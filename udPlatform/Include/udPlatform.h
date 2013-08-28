@@ -2,6 +2,7 @@
 #define UDPLATFORM_H
 
 // An abstraction layer for common functions that differ on various platforms
+#include <stdint.h>
 
 #if _WIN64 || __amd64__
   //64-bit code
