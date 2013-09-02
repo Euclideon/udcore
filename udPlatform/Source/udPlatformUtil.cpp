@@ -4,7 +4,7 @@
 
 int AddToStringTable(char *&stringTable, uint32_t &stringTableLength, const char *addString)
 {
-  int offset = 0;
+  uint32_t offset = 0;
   int addStrLen = (int)strlen(addString); // Length of string to be added
 
   while (offset < stringTableLength)

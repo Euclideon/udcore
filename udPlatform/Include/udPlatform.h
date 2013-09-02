@@ -24,6 +24,13 @@
 #error "Unknown platform"
 #endif
 
+#if defined(_MSC_VER)
+# define UDPLATFORM_WINDOWS
+#else // TODO: Work out how to detect linux here
+# define UDPLATFORM_LINUX
+#endif
+
+
 // Using c++11 ATOMIC library, so for MSVC versions not supporting this provide a minimal implementation
 #if defined(_MSC_VER) && (_MSC_VER <= 1600) // Visual studio 2010 (VC110) and below
 // Define a subset of std::atomic specifically to meet exactly the needs of udRender's use
@@ -77,5 +84,17 @@ namespace std
 
 #endif
 
+
+class udPlatformFile
+{
+public:
+  enum Result { OK, Error };
+  enum Whence { SeekSet, SeekCurrent, SeekEnd };
+  virtual Result Open(const char *name, const char *options) = 0;
+  virtual Result Close() = 0;
+  virtual Result Seek(uint64_t offset, Whence whence);
+  virtual Result Read(void *data, uint64_t length, uint64_t *actual) = 0;
+  virtual Result Write(void *data, uint64_t length, uint64_t *actual) = 0;
+};
 
 #endif // UDPLATFORM_H
