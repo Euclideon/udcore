@@ -6,9 +6,9 @@
 void udDebugPrintf(const char *format, ...);
 
 template<typename T>
-bool udSizeArray(T *&ptr, uint32_t &currentLength, uint32_t requiredLength, uint32_t allocationMultiples = 0)
+bool udSizeArray(T *&ptr, uint32_t &currentLength, uint32_t requiredLength, int32_t allocationMultiples = 0)
 {
-  if (requiredLength > currentLength)
+  if (requiredLength > currentLength || allocationMultiples < 0)
   {
     uint32_t newLength;
     if (allocationMultiples > 1)
