@@ -9,6 +9,14 @@
 void udDebugPrintf(const char *format, ...);
 
 // *********************************************************************
+// A min/max that can be depended upon
+// *********************************************************************
+
+#define udMax(a,b) (((a) > (b)) ? (a) : (b))
+#define udMin(a,b) (((a) < (b)) ? (a) : (b))
+
+
+// *********************************************************************
 // Some string functions that are safe, 
 //  - on success all return the length of the result in characters 
 //    (including null) which is always greater than zero
@@ -115,7 +123,7 @@ protected:
   void CalculateIndices();
   int m_filenameIndex;      // Index to starting character of filename
   int m_extensionIndex;     // Index to starting character of extension
-  char m_path[260];         // Buffer for the path, set to 260 characters
+  char m_path[MaxPath];         // Buffer for the path, set to 260 characters
 };
 
 #endif // UDPLATFORM_UTIL_H
