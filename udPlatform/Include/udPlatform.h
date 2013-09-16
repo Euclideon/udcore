@@ -9,7 +9,7 @@
 # define UD_WORD_SHIFT  6   // 6 bits for 64 bit pointer
 # define UD_WORD_BITS   64
 # define UD_WORD_BYTES  8
-# define UD_WORD_MAX    0x7ffffffffLL
+# define UD_WORD_MAX    0x7fffffffffffffffLL
   typedef signed long long udIWord;
   typedef unsigned long long udUWord;
 #elif  defined(_WIN32)
@@ -17,7 +17,7 @@
 # define UD_WORD_SHIFT  5   // 5 bits for 32 bit pointer  
 # define UD_WORD_BITS   32
 # define UD_WORD_BYTES  4
-# define UD_WORD_MAX    0x7ffffL
+# define UD_WORD_MAX    0x7fffffffL
   typedef signed long udIWord;
   typedef unsigned long udUWord;
 #else

@@ -122,7 +122,7 @@ bool udFilename::SetFolder(const char *folder)
     return false;
 
   // If the m_path doesn't have a trailing seperator, look for one so we can
-  // append one already being used. That is c:\\m_path\\ or c:/m_path/
+  // append one already being used. That is c:\m_path\ or c:/m_path/
   if (i > 2 && newPath[i-2] != '/' && newPath[i-2] != '\\' && newPath[i-2] != ':')
   {
     for (--i; i > 0; --i)
