@@ -180,4 +180,3 @@ inline udVec4f udVecPlaneNormalize(udVec4f p)
 }
 
 #endif // UDVEC_H
-

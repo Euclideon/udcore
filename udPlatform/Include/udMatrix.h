@@ -2,6 +2,7 @@
 #define UDMATRIX_H
 
 #include "udVec.h"
+
 UD_ALIGN_16_VS struct udMatrix4f
 {
   udVec4f r[4];

@@ -241,38 +241,38 @@ void udMatrix4f::Transpose(const udMatrix4f &M)
 
 udVec4f udMatrix4f::Transform3(udVec4f v) const
 {
-    // Splat x,y,z and w
-    udVec4f vTempX = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,0,0));
-    udVec4f vTempY = _mm_shuffle_ps(v, v, _MM_SHUFFLE(1,1,1,1));
-    udVec4f vTempZ = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2,2,2,2));
-    // Mul by the matrix
-    vTempX = _mm_mul_ps(vTempX, r[0]);
-    vTempY = _mm_mul_ps(vTempY, r[1]);
-    vTempZ = _mm_mul_ps(vTempZ, r[2]);
-    // Add them all together
-    vTempX = _mm_add_ps(vTempX, vTempY);
-    vTempZ = _mm_add_ps(vTempZ, r[3]);
-    vTempX = _mm_add_ps(vTempX, vTempZ);
-    return vTempX;
+  // Splat x,y,z and w
+  udVec4f vTempX = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,0,0));
+  udVec4f vTempY = _mm_shuffle_ps(v, v, _MM_SHUFFLE(1,1,1,1));
+  udVec4f vTempZ = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2,2,2,2));
+  // Mul by the matrix
+  vTempX = _mm_mul_ps(vTempX, r[0]);
+  vTempY = _mm_mul_ps(vTempY, r[1]);
+  vTempZ = _mm_mul_ps(vTempZ, r[2]);
+  // Add them all together
+  vTempX = _mm_add_ps(vTempX, vTempY);
+  vTempZ = _mm_add_ps(vTempZ, r[3]);
+  vTempX = _mm_add_ps(vTempX, vTempZ);
+  return vTempX;
 }
 
 udVec4f udMatrix4f::Transform4(udVec4f v) const
 {
-    // Splat x,y,z and w
-    udVec4f vTempX = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,0,0));
-    udVec4f vTempY = _mm_shuffle_ps(v, v, _MM_SHUFFLE(1,1,1,1));
-    udVec4f vTempZ = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2,2,2,2));
-    udVec4f vTempW = _mm_shuffle_ps(v, v, _MM_SHUFFLE(3,3,3,3));
-    // Mul by the matrix
-    vTempX = _mm_mul_ps(vTempX, r[0]);
-    vTempY = _mm_mul_ps(vTempY, r[1]);
-    vTempZ = _mm_mul_ps(vTempZ, r[2]);
-    vTempW = _mm_mul_ps(vTempW, r[3]);
-    // Add them all together
-    vTempX = _mm_add_ps(vTempX, vTempY);
-    vTempZ = _mm_add_ps(vTempZ, vTempW);
-    vTempX = _mm_add_ps(vTempX, vTempZ);
-    return vTempX;
+  // Splat x,y,z and w
+  udVec4f vTempX = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,0,0));
+  udVec4f vTempY = _mm_shuffle_ps(v, v, _MM_SHUFFLE(1,1,1,1));
+  udVec4f vTempZ = _mm_shuffle_ps(v, v, _MM_SHUFFLE(2,2,2,2));
+  udVec4f vTempW = _mm_shuffle_ps(v, v, _MM_SHUFFLE(3,3,3,3));
+  // Mul by the matrix
+  vTempX = _mm_mul_ps(vTempX, r[0]);
+  vTempY = _mm_mul_ps(vTempY, r[1]);
+  vTempZ = _mm_mul_ps(vTempZ, r[2]);
+  vTempW = _mm_mul_ps(vTempW, r[3]);
+  // Add them all together
+  vTempX = _mm_add_ps(vTempX, vTempY);
+  vTempZ = _mm_add_ps(vTempZ, vTempW);
+  vTempX = _mm_add_ps(vTempX, vTempZ);
+  return vTempX;
 }
 
 void udMatrix4f::SetRotationX(float angle)
