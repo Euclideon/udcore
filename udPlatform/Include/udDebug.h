@@ -1,6 +1,11 @@
 #ifndef UDDEBUG_H
 #define UDDEBUG_H
 
+// *********************************************************************
+// Outputs a string to debug console
+// *********************************************************************
+void udDebugPrintf(const char *format, ...);
+
 class udTrace
 {
 public:
