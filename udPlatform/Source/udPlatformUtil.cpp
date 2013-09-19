@@ -1,24 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "udPlatformUtil.h"
 #include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
 
-
-// *********************************************************************
-void udDebugPrintf(const char *format, ...)
-{
-  va_list args;
-  char buffer[300];
-
-  va_start(args, format);
-  vsnprintf(buffer, sizeof(buffer), format, args);
-#ifdef _WIN32
-  OutputDebugStringA(buffer);
-#else
-  printf("%s", buffer);
-#endif
-}
 
 // *********************************************************************
 size_t udStrcpy(char *dest, size_t destLen, const char *src)
