@@ -6,6 +6,7 @@
 
 #if _WIN64 || __amd64__
   //64-bit code
+# define UD_64BIT
 # define UD_WORD_SHIFT  6   // 6 bits for 64 bit pointer
 # define UD_WORD_BITS   64
 # define UD_WORD_BYTES  8
@@ -14,6 +15,7 @@
   typedef unsigned long long udUWord;
 #elif  defined(_WIN32)
    //32-bit code
+# define UD_32BIT
 # define UD_WORD_SHIFT  5   // 5 bits for 32 bit pointer  
 # define UD_WORD_BITS   32
 # define UD_WORD_BYTES  4
@@ -21,13 +23,21 @@
   typedef signed long udIWord;
   typedef unsigned long udUWord;
 #else
-#error "Unknown platform"
+# error "Unknown architecture (32/64 bit)"
 #endif
 
 #if defined(_MSC_VER)
 # define UDPLATFORM_WINDOWS
-#else // TODO: Work out how to detect linux here
+#elif defined(__GNUC__) // TODO: Work out best tag to detect linux here
 # define UDPLATFORM_LINUX
+#else
+# error "Unknown platform"
+#endif
+
+#if defined(_DEBUG)
+# define UD_DEBUG
+#else
+# define UD_RELEASE
 #endif
 
 
@@ -85,16 +95,6 @@ namespace std
 #endif
 
 
-class udPlatformFile
-{
-public:
-  enum Result { OK, Error };
-  enum Whence { SeekSet, SeekCurrent, SeekEnd };
-  virtual Result Open(const char *name, const char *options) = 0;
-  virtual Result Close() = 0;
-  virtual Result Seek(uint64_t offset, Whence whence);
-  virtual Result Read(void *data, uint64_t length, uint64_t *actual) = 0;
-  virtual Result Write(void *data, uint64_t length, uint64_t *actual) = 0;
-};
+#include "udDebug.h"
 
 #endif // UDPLATFORM_H

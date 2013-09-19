@@ -66,14 +66,21 @@ inline udVec4f udVecReciprocal(udVec4f v) { return _mm_div_ps(udVec4fConst_One, 
 inline udVec4f udVecReciprocalEst(udVec4f v) { return _mm_rcp_ps(v); }
 
 // Comparisons
-inline int udVecGetSignsMask(udVec4f v)              { return _mm_movemask_ps(v); }
-inline int udVecLess(udVec4f a, udVec4f b)           { return ((_mm_movemask_ps(_mm_cmplt_ps(a,b))==0x0f) != 0); }
-inline int udVecLessOrEqual(udVec4f a, udVec4f b)    { return ((_mm_movemask_ps(_mm_cmple_ps(a,b))==0x0f) != 0); }
-inline int udVecGreater(udVec4f a, udVec4f b)        { return ((_mm_movemask_ps(_mm_cmpgt_ps(a,b))==0x0f) != 0); }
-inline int udVecGreaterOrEqual(udVec4f a, udVec4f b) { return ((_mm_movemask_ps(_mm_cmpge_ps(a,b))==0x0f) != 0); }
-inline int udVecEqual(udVec4f a, udVec4f b)          { return ((_mm_movemask_ps(_mm_cmpeq_ps(a,b))==0x0f) != 0); }
-inline int udVecIsNaN(udVec4f v)                     { return ((_mm_movemask_ps(_mm_cmpneq_ps(v,v))     ) != 0); }
-inline int udVecIsInfinite(udVec4f v)                { return ((_mm_movemask_ps(_mm_cmpeq_ps(v,udVec4fConst_Infinity))) != 0); }
+inline int udVecGetSignsMask(udVec4f v)               { return _mm_movemask_ps(v); }
+
+inline int udVec3Less(udVec4f a, udVec4f b)           { return ((_mm_movemask_ps(_mm_cmplt_ps(a,b))==0x07) != 0); }  // TODO: Can the trailing != 0 be removed
+inline int udVec3LessOrEqual(udVec4f a, udVec4f b)    { return ((_mm_movemask_ps(_mm_cmple_ps(a,b))==0x07) != 0); }
+inline int udVec3Greater(udVec4f a, udVec4f b)        { return ((_mm_movemask_ps(_mm_cmpgt_ps(a,b))==0x07) != 0); }
+inline int udVec3GreaterOrEqual(udVec4f a, udVec4f b) { return ((_mm_movemask_ps(_mm_cmpge_ps(a,b))==0x07) != 0); }
+inline int udVec3Equal(udVec4f a, udVec4f b)          { return ((_mm_movemask_ps(_mm_cmpeq_ps(a,b))==0x07) != 0); }
+
+inline int udVec4Less(udVec4f a, udVec4f b)           { return ((_mm_movemask_ps(_mm_cmplt_ps(a,b))==0x0f) != 0); }
+inline int udVec4LessOrEqual(udVec4f a, udVec4f b)    { return ((_mm_movemask_ps(_mm_cmple_ps(a,b))==0x0f) != 0); }
+inline int udVec4Greater(udVec4f a, udVec4f b)        { return ((_mm_movemask_ps(_mm_cmpgt_ps(a,b))==0x0f) != 0); }
+inline int udVec4GreaterOrEqual(udVec4f a, udVec4f b) { return ((_mm_movemask_ps(_mm_cmpge_ps(a,b))==0x0f) != 0); }
+inline int udVec4Equal(udVec4f a, udVec4f b)          { return ((_mm_movemask_ps(_mm_cmpeq_ps(a,b))==0x0f) != 0); }
+inline int udVecIsAnyNaN(udVec4f v)                   { return ((_mm_movemask_ps(_mm_cmpneq_ps(v,v))     ) != 0); }
+inline int udVecIsAnyInfinite(udVec4f v)              { return ((_mm_movemask_ps(_mm_cmpeq_ps(v,udVec4fConst_Infinity))) != 0); }
 
 inline float udVecGetX(udVec4f v) { return _mm_cvtss_f32(v); }
 inline float udVecGetY(udVec4f v) { return _mm_cvtss_f32(_mm_shuffle_ps(v, v, _MM_SHUFFLE(1,1,1,1))); }
