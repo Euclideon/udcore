@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+//#define PRINTF_TRACE    // Very slow but useful when tracking exceptions that don't stop in the debugger
+
 
 // *********************************************************************
 void udDebugPrintf(const char *format, ...)
@@ -19,8 +21,6 @@ void udDebugPrintf(const char *format, ...)
   fprintf(stderr, "%s", buffer);
 #endif
 }
-
-//#define PRINTF_TRACE
 
 // TODO: Use TLS so there is one stack per thread
 udTrace *udTrace::head = nullptr;
