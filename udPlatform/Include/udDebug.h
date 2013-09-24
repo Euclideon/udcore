@@ -22,7 +22,9 @@ public:
 #if defined(UD_DEBUG)
 //#define UDTRACE_ON
 #define UDASSERT_ON
+#define UDRELASSERT_ON
 #elif defined(UD_RELEASE)
+#define UDRELASSERT_ON
 #endif
 
 
@@ -32,11 +34,17 @@ public:
 #define UDTRACE()
 #endif
 
-
+// TODO: Make assertion system handle pop-up window where possible
 #ifdef UDASSERT_ON
-#define UDASSERT(condition) { if (!(condition)) DebugBreak(); }
+#define UDASSERT(condition, message) { if (!(condition)) { udDebugPrintf(message); DebugBreak(); } }
 #else
-#define UDASSERT(condition) // TODO: Make platform-specific __assume(condition)
+#define UDASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
+#endif
+
+#ifdef UDRELASSERT_ON
+#define UDRELASSERT(condition, message) { if (!(condition)) { udDebugPrintf(message); /*DebugBreak();*/ } }
+#else
+#define UDRELASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
 #endif
 
 #endif // UDDEBUG_H

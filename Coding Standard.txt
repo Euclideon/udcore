@@ -1,0 +1,70 @@
+Coding standard for the UD2 repo.
+
+
+
+
+2-space indents, no tabs, camelCase variables, ProperCase function/methods
+
+Be minimal wherever possible.
+
+Avoid dependencies unless the avoidance would be counter-productive
+
+Treat memory like a hard drive, and the hard drive like an optical drive
+
+Allocate memory infrequently, and deal with failures. This means allocating memory in a constuctor is unlikely to be worthwhile.
+
+Use nothing that would prevent a release build of the sdk from being linked to a customer's debug build
+
+Exceptions, STL, Boost etc not used
+
+Keep the code compact, with white-space used to delineate groups of functionally related lines of code
+
+Spaces after key words, not after functions.
+
+if (condition)
+  DoSomething();
+
+Braces for single-line if/else's when either the if or the else require them
+
+
+if (condition)
+{
+  DoSomething();
+}
+else
+{
+  DoOneThing();
+  DoAnotherThing();
+}
+
+Keep the while from a do-while with it's closing brace so it doesn't look like a while.
+
+do
+{
+  DoSomething();
+} while (condition);
+
+
+Space after a comma, not around parentheses.
+
+// FunctionCall(a, b);
+
+
+Delineate the start of a function/method with a row of stars if it's an API function or dashes if it's an internal function.
+
+
+// ********************************************************
+void PublicAPIFunction()
+{
+  DoSometingInternal();
+}
+
+// --------------------------------------------------------
+void DoSometingInternal();
+
+
+When typedefing to simplify pointers to functions, leave the pointer out so that the declaration still looks like a pointer.
+
+typedef void (CallbackFunc)(int a, int b);
+
+void SetCallback(CallbackFunc *funcPointer);

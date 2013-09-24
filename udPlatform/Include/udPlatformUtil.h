@@ -4,11 +4,13 @@
 #include "udPlatform.h"
 
 // *********************************************************************
-// A min/max that can be depended upon
+// Some simple defines (incl min/max so they can be relied upon)
 // *********************************************************************
 
 #define udMax(a,b) (((a) > (b)) ? (a) : (b))
 #define udMin(a,b) (((a) < (b)) ? (a) : (b))
+template <typename T>
+inline T udRoundPow2(T n, int align) { return ((n + (align-1)) & -align); }
 
 
 // *********************************************************************

@@ -41,6 +41,7 @@
 #endif
 
 
+// TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
 // Using c++11 ATOMIC library, so for MSVC versions not supporting this provide a minimal implementation
 #if defined(_MSC_VER) && (_MSC_VER <= 1600) // Visual studio 2010 (VC110) and below
 // Define a subset of std::atomic specifically to meet exactly the needs of udRender's use
