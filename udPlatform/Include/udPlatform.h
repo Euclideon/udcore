@@ -1,6 +1,7 @@
 #ifndef UDPLATFORM_H
 #define UDPLATFORM_H
 
+
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
 
@@ -26,7 +27,7 @@
 # error "Unknown architecture (32/64 bit)"
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 # define UDPLATFORM_WINDOWS
 #elif defined(__GNUC__) // TODO: Work out best tag to detect linux here
 # define UDPLATFORM_LINUX
@@ -43,7 +44,7 @@
 
 // TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
 // Using c++11 ATOMIC library, so for MSVC versions not supporting this provide a minimal implementation
-#if defined(_MSC_VER) && (_MSC_VER <= 1600) // Visual studio 2010 (VC110) and below
+#if (defined(_MSC_VER) && (_MSC_VER <= 1600)) || defined(__MINGW32__)// Visual studio 2010 (VC110) and below
 // Define a subset of std::atomic specifically to meet exactly the needs of udRender's use
 #include <windows.h>
 
