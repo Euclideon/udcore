@@ -69,7 +69,7 @@ namespace std
   public:
     operator T() { return member; }
     void operator =(const T &value) { member = value; } // TODO: Check there's no better Interlocked way to do this
-    bool compare_exchange_weak(const T &expected, T desired) { return InterlockedCompareExchangePointer((void*volatile*)&member, desired, expected) == expected; }
+    bool compare_exchange_weak(T &expected, T desired) { T actual = InterlockedCompareExchangePointer((void*volatile*)&member, desired, expected); if (actual == expected) return true; expected = actual; return false; }
   protected:
     T member;
   };
