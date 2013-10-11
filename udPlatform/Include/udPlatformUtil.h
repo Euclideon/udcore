@@ -55,9 +55,17 @@ bool udSizeArray(T *&ptr, uint32_t &currentLength, uint32_t requiredLength, int3
 }
 
 // *********************************************************************
-// Count the number of bits set in a 8 bit number
+// Count the number of bits set
 // *********************************************************************
-inline uint32_t udCountBits(uint8_t a_number)
+
+inline uint32_t udCountBits32(uint32_t v)
+{
+  v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
+  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
+  return ((v + (v >> 4) & 0xF0F0F0F) * 0x1010101) >> 24; // count
+}
+
+inline uint32_t udCountBits8(uint8_t a_number)
 {
   static const uint8_t bits[256] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
                                      1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
