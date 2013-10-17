@@ -13,9 +13,9 @@ Treat memory like a hard drive, and the hard drive like an optical drive
 
 Allocate memory infrequently, and deal with failures. This means allocating memory in a constuctor is unlikely to be worthwhile.
 
-Use nothing that would prevent a release build of the sdk from being linked to a customer's debug build
+Exceptions not used
 
-Exceptions, STL, Boost etc not used
+STL/Boost - trying to avoid where possible but where memory allocation can be controlled via customer's functions it's ok, but not in interfaces, and not where it carries a lot of baggage
 
 Keep the code compact, with white-space used to delineate groups of functionally related lines of code
 
