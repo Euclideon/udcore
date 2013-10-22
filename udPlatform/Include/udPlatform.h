@@ -96,6 +96,16 @@ namespace std
 
 #endif
 
+// Minimalist MOST BASIC cross-platform thread support
+typedef uint32_t (udThreadStart)(void *data);
+uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
+void udDestroyThread(uint64_t threadHandle);
+
+#ifdef UDPLATFORM_WINDOWS
+# define udMemoryBarrier() MemoryBarrier()
+#else
+# define udMemoryBarrier() __sync_synchronize()
+#endif
 
 #include "udDebug.h"
 
