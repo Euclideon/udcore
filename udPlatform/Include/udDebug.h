@@ -47,4 +47,6 @@ public:
 #define UDRELASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
 #endif
 
+#define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
+
 #endif // UDDEBUG_H
