@@ -3,7 +3,7 @@ Coding standard for the UD2 repo.
 
 
 
-2-space indents, no tabs, camelCase variables, ProperCase function/methods
+2-space indents, no tabs, camelCase variables, ProperCase function/methods, start pointers with a lower case p (eg void *pBlockData), pointers to pointers have two p's (*ppData).
 
 Be minimal wherever possible.
 
