@@ -150,4 +150,6 @@ protected:
   char m_path[MaxPath];         // Buffer for the path, set to 260 characters
 };
 
+#define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof(_array[0]) )
+
 #endif // UDPLATFORM_UTIL_H
