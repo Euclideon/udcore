@@ -140,6 +140,11 @@ public:
   int ExtractFolder(char *folder, int folderLen);
   int ExtractFilenameOnly(char *filename, int filenameLen);
 
+  //
+  // Test methods: to determine what is present in the filename
+  bool HasFilename()                    { return m_path[m_filenameIndex] != 0; }
+  bool HasExt()                         { return m_path[m_extensionIndex] != 0; }
+
   // Temporary function to output debug info until unit tests are done to prove reliability
   void Debug();
 
