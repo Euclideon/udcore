@@ -60,6 +60,27 @@ size_t udStrcat(char *dest, size_t destLen, const char *src)
 }
 
 // *********************************************************************
+int udStrcmp(const char *s1, const char *s2)
+{
+  static const char *empty = "";
+  if (!s1) s1 = empty;
+  if (!s2) s2 = empty;
+
+  int result;
+  do
+  {
+    result = *s1 - *s2;
+  } while (*s1++ && *s2++);
+  
+  if (result < 0)
+    result = -1;
+  else if (result > 0)
+    result = 1;
+
+  return result;
+}
+
+// *********************************************************************
 int udAddToStringTable(char *&stringTable, uint32_t &stringTableLength, const char *addString)
 {
   uint32_t offset = 0;

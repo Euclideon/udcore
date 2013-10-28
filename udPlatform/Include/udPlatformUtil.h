@@ -32,6 +32,12 @@ size_t udStrncpy(char *dest, size_t destLen, const char *src, size_t maxChars);
 size_t udStrcat(char *dest, size_t destLen, const char *src);
 
 // *********************************************************************
+// String comparison functions that can be relied upon, NULL-safe
+// *********************************************************************
+int udStrcmp(const char *s1, const char *s2);
+inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
+
+// *********************************************************************
 // Helper for growing an array as required
 // *********************************************************************
 template<typename T>
