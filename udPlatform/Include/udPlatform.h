@@ -5,7 +5,7 @@
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
 
-#if _WIN64 || __amd64__
+#if defined(_WIN64) || defined(__amd64__)
   //64-bit code
 # define UD_64BIT
 # define UD_WORD_SHIFT  6   // 6 bits for 64 bit pointer
@@ -14,7 +14,7 @@
 # define UD_WORD_MAX    0x7fffffffffffffffLL
   typedef signed long long udIWord;
   typedef unsigned long long udUWord;
-#elif  defined(_WIN32)
+#elif  defined(_WIN32) || defined(__i386__)  || defined(__arm__)
    //32-bit code
 # define UD_32BIT
 # define UD_WORD_SHIFT  5   // 5 bits for 32 bit pointer  
@@ -29,7 +29,7 @@
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define UDPLATFORM_WINDOWS
-#elif defined(__GNUC__) // TODO: Work out best tag to detect linux here
+#elif defined(__linux__) // TODO: Work out best tag to detect linux here
 # define UDPLATFORM_LINUX
 #else
 # error "Unknown platform"
