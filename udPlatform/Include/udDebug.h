@@ -36,13 +36,13 @@ public:
 
 // TODO: Make assertion system handle pop-up window where possible
 #ifdef UDASSERT_ON
-#define UDASSERT(condition, message) { if (!(condition)) { udDebugPrintf(message); DebugBreak(); } }
+#define UDASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); DebugBreak(); } }
 #else
 #define UDASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
 #endif
 
 #ifdef UDRELASSERT_ON
-#define UDRELASSERT(condition, message) { if (!(condition)) { udDebugPrintf(message); /*DebugBreak();*/ } }
+#define UDRELASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); /*DebugBreak();*/ } }
 #else
 #define UDRELASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
 #endif
