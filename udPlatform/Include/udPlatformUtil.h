@@ -108,7 +108,7 @@ class udFilename
 public:
   // Construct either empty as default or from a path
   // No destructor (or memory allocation) to keep the object simple and copyable
-  udFilename() { SetFromFullPath(nullptr); }
+  udFilename() { SetFromFullPath(NULL); }
   udFilename(const char *path) { SetFromFullPath(path); }
 
   enum { MaxPath = 260 };

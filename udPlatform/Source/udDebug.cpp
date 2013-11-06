@@ -23,7 +23,7 @@ void udDebugPrintf(const char *format, ...)
 }
 
 // TODO: Use TLS so there is one stack per thread
-udTrace *udTrace::head = nullptr;
+udTrace *udTrace::head = NULL;
 int udTrace::depth = 0;
 
 
