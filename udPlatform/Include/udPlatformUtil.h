@@ -14,6 +14,9 @@ template <typename T>
 inline T udMin(const T &a, const T &b) { return (a < b) ? a : b;  }
 
 template <typename T>
+inline T udClamp(const T &a, const T &minVal, const T &maxVal) { return udMin(udMax(a, minVal), maxVal);  }
+
+template <typename T>
 inline T udRoundPow2(T n, int align) { return ((n + (align-1)) & -align); }
 
 
@@ -38,7 +41,7 @@ int udStrcmp(const char *s1, const char *s2);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
 
 // *********************************************************************
-// Helper for growing an array as required
+// Helper for growing an array as required TODO: Use configured memory allocators
 // *********************************************************************
 template<typename T>
 bool udSizeArray(T *&ptr, uint32_t &currentLength, uint32_t requiredLength, int32_t allocationMultiples = 0)

@@ -42,6 +42,15 @@
 #endif
 
 
+#ifdef UDPLATFORM_WINDOWS
+# define udInterlockedIncrement(x) InterlockedIncrement(x)
+# define udInterlockedDecrement(x) InterlockedDecrement(x)
+// #elif defined(UDPLATFORM_LINUX) -- TODO
+#else
+# define udInterlockedIncrement(x) ++(*x)
+# define udInterlockedDecrement(x) --(*x)
+#endif
+
 // TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
 // Using c++11 ATOMIC library, so for MSVC versions not supporting this provide a minimal implementation
 #if (defined(_MSC_VER) && (_MSC_VER <= 1600)) || defined(__MINGW32__)// Visual studio 2010 (VC110) and below
