@@ -45,10 +45,18 @@
 #ifdef UDPLATFORM_WINDOWS
 # define udInterlockedIncrement(x) InterlockedIncrement(x)
 # define udInterlockedDecrement(x) InterlockedDecrement(x)
-// #elif defined(UDPLATFORM_LINUX) -- TODO
+# define udSleep(x) Sleep(x)
+
+#elif defined(UDPLATFORM_LINUX)
+# define udInterlockedIncrement(x) ++(*x) // TODO
+# define udInterlockedDecrement(x) --(*x) // TODO
+# define udSleep(x) sleep(x)
+
 #else
 # define udInterlockedIncrement(x) ++(*x)
 # define udInterlockedDecrement(x) --(*x)
+# define udSleep(x)
+
 #endif
 
 // TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
