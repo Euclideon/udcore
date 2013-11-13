@@ -19,33 +19,39 @@ public:
 };
 
 
-#if defined(UD_DEBUG)
-//#define UDTRACE_ON
-#define UDASSERT_ON
-#define UDRELASSERT_ON
-#elif defined(UD_RELEASE)
-#define UDRELASSERT_ON
+#if UD_DEBUG
+
+# define UDTRACE_ON     (0)
+# define UDASSERT_ON    (1)
+# define UDRELASSERT_ON (1)
+
+#elif UD_RELEASE
+
+# define UDTRACE_ON     (0)
+# define UDASSERT_ON    (0)
+# define UDRELASSERT_ON (1)
+
 #endif
 
 
-#ifdef UDTRACE_ON
-#define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__)
+#if UDTRACE_ON
+# define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__)
 #else
-#define UDTRACE()
-#endif
+# define UDTRACE()
+#endif // UDTRACE_ON
 
 // TODO: Make assertion system handle pop-up window where possible
-#ifdef UDASSERT_ON
-#define UDASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); DebugBreak(); } }
+#if UDASSERT_ON
+# define UDASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); DebugBreak(); } }
 #else
-#define UDASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
-#endif
+# define UDASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
+#endif // UDASSERT_ON
 
-#ifdef UDRELASSERT_ON
-#define UDRELASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); /*DebugBreak();*/ } }
+#if UDRELASSERT_ON
+# define UDRELASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); /*DebugBreak();*/ } }
 #else
-#define UDRELASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
-#endif
+# define UDRELASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
+#endif //UDRELASSERT_ON
 
 #define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
 

@@ -36,9 +36,11 @@
 #endif
 
 #if defined(_DEBUG)
-# define UD_DEBUG
+# define UD_DEBUG   (1)
+# define UD_RELEASE (0)
 #else
-# define UD_RELEASE
+# define UD_DEBUG   (0)
+# define UD_RELEASE (1)
 #endif
 
 
@@ -118,11 +120,100 @@ typedef uint32_t (udThreadStart)(void *data);
 uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
 void udDestroyThread(uint64_t threadHandle);
 
+#define __MEMORY_DEBUG__ (0)
+
+#if __MEMORY_DEBUG__
+# define IF_MEMORY_DEBUG(x,y) x,y
+#else 
+# define IF_MEMORY_DEBUG(x,y) 
+#endif //  __MEMORY_DEBUG__
+
+void *_udAlloc(size_t size IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void *_udAllocAligned(size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+
+void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+
+void _udFree(void **pMemory IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+
+
+enum udMemoryOverload
+{
+  UDMO_Memory
+};
+
+void *operator new (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void *operator new[] (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+
+void operator delete (void *p, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void operator delete [](void *p, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+
+template <typename T> void _udDelete(T *&pMemory, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line)) { if (pMemory) { pMemory->~T(); operator delete (pMemory, memoryOverload, __FILE__, __LINE__); pMemory = NULL; } }
+template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line)) { if (pMemory) { /*pMemory->~T(); */operator delete [] (pMemory, memoryOverload, __FILE__, __LINE__); pMemory = NULL; }}
+
+
+#if __MEMORY_DEBUG__
+#  define udAlloc(size) _udAlloc(size, __FILE__, __LINE__)
+#  define udAllocAligned(size, alignment) _udAllocAligned(size, alignment, __FILE__, __LINE__)
+
+#  define udRealloc(pMemory, size) _udRealloc(pMemory, size, __FILE__, __LINE__)
+#  define udReallocAligned(size, alignment) _udReallocAligned(size, alignment, __FILE__, __LINE__)
+
+#  define udFree(pMemory) _udFree((void**)&pMemory, __FILE__, __LINE__)
+
+#  define udNew new (UDMO_Memory, __FILE__, __LINE__)
+#  define udNewArray new [] (UDMO_Memory, __FILE__, __LINE__)
+
+#  define udDelete(pMemory) _udDelete(pMemory, UDMO_Memory, __FILE__, __LINE__)
+#  define udDeleteArray(pMemory) _udDeleteArray(pMemory, UDMO_Memory, __FILE__, __LINE__)
+
+#else //  __MEMORY_DEBUG__
+#  define udAlloc(size) _udAlloc(size)
+#  define udAllocAligned(size, alignment) _udAllocAligned(size, alignment)
+
+#  define udRealloc(pMemory, size) _udRealloc(pMemory, size)
+#  define udReallocAligned(size, alignment) _udReallocAligned(size, alignment)
+
+#  define udFree(pMemory) _udFree((void**)&pMemory)
+
+#  define udNew new (UDMO_Memory)
+#  define udNewArray new [] (UDMO_Memory)
+
+#  define udDelete(pMemory) _udDelete(pMemory, UDMO_Memory)
+#  define udDeleteArray(pMemory) _udDeleteArray(pMemory, UDMO_Memory)
+
+#endif  //  __MEMORY_DEBUG__
+
+#if __MEMORY_DEBUG__
+void udMemoryOutputLeaks();
+#else
+# define udMemoryOutputLeaks()
+#endif // __MEMORY_DEBUG__
+
 #ifdef UDPLATFORM_WINDOWS
 # define udMemoryBarrier() MemoryBarrier()
 #else
 # define udMemoryBarrier() __sync_synchronize()
 #endif
+
+#if defined(__GNUC__)
+# define udUnused(x) x __attribute__((unused))
+#elif defined(_WIN32)
+# define udUnused(x) (void)x
+#else 
+# define udUnused(x) x
+#endif
+
+#if defined(_WIN32)
+# define __FUNC_NAME__ __FUNCTION__
+#elif defined(__GNUC__)
+# define __FUNC_NAME__ __PRETTY_FUNCTION__
+#else
+#pragma message ("This platform hasn't setup up __FUNC_NAME__")
+# define __FUNC_NAME__ "unknown"
+#endif
+
+
 
 #include "udDebug.h"
 

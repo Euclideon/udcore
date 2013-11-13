@@ -53,7 +53,7 @@ bool udSizeArray(T *&ptr, uint32_t &currentLength, uint32_t requiredLength, int3
       newLength = ((requiredLength + allocationMultiples - 1) / allocationMultiples) * allocationMultiples;
     else
       newLength = requiredLength;
-    void *resized = realloc(ptr, newLength * sizeof(T));
+    void *resized = udRealloc(ptr, newLength * sizeof(T));
     if (!resized)
       return false;
 

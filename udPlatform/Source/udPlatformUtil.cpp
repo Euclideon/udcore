@@ -97,7 +97,7 @@ int udAddToStringTable(char *&stringTable, uint32_t &stringTableLength, const ch
       offset += curStrLen + 1;
   }
   int newLength = offset + addStrLen + 1;
-  char *newCache = (char*)realloc(stringTable, newLength);
+  char *newCache = (char*)udRealloc(stringTable, newLength);
   if (!newCache)
     return -1; // A nasty case where memory allocation has failed
   strcpy(newCache + offset, addString);
