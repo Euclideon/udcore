@@ -186,8 +186,10 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 
 #if __MEMORY_DEBUG__
 void udMemoryOutputLeaks();
+void udMemoryOutputAllocInfo(void *pAlloc);
 #else
 # define udMemoryOutputLeaks()
+#define udMemoryOutputAllocInfo(pAlloc)
 #endif // __MEMORY_DEBUG__
 
 #ifdef UDPLATFORM_WINDOWS

@@ -70,13 +70,8 @@ int udStrcmp(const char *s1, const char *s2)
   do
   {
     result = *s1 - *s2;
-  } while (*s1++ && *s2++);
+  } while (!result && *s1++ && *s2++);
   
-  if (result < 0)
-    result = -1;
-  else if (result > 0)
-    result = 1;
-
   return result;
 }
 

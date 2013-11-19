@@ -57,11 +57,17 @@ void udMemoryOutputLeaks()
       for (MemTrackMap::iterator memIt = pMemoryTrackingMap->begin(); memIt != pMemoryTrackingMap->end(); ++memIt)
       {
         const MemTrack &track = memIt->second;
-        udDebugPrintf("Allocation 0x%x%x Address %p, size %u, file %s, line %d\n", uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pFile, track.size, track.pFile, track.line);
+        udDebugPrintf("%s(%d): Allocation 0x%x%x Address %p, size %u\n", track.pFile, track.line, uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pFile, track.size);
       }
     }
     delete pMemoryTrackingMap;
   }
+}
+
+void udMemoryOutputAllocInfo(void *pAlloc)
+{  
+  const MemTrack &track = (*pMemoryTrackingMap)[size_t(pAlloc)];
+  udDebugPrintf("%s(%d): Allocation 0x%x%x Address %p, size %u\n", track.pFile, track.line, uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pFile, track.size);
 }
 
 static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile, int line)
