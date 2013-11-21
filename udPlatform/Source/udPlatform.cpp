@@ -1,9 +1,10 @@
 #include "udPlatform.h"
-
+#include <stdlib.h>
+#include <string.h>
 
 uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData)
 {
-#ifdef UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   DWORD threadId = 0;
   CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)threadStarter, threadData, 0, &threadId);
   return (uint64_t)threadId;
@@ -17,15 +18,17 @@ uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData)
 
 void udDestroyThread(uint64_t threadHandle)
 {
-#ifdef UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   CloseHandle((HANDLE)threadHandle);
 #else
   // TODO: FIgure out which pthread function is *most* equivalent
 #endif
 }
 
-#if __MEMORY_DEBUG__
-#pragma warning(disable:4530) //  C++ exception handler used, but unwind semantics are not enabled. 
+#if __MEMORY_DEBUG__  
+# if defined(_MSC_VER)
+#   pragma warning(disable:4530) //  C++ exception handler used, but unwind semantics are not enabled. 
+# endif
 #include <map>
 
 size_t gAddressToBreakOnAllocation = (size_t)-1;
@@ -132,8 +135,24 @@ void *_udAlloc(size_t size IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(
 
 void *_udAllocAligned(size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
 {
+#if defined(_MSC_VER)
   void *pMemory = _aligned_malloc(size, alignment);
+#elif defined(__GNUC__)
+  if (alignment < sizeof(size_t))
+  {
+    alignment = sizeof(size_t);
+  }
+  void *pAllocation;
+  int err = posix_memalign(&pAllocation, alignment, size + alignment);
+  if (err != 0)
+  {
+	  return nullptr;
+  }
 
+  size_t *pSizeHeader = (size_t *)pAllocation + alignment - sizeof(size_t);
+  *pSizeHeader = size;
+  void *pMemory = (uint8_t*)pAllocation + alignment;
+#endif
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
   return pMemory;
@@ -164,8 +183,24 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
   }
 #endif
 
+#if defined(_MSC_VER)
   pMemory = _aligned_realloc(pMemory, size, alignment);
+#elif defined(__GNUC__)
+  if (!pMemory)
+  {
+    pMemory = _udAllocAligned(size, alignment IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+  }
+  else
+  {
+    void *pNewMem = _udAllocAligned(size, alignment IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
 
+    size_t *pSize = (size_t*)((uint8_t*)pMemory - sizeof(size_t));
+    memcpy(pNewMem, pMemory, *pSize);
+    _udFree(&pMemory IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+
+    return pNewMem;
+  }
+#endif
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
   
@@ -182,9 +217,8 @@ void _udFree(void **ppMemory IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBU
 }
 
 
-void *operator new (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
+void *operator new (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
-  udUnused(memoryOverload);
   void *pMemory = malloc(size);
 
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
@@ -193,12 +227,10 @@ void *operator new (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG
 
 }
 
-void *operator new[] (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
+void *operator new[] (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
   UDASSERT(false, "operator new [] not supported yet");
 
-  udUnused(memoryOverload);
-
   void *pMemory = malloc(size);
 
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
@@ -206,19 +238,16 @@ void *operator new[] (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEB
   return pMemory;
 }
 
-void operator delete (void *pMemory, udMemoryOverload memoryOverload  IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
+void operator delete (void *pMemory, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
-  udUnused(memoryOverload);
-
   DebugTrackMemoryFree(pMemory, pFile, line);
 
   free(pMemory);
 }
 
-void operator delete [](void *pMemory, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
+void operator delete [](void *pMemory, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
   UDASSERT(false, "operator delete [] not supported yet");
-  udUnused(memoryOverload);
 
   DebugTrackMemoryFree(pMemory, pFile, line);
 

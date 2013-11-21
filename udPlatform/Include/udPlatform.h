@@ -28,10 +28,14 @@
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
-# define UDPLATFORM_WINDOWS
+# define UDPLATFORM_WINDOWS (1)
+# define UDPLATFORM_LINUX   (0)
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
-# define UDPLATFORM_LINUX
+# define UDPLATFORM_WINDOWS (0)
+# define UDPLATFORM_LINUX   (1)
 #else
+# define UDPLATFORM_WINDOWS (0)
+# define UDPLATFORM_LINUX   (0)
 # error "Unknown platform"
 #endif
 
@@ -44,12 +48,12 @@
 #endif
 
 
-#ifdef UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
 # define udInterlockedIncrement(x) InterlockedIncrement(x)
 # define udInterlockedDecrement(x) InterlockedDecrement(x)
 # define udSleep(x) Sleep(x)
 
-#elif defined(UDPLATFORM_LINUX)
+#elif UDPLATFORM_LINUX
 # define udInterlockedIncrement(x) ++(*x) // TODO
 # define udInterlockedDecrement(x) --(*x) // TODO
 # define udSleep(x) sleep(x)
@@ -192,21 +196,30 @@ void udMemoryOutputAllocInfo(void *pAlloc);
 #define udMemoryOutputAllocInfo(pAlloc)
 #endif // __MEMORY_DEBUG__
 
-#ifdef UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
 # define udMemoryBarrier() MemoryBarrier()
 #else
 # define udMemoryBarrier() __sync_synchronize()
 #endif
 
 #if defined(__GNUC__)
-# define udUnused(x) x __attribute__((unused))
+# define udUnusedVar(x) __attribute__((__unused__))x
 #elif defined(_WIN32)
-# define udUnused(x) (void)x
+# define udUnusedVar(x) (void)x
 #else 
-# define udUnused(x) x
+# define udUnusedVar(x) x
 #endif
 
-#if defined(_WIN32)
+#if defined(__GNUC__)
+# define udUnusedParam(x) __attribute__((__unused__))x
+#elif defined(_WIN32)
+# define udUnusedParam(x) 
+#else 
+# define udUnusedParam(x) 
+#endif
+
+
+#if defined(_MSC_VER)
 # define __FUNC_NAME__ __FUNCTION__
 #elif defined(__GNUC__)
 # define __FUNC_NAME__ __PRETTY_FUNCTION__
@@ -216,6 +229,10 @@ void udMemoryOutputAllocInfo(void *pAlloc);
 #endif
 
 
+// Disabled Warnings
+#if defined(_MSC_VER)
+#pragma warning(disable:4127) // conditional expression is constant
+#endif //defined(_MSC_VER)
 
 #include "udDebug.h"
 

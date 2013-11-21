@@ -33,6 +33,17 @@ public:
 
 #endif
 
+#if defined(__GNUC__)
+# if UD_DEBUG
+#   include <signal.h>
+#   define __debugbreak() raise(SIGTRAP)
+#   define DebugBreak() raise(SIGTRAP)
+# else
+#   define __debugbreak()
+#   define DebugBreak()
+# endif
+#endif
+
 
 #if UDTRACE_ON
 # define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__)
@@ -43,8 +54,10 @@ public:
 // TODO: Make assertion system handle pop-up window where possible
 #if UDASSERT_ON
 # define UDASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); DebugBreak(); } }
+# define IF_UDASSERT(x) x
 #else
 # define UDASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
+# define IF_UDASSERT(x)
 #endif // UDASSERT_ON
 
 #if UDRELASSERT_ON
