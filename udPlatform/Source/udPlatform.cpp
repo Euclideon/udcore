@@ -60,17 +60,18 @@ void udMemoryOutputLeaks()
       for (MemTrackMap::iterator memIt = pMemoryTrackingMap->begin(); memIt != pMemoryTrackingMap->end(); ++memIt)
       {
         const MemTrack &track = memIt->second;
-        udDebugPrintf("%s(%d): Allocation 0x%x%x Address %p, size %u\n", track.pFile, track.line, uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pFile, track.size);
+        udDebugPrintf("%s(%d): Allocation 0x%x%x Address %p, size %u\n", track.pFile, track.line, uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pMemory, track.size);
       }
     }
     delete pMemoryTrackingMap;
+    pMemoryTrackingMap = NULL;
   }
 }
 
 void udMemoryOutputAllocInfo(void *pAlloc)
 {  
   const MemTrack &track = (*pMemoryTrackingMap)[size_t(pAlloc)];
-  udDebugPrintf("%s(%d): Allocation 0x%x%x Address %p, size %u\n", track.pFile, track.line, uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pFile, track.size);
+  udDebugPrintf("%s(%d): Allocation 0x%x%x Address %p, size %u\n", track.pFile, track.line, uint32_t(track.allocationNumber >> 32), uint32_t(track.allocationNumber), track.pMemory, track.size);
 }
 
 static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile, int line)
@@ -100,21 +101,24 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
 
 static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)   
 {
-  MemTrackMap::iterator it = pMemoryTrackingMap->find(size_t(pMemory));
-  if (it == pMemoryTrackingMap->end())
+  if (pMemoryTrackingMap)
   {
-    udDebugPrintf("Error freeing address %p at File %s, line %d, did not find a matching allocation", pMemory, pFile, line); 
-    __debugbreak(); 
-    return;
+    MemTrackMap::iterator it = pMemoryTrackingMap->find(size_t(pMemory));
+    if (it == pMemoryTrackingMap->end())
+    {
+      udDebugPrintf("Error freeing address %p at File %s, line %d, did not find a matching allocation", pMemory, pFile, line); 
+      __debugbreak(); 
+      return;
+    }
+    UDASSERT(it->second.pMemory == (pMemory), "Pointers didn't match");
+
+# if UDASSERT_ON
+    size_t sizeOfMap = pMemoryTrackingMap->size(); 
+# endif
+    pMemoryTrackingMap->erase(it); 
+
+    UDASSERT(pMemoryTrackingMap->size() < sizeOfMap, "map didn't shrink");
   }
-  UDASSERT(it->second.pMemory == (pMemory), "Pointers didn't match");
-
-#if UDASSERT_ON
-  size_t sizeOfMap = pMemoryTrackingMap->size(); 
-#endif
-  pMemoryTrackingMap->erase(it); 
-
-  UDASSERT(pMemoryTrackingMap->size() < sizeOfMap, "map didn't shrink");
 }
 
 #else
