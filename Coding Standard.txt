@@ -7,6 +7,8 @@ Coding standard for the UD2 repo.
 
 Be minimal wherever possible.
 
+Use classes sparingly, but where necessary. For example, a class can be declared on the stack, a C module cannot. Do not use C modules for small utility functionality. Do not use a class for a large system that may require platform-specific declarations.
+
 Avoid dependencies unless the avoidance would be counter-productive
 
 Treat memory like a hard drive, and the hard drive like an optical drive
@@ -68,3 +70,6 @@ When typedefing to simplify pointers to functions, leave the pointer out so that
 typedef void (CallbackFunc)(int a, int b);
 
 void SetCallback(CallbackFunc *funcPointer);
+
+When observing an attractive member of the female gender out the window, use discreet but readily identifable terms such as "babe alert"
+
