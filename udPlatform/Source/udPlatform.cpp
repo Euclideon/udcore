@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+UDCOMPILEASSERT(sizeof(off_t) == 8, _off_t_must_be_8_bytes);
+
 uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData)
 {
 #if UDPLATFORM_WINDOWS

@@ -1,6 +1,29 @@
 #ifndef UDPLATFORM_H
 #define UDPLATFORM_H
 
+// This must be set on all platforms for large files to work
+#if (_FILE_OFFSET_BITS != 64)
+#error "_FILE_OFFSET_BITS not defined to 64"
+#endif
+
+#if defined(_MSC_VER)
+# define _CRT_SECURE_NO_WARNINGS
+# define fseeko _fseeki64
+# define ftello _ftelli64
+# if !defined(_OFF_T_DEFINED)
+    typedef __int64 _off_t;
+    typedef _off_t off_t;
+#   define _OFF_T_DEFINED
+# endif //_OFF_T_DEFINED
+#elif defined(__linux__)
+# if !defined(_LARGEFILE_SOURCE )
+  // This must be set for linux to expose fseeko and ftello 
+# error "_LARGEFILE_SOURCE  not defined"
+#endif
+
+#endif
+
+
 
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
@@ -124,7 +147,7 @@ typedef uint32_t (udThreadStart)(void *data);
 uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
 void udDestroyThread(uint64_t threadHandle);
 
-#define __MEMORY_DEBUG__ (0)
+#define __MEMORY_DEBUG__ (0) // Need to make memory debugging re-entrant // GetCurrentThreadId()
 
 #if __MEMORY_DEBUG__
 # define IF_MEMORY_DEBUG(x,y) x,y
@@ -233,6 +256,8 @@ void udMemoryOutputAllocInfo(void *pAlloc);
 #if defined(_MSC_VER)
 #pragma warning(disable:4127) // conditional expression is constant
 #endif //defined(_MSC_VER)
+
+
 
 #include "udDebug.h"
 
