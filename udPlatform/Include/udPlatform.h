@@ -147,7 +147,7 @@ typedef uint32_t (udThreadStart)(void *data);
 uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
 void udDestroyThread(uint64_t threadHandle);
 
-#define __MEMORY_DEBUG__ (0) // Need to make memory debugging re-entrant // GetCurrentThreadId()
+#define __MEMORY_DEBUG__ (0)
 
 #if __MEMORY_DEBUG__
 # define IF_MEMORY_DEBUG(x,y) x,y
@@ -212,11 +212,15 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 #endif  //  __MEMORY_DEBUG__
 
 #if __MEMORY_DEBUG__
+void udMemoryDebugTrackingInit();
 void udMemoryOutputLeaks();
 void udMemoryOutputAllocInfo(void *pAlloc);
+void udMemoryDebugTrackingDeinit();
 #else
+# define udMemoryDebugTrackingInit()
 # define udMemoryOutputLeaks()
 #define udMemoryOutputAllocInfo(pAlloc)
+#define udMemoryDebugTrackingDeinit()
 #endif // __MEMORY_DEBUG__
 
 #if UDPLATFORM_WINDOWS

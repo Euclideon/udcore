@@ -68,4 +68,25 @@ public:
 
 #define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
 
+
+#if UD_DEBUG
+# define OUTPUT_ERROR_STRINGS (1)
+#else
+# define OUTPUT_ERROR_STRINGS (0)
+#endif
+
+#define BREAK_ON_ERROR (0)
+
+#if OUTPUT_ERROR_STRINGS
+# if BREAK_ON_ERROR
+#   define __breakOnErrorString() __debugbreak()
+# else
+#   define __breakOnErrorString()
+# endif 
+# define PRINT_ERROR_STRING(...) do {udDebugPrintf("%s : ", __FUNCTION__); udDebugPrintf(__VA_ARGS__); __breakOnErrorString(); } while (false)
+
+#else
+# define PRINT_ERROR_STRING(...)
+#endif
+
 #endif // UDDEBUG_H
