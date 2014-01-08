@@ -72,9 +72,22 @@
 
 
 #if UDPLATFORM_WINDOWS
+#ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+inline long udInterlockedPreIncrement(long *p) { return InterlockedIncrement(p); }
+inline long udInterlockedPostIncrement(long *p) { return InterlockedIncrement(p) - 1; }
+inline long udInterlockedPreDecrement(long *p) { return InterlockedDecrement(p); }
+inline long udInterlockedPostDecrement(long *p) { return InterlockedDecrement(p) + 1; }
+inline long udInterlockedCompareExchange(volatile long *dest, long exchange, long comparand) { return InterlockedCompareExchange(dest, exchange, comparand); }
+inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return InterlockedCompareExchangePointer(dest, exchange, comparand); }
+
+# define udSleep(x) Sleep(x)
+
+// Deprecated...
 # define udInterlockedIncrement(x) InterlockedIncrement(x)
 # define udInterlockedDecrement(x) InterlockedDecrement(x)
-# define udSleep(x) Sleep(x)
 
 #elif UDPLATFORM_LINUX
 # define udInterlockedIncrement(x) ++(*x) // TODO
