@@ -94,6 +94,28 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 # define udInterlockedDecrement(x) --(*x) // TODO
 # define udSleep(x) sleep(x)
 
+inline long udInterlockedCompareExchange(volatile long *dest, long exchange, long comparand) 
+{ 
+  long oDest = *dest;
+  if (oDest == comparand)
+  {
+    *dest = exchange;
+  }
+
+  return oDest;
+}
+
+inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) 
+{
+  void *oDest = *dest;
+  if (oDest == comparand)
+  {
+    *dest = exchange;
+  }
+
+  return oDest;
+}
+
 #else
 # define udInterlockedIncrement(x) ++(*x)
 # define udInterlockedDecrement(x) --(*x)
