@@ -75,52 +75,25 @@
 #ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
 #endif
-#include <Windows.h>
-inline long udInterlockedPreIncrement(long *p) { return InterlockedIncrement(p); }
-inline long udInterlockedPostIncrement(long *p) { return InterlockedIncrement(p) - 1; }
-inline long udInterlockedPreDecrement(long *p) { return InterlockedDecrement(p); }
-inline long udInterlockedPostDecrement(long *p) { return InterlockedDecrement(p) + 1; }
-inline long udInterlockedCompareExchange(volatile long *dest, long exchange, long comparand) { return InterlockedCompareExchange(dest, exchange, comparand); }
-inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return InterlockedCompareExchangePointer(dest, exchange, comparand); }
-
+#include <Intrin.h>
+inline int32_t udInterlockedPreIncrement(int32_t *p)  { return _InterlockedIncrement((long*)p); }
+inline int32_t udInterlockedPostIncrement(int32_t *p) { return _InterlockedIncrement((long*)p) - 1; }
+inline int32_t udInterlockedPostDecrement(int32_t *p) { return _InterlockedDecrement((long*)p) + 1; }
+inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return _InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
+inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer(dest, exchange, comparand); }
 # define udSleep(x) Sleep(x)
 
-// Deprecated...
-# define udInterlockedIncrement(x) InterlockedIncrement(x)
-# define udInterlockedDecrement(x) InterlockedDecrement(x)
-
 #elif UDPLATFORM_LINUX
-# define udInterlockedIncrement(x) ++(*x) // TODO
-# define udInterlockedDecrement(x) --(*x) // TODO
+inline long udInterlockedPreIncrement(int32_t *p)  { return __sync_add_and_fetch(p, 1); }
+inline long udInterlockedPostIncrement(int32_t *p) { return __sync_fetch_and_add(p, 1); }
+inline long udInterlockedPreDecrement(int32_t *p)  { return __sync_add_and_fetch(p, -1); }
+inline long udInterlockedPostDecrement(int32_t *p) { return __sync_fetch_and_add(p, -1); }
+inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
+inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 # define udSleep(x) sleep(x)
 
-inline long udInterlockedCompareExchange(volatile long *dest, long exchange, long comparand) 
-{ 
-  long oDest = *dest;
-  if (oDest == comparand)
-  {
-    *dest = exchange;
-  }
-
-  return oDest;
-}
-
-inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) 
-{
-  void *oDest = *dest;
-  if (oDest == comparand)
-  {
-    *dest = exchange;
-  }
-
-  return oDest;
-}
-
 #else
-# define udInterlockedIncrement(x) ++(*x)
-# define udInterlockedDecrement(x) --(*x)
-# define udSleep(x)
-
+#error Unknown platform
 #endif
 
 // TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
@@ -150,7 +123,7 @@ namespace std
   public:
     operator T() { return member; }
     void operator =(const T &value) { member = value; } // TODO: Check there's no better Interlocked way to do this
-    bool compare_exchange_weak(T &expected, T desired) { T actual = InterlockedCompareExchangePointer((void*volatile*)&member, desired, expected); if (actual == expected) return true; expected = actual; return false; }
+    bool compare_exchange_weak(T &expected, T desired) { T actual = _InterlockedCompareExchangePointer((void*volatile*)&member, desired, expected); if (actual == expected) return true; expected = actual; return false; }
   protected:
     T member;
   };
