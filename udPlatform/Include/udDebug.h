@@ -53,17 +53,17 @@ public:
 
 // TODO: Make assertion system handle pop-up window where possible
 #if UDASSERT_ON
-# define UDASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); DebugBreak(); } }
+# define UDASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); } }
 # define IF_UDASSERT(x) x
 #else
-# define UDASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
+# define UDASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
 # define IF_UDASSERT(x)
 #endif // UDASSERT_ON
 
 #if UDRELASSERT_ON
-# define UDRELASSERT(condition, message) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(message); /*DebugBreak();*/ } }
+# define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); /*DebugBreak();*/ } }
 #else
-# define UDRELASSERT(condition, message) // TODO: Make platform-specific __assume(condition)
+# define UDRELASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
 #endif //UDRELASSERT_ON
 
 #define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
