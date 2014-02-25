@@ -1,31 +1,177 @@
 #include "udPlatform.h"
 #include <stdlib.h>
 #include <string.h>
-
+#if UDPLATFORM_LINUX
+#include <semaphore.h>
+#endif
 UDCOMPILEASSERT(sizeof(off_t) == 8, _off_t_must_be_8_bytes);
 
-uint64_t udCreateThread(udThreadStart *threadStarter, void *threadData)
+// ***************************************************************************************
+udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)
 {
 #if UDPLATFORM_WINDOWS
   DWORD threadId = 0;
   CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)threadStarter, threadData, 0, &threadId);
-  return (uint64_t)threadId;
-#else
+  return (udThreadHandle)threadId;
+#elif UDPLATFORM_LINUX
   pthread_t t;
   typedef void *(*PTHREAD_START_ROUTINE)(void *);
   pthread_create(&t, NULL, (PTHREAD_START_ROUTINE)threadStarter, threadData);
   return t;
+#else
+#error Unknown platform
 #endif
 }
 
-void udDestroyThread(uint64_t threadHandle)
+// ***************************************************************************************
+void udDestroyThread(udThreadHandle *pThreadHandle)
+{
+  if (pThreadHandle)
+  {
+#if UDPLATFORM_WINDOWS
+    CloseHandle((HANDLE)(*pThreadHandle));
+#elif UDPLATFORM_LINUX
+    // TODO: FIgure out which pthread function is *most* equivalent
+#else
+#   error Unknown platform
+#endif
+    *pThreadHandle = 0;
+  }
+}
+
+// ***************************************************************************************
+udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
 {
 #if UDPLATFORM_WINDOWS
-  CloseHandle((HANDLE)threadHandle);
+  HANDLE handle = CreateSemaphore(NULL, initialValue, maxValue, NULL);
+  return (udSemaphore *)handle;
+#elif UDPLATFORM_LINUX
+  sem_t *sem = (sem_t *)udAlloc(sizeof(sem_t));
+  (void)maxValue;
+  if (sem)
+    sem_init(sem, 0, initialValue);
+  return (udSemaphore*)sem;
 #else
-  // TODO: FIgure out which pthread function is *most* equivalent
+# error Unknown platform
 #endif
 }
+
+// ***************************************************************************************
+void udDestroySemaphore(udSemaphore **ppSemaphore)
+{
+  if (ppSemaphore && *ppSemaphore)
+  {
+#if UDPLATFORM_WINDOWS
+    HANDLE semHandle = (HANDLE)(*ppSemaphore);
+    *ppSemaphore = NULL;
+    CloseHandle(semHandle);
+#elif UDPLATFORM_LINUX
+    sem_t *sem = (sem_t*)(*ppSemaphore);
+    sem_destroy(sem);
+    udFree(sem);
+    *ppSemaphore = nullptr;
+#else
+#  error Unknown platform
+#endif
+  }
+}
+
+// ***************************************************************************************
+void udIncrementSemaphore(udSemaphore *pSemaphore)
+{
+  if (pSemaphore)
+  {
+#if UDPLATFORM_WINDOWS
+    ReleaseSemaphore((HANDLE)pSemaphore, 1, nullptr);
+#elif UDPLATFORM_LINUX
+    sem_post((sem_t*)pSemaphore);
+#else
+#   error Unknown platform
+#endif
+  }
+}
+
+// ***************************************************************************************
+void udWaitSemaphore(udSemaphore *pSemaphore)
+{
+  if (pSemaphore)
+  {
+#if UDPLATFORM_WINDOWS
+    WaitForSingleObject((HANDLE)pSemaphore, 0);
+#elif UDPLATFORM_LINUX
+    sem_wait((sem_t*)pSemaphore);
+#else
+#   error Unknown platform
+#endif
+  }
+}
+
+// ***************************************************************************************
+udMutex *udCreateMutex()
+{
+#if UDPLATFORM_WINDOWS
+  HANDLE handle = CreateMutex(NULL, FALSE, NULL);
+  return (udMutex *)handle;
+#elif UDPLATFORM_LINUX
+  pthread_mutex_t *mutex = (pthread_mutex_t *)udAlloc(sizeof(pthread_mutex_t));
+  if (mutex)
+    pthread_mutex_init(mutex, NULL);
+  return (udMutex*)mutex;
+#else
+#error Unknown platform
+#endif
+}
+
+// ***************************************************************************************
+void udDestroyMutex(udMutex **ppMutex)
+{
+  if (ppMutex && *ppMutex)
+  {
+#if UDPLATFORM_WINDOWS
+    HANDLE mutexHandle = (HANDLE)(*ppMutex);
+    *ppMutex = NULL;
+    CloseHandle(mutexHandle);
+#elif UDPLATFORM_LINUX
+    pthread_mutex_t *mutex = (pthread_mutex_t *)(*ppMutex);
+    pthread_mutex_destroy(mutex);
+    udFree(mutex);
+    *ppMutex = nullptr;
+#else
+#  error Unknown platform
+#endif
+  }
+}
+
+// ***************************************************************************************
+void udLockMutex(udMutex *pMutex)
+{
+  if (pMutex)
+  {
+#if UDPLATFORM_WINDOWS
+    WaitForSingleObject((HANDLE)pMutex, INFINITE);
+#elif UDPLATFORM_LINUX
+    pthread_mutex_lock((pthread_mutex_t *)pMutex);
+#else
+#   error Unknown platform
+#endif
+  }
+}
+
+// ***************************************************************************************
+void udReleaseMutex(udMutex *pMutex)
+{
+  if (pMutex)
+  {
+#if UDPLATFORM_WINDOWS
+    ReleaseMutex((HANDLE)pMutex);
+#elif UDPLATFORM_LINUX
+    pthread_mutex_unlock((pthread_mutex_t *)pMutex);
+#else
+#error Unknown platform
+#endif
+  }
+}
+
 
 #if __MEMORY_DEBUG__  
 # if defined(_MSC_VER)
@@ -330,46 +476,44 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 
 void _udFree(void **ppMemory IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
 {
-  DebugTrackMemoryFree(*ppMemory, pFile, line);
-
-  free(*ppMemory);
-
-  *ppMemory = NULL;
+  if (*ppMemory)
+  {
+    DebugTrackMemoryFree(*ppMemory, pFile, line);
+    free(*ppMemory);
+    *ppMemory = NULL;
+  }
 }
 
 
 void *operator new (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
   void *pMemory = malloc(size);
-
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
-
   return pMemory;
 }
 
 void *operator new[] (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
-  UDASSERT(false, "operator new [] not supported yet");
-
   void *pMemory = malloc(size);
-
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
-
   return pMemory;
 }
 
 void operator delete (void *pMemory, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
-  DebugTrackMemoryFree(pMemory, pFile, line);
-
-  free(pMemory);
+  if (pMemory)
+  {
+    DebugTrackMemoryFree(pMemory, pFile, line);
+    free(pMemory);
+  }
 }
 
 void operator delete [](void *pMemory, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
-  UDASSERT(false, "operator delete [] not supported yet");
-
-  DebugTrackMemoryFree(pMemory, pFile, line);
-
-  free(pMemory);
+  if (pMemory)
+  {
+    UDASSERT(false, "operator delete [] not supported yet");
+    DebugTrackMemoryFree(pMemory, pFile, line);
+    free(pMemory);
+  }
 }
