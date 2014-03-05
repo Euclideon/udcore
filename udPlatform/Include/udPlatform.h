@@ -83,7 +83,11 @@ inline int32_t udInterlockedPostIncrement(int32_t *p) { return _InterlockedIncre
 inline int32_t udInterlockedPreDecrement(int32_t *p) { return _InterlockedDecrement((long*)p); }
 inline int32_t udInterlockedPostDecrement(int32_t *p) { return _InterlockedDecrement((long*)p) + 1; }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return _InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
+# if defined(UD_32BIT)
+inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
+# else // defined(UD_32BIT)
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer(dest, exchange, comparand); }
+# endif // defined(UD_32BIT)
 # define udSleep(x) Sleep(x)
 
 #elif UDPLATFORM_LINUX
