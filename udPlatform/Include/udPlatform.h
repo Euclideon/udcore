@@ -176,6 +176,16 @@ void udDestroyMutex(udMutex **ppMutex);
 void udLockMutex(udMutex *pMutex);
 void udReleaseMutex(udMutex *pMutex);
 
+// A convenience class to lock and unlock based on scope of the variable
+class udScopeLock
+{
+public:
+  udScopeLock(udMutex *mutex) { m_mutex = mutex; udLockMutex(m_mutex); }
+  ~udScopeLock() { udReleaseMutex(m_mutex); }
+protected:
+  udMutex *m_mutex;
+};
+
 #define __MEMORY_DEBUG__ (0)
 
 #if __MEMORY_DEBUG__

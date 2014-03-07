@@ -53,7 +53,7 @@ public:
 
 // TODO: Make assertion system handle pop-up window where possible
 #if UDASSERT_ON
-# define UDASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); } }
+# define UDASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } }
 # define IF_UDASSERT(x) x
 #else
 # define UDASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
@@ -61,7 +61,7 @@ public:
 #endif // UDASSERT_ON
 
 #if UDRELASSERT_ON
-# define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); /*DebugBreak();*/ } }
+# define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); /*DebugBreak();*/ udDebugPrintf("\n"); } }
 #else
 # define UDRELASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
 #endif //UDRELASSERT_ON
