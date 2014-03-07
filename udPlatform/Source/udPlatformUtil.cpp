@@ -76,27 +76,27 @@ int udStrcmp(const char *s1, const char *s2)
 }
 
 // *********************************************************************
-int udAddToStringTable(char *&stringTable, uint32_t &stringTableLength, const char *addString)
+int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const char *addString)
 {
   uint32_t offset = 0;
   int addStrLen = (int)strlen(addString); // Length of string to be added
 
   while (offset < stringTableLength)
   {
-    int curStrLen = (int)strlen(stringTable + offset);
+    int curStrLen = (int)strlen(pStringTable + offset);
     if (offset + curStrLen > stringTableLength)
       break; // A catch-all in case something's gone wrong
-    if (curStrLen >= addStrLen && strcmp(stringTable + offset + curStrLen - addStrLen, addString) == 0)
+    if (curStrLen >= addStrLen && strcmp(pStringTable + offset + curStrLen - addStrLen, addString) == 0)
       return offset + curStrLen - addStrLen; // Found a match
     else
       offset += curStrLen + 1;
   }
   int newLength = offset + addStrLen + 1;
-  char *newCache = (char*)udRealloc(stringTable, newLength);
+  char *newCache = (char*)udRealloc(pStringTable, newLength);
   if (!newCache)
     return -1; // A nasty case where memory allocation has failed
   strcpy(newCache + offset, addString);
-  stringTable = newCache;
+  pStringTable = newCache;
   stringTableLength = offset + addStrLen + 1;
   return offset;
 }

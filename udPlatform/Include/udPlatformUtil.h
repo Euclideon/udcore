@@ -97,10 +97,10 @@ inline uint32_t udCountBits8(uint8_t a_number)
 
 // *********************************************************************
 // Add a string to a dynamic table of unique strings. 
-// Initialise stringTable to NULL and stringTableLength to 0, 
+// Initialise pStringTable to NULL and stringTableLength to 0, 
 // and table will be reallocated as necessary
 // *********************************************************************
-int udAddToStringTable(char *&stringTable, uint32_t &stringTableLength, const char *addString);
+int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const char *addString);
 
 
 // *********************************************************************
