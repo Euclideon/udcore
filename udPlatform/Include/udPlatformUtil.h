@@ -33,11 +33,13 @@ inline T udRoundPow2(T n, int align) { return ((n + (align-1)) & -align); }
 size_t udStrcpy(char *dest, size_t destLen, const char *src);
 size_t udStrncpy(char *dest, size_t destLen, const char *src, size_t maxChars);
 size_t udStrcat(char *dest, size_t destLen, const char *src);
+size_t udStrlen(const char *str);
 
 // *********************************************************************
 // String comparison functions that can be relied upon, NULL-safe
 // *********************************************************************
 int udStrcmp(const char *s1, const char *s2);
+bool udStrBeginsWith(const char *s, const char *prefix);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
 
 // *********************************************************************

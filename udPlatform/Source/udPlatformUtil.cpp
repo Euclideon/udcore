@@ -76,6 +76,35 @@ int udStrcmp(const char *s1, const char *s2)
 }
 
 // *********************************************************************
+size_t udStrlen(const char *str)
+{
+  static const char *empty = "";
+  if (!str) str = empty;
+
+  size_t len = 0;
+  while (*str++)
+    ++len;
+  
+  return len;
+}
+
+// *********************************************************************
+bool udStrBeginsWith(const char *s, const char *prefix)
+{
+  static const char *empty = "";
+  if (!s) s = empty;
+  if (!prefix) prefix = empty;
+
+  while (*prefix)
+  {
+    if (*s++ != *prefix++)
+      return false;
+  }
+  return true;
+}
+
+
+// *********************************************************************
 int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const char *addString)
 {
   uint32_t offset = 0;
@@ -83,10 +112,10 @@ int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const c
 
   while (offset < stringTableLength)
   {
-    int curStrLen = (int)strlen(pStringTable + offset);
+    int curStrLen = (int)udStrlen(pStringTable + offset);
     if (offset + curStrLen > stringTableLength)
       break; // A catch-all in case something's gone wrong
-    if (curStrLen >= addStrLen && strcmp(pStringTable + offset + curStrLen - addStrLen, addString) == 0)
+    if (curStrLen >= addStrLen && udStrcmp(pStringTable + offset + curStrLen - addStrLen, addString) == 0)
       return offset + curStrLen - addStrLen; // Found a match
     else
       offset += curStrLen + 1;
