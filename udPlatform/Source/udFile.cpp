@@ -14,6 +14,7 @@ static udFile_OpenHandlerFunc       udFileHandler_FILEOpen;
 static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
 static udFile_SeekWriteHandlerFunc  udFileHandler_FILESeekWrite;
 static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
+       udFile_OpenHandlerFunc       udFileHandler_HTTPOpen;     // Plus the HTTP handler
 
 struct udFileHandler
 {
@@ -22,8 +23,10 @@ struct udFileHandler
   udFileHandler *pNext;         // Temp until udSparsePtrArray is up and running
 };
 
+// TEMP: Pre-initialise the linked list, do this via the Register function when there is an initialisation path
 static udFileHandler s_defaultFileHandler = { udFileHandler_FILEOpen, "", nullptr };
-static udFileHandler *s_fileHandlers = &s_defaultFileHandler;
+static udFileHandler s_httpFileHandler =    { udFileHandler_HTTPOpen, "http:", &s_defaultFileHandler };
+static udFileHandler *s_fileHandlers = &s_httpFileHandler;
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
@@ -50,11 +53,11 @@ epilogue:
 
 
 // ****************************************************************************
-// Author: Dave Pevreal   Date: March, 2014
+// Author: Dave Pevreal, March 2014
 udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead)
 {
   udResult result;
-  size_t actualRead;
+  size_t actualRead = 0; // Assign to zero to avoid incorrect compiler warning
 
   result = udR_File_ReadFailure;
   if (pFile == nullptr || pFile->fpRead == nullptr)
@@ -76,11 +79,11 @@ epilogue:
 
 
 // ****************************************************************************
-// Author: Dave Pevreal   Date: March, 2014
+// Author: Dave Pevreal, March 2014
 udResult udFile_SeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
 {
   udResult result;
-  size_t actualWritten;
+  size_t actualWritten = 0; // Assign to zero to avoid incorrect compiler warning;
 
   result = udR_File_ReadFailure;
   if (pFile == nullptr || pFile->fpRead == nullptr)
@@ -102,7 +105,7 @@ epilogue:
 
 
 // ****************************************************************************
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 udResult udFile_Close(udFile **ppFile)
 {
   if (ppFile == nullptr)
@@ -122,7 +125,7 @@ udResult udFile_Close(udFile **ppFile)
 
 
 // ****************************************************************************
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 udResult udFile_RegisterHandler(udFile_OpenHandlerFunc * /*fpHandler*/, bool /*lowPriority*/)
 {
   return udR_Failure_;
@@ -130,7 +133,7 @@ udResult udFile_RegisterHandler(udFile_OpenHandlerFunc * /*fpHandler*/, bool /*l
 
 
 // ****************************************************************************
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 udResult udFile_DeregisterHandler(udFileHandler * /*fpHandler*/)
 {
   return udR_Failure_;
@@ -146,7 +149,7 @@ struct udFile_FILE : public udFile
 
 // ----------------------------------------------------------------------------
 // Implementation of OpenHandler to access the crt FILE i/o functions
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 static udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
 {
   udFile_FILE *pFile = nullptr;
@@ -154,7 +157,7 @@ static udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, u
   const char *pMode;
 
   result = udR_MemoryAllocationFailure;
-  pFile = udNew udFile_FILE;
+  pFile = udAllocType(udFile_FILE);
   if (pFile == nullptr)
     goto epilogue;
 
@@ -187,7 +190,7 @@ epilogue:
   {
     if (pFile->pCrtFile)
       fclose(pFile->pCrtFile);
-    udDelete(pFile);
+    udFree(pFile);
   }
 
   return result;
@@ -196,7 +199,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Implementation of SeekReadHandler to access the crt FILE i/o functions
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead)
 {
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
@@ -220,7 +223,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 
 // ----------------------------------------------------------------------------
 // Implementation of SeekWriteHandler to access the crt FILE i/o functions
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 static udResult udFileHandler_FILESeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
 {
   udResult result;
@@ -244,16 +247,20 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, void *pBuffer, size_t
 
 // ----------------------------------------------------------------------------
 // Implementation of CloseHandler to access the crt FILE i/o functions
-// Author: Dave Pevreal  March, 2014
+// Author: Dave Pevreal, March 2014
 static udResult udFileHandler_FILEClose(udFile **ppFile)
 {
-  udFile_FILE *pFILE = static_cast<udFile_FILE*>(*ppFile);
+  udFile_FILE *pFile = static_cast<udFile_FILE*>(*ppFile);
   udResult result;
 
   *ppFile = nullptr;
+
   result = udR_File_CloseFailure;
-  if (fclose(pFILE->pCrtFile) == 0)
+  if (fclose(pFile->pCrtFile) == 0)
     result = udR_Success;
+
+  udFree(pFile);
+  result = udR_Success;
 
 //epilogue:
 

@@ -36,7 +36,7 @@ struct udFile
 };
 
 // Register a file handler, optionally pushing to the back of the list if low priority is desired behaviour
-udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *pHandler, bool lowPriority);
+udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *pHandler, bool lowPriority = false);
 
 // Deregister a file handler removing it from the internal list (note that functions may still be called if there are open files)
 udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *pHandler);

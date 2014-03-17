@@ -35,6 +35,26 @@ size_t udStrncpy(char *dest, size_t destLen, const char *src, size_t maxChars);
 size_t udStrcat(char *dest, size_t destLen, const char *src);
 size_t udStrlen(const char *str);
 
+
+// *********************************************************************
+// String maniplulation functions, NULL-safe
+// *********************************************************************
+// udStrdup behaves much like strdup, optionally allocating additional characters
+char *udStrdup(const char *s, size_t additionalChars = 0);
+// udStrchr behaves much like strchr, optionally also providing the index
+// of the find, which will be the length if not found (ie when null is returned)
+const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex = nullptr);
+// udStrstr behaves much like strstr, though the length of s can be supplied for safety
+// (zero indicates assume nul-terminated). Optionally the function can provide the index
+// of the find, which will be the length if not found (ie when null is returned)
+const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t *pIndex = nullptr);
+// udAtoi behaves much like atoi, optionally giving the number of characters parsed
+// and the radix can be supplied to parse hex(16) or binary(2) numbers
+int32_t udStrAtoi(const char *s, size_t *pCharCount = nullptr, int radix = 10);
+// udAtoi behaves much like atol, optionally giving the number of characters parsed
+// and the radix can be supplied to parse hex(16) or binary(2) numbers
+int64_t udStrAtoi64(const char *s, size_t *pCharCount = nullptr, int radix = 10);
+
 // *********************************************************************
 // String comparison functions that can be relied upon, NULL-safe
 // *********************************************************************
@@ -107,14 +127,16 @@ int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const c
 
 // *********************************************************************
 // A helper class for dealing with filenames, no memory allocation
+// If allocated rather than created with new, call Construct method
 // *********************************************************************
 class udFilename
 {
 public:
   // Construct either empty as default or from a path
   // No destructor (or memory allocation) to keep the object simple and copyable
-  udFilename() { SetFromFullPath(NULL); }
+  udFilename() { Construct(); }
   udFilename(const char *path) { SetFromFullPath(path); }
+  void Construct() { SetFromFullPath(NULL); }
 
   enum { MaxPath = 260 };
 
@@ -164,6 +186,32 @@ protected:
   int m_filenameIndex;      // Index to starting character of filename
   int m_extensionIndex;     // Index to starting character of extension
   char m_path[MaxPath];         // Buffer for the path, set to 260 characters
+};
+
+
+// *********************************************************************
+// A helper class for dealing with filenames, allocates memory due to unknown maximum length of url
+// If allocated rather than created with new, call Construct method
+// *********************************************************************
+class udURL
+{
+public:
+  udURL(const char *pURLText = nullptr) { Construct(); SetURL(pURLText); }
+  ~udURL() { SetURL(nullptr); }
+  void Construct() { m_pURLText = nullptr; }
+
+  udResult SetURL(const char *pURLText);
+  const char *GetScheme()         { return m_pScheme; }
+  const char *GetDomain()         { return m_pDomain; }
+  int GetPort()                   { return m_port; }
+  const char *GetPathWithQuery()  { return m_pPath; }
+
+protected:
+  char *m_pURLText;
+  const char *m_pScheme;
+  const char *m_pDomain;
+  const char *m_pPath;
+  int m_port;
 };
 
 #define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof(_array[0]) )

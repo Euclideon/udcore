@@ -14,7 +14,7 @@ enum udResult
   udR_CountExceeded,
   udR_ObjectNotFound,
   udR_RenderAlreadyInProgress,
-
+  udR_BufferTooSmall,
 
   udR_Writer_InitFailure, 
   udR_Writer_WritePointCloudHeaderFailure, 
@@ -35,6 +35,7 @@ enum udResult
   udR_File_ReadFailure,
   udR_File_WriteFailure,
   udR_File_FailedToAddFileJob,
+  udR_File_SocketError,
   udR_Count,
 
   udR_ForceInt = 0x7FFFFFFF
