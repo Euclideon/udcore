@@ -186,6 +186,8 @@ protected:
   udMutex *m_mutex;
 };
 
+#define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
+
 #define __MEMORY_DEBUG__ (0)
 
 #if __MEMORY_DEBUG__
