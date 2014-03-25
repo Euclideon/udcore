@@ -21,6 +21,12 @@ inline T udRoundPow2(T n, int align) { return ((n + (align-1)) & -align); }
 
 
 // *********************************************************************
+// Time and timing
+// *********************************************************************
+uint32_t udGetTimeMs(); // Get a millisecond-resolution timer - timeGetTime() on windows
+
+
+// *********************************************************************
 // Some string functions that are safe, 
 //  - on success all return the length of the result in characters 
 //    (including null) which is always greater than zero

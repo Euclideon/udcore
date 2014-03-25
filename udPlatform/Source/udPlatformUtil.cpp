@@ -5,7 +5,26 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#if UDPLATFORM_WINDOWS
+#include <mmsystem.h>
+#elif UDPLATFORM_LINUX
+#include <sys/time.h>
+#endif
+
 static char s_udStrEmptyString[] = "";
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2014
+uint32_t udGetTimeMs()
+{
+#if UDPLATFORM_WINDOWS
+  return timeGetTime();
+#else
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  return now.tv_usec/1000;
+#endif
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014

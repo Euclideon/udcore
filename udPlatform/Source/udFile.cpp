@@ -54,10 +54,45 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead)
+udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pRequestsInFlight)
+{
+  if (!pFile)
+    return udR_InvalidParameter_;
+
+  if (pKBPerSec)
+    *pKBPerSec = pFile->kbPerSec;
+  if (pRequestsInFlight)
+    *pRequestsInFlight = pFile->requestsInFlight;
+
+  return udR_Success;
+}
+
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, March 2014
+static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
+{
+  --pFile->requestsInFlight;
+  pFile->msAccumulator += udGetTimeMs();
+  pFile->totalBytes += actualRead;
+  if (!pFile->requestsInFlight)
+  {
+    pFile->kbPerSec = float((pFile->totalBytes/1024.0) / (pFile->msAccumulator / 1000.0));
+
+    // Each time the kbPerSec is calculated shift all the data down so that old
+    // performance is less significant than recent performance
+    pFile->totalBytes >>= 1;
+    pFile->msAccumulator >>= 1;
+  }
+}
+
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2014
+udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest)
 {
   udResult result;
-  size_t actualRead = 0; // Assign to zero to avoid incorrect compiler warning
+  size_t actualRead;
 
   result = udR_File_ReadFailure;
   if (pFile == nullptr || pFile->fpRead == nullptr)
@@ -65,9 +100,16 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
 
   if (pFile->pMutex)
     udLockMutex(pFile->pMutex);
-  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualRead ? pActualRead : &actualRead);
+  ++pFile->requestsInFlight;
+  pFile->msAccumulator -= udGetTimeMs();
+  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pPipelinedRequest);
+  if (!pPipelinedRequest || !pFile->fnBlockPipedRequest)
+    udUpdateFilePerformance(pFile, actualRead);
   if (pFile->pMutex)
     udReleaseMutex(pFile->pMutex);
+
+  if (pActualRead)
+    *pActualRead = actualRead;
 
   // If the caller isn't checking the actual read (ie it's null), and it's not the requested amount, return an error when full amount isn't actually read
   if (result == udR_Success && pActualRead == nullptr && actualRead != bufferLength)
@@ -100,6 +142,29 @@ udResult udFile_SeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int
     result = udR_File_ReadFailure;
 
 epilogue:
+  return result;
+}
+
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2014
+udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead)
+{
+  udResult result;
+
+  if (pFile->fnBlockPipedRequest)
+  {
+    size_t actualRead;
+    result = pFile->fnBlockPipedRequest(pFile, pPipelinedRequest, &actualRead);
+    udUpdateFilePerformance(pFile, actualRead);
+    if (pActualRead)
+      *pActualRead = actualRead;
+  }
+  else
+  {
+    result = udR_Success;
+  }
+
   return result;
 }
 
@@ -200,7 +265,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekReadHandler to access the crt FILE i/o functions
-static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead)
+static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
   udResult result;
