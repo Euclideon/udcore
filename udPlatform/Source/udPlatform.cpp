@@ -92,14 +92,17 @@ void udIncrementSemaphore(udSemaphore *pSemaphore)
 }
 
 // ***************************************************************************************
-void udWaitSemaphore(udSemaphore *pSemaphore)
+int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 {
   if (pSemaphore)
   {
 #if UDPLATFORM_WINDOWS
-    WaitForSingleObject((HANDLE)pSemaphore, 0);
+    return WaitForSingleObject((HANDLE)pSemaphore, waitMs);
 #elif UDPLATFORM_LINUX
-    sem_wait((sem_t*)pSemaphore);
+    struct  timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = waitMs * 1000;
+    return sem_timedwait((sem_t*)pSemaphore, &ts);
 #else
 #   error Unknown platform
 #endif

@@ -54,13 +54,13 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pRequestsInFlight)
+udResult udFile_GetPerformance(udFile *pFile, float *pMBPerSec, uint32_t *pRequestsInFlight)
 {
   if (!pFile)
     return udR_InvalidParameter_;
 
-  if (pKBPerSec)
-    *pKBPerSec = pFile->kbPerSec;
+  if (pMBPerSec)
+    *pMBPerSec = pFile->mbPerSec;
   if (pRequestsInFlight)
     *pRequestsInFlight = pFile->requestsInFlight;
 
@@ -72,18 +72,10 @@ udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pReque
 // Author: Dave Pevreal, March 2014
 static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
 {
-  --pFile->requestsInFlight;
   pFile->msAccumulator += udGetTimeMs();
   pFile->totalBytes += actualRead;
-  if (!pFile->requestsInFlight)
-  {
-    pFile->kbPerSec = float((pFile->totalBytes/1024.0) / (pFile->msAccumulator / 1000.0));
-
-    // Each time the kbPerSec is calculated shift all the data down so that old
-    // performance is less significant than recent performance
-    pFile->totalBytes >>= 1;
-    pFile->msAccumulator >>= 1;
-  }
+  if (--pFile->requestsInFlight == 0)
+    pFile->mbPerSec = float((pFile->totalBytes/1048576.0) / (pFile->msAccumulator / 1000.0));
 }
 
 
@@ -102,9 +94,16 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
     udLockMutex(pFile->pMutex);
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
-  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pPipelinedRequest);
+  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFile->fnBlockPipedRequest ? pPipelinedRequest : nullptr);
+
+  // Save off the actualRead in the request for the case where the handler doesn't support piped requests
+  if (pPipelinedRequest && !pFile->fnBlockPipedRequest)
+    pPipelinedRequest->reserved[0] = (uint64_t)actualRead;
+
+  // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   if (!pPipelinedRequest || !pFile->fnBlockPipedRequest)
     udUpdateFilePerformance(pFile, actualRead);
+
   if (pFile->pMutex)
     udReleaseMutex(pFile->pMutex);
 
@@ -162,6 +161,8 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
   }
   else
   {
+    if (pActualRead)
+      *pActualRead = (size_t)pPipelinedRequest->reserved[0];
     result = udR_Success;
   }
 

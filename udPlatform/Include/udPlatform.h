@@ -102,6 +102,8 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 #else
 #error Unknown platform
 #endif
+// Helpers to perform various interlocked functions based on the platform-wrapped primitives
+inline long udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
 
 // TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
 // Using c++11 ATOMIC library, so for MSVC versions not supporting this provide a minimal implementation
@@ -169,7 +171,7 @@ void udDestroyThread(udThreadHandle threadHandle);
 udSemaphore *udCreateSemaphore(int maxValue, int initialValue);
 void udDestroySemaphore(udSemaphore **ppSemaphore);
 void udIncrementSemaphore(udSemaphore *pSemaphore);
-void udWaitSemaphore(udSemaphore *pSemaphore);
+int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs); // Returns zero on success
 
 udMutex *udCreateMutex();
 void udDestroyMutex(udMutex **ppMutex);

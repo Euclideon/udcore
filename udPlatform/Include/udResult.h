@@ -41,5 +41,7 @@ enum udResult
   udR_ForceInt = 0x7FFFFFFF
 };
 
+// Return a human-friendly string fro a given result code
+const char *udResultAsString(udResult result);
 
 #endif // UDRESULT_H

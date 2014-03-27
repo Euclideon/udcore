@@ -40,7 +40,7 @@ struct udFile
   uint32_t msAccumulator;
   uint32_t requestsInFlight;
   uint64_t totalBytes;
-  float kbPerSec;
+  float mbPerSec;
 };
 
 // Register a file handler, optionally pushing to the back of the list if low priority is desired behaviour

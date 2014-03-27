@@ -40,6 +40,7 @@ struct udFile_HTTP : public udFile
 #else
   int sock;
 #endif
+  int sockID; // Each time a socket it created we increment this number, this way pipelined requests from a dead socket can be identified as dead
 };
 
 
@@ -87,6 +88,7 @@ static void udFileHandler_HTTPCloseSocket(udFile_HTTP *pFile)
 #endif
     pFile->sock = INVALID_SOCKET;
   }
+  ++pFile->sockID;
 }
 
 
@@ -137,7 +139,10 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
 
   result = udFileHandler_HTTPOpenSocket(pFile);
   if (result != udR_Success)
+  {
+    udDebugPrintf("Unable to open socket\n");
     goto epilogue;
+  }
   
   result = udR_File_OpenFailure; // For now, all failures will be generic file failure
 
@@ -148,7 +153,10 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     udFileHandler_HTTPOpenSocket(pFile);
     recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
     if (recvCode == SOCKET_ERROR)
+    {
+      udDebugPrintf("recv returned SOCKET_ERROR\n");
       goto epilogue;
+    }
   }
   bytesReceived += recvCode;
 
@@ -156,7 +164,10 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   {
     recvCode = recv(pFile->sock, pFile->recvBuffer + bytesReceived, (int)(sizeof(pFile->recvBuffer) - bytesReceived), 0);
     if (recvCode == SOCKET_ERROR)
+    {
+      udDebugPrintf("recv returned SOCKET_ERROR\n");
       goto epilogue;
+    }
     bytesReceived += recvCode;
   }
 
@@ -164,7 +175,10 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   code = 0;
   sscanf(pFile->recvBuffer, "HTTP/1.1 %d", &code);
   if ((code != 200 && code != 206) || (headerLength == (size_t)bytesReceived)) // if headerLength is bytesReceived, never found the \r\n\r\n
+  {
+    udDebugPrintf("Fail on packet: code = %d headerLength = %d (bytesReceived = %d)\n", code, (int)headerLength, (int)bytesReceived);
     goto epilogue;
+  }
 
   headerLength += 4;
   pFile->recvBuffer[headerLength-1] = 0; // null terminate the header part
@@ -328,7 +342,7 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
   {
     pPipelinedRequest->reserved[0] = (uint64_t)(pBuffer);
     pPipelinedRequest->reserved[1] = (uint64_t)(bufferLength);
-    pPipelinedRequest->reserved[2] = 0;
+    pPipelinedRequest->reserved[2] = (uint64_t)pFile->sockID;
     pPipelinedRequest->reserved[3] = 0;
     if (pActualRead)
       *pActualRead = bufferLength; // Being optimistic
@@ -353,7 +367,17 @@ static udResult udFileHandler_HTTPBlockForPipelinedRequest(udFile *pBaseFile, ud
   udFile_HTTP *pFile = static_cast<udFile_HTTP *>(pBaseFile);
   void *pBuffer = (void*)(pPipelinedRequest->reserved[0]);
   size_t bufferLength = (size_t)(pPipelinedRequest->reserved[1]);
-  udResult result = udFileHandler_HTTPRecvGET(pFile, pBuffer, bufferLength, pActualRead);
+  int sockID = (int)pPipelinedRequest->reserved[2];
+  udResult result;
+  if (sockID != pFile->sockID)
+  {
+    udDebugPrintf("Pipelined request failed due to socket close/reopen. Expected %d, socket id is now %d\n", sockID, pFile->sockID);
+    result = udR_File_SocketError;
+  }
+  else
+  {
+    result = udFileHandler_HTTPRecvGET(pFile, pBuffer, bufferLength, pActualRead);
+  }
 
   return result;
 }
