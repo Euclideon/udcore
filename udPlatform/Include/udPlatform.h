@@ -29,6 +29,7 @@
 
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined(_WIN64) || defined(__amd64__)
   //64-bit code
@@ -74,14 +75,16 @@
 
 
 #if UDPLATFORM_WINDOWS
-#ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
-#endif
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+#include <Windows.h>
 #include <Intrin.h>
-inline int32_t udInterlockedPreIncrement(int32_t *p)  { return _InterlockedIncrement((long*)p); }
-inline int32_t udInterlockedPostIncrement(int32_t *p) { return _InterlockedIncrement((long*)p) - 1; }
-inline int32_t udInterlockedPreDecrement(int32_t *p) { return _InterlockedDecrement((long*)p); }
-inline int32_t udInterlockedPostDecrement(int32_t *p) { return _InterlockedDecrement((long*)p) + 1; }
+inline int32_t udInterlockedPreIncrement(volatile int32_t *p)  { return _InterlockedIncrement((long*)p); }
+inline int32_t udInterlockedPostIncrement(volatile int32_t *p) { return _InterlockedIncrement((long*)p) - 1; }
+inline int32_t udInterlockedPreDecrement(volatile int32_t *p) { return _InterlockedDecrement((long*)p); }
+inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return _InterlockedDecrement((long*)p) + 1; }
+inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return _InterlockedExchange((volatile long*)dest, exchange); }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return _InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
 # if defined(UD_32BIT)
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
@@ -91,10 +94,12 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 # define udSleep(x) Sleep(x)
 
 #elif UDPLATFORM_LINUX
-inline long udInterlockedPreIncrement(int32_t *p)  { return __sync_add_and_fetch(p, 1); }
-inline long udInterlockedPostIncrement(int32_t *p) { return __sync_fetch_and_add(p, 1); }
-inline long udInterlockedPreDecrement(int32_t *p)  { return __sync_add_and_fetch(p, -1); }
-inline long udInterlockedPostDecrement(int32_t *p) { return __sync_fetch_and_add(p, -1); }
+#include <unistd.h>
+inline long udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
+inline long udInterlockedPostIncrement(volatile int32_t *p) { return __sync_fetch_and_add(p, 1); }
+inline long udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, -1); }
+inline long udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetch_and_add(p, -1); }
+inline long udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return __sync_lock_test_and_set(dest, exchange); }
 inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 # define udSleep(x) usleep((x)*1000)
@@ -105,59 +110,21 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 // Helpers to perform various interlocked functions based on the platform-wrapped primitives
 inline long udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
 
-// TODO: Consider wrapping instead of implementing psuedo-c++11 interfaces
-// Using c++11 ATOMIC library, so for MSVC versions not supporting this provide a minimal implementation
-#if (defined(_MSC_VER) && (_MSC_VER <= 1600)) || defined(__MINGW32__)// Visual studio 2010 (VC110) and below
-// Define a subset of std::atomic specifically to meet exactly the needs of udRender's use
-#include <windows.h>
-
-namespace std
+class udInterlockedInt32
 {
-  class atomic_long
-  {
-  public:
-    operator long() { return member; }
-    long operator--() { return InterlockedDecrement(&member); }
-    long operator--(int) { return InterlockedDecrement(&member) + 1; }
-    long operator++() { return InterlockedIncrement(&member); }
-    long operator++(int) { return InterlockedIncrement(&member) - 1; }
-    void operator=(long v) { member = v; }
-  protected:
-    volatile long member;
-  };
-
-  template <typename T>
-  class atomic
-  {
-  public:
-    operator T() { return member; }
-    void operator =(const T &value) { member = value; } // TODO: Check there's no better Interlocked way to do this
-    bool compare_exchange_weak(T &expected, T desired) { T actual = _InterlockedCompareExchangePointer((void*volatile*)&member, desired, expected); if (actual == expected) return true; expected = actual; return false; }
-  protected:
-    T member;
-  };
-
-
-  class mutex
-  {
-  public:
-    mutex() { handle = CreateMutex(NULL, FALSE, NULL); }
-    ~mutex() { CloseHandle(handle); }
-    void lock() { WaitForSingleObject(handle, INFINITE); }
-    bool try_lock() { return WaitForSingleObject(handle, 0) == WAIT_OBJECT_0; }
-    void unlock() { ReleaseMutex(handle); }
-  protected:
-    HANDLE handle;
-  };
+public:
+  // Get the value
+  int32_t Get()                 { return m_value; }
+  // Set a new value, returning the previous value
+  int32_t Set(int32_t newValue) { return udInterlockedExchange(&m_value, newValue); }
+  int32_t operator++()          { return udInterlockedPreIncrement(&m_value);       }
+  int32_t operator++(int)       { return udInterlockedPostIncrement(&m_value);      }
+  int32_t operator--()          { return udInterlockedPreDecrement(&m_value);       }
+  int32_t operator--(int)       { return udInterlockedPostDecrement(&m_value);      }
+protected:
+  volatile int32_t m_value;
 };
 
-#else
-
-#include <thread>
-#include <atomic>
-#include <mutex>
-
-#endif
 
 // Minimalist MOST BASIC cross-platform thread support
 struct udSemaphore;

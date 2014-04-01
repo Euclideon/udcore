@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if UDPLATFORM_LINUX
+#include <pthread.h>
 #include <semaphore.h>
 #endif
 UDCOMPILEASSERT(sizeof(off_t) == 8, _off_t_must_be_8_bytes);
@@ -107,6 +108,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 #   error Unknown platform
 #endif
   }
+  return -1;
 }
 
 // ***************************************************************************************
