@@ -250,7 +250,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
     goto epilogue;
 
   result = udR_MemoryAllocationFailure;
-  pFile = udAllocType(udFile_HTTP);
+  pFile = udAllocType(udFile_HTTP, 1);
   if (!pFile)
     goto epilogue;
   memset(pFile, 0, sizeof(*pFile));

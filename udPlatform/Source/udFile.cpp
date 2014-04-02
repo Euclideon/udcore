@@ -223,7 +223,7 @@ static udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, u
   const char *pMode;
 
   result = udR_MemoryAllocationFailure;
-  pFile = udAllocType(udFile_FILE);
+  pFile = udAllocType(udFile_FILE, 1);
   if (pFile == nullptr)
     goto epilogue;
 

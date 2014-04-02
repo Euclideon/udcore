@@ -191,7 +191,7 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 
 #if __MEMORY_DEBUG__
 #  define udAlloc(size) _udAlloc(size, __FILE__, __LINE__)
-#  define udAllocType(type) (type*)_udAlloc(sizeof(type), __FILE__, __LINE__)
+#  define udAllocType(type,count) (type*)_udAlloc(sizeof(type) * (count), __FILE__, __LINE__)
 #  define udAllocAligned(size, alignment) _udAllocAligned(size, alignment, __FILE__, __LINE__)
 
 #  define udRealloc(pMemory, size) _udRealloc(pMemory, size, __FILE__, __LINE__)
@@ -207,7 +207,7 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 
 #else //  __MEMORY_DEBUG__
 #  define udAlloc(size) _udAlloc(size)
-#  define udAllocType(type) (type*)_udAlloc(sizeof(type))
+#  define udAllocType(type, count) (type*)_udAlloc(sizeof(type) * (count))
 #  define udAllocAligned(size, alignment) _udAllocAligned(size, alignment)
 
 #  define udRealloc(pMemory, size) _udRealloc(pMemory, size)
