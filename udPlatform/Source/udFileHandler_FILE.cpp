@@ -8,6 +8,7 @@
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include <stdio.h>
+#include <memory.h>
 
 // Declarations of the fall-back standard handler that uses crt FILE as a back-end
 static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
