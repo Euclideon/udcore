@@ -1,3 +1,9 @@
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, March 2014
+// 
+
 #include "udPlatform.h"
 #include "udPlatformUtil.h"
 #include "udFileHandler.h"
