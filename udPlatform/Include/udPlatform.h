@@ -275,6 +275,17 @@ void udMemoryDebugTrackingDeinit();
 
 
 
+#if UDPLATFORM_WINDOWS
+# define udU64L(x) x##ULL
+# define udI64L(x) x##LL
+# define UDFORCE_INLINE __forceinline
+#else
+# define udU64L(x) x##UL
+# define udI64L(x) x##L
+# define UDFORCE_INLINE inline
+#endif
+
+
 #include "udDebug.h"
 
 #endif // UDPLATFORM_H
