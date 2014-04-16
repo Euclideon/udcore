@@ -109,6 +109,8 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 #endif
 // Helpers to perform various interlocked functions based on the platform-wrapped primitives
 inline long udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
+inline long udInterlockedMin(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue < newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
+inline long udInterlockedMax(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue > newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
 
 class udInterlockedInt32
 {
@@ -116,7 +118,12 @@ public:
   // Get the value
   int32_t Get()                 { return m_value; }
   // Set a new value, returning the previous value
-  int32_t Set(int32_t newValue) { return udInterlockedExchange(&m_value, newValue); }
+  int32_t Set(int32_t v)        { return udInterlockedExchange(&m_value, v); }
+  // Set to the minimum of the existing or new value
+  void SetMin(int32_t v)        { udInterlockedMin(&m_value, v); }
+  // Set to the maximum of the existing or new value
+  void SetMax(int32_t v)        { udInterlockedMax(&m_value, v); }
+  // Increment operators
   int32_t operator++()          { return udInterlockedPreIncrement(&m_value);       }
   int32_t operator++(int)       { return udInterlockedPostIncrement(&m_value);      }
   int32_t operator--()          { return udInterlockedPreDecrement(&m_value);       }
