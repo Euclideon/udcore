@@ -329,7 +329,7 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
 {
   udResult result;
   udFile_HTTP *pFile = static_cast<udFile_HTTP *>(pBaseFile);
-  size_t offset = pFile->currentOffset;
+  int64_t offset = pFile->currentOffset;
 
   switch (seekWhence)
   {
