@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #endif
-UDCOMPILEASSERT(sizeof(off_t) == 8, _off_t_must_be_8_bytes);
 
 // ***************************************************************************************
 udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)

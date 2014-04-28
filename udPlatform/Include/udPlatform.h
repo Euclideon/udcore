@@ -3,30 +3,6 @@
 
 #include "udResult.h"
 
-// This must be set on all platforms for large files to work
-#if (_FILE_OFFSET_BITS != 64)
-#error "_FILE_OFFSET_BITS not defined to 64"
-#endif
-
-#if defined(_MSC_VER)
-# define _CRT_SECURE_NO_WARNINGS
-# define fseeko _fseeki64
-# define ftello _ftelli64
-# if !defined(_OFF_T_DEFINED)
-    typedef __int64 _off_t;
-    typedef _off_t off_t;
-#   define _OFF_T_DEFINED
-# endif //_OFF_T_DEFINED
-#elif defined(__linux__)
-# if !defined(_LARGEFILE_SOURCE )
-  // This must be set for linux to expose fseeko and ftello 
-# error "_LARGEFILE_SOURCE  not defined"
-#endif
-
-#endif
-
-
-
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
 #include <stdlib.h>

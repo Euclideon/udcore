@@ -3,6 +3,7 @@
 //
 // Creator: Dave Pevreal, March 2014
 // 
+# define _CRT_SECURE_NO_WARNINGS
 
 #include "udPlatform.h"
 #include "udPlatformUtil.h"
