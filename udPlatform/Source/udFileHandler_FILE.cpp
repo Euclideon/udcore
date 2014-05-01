@@ -51,11 +51,10 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   const char *pMode;
 
   result = udR_MemoryAllocationFailure;
-  pFile = udAllocType(udFile_FILE, 1);
+  pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
   if (pFile == nullptr)
     goto epilogue;
 
-  memset(pFile, 0, sizeof(*pFile)); // Ensure everything is null
   pFile->fpRead = udFileHandler_FILESeekRead;
   pFile->fpWrite = udFileHandler_FILESeekWrite;
   pFile->fpClose = udFileHandler_FILEClose;

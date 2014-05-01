@@ -257,10 +257,10 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
     goto epilogue;
 
   result = udR_MemoryAllocationFailure;
-  pFile = udAllocType(udFile_HTTP, 1);
+  pFile = udAllocType(udFile_HTTP, 1, udAF_Zero);
   if (!pFile)
     goto epilogue;
-  memset(pFile, 0, sizeof(*pFile));
+
   pFile->url.Construct();
   pFile->wsInitialised = false;
   pFile->sock = INVALID_SOCKET;

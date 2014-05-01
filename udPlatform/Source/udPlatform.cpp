@@ -186,6 +186,7 @@ void udReleaseMutex(udMutex *pMutex)
 size_t gAddressToBreakOnAllocation = (size_t)-1;
 size_t gAllocationCount = 0;
 size_t gAllocationCountToBreakOn = (size_t)-1;
+size_t gAddressToBreakOnFree = (size_t)-1;
 
 struct MemTrack
 {
@@ -348,6 +349,12 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 # endif
 
 
+  if (gAddressToBreakOnFree == (uint64_t)pMemory) 
+  { 
+    udDebugPrintf("Allocation 0x%p address 0x%p, at File %s, line %d", (void*)gAllocationCount, pMemory, pFile, line); 
+    __debugbreak(); 
+  } 
+
 #if UDPLATFORM_WINDOWS
   uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
   if (result != WAIT_OBJECT_0)
@@ -395,34 +402,51 @@ epilogue:
 #endif // __MEMORY_DEBUG__
 
 
-void *_udAlloc(size_t size IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
 {
-  void *pMemory = malloc(size);
+  void *pMemory = (flags & udAF_Zero) ? calloc(size, 1) : malloc(size);
 
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pMemory)
+  {
+    udDebugPrintf("_udAlloc failure, %llu", size);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   return pMemory;
 }
 
-void *_udAllocAligned(size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
 {
 #if defined(_MSC_VER)
-  void *pMemory = _aligned_malloc(size, alignment);
+  void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, alignment) : _aligned_malloc(size, alignment);
+
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pMemory)
+  {
+    udDebugPrintf("_udAllocAligned failure, %llu", size);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+
 #elif defined(__GNUC__)
   if (alignment < sizeof(size_t))
   {
     alignment = sizeof(size_t);
   }
-  void *pAllocation;
-  int err = posix_memalign(&pAllocation, alignment, size + alignment);
+  void *pMemory;
+  int err = posix_memalign(&pMemory, alignment, size + alignment);
   if (err != 0)
   {
 	  return nullptr;
   }
 
-  size_t *pSizeHeader = (size_t *)pAllocation + alignment - sizeof(size_t);
-  *pSizeHeader = size;
-  void *pMemory = (uint8_t*)pAllocation + alignment;
+  if (flags & udAF_Zero)
+  {
+    memset(pMemory, 0, size);
+  }
 #endif
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
@@ -439,6 +463,13 @@ void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(,const char * pFile)
 #endif  
   pMemory = realloc(pMemory, size);
 
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pMemory)
+  {
+    udDebugPrintf("_udRealloc failure, %llu", size);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
 
@@ -456,14 +487,21 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 
 #if defined(_MSC_VER)
   pMemory = _aligned_realloc(pMemory, size, alignment);
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pMemory)
+  {
+    udDebugPrintf("_udReallocAligned failure, %llu", size);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 #elif defined(__GNUC__)
   if (!pMemory)
   {
-    pMemory = _udAllocAligned(size, alignment IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+    pMemory = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
   }
   else
   {
-    void *pNewMem = _udAllocAligned(size, alignment IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+    void *pNewMem = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
 
     size_t *pSize = (size_t*)((uint8_t*)pMemory - sizeof(size_t));
     memcpy(pNewMem, pMemory, *pSize);
@@ -492,6 +530,13 @@ void _udFree(void **ppMemory IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBU
 void *operator new (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
   void *pMemory = malloc(size);
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pMemory)
+  {
+    udDebugPrintf("operator new failure, %llu", size);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
   return pMemory;
 }
@@ -499,6 +544,13 @@ void *operator new (size_t size, udMemoryOverload udUnusedParam(memoryOverload) 
 void *operator new[] (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
 {
   void *pMemory = malloc(size);
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pMemory)
+  {
+    udDebugPrintf("operator new[] failure, %llu", size);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
   return pMemory;
 }
@@ -520,4 +572,44 @@ void operator delete [](void *pMemory, udMemoryOverload udUnusedParam(memoryOver
     DebugTrackMemoryFree(pMemory, pFile, line);
     free(pMemory);
   }
+}
+
+
+
+
+udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
+{
+#if UDPLATFORM_WINDOWS
+  MEMORYSTATUSEX memorySatusEx;
+  memorySatusEx.dwLength = sizeof(memorySatusEx);
+  BOOL result = GlobalMemoryStatusEx(&memorySatusEx);
+  if (result)
+  {
+    *pTotalMemory = memorySatusEx.ullTotalPhys;
+    return udR_Success;
+  }
+
+  *pTotalMemory = 0;
+  return udR_Failure_;
+
+#elif UDPLATFORM_LINUX
+
+// see http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system for 
+// explanation.
+
+#if !defined(_SC_PHYS_PAGES)
+#error "_SC_PHYS_PAGES is not defined"
+#endif
+
+#if !defined(_SC_PAGESIZE)
+#error "_SC_PAGESIZE is not defined"
+#endif
+
+  *pTotalMemory = (uint64_t)sysconf(_SC_PHYS_PAGES) * (uint64_t)sysconf(_SC_PAGESIZE);
+  return udR_Success;
+
+#else
+  *pTotalMemory = 0;
+  return udR_Success;
+#endif
 }

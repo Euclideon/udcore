@@ -120,7 +120,7 @@ udResult udFile_SeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int
   udResult result;
   size_t actualWritten = 0; // Assign to zero to avoid incorrect compiler warning;
 
-  result = udR_File_ReadFailure;
+  result = udR_File_WriteFailure;
   if (pFile == nullptr || pFile->fpRead == nullptr)
     goto epilogue;
 
@@ -132,7 +132,7 @@ udResult udFile_SeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int
 
   // If the caller isn't checking the actual written (ie it's null), and it's not the requested amount, return an error when full amount isn't actually written
   if (result == udR_Success && pActualWritten == nullptr && actualWritten != bufferLength)
-    result = udR_File_ReadFailure;
+    result = udR_File_WriteFailure;
 
 epilogue:
   return result;

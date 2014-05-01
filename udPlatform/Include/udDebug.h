@@ -75,10 +75,10 @@ public:
 # define OUTPUT_ERROR_STRINGS (0)
 #endif
 
-#define BREAK_ON_ERROR (0)
+#define UD_BREAK_ON_ERROR_STRING (0)
 
 #if OUTPUT_ERROR_STRINGS
-# if BREAK_ON_ERROR
+# if UD_BREAK_ON_ERROR_STRING
 #   define __breakOnErrorString() __debugbreak()
 # else
 #   define __breakOnErrorString()

@@ -167,9 +167,9 @@ public:
   //    GetPath             - Get the complete path (eg pass to fopen)
   //    GetFilenameWithExt  - Get the filename and extension, without the path
   //    GetExt              - Get just the extension (starting with the dot)
-  const char *GetPath()                 { return m_path; }
-  const char *GetFilenameWithExt()      { return m_path + m_filenameIndex; }
-  const char *GetExt()                  { return m_path + m_extensionIndex; }
+  const char *GetPath() const            { return m_path; }  
+  const char *GetFilenameWithExt() const { return m_path + m_filenameIndex; }
+  const char *GetExt() const             { return m_path + m_extensionIndex; }
 
   //
   // Extract methods: (take portions from within the full path to a user supplied buffer, returning size required)
@@ -181,8 +181,8 @@ public:
 
   //
   // Test methods: to determine what is present in the filename
-  bool HasFilename()                    { return m_path[m_filenameIndex] != 0; }
-  bool HasExt()                         { return m_path[m_extensionIndex] != 0; }
+  bool HasFilename() const              { return m_path[m_filenameIndex] != 0; }
+  bool HasExt() const                   { return m_path[m_extensionIndex] != 0; }
 
   // Temporary function to output debug info until unit tests are done to prove reliability
   void Debug();

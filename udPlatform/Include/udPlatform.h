@@ -141,6 +141,7 @@ protected:
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
 #define __MEMORY_DEBUG__ (0)
+#define __BREAK_ON_MEMORY_ALLOCATION_FAILURE (0)
 
 #if __MEMORY_DEBUG__
 # define IF_MEMORY_DEBUG(x,y) x,y
@@ -148,8 +149,19 @@ protected:
 # define IF_MEMORY_DEBUG(x,y) 
 #endif //  __MEMORY_DEBUG__
 
-void *_udAlloc(size_t size IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-void *_udAllocAligned(size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+
+enum udAllocationFlags
+{
+  udAF_None = 0,
+  udAF_Zero = 1
+};
+
+// Inline of operator to allow flags to be combined and retain type-safety
+inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
+
+
+void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
 
 void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
 void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
@@ -173,9 +185,11 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 
 
 #if __MEMORY_DEBUG__
-#  define udAlloc(size) _udAlloc(size, __FILE__, __LINE__)
-#  define udAllocType(type,count) (type*)_udAlloc(sizeof(type) * (count), __FILE__, __LINE__)
-#  define udAllocAligned(size, alignment) _udAllocAligned(size, alignment, __FILE__, __LINE__)
+#  define udAlloc(size) _udAlloc(size, udAF_None, __FILE__, __LINE__)
+
+#  define udAllocFlags(size, flags) _udAlloc(size, flags, __FILE__, __LINE__)
+#  define udAllocType(type, count, flags) (type*)_udAlloc(sizeof(type) * (count), flags, __FILE__, __LINE__)
+#  define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags, __FILE__, __LINE__)
 
 #  define udRealloc(pMemory, size) _udRealloc(pMemory, size, __FILE__, __LINE__)
 #  define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment, __FILE__, __LINE__)
@@ -189,9 +203,11 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 #  define udDeleteArray(pMemory) _udDeleteArray(pMemory, UDMO_Memory, __FILE__, __LINE__)
 
 #else //  __MEMORY_DEBUG__
-#  define udAlloc(size) _udAlloc(size)
-#  define udAllocType(type, count) (type*)_udAlloc(sizeof(type) * (count))
-#  define udAllocAligned(size, alignment) _udAllocAligned(size, alignment)
+#  define udAlloc(size) _udAlloc(size, udAF_None)
+
+#  define udAllocFlags(size, flags) _udAlloc(size, flags)
+#  define udAllocType(type, count, flags) (type*)_udAlloc(sizeof(type) * (count), flags)
+#  define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags)
 
 #  define udRealloc(pMemory, size) _udRealloc(pMemory, size)
 #  define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment)
@@ -268,6 +284,10 @@ void udMemoryDebugTrackingDeinit();
 # define UDFORCE_INLINE inline
 #endif
 
+
+#define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
+
+udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
 #include "udDebug.h"
 

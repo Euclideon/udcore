@@ -133,7 +133,7 @@ char *udStrdup(const char *s, size_t additionalChars)
   if (!s) s = s_udStrEmptyString;
   
   size_t len = udStrlen(s) + 1;
-  char *dup = udAllocType(char, len + additionalChars);
+  char *dup = udAllocType(char, len + additionalChars, udAF_None);
   memcpy(dup, s, len);
   return dup;
 }
