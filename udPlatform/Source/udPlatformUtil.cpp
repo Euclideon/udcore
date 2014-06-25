@@ -8,7 +8,9 @@
 #if UDPLATFORM_WINDOWS
 #include <mmsystem.h>
 #elif UDPLATFORM_LINUX
+#include <time.h>
 #include <sys/time.h>
+static const uint64_t nsec_per_sec = 1000000000; // 1 billion nanoseconds in one second
 #endif
 
 static char s_udStrEmptyString[] = "";
@@ -25,6 +27,51 @@ uint32_t udGetTimeMs()
   return now.tv_usec/1000;
 #endif
 }
+
+// *********************************************************************
+// Author: Dave Pevreal, June 2014
+uint64_t udPerfCounterStart()
+{
+#if UDPLATFORM_WINDOWS
+  LARGE_INTEGER p;
+  QueryPerformanceCounter(&p);
+  return p.QuadPart;
+#else
+  uint64_t nsec_count;
+  struct timespec ts1;
+  clock_gettime(CLOCK_MONOTONIC, &ts1);
+  nsec_count = ts1.tv_nsec + ts1.tv_sec * nsec_per_sec;
+  return nsec_count;
+#endif
+}
+
+
+// *********************************************************************
+// Author: Dave Pevreal, June 2014
+float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end)
+{
+#if UDPLATFORM_WINDOWS
+  LARGE_INTEGER p, f;
+  if (end)
+    p.QuadPart = end;
+  else
+    QueryPerformanceCounter(&p);
+  QueryPerformanceFrequency(&f);
+
+  // TODO: Come back and tidy this up to be integer
+
+  double delta = (p.QuadPart - startValue);
+  
+  double ms = (delta) ? (1000.0 / (f.QuadPart / delta)) : 0.0;
+  return (float)ms;
+#else
+  if (!end)
+    end = udPerfCounterStart();
+  double ms = (end - startValue) / (nsec_per_sec / 1000.0);
+  return (float)ms;
+#endif
+}
+
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014

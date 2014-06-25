@@ -10,9 +10,7 @@
 udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)
 {
 #if UDPLATFORM_WINDOWS
-  DWORD threadId = 0;
-  CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)threadStarter, threadData, 0, &threadId);
-  return (udThreadHandle)threadId;
+  return (udThreadHandle)CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)threadStarter, threadData, 0, NULL);
 #elif UDPLATFORM_LINUX
   pthread_t t;
   typedef void *(*PTHREAD_START_ROUTINE)(void *);
@@ -77,14 +75,15 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
 }
 
 // ***************************************************************************************
-void udIncrementSemaphore(udSemaphore *pSemaphore)
+void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
 {
   if (pSemaphore)
   {
 #if UDPLATFORM_WINDOWS
-    ReleaseSemaphore((HANDLE)pSemaphore, 1, nullptr);
+    ReleaseSemaphore((HANDLE)pSemaphore, count, nullptr);
 #elif UDPLATFORM_LINUX
-    sem_post((sem_t*)pSemaphore);
+    while (count-- > 0)
+      sem_post((sem_t*)pSemaphore);
 #else
 #   error Unknown platform
 #endif

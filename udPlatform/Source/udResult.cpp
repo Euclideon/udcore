@@ -14,6 +14,7 @@ udResultInfo udResultInfoArray[] =
 {
   RESULTINFO(udR_Success),
   RESULTINFO(udR_Failure_),
+  RESULTINFO(udR_NothingToDo),
   RESULTINFO(udR_InternalError),
   RESULTINFO(udR_NotInitialized_),
   RESULTINFO(udR_InvalidConfiguration),

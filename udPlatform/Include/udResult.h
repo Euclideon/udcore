@@ -5,6 +5,7 @@ enum udResult
 {
   udR_Success,
   udR_Failure_,
+  udR_NothingToDo,
   udR_InternalError,
   udR_NotInitialized_,
   udR_InvalidConfiguration,

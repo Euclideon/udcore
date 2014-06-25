@@ -120,7 +120,7 @@ void udDestroyThread(udThreadHandle threadHandle);
 
 udSemaphore *udCreateSemaphore(int maxValue, int initialValue);
 void udDestroySemaphore(udSemaphore **ppSemaphore);
-void udIncrementSemaphore(udSemaphore *pSemaphore);
+void udIncrementSemaphore(udSemaphore *pSemaphore, int count = 1);
 int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs); // Returns zero on success
 
 udMutex *udCreateMutex();

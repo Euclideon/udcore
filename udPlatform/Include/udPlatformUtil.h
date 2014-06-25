@@ -24,6 +24,8 @@ inline T udRoundPow2(T n, int align) { return ((n + (align-1)) & -align); }
 // Time and timing
 // *********************************************************************
 uint32_t udGetTimeMs(); // Get a millisecond-resolution timer - timeGetTime() on windows
+uint64_t udPerfCounterStart(); // Get a starting point value for now
+float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
 
 
 // *********************************************************************
@@ -100,6 +102,11 @@ inline uint32_t udCountBits32(uint32_t v)
   v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
   v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
   return (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
+}
+
+inline uint32_t udCountBits64(uint64_t v)
+{
+  return udCountBits32((uint32_t)(v & 0xFFFF)) + udCountBits32((uint32_t)((v >> 32) & 0xFFFF));
 }
 
 inline uint32_t udCountBits8(uint8_t a_number)
