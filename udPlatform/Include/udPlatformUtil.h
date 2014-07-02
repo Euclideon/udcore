@@ -16,7 +16,6 @@ inline T udMin(const T &a, const T &b) { return (a < b) ? a : b;  }
 template <typename T>
 inline T udClamp(const T &a, const T &minVal, const T &maxVal) { return udMin(udMax(a, minVal), maxVal);  }
 
-
 // *********************************************************************
 // Time and timing
 // *********************************************************************
@@ -132,7 +131,7 @@ inline uint32_t udCountBits8(uint8_t a_number)
 // Initialise pStringTable to NULL and stringTableLength to 0, 
 // and table will be reallocated as necessary
 // *********************************************************************
-int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const char *addString);
+int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString);
 
 
 // *********************************************************************

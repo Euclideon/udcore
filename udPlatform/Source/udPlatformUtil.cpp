@@ -338,15 +338,15 @@ int64_t udStrAtoi64(const char *s, size_t *pCharCount, int radix)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const char *addString)
+int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString)
 {
   uint32_t offset = 0;
   int addStrLen = (int)udStrlen(addString); // Length of string to be added
 
-  while (offset < stringTableLength)
+  while (offset < *pStringTableLength)
   {
     int curStrLen = (int)udStrlen(pStringTable + offset);
-    if (offset + curStrLen > stringTableLength)
+    if (offset + curStrLen > *pStringTableLength)
       break; // A catch-all in case something's gone wrong
     if (curStrLen >= addStrLen && udStrcmp(pStringTable + offset + curStrLen - addStrLen, addString) == 0)
       return offset + curStrLen - addStrLen; // Found a match
@@ -359,7 +359,7 @@ int udAddToStringTable(char *&pStringTable, uint32_t &stringTableLength, const c
     return -1; // A nasty case where memory allocation has failed
   strcpy(newCache + offset, addString);
   pStringTable = newCache;
-  stringTableLength = offset + addStrLen + 1;
+  *pStringTableLength = offset + addStrLen + 1;
   return offset;
 }
 
