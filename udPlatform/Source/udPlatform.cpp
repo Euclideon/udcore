@@ -217,7 +217,6 @@ void udMemoryDebugTrackingInit()
   {
     pMemoryTrackingMap = new MemTrackMap;
   }
-
 }
 
 void udMemoryDebugTrackingDeinit()
@@ -401,9 +400,15 @@ epilogue:
 #endif // __MEMORY_DEBUG__
 
 
-void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+#define UD_DEFAULT_ALIGNMENT (8)
+
+void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
+#if defined(_MSC_VER)
+  void *pMemory = (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, UD_DEFAULT_ALIGNMENT) : _aligned_malloc(size, UD_DEFAULT_ALIGNMENT);
+#else
   void *pMemory = (flags & udAF_Zero) ? calloc(size, 1) : malloc(size);
+#endif // defined(_MSC_VER)
 
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
@@ -417,7 +422,7 @@ void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(,const char 
   return pMemory;
 }
 
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if defined(_MSC_VER)
   void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, alignment) : _aligned_malloc(size, alignment);
@@ -452,15 +457,19 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_
   return pMemory;
 }
 
-void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if __MEMORY_DEBUG__
   if (pMemory)
   {
     DebugTrackMemoryFree(pMemory, pFile, line);
   }
-#endif  
+#endif
+#if defined(_MSC_VER)
+  pMemory =  _aligned_realloc(pMemory, size, UD_DEFAULT_ALIGNMENT);
+#else
   pMemory = realloc(pMemory, size);
+#endif // defined(_MSC_VER)
 
 #if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   if (!pMemory)
@@ -475,7 +484,7 @@ void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(,const char * pFile)
   return pMemory;
 }
 
-void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if __MEMORY_DEBUG__
   if (pMemory)
@@ -496,15 +505,15 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 #elif defined(__GNUC__)
   if (!pMemory)
   {
-    pMemory = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+    pMemory = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(pFile, line));
   }
   else
   {
-    void *pNewMem = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+    void *pNewMem = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(pFile, line));
 
     size_t *pSize = (size_t*)((uint8_t*)pMemory - sizeof(size_t));
     memcpy(pNewMem, pMemory, *pSize);
-    _udFree(&pMemory IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line));
+    _udFree(&pMemory IF_MEMORY_DEBUG(pFile, line));
 
     return pNewMem;
   }
@@ -515,66 +524,19 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
   return pMemory;
 }
 
-void _udFree(void **ppMemory IF_MEMORY_DEBUG(,const char * pFile) IF_MEMORY_DEBUG(,int line))
+void _udFree(void **ppMemory IF_MEMORY_DEBUG(const char * pFile, int line))
 {
   if (*ppMemory)
   {
     DebugTrackMemoryFree(*ppMemory, pFile, line);
+#if defined(_MSC_VER)
+    _aligned_free(*ppMemory);
+#else
     free(*ppMemory);
+#endif // defined(_MSC_VER)
     *ppMemory = NULL;
   }
 }
-
-
-void *operator new (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
-{
-  void *pMemory = malloc(size);
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pMemory)
-  {
-    udDebugPrintf("operator new failure, %llu", size);
-    __debugbreak();
-  }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
-  return pMemory;
-}
-
-void *operator new[] (size_t size, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
-{
-  void *pMemory = malloc(size);
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pMemory)
-  {
-    udDebugPrintf("operator new[] failure, %llu", size);
-    __debugbreak();
-  }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
-  return pMemory;
-}
-
-void operator delete (void *pMemory, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
-{
-  if (pMemory)
-  {
-    DebugTrackMemoryFree(pMemory, pFile, line);
-    free(pMemory);
-  }
-}
-
-void operator delete [](void *pMemory, udMemoryOverload udUnusedParam(memoryOverload) IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line))
-{
-  if (pMemory)
-  {
-    UDASSERT(false, "operator delete [] not supported yet");
-    DebugTrackMemoryFree(pMemory, pFile, line);
-    free(pMemory);
-  }
-}
-
-
-
 
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 {

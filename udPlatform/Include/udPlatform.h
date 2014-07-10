@@ -6,6 +6,7 @@
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
 #include <stdlib.h>
+#include <new>
 
 #if defined(_WIN64) || defined(__amd64__)
   //64-bit code
@@ -144,7 +145,7 @@ protected:
 #define __BREAK_ON_MEMORY_ALLOCATION_FAILURE (0)
 
 #if __MEMORY_DEBUG__
-# define IF_MEMORY_DEBUG(x,y) x,y
+# define IF_MEMORY_DEBUG(x,y) ,x,y
 #else 
 # define IF_MEMORY_DEBUG(x,y) 
 #endif //  __MEMORY_DEBUG__
@@ -160,28 +161,15 @@ enum udAllocationFlags
 inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
 
 
-void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int  line));
+void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int  line));
 
-void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int  line));
+void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int  line));
 
-void _udFree(void **pMemory IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
+void _udFree(void **pMemory IF_MEMORY_DEBUG(const char * pFile, int  line));
 
-
-enum udMemoryOverload
-{
-  UDMO_Memory
-};
-
-void *operator new (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-void *operator new[] (size_t size, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-
-void operator delete (void *p, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-void operator delete [](void *p, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line));
-
-template <typename T> void _udDelete(T *&pMemory, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line)) { if (pMemory) { pMemory->~T(); operator delete (pMemory, memoryOverload IF_MEMORY_DEBUG(, pFile) IF_MEMORY_DEBUG(, line)); pMemory = NULL; } }
-template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOverload IF_MEMORY_DEBUG(,const char * pFile ) IF_MEMORY_DEBUG(,int  line)) { if (pMemory) { /*pMemory->~T(); */operator delete [] (pMemory, memoryOverload IF_MEMORY_DEBUG(,pFile) IF_MEMORY_DEBUG(, line)); pMemory = NULL; }}
+template <typename T> void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile, int  line)) { if (pMemory) { pMemory->~T(); _udFree((void**)&pMemory IF_MEMORY_DEBUG(pFile, line)); pMemory = NULL; } }
 
 
 #if __MEMORY_DEBUG__
@@ -196,11 +184,8 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 
 #  define udFree(pMemory) _udFree((void**)&pMemory, __FILE__, __LINE__)
 
-#  define udNew new (UDMO_Memory, __FILE__, __LINE__)
-#  define udNewArray new [] (UDMO_Memory, __FILE__, __LINE__)
-
-#  define udDelete(pMemory) _udDelete(pMemory, UDMO_Memory, __FILE__, __LINE__)
-#  define udDeleteArray(pMemory) _udDeleteArray(pMemory, UDMO_Memory, __FILE__, __LINE__)
+#  define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None, __FILE__, __LINE__)) type(__VA_ARGS__)
+#  define udDelete(pMemory) _udDelete(pMemory, __FILE__, __LINE__)
 
 #else //  __MEMORY_DEBUG__
 #  define udAlloc(size) _udAlloc(size, udAF_None)
@@ -214,11 +199,8 @@ template <typename T> void _udDeleteArray(T *&pMemory, udMemoryOverload memoryOv
 
 #  define udFree(pMemory) _udFree((void**)&pMemory)
 
-#  define udNew new (UDMO_Memory)
-#  define udNewArray new [] (UDMO_Memory)
-
-#  define udDelete(pMemory) _udDelete(pMemory, UDMO_Memory)
-#  define udDeleteArray(pMemory) _udDeleteArray(pMemory, UDMO_Memory)
+#  define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None)) type(__VA_ARGS__)
+#  define udDelete(pMemory) _udDelete(pMemory)
 
 #endif  //  __MEMORY_DEBUG__
 

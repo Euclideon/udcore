@@ -16,9 +16,6 @@ inline T udMin(const T &a, const T &b) { return (a < b) ? a : b;  }
 template <typename T>
 inline T udClamp(const T &a, const T &minVal, const T &maxVal) { return udMin(udMax(a, minVal), maxVal);  }
 
-template <typename T>
-inline T udRoundPow2(T n, int align) { return ((n + (align-1)) & -align); }
-
 
 // *********************************************************************
 // Time and timing
@@ -106,7 +103,7 @@ inline uint32_t udCountBits32(uint32_t v)
 
 inline uint32_t udCountBits64(uint64_t v)
 {
-  return udCountBits32((uint32_t)(v & 0xFFFF)) + udCountBits32((uint32_t)((v >> 32) & 0xFFFF));
+  return udCountBits32((uint32_t)v) + udCountBits32((uint32_t)(v >> 32));
 }
 
 inline uint32_t udCountBits8(uint8_t a_number)

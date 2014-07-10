@@ -61,7 +61,7 @@ public:
 #endif // UDASSERT_ON
 
 #if UDRELASSERT_ON
-# define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); /*DebugBreak();*/ udDebugPrintf("\n"); } }
+# define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } }
 #else
 # define UDRELASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
 #endif //UDRELASSERT_ON

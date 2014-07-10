@@ -25,6 +25,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_ObjectNotFound),
   RESULTINFO(udR_RenderAlreadyInProgress),
   RESULTINFO(udR_BufferTooSmall),
+  RESULTINFO(udR_VersionMismatch),
 
   RESULTINFO(udR_Writer_InitFailure), 
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure), 
