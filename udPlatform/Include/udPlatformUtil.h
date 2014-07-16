@@ -16,6 +16,14 @@ inline T udMin(const T &a, const T &b) { return (a < b) ? a : b;  }
 template <typename T>
 inline T udClamp(const T &a, const T &minVal, const T &maxVal) { return udMin(udMax(a, minVal), maxVal);  }
 
+template <typename SourceType, typename DestType>
+inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { return DestType(source); }
+
+// A utility macro to isolate a bit-field style value from an integer, using an enumerate convention
+#define udBitFieldGet(composite, id)        (((composite) >> id##Shift) & id##Mask)                                       // Retrieve a field from a composite
+#define udBitFieldClear(composite, id)      ((composite) & ~(udCastToTypeOf(id##Mask, composite) << id##Shift)            // Clear a field, generally used before updating just one field of a composite
+#define udBitFieldSet(composite, id, value) ((composite) | ((udCastToTypeOf(value, composite) & id##Mask) << id##Shift))  // NOTE! Field should be cleared first, most common case is building a composite from zero
+
 // *********************************************************************
 // Time and timing
 // *********************************************************************

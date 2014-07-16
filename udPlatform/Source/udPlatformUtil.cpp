@@ -60,7 +60,7 @@ float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end)
 
   // TODO: Come back and tidy this up to be integer
 
-  double delta = (p.QuadPart - startValue);
+  double delta = (double)(p.QuadPart - startValue);
   
   double ms = (delta) ? (1000.0 / (f.QuadPart / delta)) : 0.0;
   return (float)ms;
