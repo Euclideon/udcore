@@ -37,7 +37,7 @@ struct udFilePipelinedRequest
 };
 
 // Open a file. The filename contains a prefix such as http: to access registered file handlers (see udFileHandler.h)
-udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags);
+udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes = nullptr);
 
 // Get performance information
 udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pRequestsInFlight);
@@ -46,13 +46,12 @@ udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pReque
 udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);
 
 // Seek and write some data
-udResult udFile_SeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr);
+udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr);
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead = nullptr);
 
 // Close the file (sets the udFile pointer to null)
 udResult udFile_Close(udFile **ppFile);
-
 
 #endif // UDFILE_H

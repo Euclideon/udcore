@@ -27,6 +27,7 @@
 #include "udPlatformUtil.h"
 #include <stdio.h>
 #include <memory.h>
+#include <sys/stat.h>
 
 // Declarations of the fall-back standard handler that uses crt FILE as a back-end
 static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
@@ -44,12 +45,18 @@ struct udFile_FILE : public udFile
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of OpenHandler to access the crt FILE i/o functions
-udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
+udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
   udFile_FILE *pFile = nullptr;
   udResult result;
   const char *pMode;
 
+  if (pFileLengthInBytes)
+  {
+    struct stat st;
+    stat(pFilename, &st);
+    *pFileLengthInBytes = (int64_t)st.st_size;
+  }
   result = udR_MemoryAllocationFailure;
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
   if (pFile == nullptr)
@@ -63,13 +70,26 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   pMode = "";
 
   if ((flags & udFOF_Read) && (flags & udFOF_Write) && (flags & udFOF_Create))
+  {
     pMode = "w+b";  // Read/write, any existing file destroyed
+  }
   else if ((flags & udFOF_Read) && (flags & udFOF_Write))
+  {
     pMode = "r+b"; // Read/write, but file must already exist
+  }
   else if (flags & udFOF_Read)
+  {
     pMode = "rb"; // Read, file must already exist
-  else if (flags & udFOF_Write)
-    pMode = "wb"; // Write, any existing file destroyed (Create flag ignored in this case)
+  }
+  else if ((flags & udFOF_Write) || (flags & udFOF_Create))
+  {
+    pMode = "wb"; // Write, any existing file destroyed (Create flag treated as Write in this case)
+  }
+  else
+  {
+    result = udR_InvalidParameter_;
+    goto epilogue;
+  }
   pFile->pCrtFile = fopen(pFilename, pMode);
   if (pFile->pCrtFile == nullptr)
     goto epilogue;
@@ -117,7 +137,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekWriteHandler to access the crt FILE i/o functions
-static udResult udFileHandler_FILESeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
+static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
 {
   udResult result;
   size_t actualWritten;

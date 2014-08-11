@@ -27,8 +27,8 @@ inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { ret
 // *********************************************************************
 // Time and timing
 // *********************************************************************
-uint32_t udGetTimeMs(); // Get a millisecond-resolution timer - timeGetTime() on windows
-uint64_t udPerfCounterStart(); // Get a starting point value for now
+uint32_t udGetTimeMs(); // Get a millisecond-resolution timer that is thread-independent - timeGetTime() on windows
+uint64_t udPerfCounterStart(); // Get a starting point value for now (thread dependent)
 float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
 
 
@@ -60,12 +60,16 @@ const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex = null
 // (zero indicates assume nul-terminated). Optionally the function can provide the index
 // of the find, which will be the length if not found (ie when null is returned)
 const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t *pIndex = nullptr);
-// udAtoi behaves much like atoi, optionally giving the number of characters parsed
+// udStrAtoi behaves much like atoi, optionally giving the number of characters parsed
 // and the radix can be supplied to parse hex(16) or binary(2) numbers
-int32_t udStrAtoi(const char *s, size_t *pCharCount = nullptr, int radix = 10);
-// udAtoi behaves much like atol, optionally giving the number of characters parsed
+int32_t udStrAtoi(const char *s, int *pCharCount = nullptr, int radix = 10);
+// udStrAtoi behaves much like atol, optionally giving the number of characters parsed
 // and the radix can be supplied to parse hex(16) or binary(2) numbers
-int64_t udStrAtoi64(const char *s, size_t *pCharCount = nullptr, int radix = 10);
+int64_t udStrAtoi64(const char *s, int *pCharCount = nullptr, int radix = 10);
+// udStrAtof behaves much like atol, but much faster and optionally gives the number of characters parsed
+float udStrAtof(const char *s, int *pCharCount = nullptr);
+// Split a line into an array of tokens
+int udTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens);
 
 // *********************************************************************
 // String comparison functions that can be relied upon, NULL-safe
@@ -134,12 +138,24 @@ inline uint32_t udCountBits8(uint8_t a_number)
   return bits[a_number];
 }
 
+
+// *********************************************************************
+// Create (or optionally update) a standard 32-bit CRC
+uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
+
+
 // *********************************************************************
 // Add a string to a dynamic table of unique strings. 
 // Initialise pStringTable to NULL and stringTableLength to 0, 
 // and table will be reallocated as necessary
 // *********************************************************************
 int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString);
+
+
+// *********************************************************************
+// Threading and concurrency
+// *********************************************************************
+int udGetHardwareThreadCount();
 
 
 // *********************************************************************
@@ -231,6 +247,29 @@ protected:
   int m_port;
 };
 
-#define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof(_array[0]) )
+
+// Load or Save a BMP
+udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColorData, int pitch = 0);
+udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **pColorData);
+
+// Directory iteration for OS file system only
+struct udFindDir
+{
+  const char *pFilename;
+  bool isDirectory;
+};
+
+// Test for existence of a file, on OS FILESYSTEM only (not registered file handlers)
+udResult udFileExists(const char *pFilename);
+
+// Open a folder for reading
+udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder);
+
+// Read next entry in the folder
+udResult udReadDir(udFindDir *pFindDir);
+
+// Free resources associated with the directory
+udResult udCloseDir(udFindDir **ppFindDir);
+
 
 #endif // UDPLATFORM_UTIL_H

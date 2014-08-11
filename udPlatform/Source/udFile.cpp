@@ -24,14 +24,24 @@ static udFileHandler *s_fileHandlers = &s_httpFileHandler;
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
+udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
   udResult result = udR_File_OpenFailure;
+  if (ppFile == nullptr || pFilename == nullptr)
+  {
+    result = udR_InvalidParameter_;
+    goto epilogue;
+  }
+
+  *ppFile = nullptr;
+  if (pFileLengthInBytes)
+    *pFileLengthInBytes = 0;
+
   for (udFileHandler *pHandler = s_fileHandlers; pHandler; pHandler = pHandler->pNext)
   {
     if (udStrBeginsWith(pFilename, pHandler->prefix))
     {
-      result = pHandler->fpOpen(ppFile, pFilename, flags);
+      result = pHandler->fpOpen(ppFile, pFilename, flags, pFileLengthInBytes);
       if (result == udR_Success)
       {
         if (flags & udFOF_Multithread)
@@ -115,7 +125,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_SeekWrite(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
+udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
 {
   udResult result;
   size_t actualWritten = 0; // Assign to zero to avoid incorrect compiler warning;
@@ -198,5 +208,4 @@ udResult udFile_DeregisterHandler(udFileHandler * /*fpHandler*/)
 {
   return udR_Failure_;
 }
-
 

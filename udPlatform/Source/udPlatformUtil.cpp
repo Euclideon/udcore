@@ -1,16 +1,22 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "udPlatformUtil.h"
+#include "udFile.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <math.h>
 
 #if UDPLATFORM_WINDOWS
+#include <io.h>
 #include <mmsystem.h>
 #elif UDPLATFORM_LINUX
+#include "dirent.h"
 #include <time.h>
 #include <sys/time.h>
 static const uint64_t nsec_per_sec = 1000000000; // 1 billion nanoseconds in one second
+static const uint64_t nsec_per_msec = 1000000;   // 1 million nanoseconds in one millisecond
+static const uint64_t usec_per_msec = 1000;      // 1 thousand microseconds in one millisecond
 #endif
 
 static char s_udStrEmptyString[] = "";
@@ -22,9 +28,15 @@ uint32_t udGetTimeMs()
 #if UDPLATFORM_WINDOWS
   return timeGetTime();
 #else
-  struct timeval now;
-  gettimeofday(&now, NULL);
-  return now.tv_usec/1000;
+  //struct timeval now;
+  //gettimeofday(&now, NULL);
+  //return (uint32_t)(now.tv_usec/usec_per_msec);
+
+  // Unfortunately the above code is unreliable
+  // TODO: Check whether this code gives consistent timing values regardless of thread
+  struct timespec ts1;
+  clock_gettime(CLOCK_MONOTONIC, &ts1);
+  return (ts1.tv_sec * 1000) + (ts1.tv_nsec / nsec_per_msec);
 #endif
 }
 
@@ -248,19 +260,43 @@ const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t 
   if (pIndex)
     *pIndex = i;
   return nullptr;
-
-  //const char *result = strstr(s, pSubString);
-
-  //if (pIndex)
-  //  *pIndex = (result) ? result - s : strlen(s);
-
-  //return result;
 }
 
 
 // *********************************************************************
+// Author: Dave Pevreal, August 2014
+int udTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens)
+{
+  if (pLine == nullptr)
+    return 0;
+
+  int tokenCount = 0;
+  while (*pLine && tokenCount < maxTokens)
+  {
+    size_t delimiterIndex;
+    pTokenArray[tokenCount++] = pLine;                  // Assign token
+    if (udStrchr(pLine, pDelimiters, &delimiterIndex))  // Get the index of the delimiter
+    {
+      pLine[delimiterIndex] = 0;                        // Null terminate the token
+      pLine += delimiterIndex + 1;                      // Move pLine to 1st char after delimiter (possibly another delimiter)
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  // Assign remaining tokens to the end-of-line, this way caller's can
+  // depend on all tokens in the array being initialised
+  for (int i = tokenCount; i < maxTokens; ++i)
+    pTokenArray[i] = pLine;
+
+  return tokenCount;
+}
+
+// *********************************************************************
 // Author: Dave Pevreal, March 2014
-int32_t udStrAtoi(const char *s, size_t *pCharCount, int radix)
+int32_t udStrAtoi(const char *s, int *pCharCount, int radix)
 {
   if (!s) s = s_udStrEmptyString;
   int32_t result = 0;
@@ -268,6 +304,8 @@ int32_t udStrAtoi(const char *s, size_t *pCharCount, int radix)
   bool negate = false;
 
   while (s[charCount] == ' ' || s[charCount] == '\t')
+    ++charCount;
+  if (s[charCount] == '+')
     ++charCount;
   if (s[charCount] == '-')
   {
@@ -299,7 +337,7 @@ int32_t udStrAtoi(const char *s, size_t *pCharCount, int radix)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-int64_t udStrAtoi64(const char *s, size_t *pCharCount, int radix)
+int64_t udStrAtoi64(const char *s, int *pCharCount, int radix)
 {
   if (!s) s = s_udStrEmptyString;
   int64_t result = 0;
@@ -307,6 +345,8 @@ int64_t udStrAtoi64(const char *s, size_t *pCharCount, int radix)
   bool negate = false;
 
   while (s[charCount] == ' ' || s[charCount] == '\t')
+    ++charCount;
+  if (s[charCount] == '+')
     ++charCount;
   if (s[charCount] == '-')
   {
@@ -330,6 +370,38 @@ int64_t udStrAtoi64(const char *s, size_t *pCharCount, int radix)
   };
   if (negate)
     result = -result;
+  if (pCharCount)
+    *pCharCount = charCount;
+  return result;
+}
+
+
+// *********************************************************************
+// Author: Dave Pevreal, August 2014
+float udStrAtof(const char *s, int *pCharCount)
+{
+  if (!s) s = s_udStrEmptyString;
+  int charCount = 0;
+  int secondaryCharCount = 0;
+
+  float result = (float)udStrAtoi(s, &charCount);
+  if (s[charCount] == '.')
+  {
+    ++charCount;
+    int32_t fraction = udStrAtoi(s + charCount, &secondaryCharCount);
+    if (result >= 0.f)
+      result += fraction / powf(10.f, (float)secondaryCharCount);
+    else
+      result -= fraction / powf(10.f, (float)secondaryCharCount);
+    charCount += secondaryCharCount;
+  }
+  if (s[charCount] == 'e' || s[charCount] == 'E')
+  {
+    ++charCount;
+    float e = (float)udStrAtoi(s + charCount, &secondaryCharCount);
+    result *= powf(10, e);
+    charCount += secondaryCharCount;
+  }
   if (pCharCount)
     *pCharCount = charCount;
   return result;
@@ -361,6 +433,31 @@ int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const 
   pStringTable = newCache;
   *pStringTableLength = offset + addStrLen + 1;
   return offset;
+}
+
+
+// *********************************************************************
+int udGetHardwareThreadCount()
+{
+#if UDPLATFORM_WINDOWS
+  DWORD_PTR processMask;
+  DWORD_PTR systemMask;
+
+  if (::GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask))
+  {
+    int hardwareThreadCount = 0;
+    while (processMask)
+    {
+      ++hardwareThreadCount;
+      processMask &= processMask - 1; // Clear LSB
+    }
+    return hardwareThreadCount;
+  }
+#elif UDPLATFORM_LINUX
+  return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+
+  return 1;
 }
 
 // *********************************************************************
@@ -549,7 +646,7 @@ udResult udURL::SetURL(const char *pURLText)
     if (p[i] == ':')
     {
       // A colon is present, so decode the port number
-      size_t portChars;
+      int portChars;
       m_port = udStrAtoi(&p[i+1], &portChars);
       i += portChars + 1;
     }
@@ -570,4 +667,280 @@ udResult udURL::SetURL(const char *pURLText)
   }
 
   return udR_Success; // TODO: Perhaps return an error if the url isn't formed properly
+}
+
+
+#pragma pack(push)
+#pragma pack(2)
+struct udBMPHeader
+{
+    uint16_t  bfType;            // must be 'BM' 
+    uint32_t  bfSize;            // size of the whole .bmp file
+    uint16_t  bfReserved1;       // must be 0
+    uint16_t  bfReserved2;       // must be 0
+    uint32_t  bfOffBits;     
+
+    uint32_t  biSize;            // size of the structure
+    int32_t   biWidth;           // image width
+    int32_t   biHeight;          // image height
+    uint16_t  biPlanes;          // bitplanes
+    uint16_t  biBitCount;        // resolution 
+    uint32_t  biCompression;     // compression
+    uint32_t  biSizeImage;       // size of the image
+    int32_t   biXPelsPerMeter;   // pixels per meter X
+    int32_t   biYPelsPerMeter;   // pixels per meter Y
+    uint32_t  biClrUsed;         // colors used
+    uint32_t  biClrImportant;    // important colors
+};
+#pragma pack(pop)
+
+// ***************************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColorData, int pitchInBytes)
+{
+  udBMPHeader header = { 0 };
+  if (!pitchInBytes)
+    pitchInBytes = width * 4;
+
+  udFile *pFile = nullptr;
+  int paddedLineSize = (width * 3 + 3) & ~3;
+  udResult result = udR_MemoryAllocationFailure;
+  uint8_t *pLine = udAllocType(uint8_t, paddedLineSize, udAF_Zero);
+  if (!pLine)
+    goto error;
+
+  header.bfType = 0x4d42;       // 0x4d42 = 'BM'
+  header.bfReserved1 = 0;
+  header.bfReserved2 = 0;
+  header.bfSize = sizeof(header) + paddedLineSize * height;
+  header.bfOffBits = 0x36;
+  header.biSize = 0x28; // sizeof(BITMAPINFOHEADER);
+  header.biWidth = width;
+  header.biHeight = height;
+  header.biPlanes = 1;	
+  header.biBitCount = 24;
+  header.biCompression = 0; /*BI_RGB*/
+  header.biSizeImage = 0;
+  header.biXPelsPerMeter = 0x0ec4;  
+  header.biYPelsPerMeter = 0x0ec4;     
+  header.biClrUsed = 0;	
+  header.biClrImportant = 0; 
+
+  result = udFile_Open(&pFile, pFilename, udFOF_Write | udFOF_Create);
+  if (result != udR_Success)
+    goto error;
+
+  result = udFile_SeekWrite(pFile, &header, sizeof(header));
+  if (result != udR_Success)
+    goto error;
+
+  for (int y = height - 1; y >= 0 ; --y)
+  {
+    for (int x = 0; x < width; ++x)
+      memcpy(&pLine[x*3], &((uint8_t*)pColorData)[y * pitchInBytes + x * 4], 3);
+    
+    result = udFile_SeekWrite(pFile, pLine, paddedLineSize);
+    if (result != udR_Success)
+      goto error;
+  }
+
+error:
+  udFree(pLine);
+  udFile_Close(&pFile);
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **ppColorData)
+{
+  if (!pFilename || !pWidth || !pHeight || !ppColorData)
+    return udR_InvalidParameter_;
+  udBMPHeader header = { 0 };
+  udFile *pFile = nullptr;
+  uint8_t *pColors = nullptr;
+  uint8_t *pLine = nullptr;
+  int paddedLineSize;
+  udResult result;
+
+  result = udFile_Open(&pFile, pFilename, udFOF_Read);
+  if (result != udR_Success)
+    goto epilogue;
+  result = udFile_SeekRead(pFile, &header, sizeof(header));
+  if (result != udR_Success)
+    goto epilogue;
+
+  *pWidth = header.biWidth;
+  *pHeight = header.biHeight;
+  paddedLineSize = (*pWidth * 3 + 3) & ~3;
+  pColors = udAllocType(uint8_t, *pWidth * *pHeight * 4, udAF_None);
+  pLine = udAllocType(uint8_t, paddedLineSize, udAF_None);
+  if (!pColors || !pLine)
+  {
+    result = udR_MemoryAllocationFailure;
+    goto epilogue;
+  }
+
+  for (int y = *pHeight - 1; y >= 0 ; --y)
+  {
+    result = udFile_SeekRead(pFile, pLine, paddedLineSize);
+    if (result != udR_Success)
+      goto epilogue;
+
+    uint8_t *p = pColors + y * *pWidth * 4;
+    for (int x = 0; x < *pWidth; ++x)
+    {
+      *p++ = pLine[x * 3 + 0];
+      *p++ = pLine[x * 3 + 1];
+      *p++ = pLine[x * 3 + 2];
+      *p++ = 0xff;
+    }
+  }
+
+  *ppColorData = (uint32_t*)pColors;
+  pColors = nullptr;
+  result = udR_Success;
+
+epilogue:
+  if (pFile)
+    udFile_Close(&pFile);
+  udFree(pLine);
+  udFree(pColors);
+
+  return result;
+}
+
+struct udFindDirData : public udFindDir
+{
+#if UDPLATFORM_WINDOWS
+  HANDLE hFind;
+  WIN32_FIND_DATAA findFileData;
+
+  void SetMembers()
+  {
+    pFilename = findFileData.cFileName;
+    isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+  }
+#elif UDPLATFORM_LINUX
+  DIR *pDir;
+  struct dirent *pDirent;
+
+  void SetMembers()
+  {
+    pFilename = pDirent->d_name;
+    isDirectory = !!(pDirent->d_type & DT_DIR);
+  }
+#endif
+};
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udFileExists(const char *pFilename)
+{
+#if UDPLATFORM_WINDOWS
+  return (_access(pFilename, 0) == -1) ? udR_ObjectNotFound : udR_Success;
+#elif UDPLATFORM_LINUX
+  return (access(pFilename, 0) == -1) ? udR_ObjectNotFound : udR_Success;
+#else
+  return udR_Failure_;
+#endif
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
+{
+  udResult result;
+  udFindDirData *pFindData = nullptr;
+
+  pFindData = udAllocType(udFindDirData, 1, udAF_Zero);
+  if (!pFindData)
+  {
+    result = udR_MemoryAllocationFailure;
+    goto epilogue;
+  }
+
+#if UDPLATFORM_WINDOWS
+  {
+    udFilename fn;
+    fn.SetFolder(pFolder);
+    fn.SetFilenameWithExt("*.*");
+    pFindData->hFind = FindFirstFileA(fn.GetPath(), &pFindData->findFileData);
+    if (pFindData->hFind == INVALID_HANDLE_VALUE)
+    {
+      result = udR_File_OpenFailure;
+      goto epilogue;
+    }
+    pFindData->SetMembers();
+  }
+#elif UDPLATFORM_LINUX
+  pFindData->pDir = opendir(pFolder);
+  if (!pFindData->pDir)
+  {
+    result = udR_File_OpenFailure;
+    goto epilogue;
+  }
+  pFindData->pDirent = readdir(pFindData->pDir);
+  if (!pFindData->pDirent)
+  {
+    result = udR_ObjectNotFound;
+    goto epilogue;
+  }
+  pFindData->SetMembers();
+#endif
+
+  result = udR_Success;
+  *ppFindDir = pFindData;
+  pFindData = nullptr;
+
+epilogue:
+  if (pFindData)
+    udCloseDir((udFindDir**)&pFindData);
+
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udReadDir(udFindDir *pFindDir)
+{
+  if (!pFindDir)
+    return udR_InvalidParameter_;
+  udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
+
+#if UDPLATFORM_WINDOWS
+  if (!FindNextFileA(pFindData->hFind, &pFindData->findFileData))
+  {
+    return udR_ObjectNotFound;
+  }
+#elif UDPLATFORM_LINUX
+  pFindData->pDirent = readdir(pFindData->pDir);
+  if (!pFindData->pDirent)
+  {
+    return udR_ObjectNotFound;
+  }
+#endif
+  pFindData->SetMembers();
+  return udR_Success;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udCloseDir(udFindDir **ppFindDir)
+{
+  if (!ppFindDir || !*ppFindDir)
+    return udR_InvalidParameter_;
+  udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
+
+#if UDPLATFORM_WINDOWS
+  if (pFindData->hFind != INVALID_HANDLE_VALUE)
+    FindClose(pFindData->hFind);
+#elif UDPLATFORM_LINUX
+  if (pFindData->pDir)
+
+    closedir(pFindData->pDir);
+#endif
+  
+  udFree(*ppFindDir);
+  return udR_Success;
 }

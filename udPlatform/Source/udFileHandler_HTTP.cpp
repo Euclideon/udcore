@@ -243,7 +243,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Implementation of OpenHandler via HTTP
 // Author: Dave Pevreal, March 2014
-udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
+udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
   udResult result;
   udFile_HTTP *pFile = nullptr;
@@ -287,7 +287,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   hp = gethostbyname(pFile->url.GetDomain());
   if (!hp)
   {
-	  udDebugPrintf("gethostbyname failed to resolve url domain\n");
+    udDebugPrintf("gethostbyname failed to resolve url domain\n");
     goto epilogue;
   }
   pFile->server.sin_addr.s_addr = *((unsigned long*)hp->h_addr); // TODO: This is bad. use h_addr_list instead
@@ -311,6 +311,9 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile->fpRead = udFileHandler_HTTPSeekRead;
   pFile->fnBlockPipedRequest = udFileHandler_HTTPBlockForPipelinedRequest;
   pFile->fpClose = udFileHandler_HTTPClose;
+
+  if (pFileLengthInBytes)
+    *pFileLengthInBytes = pFile->length;
 
   *ppFile = pFile;
   pFile = nullptr;

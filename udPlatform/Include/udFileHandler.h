@@ -15,13 +15,13 @@
 
 // The OpenHandler is responsible for allocating a derivative of udFile (generally a structure inherited from it) and writing
 // any state required for SeekRead/SeekWrite/Close to function. The fpWrite can be null if writing is not supported.
-typedef udResult udFile_OpenHandlerFunc(udFile **ppFile, const char *pFilename, udFileOpenFlags flags);
+typedef udResult udFile_OpenHandlerFunc(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes);
 
 // Perform a seek followed by read, though the default parameters are a SeekCur of 0 (no seek operation) so in that case it may be skipped
 typedef udResult udFile_SeekReadHandlerFunc(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest);
 
 // Perform a seek followed by write, though the default parameters are a SeekCur of 0 (no seek operation) so in that case it may be skipped
-typedef udResult udFile_SeekWriteHandlerFunc(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten);
+typedef udResult udFile_SeekWriteHandlerFunc(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten);
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 typedef udResult udFile_BlockForPipelinedRequestHandlerFunc(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead);

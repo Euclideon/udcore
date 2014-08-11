@@ -69,9 +69,11 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer(dest, exchange, comparand); }
 # endif // defined(UD_32BIT)
 # define udSleep(x) Sleep(x)
+# define udYield() SwitchToThread()
 
 #elif UDPLATFORM_LINUX
 #include <unistd.h>
+#include <sched.h>
 inline long udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
 inline long udInterlockedPostIncrement(volatile int32_t *p) { return __sync_fetch_and_add(p, 1); }
 inline long udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, -1); }
@@ -80,6 +82,7 @@ inline long udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { re
 inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 # define udSleep(x) usleep((x)*1000)
+# define udYield(x) sched_yield()
 
 #else
 #error Unknown platform
@@ -100,6 +103,8 @@ public:
   void SetMin(int32_t v)        { udInterlockedMin(&m_value, v); }
   // Set to the maximum of the existing or new value
   void SetMax(int32_t v)        { udInterlockedMax(&m_value, v); }
+  // Add an integer
+  void Add(int32_t v)           { udInterlockedAdd(&m_value, v); }
   // Increment operators
   int32_t operator++()          { return udInterlockedPreIncrement(&m_value);       }
   int32_t operator++(int)       { return udInterlockedPostIncrement(&m_value);      }
@@ -268,6 +273,7 @@ void udMemoryDebugTrackingDeinit();
 
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
+#define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof(_array[0]) )
 
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
