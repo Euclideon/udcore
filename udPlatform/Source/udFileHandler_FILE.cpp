@@ -51,11 +51,11 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   udResult result;
   const char *pMode;
 
-  if (pFileLengthInBytes)
+  if (pFileLengthInBytes && (flags & udFOF_Read))
   {
-    struct stat st;
-    stat(pFilename, &st);
-    *pFileLengthInBytes = (int64_t)st.st_size;
+    result = udFileExists(pFilename, pFileLengthInBytes);
+    if (result != udR_Success)
+      goto epilogue;
   }
   result = udR_MemoryAllocationFailure;
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);

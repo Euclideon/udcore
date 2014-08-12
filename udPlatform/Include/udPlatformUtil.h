@@ -260,7 +260,7 @@ struct udFindDir
 };
 
 // Test for existence of a file, on OS FILESYSTEM only (not registered file handlers)
-udResult udFileExists(const char *pFilename);
+udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes = nullptr);
 
 // Open a folder for reading
 udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder);

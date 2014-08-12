@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
+#include <sys/stat.h>
 
 #if UDPLATFORM_WINDOWS
 #include <io.h>
@@ -835,15 +836,19 @@ struct udFindDirData : public udFindDir
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2014
-udResult udFileExists(const char *pFilename)
+udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
 {
-#if UDPLATFORM_WINDOWS
-  return (_access(pFilename, 0) == -1) ? udR_ObjectNotFound : udR_Success;
-#elif UDPLATFORM_LINUX
-  return (access(pFilename, 0) == -1) ? udR_ObjectNotFound : udR_Success;
-#else
-  return udR_Failure_;
-#endif
+  struct stat st = { 0 };
+  if (stat(pFilename, &st) == 0)
+  {
+    if (pFileLengthInBytes)
+      *pFileLengthInBytes = (int64_t)st.st_size;
+    return udR_Success;
+  }
+  else
+  {
+    return udR_ObjectNotFound;
+  }
 }
 
 // ****************************************************************************
