@@ -10,7 +10,8 @@
 
 #if defined(_WIN64) || defined(__amd64__)
   //64-bit code
-# define UD_64BIT
+# define UD_64BIT (1)
+# define UD_32BIT (0)
 # define UD_WORD_SHIFT  6   // 6 bits for 64 bit pointer
 # define UD_WORD_BITS   64
 # define UD_WORD_BYTES  8
@@ -19,7 +20,8 @@
   typedef unsigned long long udUWord;
 #elif  defined(_WIN32) || defined(__i386__)  || defined(__arm__)
    //32-bit code
-# define UD_32BIT
+# define UD_64BIT (0)
+# define UD_32BIT (1)
 # define UD_WORD_SHIFT  5   // 5 bits for 32 bit pointer  
 # define UD_WORD_BITS   32
 # define UD_WORD_BYTES  4
@@ -63,11 +65,11 @@ inline int32_t udInterlockedPreDecrement(volatile int32_t *p) { return _Interloc
 inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return _InterlockedDecrement((long*)p) + 1; }
 inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return _InterlockedExchange((volatile long*)dest, exchange); }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return _InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
-# if defined(UD_32BIT)
+# if UD_32BIT
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
-# else // defined(UD_32BIT)
+# else // UD_32BIT
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer(dest, exchange, comparand); }
-# endif // defined(UD_32BIT)
+# endif // UD_32BIT
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
 
