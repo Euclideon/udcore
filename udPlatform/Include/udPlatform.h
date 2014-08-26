@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <new>
+#include <memory.h>
 
 #if defined(_WIN64) || defined(__amd64__)
   //64-bit code
@@ -50,6 +51,16 @@
 #else
 # define UD_DEBUG   (0)
 # define UD_RELEASE (1)
+#endif
+
+#if UDPLATFORM_WINDOWS
+# define udU64L(x) x##ULL
+# define udI64L(x) x##LL
+# define UDFORCE_INLINE __forceinline
+#else
+# define udU64L(x) x##UL
+# define udI64L(x) x##L
+# define UDFORCE_INLINE inline
 #endif
 
 
@@ -210,6 +221,10 @@ template <typename T> void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pF
 #  define udDelete(pMemory) _udDelete(pMemory)
 
 #endif  //  __MEMORY_DEBUG__
+
+UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
+#define udAllocStack(type, count, flags)   (flags & udAF_Zero) ? (type*)__udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
+#define udFreeStack(pMemory)  
 
 #if __MEMORY_DEBUG__
 void udMemoryDebugTrackingInit();
