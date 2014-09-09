@@ -382,8 +382,21 @@ int64_t udStrAtoi64(const char *s, int *pCharCount, int radix)
 float udStrAtof(const char *s, int *pCharCount)
 {
   if (!s) s = s_udStrEmptyString;
+  int preCharCount = 0;
   int charCount = 0;
   int secondaryCharCount = 0;
+
+  float negate = 1.0f;
+  while (s[preCharCount] == ' ' || s[preCharCount] == '\t')
+    ++preCharCount;
+
+  // Process negation separately
+  if (s[preCharCount] == '-')
+  {
+    negate = -1.0f;
+    ++preCharCount;
+  }
+  s += preCharCount;
 
   float result = (float)udStrAtoi(s, &charCount);
   if (s[charCount] == '.')
@@ -394,18 +407,16 @@ float udStrAtof(const char *s, int *pCharCount)
       result += fraction / powf(10.f, (float)secondaryCharCount);
     else
       result -= fraction / powf(10.f, (float)secondaryCharCount);
-    charCount += secondaryCharCount;
   }
   if (s[charCount] == 'e' || s[charCount] == 'E')
   {
     ++charCount;
     float e = (float)udStrAtoi(s + charCount, &secondaryCharCount);
     result *= powf(10, e);
-    charCount += secondaryCharCount;
   }
   if (pCharCount)
-    *pCharCount = charCount;
-  return result;
+    *pCharCount = preCharCount + charCount + secondaryCharCount;
+  return result * negate;
 }
 
 
