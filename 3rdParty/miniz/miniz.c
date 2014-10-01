@@ -209,9 +209,11 @@
 #define MINIZ_LITTLE_ENDIAN 1
 #endif
 
-#if MINIZ_X86_OR_X64_CPU
+#if MINIZ_X86_OR_X64_CPU && !defined(__GNUC__)
 // Set MINIZ_USE_UNALIGNED_LOADS_AND_STORES to 1 on CPU's that permit efficient integer loads and stores from unaligned addresses.
 #define MINIZ_USE_UNALIGNED_LOADS_AND_STORES 1
+#else
+#define MINIZ_USE_UNALIGNED_LOADS_AND_STORES 0
 #endif
 
 #if defined(_M_X64) || defined(_WIN64) || defined(__MINGW64__) || defined(_LP64) || defined(__LP64__) || defined(__ia64__) || defined(__x86_64__)

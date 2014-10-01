@@ -62,8 +62,10 @@ public:
 
 #if UDRELASSERT_ON
 # define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } }
+# define IF_UDRELASSERT(x) x
 #else
 # define UDRELASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
+# define IF_UDRELASSERT(x)
 #endif //UDRELASSERT_ON
 
 #define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
