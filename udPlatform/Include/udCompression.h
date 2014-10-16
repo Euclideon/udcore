@@ -22,4 +22,10 @@ udResult udMiniZDecompressor_Inflate(udMiniZDecompressor *pDecompressor, void *p
 size_t udMiniZDecompressor_GetStructureSize();
 
 
+// Register a file handler to load files from an in-memory zip
+udResult udMiniZ_RegisterMemoryFileHandler(void *pMem, size_t size);
+
+// Remove registered handler (only one handler can be registered at a time)
+udResult udMiniZ_DegisterFileHandler();
+
 #endif // UDCOMPRESSION_H

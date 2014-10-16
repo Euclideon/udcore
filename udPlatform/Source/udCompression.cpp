@@ -35,7 +35,7 @@
 #define mz_compress udComp_compress                               
 
 
-#define MINIZ_NO_ARCHIVE_APIS
+#define MINIZ_NO_STDIO
 #define MINIZ_NO_TIME
 #define MINIZ_NO_MALLOC 
 #include "miniz.c"
@@ -295,5 +295,138 @@ udResult udMiniZDecompressor_Inflate(udMiniZDecompressor *pDecompressor, void *p
 size_t udMiniZDecompressor_GetStructureSize()
 {
   return sizeof(udMiniZDecompressor);
+}
+
+
+#include "udFileHandler.h"
+
+static mz_zip_archive *s_pZip;
+struct udFile_MiniZFile : public udFile
+{
+  size_t length;
+  size_t fPos;
+  uint8_t data[1];
+};
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, October 2014
+// Implementation of SeekReadHandler to access a file in the registered zip
+static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
+{
+  udFile_MiniZFile *pFile = static_cast<udFile_MiniZFile *>(a_pFile);
+  size_t newPos;
+  switch (seekWhence)
+  {
+    case udFSW_SeekSet: newPos = (size_t)seekOffset; break;
+    case udFSW_SeekCur: newPos = pFile->fPos + (size_t)seekOffset; break;
+    case udFSW_SeekEnd: newPos = pFile->length + (size_t)seekOffset; break;
+    default:
+      return udR_InvalidParameter_;
+  }
+  if (newPos >= pFile->length)
+    return udR_File_ReadFailure;
+  size_t actualRead = (newPos + bufferLength) > pFile->length ? pFile->length - newPos : bufferLength;
+  memcpy(pBuffer, pFile->data + newPos, actualRead);
+  if (pActualRead)
+    *pActualRead = actualRead;
+  return udR_Success;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, October 2014
+// Implementation of CloseHandler to access a file in the registered zip
+static udResult udFileHandler_MiniZClose(udFile **ppFile)
+{
+  if (ppFile == nullptr)
+    return udR_InvalidParameter_;
+  udFile_MiniZFile *pFile = static_cast<udFile_MiniZFile *>(*ppFile);
+  udFree(pFile);
+  return udR_Success;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, October 2014
+// Implementation of OpenHandler to access a file in the registered zip
+static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
+{
+  if (!s_pZip || (flags & udFOF_Write))
+    return udR_File_OpenFailure;
+  int index = mz_zip_reader_locate_file(s_pZip, pFilename, nullptr, 0);
+  if (index < 0)
+    return udR_File_OpenFailure;
+  mz_zip_archive_file_stat stat;
+  if (!mz_zip_reader_file_stat(s_pZip, index, &stat))
+    return udR_File_OpenFailure;
+  udFile_MiniZFile *pFile = (udFile_MiniZFile *)udAllocFlags(sizeof(udFile_MiniZFile) + stat.m_uncomp_size, udAF_Zero);
+  if (!pFile)
+    return udR_MemoryAllocationFailure;
+
+  if (!mz_zip_reader_extract_to_mem(s_pZip, index, pFile->data, stat.m_uncomp_size, 0))
+  {
+    udFree(pFile);
+    return udR_File_ReadFailure;
+  }
+
+  pFile->length = stat.m_uncomp_size;
+  pFile->fPos = 0;
+  pFile->fpRead = udFileHandler_MiniZSeekRead;
+  pFile->fpClose = udFileHandler_MiniZClose;
+
+  if (pFileLengthInBytes)
+    *pFileLengthInBytes = stat.m_uncomp_size;
+
+  *ppFile = pFile;
+  return udR_Success;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, October 2014
+static void *udMiniZ_Alloc(void * /*opaque*/, size_t items, size_t size) { return udAlloc(items * size); }
+static void *udMiniZ_Realloc(void * /*opaque*/, void *address, size_t items, size_t size) { return udRealloc(address, items * size); }
+static void udMiniZ_Free(void * /*opaque*/, void *address) { udFree(address); }
+
+// ****************************************************************************
+// Author: Dave Pevreal, October 2014
+udResult udMiniZ_RegisterMemoryFileHandler(void *pMem, size_t size)
+{
+  udResult result;
+
+  if (s_pZip)
+    return udR_OutstandingReferences;
+  s_pZip = udAllocType(mz_zip_archive, 1, udAF_Zero);
+  if (!s_pZip)
+  {
+    result = udR_MemoryAllocationFailure;
+    goto epilogue;
+  }
+  // Assign our internal allocator
+  s_pZip->m_pAlloc = udMiniZ_Alloc;
+  s_pZip->m_pRealloc = udMiniZ_Realloc;
+  s_pZip->m_pFree = udMiniZ_Free;
+
+  if (!mz_zip_reader_init_mem(s_pZip, pMem, size, 0))
+  {
+    result = udR_Failure_;
+    goto epilogue;
+  }
+
+  result = udFile_RegisterHandler(udFileHandler_MiniZOpen, "");
+
+epilogue:
+  if (result != udR_Success)
+    udFree(s_pZip);
+
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, October 2014
+udResult udMiniZ_DegisterFileHandler()
+{
+  if (!s_pZip || udFile_DeregisterHandler(udFileHandler_MiniZOpen))
+    return udR_ObjectNotFound;
+  mz_zip_reader_end(s_pZip);
+  udFree(s_pZip);
+  return udR_Success;
 }
 

@@ -23,10 +23,17 @@
 #include <stdio.h>
 #include <memory.h>
 
-udFile_OpenHandlerFunc                            udFileHandler_HTTPOpen;
+static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
 static udFile_SeekReadHandlerFunc                 udFileHandler_HTTPSeekRead;
 static udFile_BlockForPipelinedRequestHandlerFunc udFileHandler_HTTPBlockForPipelinedRequest;
 static udFile_CloseHandlerFunc                    udFileHandler_HTTPClose;
+
+// Register the HTTP handler (optional as it requires networking libraries, WS2_32.lib on Windows platform)
+udResult udFile_RegisterHTTP()
+{
+  return udFile_RegisterHandler(udFileHandler_HTTPOpen, "http:");
+}
+
 
 static char s_HTTPHeaderString[] = "HEAD %s HTTP/1.1\r\nHost: %s\r\nConnection: Keep-Alive\r\nUser-Agent: Euclideon udSDK/2.0\r\n\r\n";
 static char s_HTTPGetString[] = "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Euclideon udSDK/2.0\r\nConnection: Keep-Alive\r\nRange: bytes=%lld-%lld\r\n\r\n";
@@ -89,9 +96,9 @@ static void udFileHandler_HTTPCloseSocket(udFile_HTTP *pFile)
   if (pFile->sock != INVALID_SOCKET)
   {
 #if UDPLATFORM_WINDOWS
-	  shutdown(pFile->sock, SD_BOTH);
+    shutdown(pFile->sock, SD_BOTH);
 #else
-	  close(pFile->sock);
+    close(pFile->sock);
 #endif
     pFile->sock = INVALID_SOCKET;
   }

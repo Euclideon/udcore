@@ -7,6 +7,8 @@
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 
+#define MAX_HANDLERS 16
+
 udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
 udFile_OpenHandlerFunc udFileHandler_HTTPOpen;     // Plus the HTTP handler
 
@@ -14,13 +16,50 @@ struct udFileHandler
 {
   udFile_OpenHandlerFunc *fpOpen;
   char prefix[16];              // The prefix that this handler will respond to, eg 'http:', or an empty string for regular filenames
-  udFileHandler *pNext;         // Temp until udSparsePtrArray is up and running
 };
 
-// TEMP: Pre-initialise the linked list, do this via the Register function when there is an initialisation path
-static udFileHandler s_defaultFileHandler = { udFileHandler_FILEOpen, "", nullptr };
-static udFileHandler s_httpFileHandler =    { udFileHandler_HTTPOpen, "http:", &s_defaultFileHandler };
-static udFileHandler *s_fileHandlers = &s_httpFileHandler;
+static udFileHandler s_handlers[MAX_HANDLERS] = 
+{
+  { udFileHandler_FILEOpen, "" }    // Default file handler
+};
+static int s_handlersCount = 1;
+
+// ****************************************************************************
+// Author: Dave Pevreal, Ocober 2014
+udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes)
+{
+  if (!pFilename || !ppMemory)
+    return udR_InvalidParameter_;
+  udFile *pFile = nullptr;
+  char *pMemory = nullptr;
+  int64_t length;
+
+  udResult result = udFile_Open(&pFile, pFilename, udFOF_Read, &length);
+  if (result != udR_Success)
+    goto epilogue;
+  
+  result = udR_MemoryAllocationFailure;
+  pMemory = (char*)udAlloc((size_t)length + 1);
+  if (!pMemory)
+    goto epilogue;
+  pMemory[length] = 0; // A nul-terminator for text files
+
+  result = udFile_SeekRead(pFile, pMemory, (size_t)length);
+  if (result != udR_Success)
+    goto epilogue;
+
+  // Success, pass the memory back to the caller
+  *ppMemory = pMemory;
+  pMemory = nullptr;
+
+  if (pFileLengthInBytes) // Pass length back if requested
+    *pFileLengthInBytes = length;
+
+epilogue:
+  udFile_Close(&pFile);
+  udFree(pMemory);
+  return result;
+}
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
@@ -37,8 +76,9 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
   if (pFileLengthInBytes)
     *pFileLengthInBytes = 0;
 
-  for (udFileHandler *pHandler = s_fileHandlers; pHandler; pHandler = pHandler->pNext)
+  for (int i = s_handlersCount - 1; i >= 0; --i)
   {
+    udFileHandler *pHandler = s_handlers + i;
     if (udStrBeginsWith(pFilename, pHandler->prefix))
     {
       result = pHandler->fpOpen(ppFile, pFilename, flags, pFileLengthInBytes);
@@ -196,16 +236,32 @@ udResult udFile_Close(udFile **ppFile)
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_RegisterHandler(udFile_OpenHandlerFunc * /*fpHandler*/, bool /*lowPriority*/)
+udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix)
 {
-  return udR_Failure_;
+  if (s_handlersCount >= MAX_HANDLERS)
+    return udR_CountExceeded;
+  s_handlers[s_handlersCount].fpOpen = fpHandler;
+  udStrcpy(s_handlers[s_handlersCount].prefix, sizeof(s_handlers[s_handlersCount].prefix), pPrefix);
+  ++s_handlersCount;
+  return udR_Success;
 }
 
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_DeregisterHandler(udFileHandler * /*fpHandler*/)
+udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler)
 {
-  return udR_Failure_;
+  for (int handlerIndex = 0; handlerIndex < s_handlersCount; ++handlerIndex)
+  {
+    if (s_handlers[handlerIndex].fpOpen == fpHandler)
+    {
+      if (++handlerIndex < s_handlersCount)
+        memcpy(s_handlers + handlerIndex - 1, s_handlers + handlerIndex, (s_handlersCount - handlerIndex) * sizeof(s_handlers[0]));
+      --s_handlersCount;
+      return udR_Success;
+    }
+  }
+
+  return udR_ObjectNotFound;
 }
 

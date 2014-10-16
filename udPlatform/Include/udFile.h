@@ -36,6 +36,9 @@ struct udFilePipelinedRequest
   uint64_t reserved[6];
 };
 
+// Load an entire file, appending a nul terminator. Calls Open/SeekRead/Close internally.
+udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes = nullptr);
+
 // Open a file. The filename contains a prefix such as http: to access registered file handlers (see udFileHandler.h)
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes = nullptr);
 
@@ -53,5 +56,8 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
 
 // Close the file (sets the udFile pointer to null)
 udResult udFile_Close(udFile **ppFile);
+
+// Register the HTTP handler (optional as it requires networking libraries, WS2_32.lib on Windows platform)
+udResult udFile_RegisterHTTP();
 
 #endif // UDFILE_H
