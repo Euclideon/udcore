@@ -10,7 +10,6 @@
 #define MAX_HANDLERS 16
 
 udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
-udFile_OpenHandlerFunc udFileHandler_HTTPOpen;     // Plus the HTTP handler
 
 struct udFileHandler
 {

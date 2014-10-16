@@ -32,8 +32,13 @@
 #define mz_uncompress udComp_uncompress                             
 #define mz_deflateInit udComp_deflateInit                            
 #define mz_compress2 udComp_compress2                              
-#define mz_compress udComp_compress                               
+#define mz_compress udComp_compress          
 
+#define mz_zip_writer_init_from_reader udComp_zip_writer_init_from_reader
+#define mz_zip_reader_end udComp_mz_zip_reader_end
+#define mz_zip_reader_init_mem udComp_mz_zip_reader_init_mem
+#define mz_zip_reader_locate_file udComp_mz_zip_reader_locate_file
+#define mz_zip_reader_file_stat udComp_mz_zip_reader_file_stat
 
 #define MINIZ_NO_STDIO
 #define MINIZ_NO_TIME
