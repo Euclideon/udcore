@@ -17,11 +17,16 @@ struct udFileHandler
   char prefix[16];              // The prefix that this handler will respond to, eg 'http:', or an empty string for regular filenames
 };
 
+#if UDPLATFORM_NACL
+static udFileHandler s_handlers[MAX_HANDLERS];
+static int s_handlersCount = 0;
+#else
 static udFileHandler s_handlers[MAX_HANDLERS] = 
 {
   { udFileHandler_FILEOpen, "" }    // Default file handler
 };
 static int s_handlersCount = 1;
+#endif
 
 // ****************************************************************************
 // Author: Dave Pevreal, Ocober 2014

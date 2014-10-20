@@ -28,6 +28,9 @@ uint32_t udGetTimeMs()
 {
 #if UDPLATFORM_WINDOWS
   return timeGetTime();
+#elif UDPLATFORM_NACL
+  // TODO
+  return 0;
 #else
   //struct timeval now;
   //gettimeofday(&now, NULL);
@@ -49,6 +52,9 @@ uint64_t udPerfCounterStart()
   LARGE_INTEGER p;
   QueryPerformanceCounter(&p);
   return p.QuadPart;
+#elif UDPLATFORM_NACL
+  // TODO
+  return 0;
 #else
   uint64_t nsec_count;
   struct timespec ts1;
@@ -77,6 +83,9 @@ float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end)
   
   double ms = (delta) ? (1000.0 / (f.QuadPart / delta)) : 0.0;
   return (float)ms;
+#elif UDPLATFORM_NACL
+  // TODO
+  return 0;
 #else
   if (!end)
     end = udPerfCounterStart();
@@ -903,6 +912,10 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     goto epilogue;
   }
   pFindData->SetMembers();
+#elif UDPLATFORM_NACL
+  // TODO: See if this implementation is required
+  result = udR_ObjectNotFound;
+  goto epilogue;
 #endif
 
   result = udR_Success;
@@ -922,21 +935,23 @@ udResult udReadDir(udFindDir *pFindDir)
 {
   if (!pFindDir)
     return udR_InvalidParameter_;
-  udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
 
 #if UDPLATFORM_WINDOWS
+  udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   if (!FindNextFileA(pFindData->hFind, &pFindData->findFileData))
   {
     return udR_ObjectNotFound;
   }
+  pFindData->SetMembers();
 #elif UDPLATFORM_LINUX
+  udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   pFindData->pDirent = readdir(pFindData->pDir);
   if (!pFindData->pDirent)
   {
     return udR_ObjectNotFound;
   }
-#endif
   pFindData->SetMembers();
+#endif
   return udR_Success;
 }
 
@@ -946,14 +961,14 @@ udResult udCloseDir(udFindDir **ppFindDir)
 {
   if (!ppFindDir || !*ppFindDir)
     return udR_InvalidParameter_;
-  udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
 
 #if UDPLATFORM_WINDOWS
+  udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->hFind != INVALID_HANDLE_VALUE)
     FindClose(pFindData->hFind);
 #elif UDPLATFORM_LINUX
+  udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->pDir)
-
     closedir(pFindData->pDir);
 #endif
   

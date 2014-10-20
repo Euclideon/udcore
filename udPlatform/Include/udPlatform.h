@@ -19,7 +19,7 @@
 # define UD_WORD_MAX    0x7fffffffffffffffLL
   typedef signed long long udIWord;
   typedef unsigned long long udUWord;
-#elif  defined(_WIN32) || defined(__i386__)  || defined(__arm__)
+#elif defined(_WIN32) || defined(__i386__)  || defined(__arm__) || defined(__native_client__)
    //32-bit code
 # define UD_64BIT (0)
 # define UD_32BIT (1)
@@ -34,29 +34,40 @@
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
-# define UDPLATFORM_WINDOWS (1)
-# define UDPLATFORM_LINUX   (0)
+# define UDPLATFORM_WINDOWS 1
+# define UDPLATFORM_LINUX   0
+# define UDPLATFORM_NACL    0
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
-# define UDPLATFORM_WINDOWS (0)
-# define UDPLATFORM_LINUX   (1)
+# define UDPLATFORM_WINDOWS 0
+# define UDPLATFORM_LINUX   1
+# define UDPLATFORM_NACL    0
+#elif defined(__native_client__)
+# define UDPLATFORM_WINDOWS 0
+# define UDPLATFORM_LINUX   0
+# define UDPLATFORM_NACL    1
 #else
-# define UDPLATFORM_WINDOWS (0)
-# define UDPLATFORM_LINUX   (0)
+# define UDPLATFORM_WINDOWS 0
+# define UDPLATFORM_LINUX   0
+# define UDPLATFORM_NACL    0
 # error "Unknown platform"
 #endif
 
 #if defined(_DEBUG)
-# define UD_DEBUG   (1)
-# define UD_RELEASE (0)
+# define UD_DEBUG   1
+# define UD_RELEASE 0
 #else
-# define UD_DEBUG   (0)
-# define UD_RELEASE (1)
+# define UD_DEBUG   0
+# define UD_RELEASE 1
 #endif
 
 #if UDPLATFORM_WINDOWS
 # define udU64L(x) x##ULL
 # define udI64L(x) x##LL
 # define UDFORCE_INLINE __forceinline
+#elif UDPLATFORM_NACL
+# define udU64L(x) x##ULL
+# define udI64L(x) x##LL
+# define UDFORCE_INLINE inline
 #else
 # define udU64L(x) x##UL
 # define udI64L(x) x##L
@@ -84,7 +95,7 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
 
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <unistd.h>
 #include <sched.h>
 inline long udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
@@ -168,6 +179,9 @@ protected:
 # define IF_MEMORY_DEBUG(x,y) 
 #endif //  __MEMORY_DEBUG__
 
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL
+#include <alloca.h>
+#endif
 
 enum udAllocationFlags
 {
@@ -244,7 +258,9 @@ void udMemoryDebugTrackingDeinit();
 # define udMemoryBarrier() __sync_synchronize()
 #endif
 
-#if defined(__GNUC__)
+#if UDPLATFORM_NACL
+# define udUnusedVar(x) (void)x
+#elif defined(__GNUC__)
 # define udUnusedVar(x) __attribute__((__unused__))x
 #elif defined(_WIN32)
 # define udUnusedVar(x) (void)x
@@ -270,23 +286,14 @@ void udMemoryDebugTrackingDeinit();
 # define __FUNC_NAME__ "unknown"
 #endif
 
+#if UDPLATFORM_NACL
+# define nullptr NULL
+#endif
 
 // Disabled Warnings
 #if defined(_MSC_VER)
 #pragma warning(disable:4127) // conditional expression is constant
 #endif //defined(_MSC_VER)
-
-
-
-#if UDPLATFORM_WINDOWS
-# define udU64L(x) x##ULL
-# define udI64L(x) x##LL
-# define UDFORCE_INLINE __forceinline
-#else
-# define udU64L(x) x##UL
-# define udI64L(x) x##L
-# define UDFORCE_INLINE inline
-#endif
 
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )

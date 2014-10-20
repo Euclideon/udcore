@@ -14,7 +14,11 @@ void udDebugPrintf(const char *format, ...)
   char buffer[300];
 
   va_start(args, format);
+#if UDPLATFORM_NACL
+  vsprintf(buffer, format, args);
+#else
   vsnprintf(buffer, sizeof(buffer), format, args);
+#endif
 #ifdef _WIN32
   OutputDebugStringA(buffer);
 #else
@@ -47,4 +51,19 @@ udTrace::~udTrace()
 #ifdef PRINTF_TRACE
   udDebugPrintf("%*.s Exiting  %s\n", depth*2, "                                                ", functionName);
 #endif
+}
+
+// ***************************************************************************************
+void udTrace::Message(const char *pFormat, ...)
+{
+  va_list args;
+  char buffer[300];
+
+  va_start(args, pFormat);
+#if UDPLATFORM_NACL
+  vsprintf(buffer, pFormat, args);
+#else
+  vsnprintf(buffer, sizeof(buffer), pFormat, args);
+#endif
+  udDebugPrintf("%*.s %s\n", head->depth*2, "", buffer);
 }

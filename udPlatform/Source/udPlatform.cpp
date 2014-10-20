@@ -1,7 +1,7 @@
 #include "udPlatform.h"
 #include <stdlib.h>
 #include <string.h>
-#if UDPLATFORM_LINUX
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <pthread.h>
 #include <semaphore.h>
 #endif
@@ -11,11 +11,11 @@ udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)
 {
 #if UDPLATFORM_WINDOWS
   return (udThreadHandle)CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)threadStarter, threadData, 0, NULL);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
   pthread_t t;
   typedef void *(*PTHREAD_START_ROUTINE)(void *);
   pthread_create(&t, NULL, (PTHREAD_START_ROUTINE)threadStarter, threadData);
-  return t;
+  return (udThreadHandle)t;
 #else
 #error Unknown platform
 #endif
@@ -28,7 +28,7 @@ void udDestroyThread(udThreadHandle *pThreadHandle)
   {
 #if UDPLATFORM_WINDOWS
     CloseHandle((HANDLE)(*pThreadHandle));
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
     // TODO: FIgure out which pthread function is *most* equivalent
 #else
 #   error Unknown platform
@@ -43,7 +43,7 @@ udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
 #if UDPLATFORM_WINDOWS
   HANDLE handle = CreateSemaphore(NULL, initialValue, maxValue, NULL);
   return (udSemaphore *)handle;
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
   sem_t *sem = (sem_t *)udAlloc(sizeof(sem_t));
   (void)maxValue;
   if (sem)
@@ -63,7 +63,7 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
     HANDLE semHandle = (HANDLE)(*ppSemaphore);
     *ppSemaphore = NULL;
     CloseHandle(semHandle);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
     sem_t *sem = (sem_t*)(*ppSemaphore);
     sem_destroy(sem);
     udFree(sem);
@@ -81,7 +81,7 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
   {
 #if UDPLATFORM_WINDOWS
     ReleaseSemaphore((HANDLE)pSemaphore, count, nullptr);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
     while (count-- > 0)
       sem_post((sem_t*)pSemaphore);
 #else
@@ -102,6 +102,8 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
     ts.tv_sec = 0;
     ts.tv_nsec = waitMs * 1000;
     return sem_timedwait((sem_t*)pSemaphore, &ts);
+#elif UDPLATFORM_NACL
+    return sem_wait((sem_t*)pSemaphore);  // TODO: Need to find out timedwait equiv for NACL
 #else
 #   error Unknown platform
 #endif
@@ -115,7 +117,7 @@ udMutex *udCreateMutex()
 #if UDPLATFORM_WINDOWS
   HANDLE handle = CreateMutex(NULL, FALSE, NULL);
   return (udMutex *)handle;
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
   pthread_mutex_t *mutex = (pthread_mutex_t *)udAlloc(sizeof(pthread_mutex_t));
   if (mutex)
     pthread_mutex_init(mutex, NULL);
@@ -134,7 +136,7 @@ void udDestroyMutex(udMutex **ppMutex)
     HANDLE mutexHandle = (HANDLE)(*ppMutex);
     *ppMutex = NULL;
     CloseHandle(mutexHandle);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
     pthread_mutex_t *mutex = (pthread_mutex_t *)(*ppMutex);
     pthread_mutex_destroy(mutex);
     udFree(mutex);
@@ -152,7 +154,7 @@ void udLockMutex(udMutex *pMutex)
   {
 #if UDPLATFORM_WINDOWS
     WaitForSingleObject((HANDLE)pMutex, INFINITE);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
     pthread_mutex_lock((pthread_mutex_t *)pMutex);
 #else
 #   error Unknown platform
@@ -167,7 +169,7 @@ void udReleaseMutex(udMutex *pMutex)
   {
 #if UDPLATFORM_WINDOWS
     ReleaseMutex((HANDLE)pMutex);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
     pthread_mutex_unlock((pthread_mutex_t *)pMutex);
 #else
 #error Unknown platform
@@ -435,6 +437,9 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 
+#elif UDPLATFORM_NACL
+  void *pMemory =  (flags & udAF_Zero) ? calloc(size, 1) : malloc(size);
+
 #elif defined(__GNUC__)
   if (alignment < sizeof(size_t))
   {
@@ -502,6 +507,8 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
     __debugbreak();
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+#elif UDPLATFORM_NACL
+  pMemory = realloc(pMemory, size);
 #elif defined(__GNUC__)
   if (!pMemory)
   {

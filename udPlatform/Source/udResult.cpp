@@ -64,7 +64,7 @@ const char *udResultAsString(udResult result)
     for (int i = 0; i < udR_Count; ++i)
     {
       if (udResultInfoArray[i].result != i)
-        return nullptr; // Signal that the array is out of sync
+        return 0; // Signal that the array is out of sync
     }
     return ""; // Empty string signals array looks ok
   }
