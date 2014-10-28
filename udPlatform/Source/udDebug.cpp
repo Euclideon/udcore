@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-//#define PRINTF_TRACE    // Very slow but useful when tracking exceptions that don't stop in the debugger
-
-
 // *********************************************************************
 void udDebugPrintf(const char *format, ...)
 {
@@ -26,19 +23,28 @@ void udDebugPrintf(const char *format, ...)
 #endif
 }
 
-// TODO: Use TLS so there is one stack per thread
-udTrace *udTrace::head = NULL;
-int udTrace::depth = 0;
-
+UDTHREADLOCAL udTrace *udTrace::head = NULL;
+UDTHREADLOCAL int udTrace::depth = 0;
+UDTHREADLOCAL int udTrace::threadId = 0;
+static udInterlockedInt32 nextThreadId;
 
 // ***************************************************************************************
 udTrace::udTrace(const char *a_functionName)
 {
+  if (!threadId)
+  {
+    threadId = nextThreadId++;
+#if UDTRACE_ON
+    udDebugPrintf("%02d> Thread started with %s\n", threadId, a_functionName);
+#endif
+  }
   functionName = a_functionName;
   next = head;
   head = this;
-#ifdef PRINTF_TRACE
-  udDebugPrintf("%*.s Entering %s\n", depth*2, "                                                ", functionName);
+  entryPrinted = false;
+#if UDTRACE_ON > 1
+  udDebugPrintf("%02d>%*.s Entering %s\n", threadId, depth*2, "", functionName);
+  entryPrinted = true;
 #endif
   ++depth;
 }
@@ -48,9 +54,8 @@ udTrace::~udTrace()
 {
   --depth;
   head = next;
-#ifdef PRINTF_TRACE
-  udDebugPrintf("%*.s Exiting  %s\n", depth*2, "                                                ", functionName);
-#endif
+  if (entryPrinted)
+    udDebugPrintf("%02d>%*.s Exiting  %s\n", threadId, depth*2, "", functionName);
 }
 
 // ***************************************************************************************
@@ -65,5 +70,23 @@ void udTrace::Message(const char *pFormat, ...)
 #else
   vsnprintf(buffer, sizeof(buffer), pFormat, args);
 #endif
-  udDebugPrintf("%*.s %s\n", head->depth*2, "", buffer);
+  if (head && !head->entryPrinted)
+  {
+    const char *pParent0 = "";
+    const char *pParent1 = "";
+    const char *pParent2 = "";
+    if (head->next)
+    {
+      pParent0 = head->next->functionName;
+      if (head->next->next)
+      {
+        pParent1 = head->next->next->functionName;
+        if (head->next->next->next)
+          pParent1 = head->next->next->next->functionName;
+      }
+    }
+    udDebugPrintf("%02d>%*.s Within  %s->%s->%s->%s\n", threadId, (depth-1)*2, "", pParent2, pParent1, pParent0, head->functionName);
+    head->entryPrinted = true;
+  }
+  udDebugPrintf("%02d>%*.s %s\n", threadId, head ? head->depth*2 : 0, "", buffer);
 }

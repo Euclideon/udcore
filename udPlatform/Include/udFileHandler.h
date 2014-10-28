@@ -34,7 +34,7 @@ struct udFile
 {
   udFile_SeekReadHandlerFunc *fpRead;
   udFile_SeekWriteHandlerFunc *fpWrite;
-  udFile_BlockForPipelinedRequestHandlerFunc *fnBlockPipedRequest;
+  udFile_BlockForPipelinedRequestHandlerFunc *fpBlockPipedRequest;
   udFile_CloseHandlerFunc *fpClose;
   udMutex *pMutex;    // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads, OpenHandlerFunc's need only set to null
   uint32_t msAccumulator;
@@ -47,6 +47,6 @@ struct udFile
 udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix);
 
 // Deregister a file handler removing it from the internal list (note that functions may still be called if there are open files)
-udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *pHandler);
+udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler);
 
 #endif // UDFILEHANDLER_H

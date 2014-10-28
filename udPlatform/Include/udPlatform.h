@@ -94,6 +94,7 @@ inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *ex
 # endif // UD_32BIT
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
+# define UDTHREADLOCAL __declspec(thread)
 
 #elif UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <unistd.h>
@@ -107,6 +108,7 @@ inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchang
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
+# define UDTHREADLOCAL __thread
 
 #else
 #error Unknown platform
@@ -258,15 +260,7 @@ void udMemoryDebugTrackingDeinit();
 # define udMemoryBarrier() __sync_synchronize()
 #endif
 
-#if UDPLATFORM_NACL
-# define udUnusedVar(x) (void)x
-#elif defined(__GNUC__)
-# define udUnusedVar(x) __attribute__((__unused__))x
-#elif defined(_WIN32)
-# define udUnusedVar(x) (void)x
-#else 
-# define udUnusedVar(x) x
-#endif
+#define udUnused(x) (void)x
 
 #if defined(__GNUC__)
 # define udUnusedParam(x) __attribute__((__unused__))x

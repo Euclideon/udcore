@@ -17,21 +17,17 @@ struct udFileHandler
   char prefix[16];              // The prefix that this handler will respond to, eg 'http:', or an empty string for regular filenames
 };
 
-#if UDPLATFORM_NACL
-static udFileHandler s_handlers[MAX_HANDLERS];
-static int s_handlersCount = 0;
-#else
 static udFileHandler s_handlers[MAX_HANDLERS] = 
 {
   { udFileHandler_FILEOpen, "" }    // Default file handler
 };
 static int s_handlersCount = 1;
-#endif
 
 // ****************************************************************************
 // Author: Dave Pevreal, Ocober 2014
 udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes)
 {
+  UDTRACE();
   if (!pFilename || !ppMemory)
     return udR_InvalidParameter_;
   udFile *pFile = nullptr;
@@ -69,6 +65,7 @@ epilogue:
 // Author: Dave Pevreal, March 2014
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
+  UDTRACE();
   udResult result = udR_File_OpenFailure;
   if (ppFile == nullptr || pFilename == nullptr)
   {
@@ -104,6 +101,7 @@ epilogue:
 // Author: Dave Pevreal, March 2014
 udResult udFile_GetPerformance(udFile *pFile, float *pMBPerSec, uint32_t *pRequestsInFlight)
 {
+  UDTRACE();
   if (!pFile)
     return udR_InvalidParameter_;
 
@@ -120,6 +118,7 @@ udResult udFile_GetPerformance(udFile *pFile, float *pMBPerSec, uint32_t *pReque
 // Author: Dave Pevreal, March 2014
 static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
 {
+  UDTRACE();
   pFile->msAccumulator += udGetTimeMs();
   pFile->totalBytes += actualRead;
   if (--pFile->requestsInFlight == 0)
@@ -131,6 +130,7 @@ static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
 // Author: Dave Pevreal, March 2014
 udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest)
 {
+  UDTRACE();
   udResult result;
   size_t actualRead;
 
@@ -142,14 +142,14 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
     udLockMutex(pFile->pMutex);
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
-  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFile->fnBlockPipedRequest ? pPipelinedRequest : nullptr);
+  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFile->fpBlockPipedRequest ? pPipelinedRequest : nullptr);
 
   // Save off the actualRead in the request for the case where the handler doesn't support piped requests
-  if (pPipelinedRequest && !pFile->fnBlockPipedRequest)
+  if (pPipelinedRequest && !pFile->fpBlockPipedRequest)
     pPipelinedRequest->reserved[0] = (uint64_t)actualRead;
 
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
-  if (!pPipelinedRequest || !pFile->fnBlockPipedRequest)
+  if (!pPipelinedRequest || !pFile->fpBlockPipedRequest)
     udUpdateFilePerformance(pFile, actualRead);
 
   if (pFile->pMutex)
@@ -171,6 +171,7 @@ epilogue:
 // Author: Dave Pevreal, March 2014
 udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
 {
+  UDTRACE();
   udResult result;
   size_t actualWritten = 0; // Assign to zero to avoid incorrect compiler warning;
 
@@ -197,12 +198,13 @@ epilogue:
 // Author: Dave Pevreal, March 2014
 udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead)
 {
+  UDTRACE();
   udResult result;
 
-  if (pFile->fnBlockPipedRequest)
+  if (pFile->fpBlockPipedRequest)
   {
     size_t actualRead;
-    result = pFile->fnBlockPipedRequest(pFile, pPipelinedRequest, &actualRead);
+    result = pFile->fpBlockPipedRequest(pFile, pPipelinedRequest, &actualRead);
     udUpdateFilePerformance(pFile, actualRead);
     if (pActualRead)
       *pActualRead = actualRead;
@@ -222,6 +224,7 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
 // Author: Dave Pevreal, March 2014
 udResult udFile_Close(udFile **ppFile)
 {
+  UDTRACE();
   if (ppFile == nullptr)
     return udR_InvalidParameter_;
 
@@ -242,6 +245,7 @@ udResult udFile_Close(udFile **ppFile)
 // Author: Dave Pevreal, March 2014
 udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix)
 {
+  UDTRACE();
   if (s_handlersCount >= MAX_HANDLERS)
     return udR_CountExceeded;
   s_handlers[s_handlersCount].fpOpen = fpHandler;
@@ -255,6 +259,7 @@ udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *p
 // Author: Dave Pevreal, March 2014
 udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler)
 {
+  UDTRACE();
   for (int handlerIndex = 0; handlerIndex < s_handlersCount; ++handlerIndex)
   {
     if (s_handlers[handlerIndex].fpOpen == fpHandler)

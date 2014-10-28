@@ -316,7 +316,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
     goto epilogue;
 
   pFile->fpRead = udFileHandler_HTTPSeekRead;
-  pFile->fnBlockPipedRequest = udFileHandler_HTTPBlockForPipelinedRequest;
+  pFile->fpBlockPipedRequest = udFileHandler_HTTPBlockForPipelinedRequest;
   pFile->fpClose = udFileHandler_HTTPClose;
 
   if (pFileLengthInBytes)

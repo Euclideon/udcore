@@ -669,17 +669,19 @@ udResult udURL::SetURL(const char *pURLText)
       // A colon is present, so decode the port number
       int portChars;
       m_port = udStrAtoi(&p[i+1], &portChars);
+      p[i] = 0; // null terminate the domain
       i += portChars + 1;
     }
     else
     {
       // Otherwise let's assume port 80. TODO: Default port should be based on the scheme
       m_port = 80;
-    }
-    if (p[i] != 0)
-    {
-      memmove(p + i + 1, p + i, udStrlen(p + i) + 1); // Move the string one to the right to retain the separator (note: 1 byte was added to allocation when udStrdup called)
-      p[i++] = 0; // null terminate the domain
+      // Because no colon character exists to terminate the domain, move it forward by 1 byte
+      if (p[i] != 0)
+      {
+        memmove(p + i + 1, p + i, udStrlen(p + i) + 1); // Move the string one to the right to retain the separator (note: 1 byte was added to allocation when udStrdup called)
+        p[i++] = 0; // null terminate the domain
+      }
     }
     p += i;
 

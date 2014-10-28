@@ -57,7 +57,8 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
 // Close the file (sets the udFile pointer to null)
 udResult udFile_Close(udFile **ppFile);
 
-// Register the HTTP handler (optional as it requires networking libraries, WS2_32.lib on Windows platform)
+// Optional handlers (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP();
+udResult udFile_RegisterNaclHTTP(void*);
 
 #endif // UDFILE_H

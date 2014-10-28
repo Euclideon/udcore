@@ -1,6 +1,9 @@
 #ifndef UDDEBUG_H
 #define UDDEBUG_H
 
+#include "udPlatform.h"
+#include "udResult.h"
+
 // *********************************************************************
 // Outputs a string to debug console
 // *********************************************************************
@@ -15,28 +18,29 @@ public:
 
   const char *functionName;
   udTrace *next;
-  static udTrace *head;
-  static int depth;
+  bool entryPrinted;
+  static UDTHREADLOCAL udTrace *head;
+  static UDTHREADLOCAL int depth;
+  static UDTHREADLOCAL int threadId;
 };
 
 template <typename T>
-inline void udTrace_Variable(const char *pName, T value) { udTrace::Message("%s has unknown type", pName); }
-template <typename T>
-inline void udTrace_Variable(const char *pName, const T *value) { udTrace::Message("%s = %p", pName, value); }
-template <>
-inline void udTrace_Variable<int>(const char *pName, int value) { udTrace::Message("%s = %d (int)", pName, value); }
-template <>
-inline void udTrace_Variable<double>(const char *pName, double value) { udTrace::Message("%s = %f (float)", pName, value); }
-template <>
-inline void udTrace_Variable<float>(const char *pName, float value) { udTrace::Message("%s = %f (double)", pName, value); }
-template <>
-inline void udTrace_Variable<bool>(const char *pName, bool value) { udTrace::Message("%s = %s", pName, value ? "true" : "false"); }
+inline void udTrace_Variable(const char *pName, const T *value, int line)     { udTrace::Message("%s = %p (line#=%d)", pName, value, line); }
+inline void udTrace_Variable(const char *pName, udResult value, int line)     { udTrace::Message("%s = udR_%s (line#=%d)", pName, udResultAsString(value), line); }
+inline void udTrace_Variable(const char *pName, const char *value, int line)  { udTrace::Message("%s = '%s' (line#=%d)", pName, value, line); }
+inline void udTrace_Variable(const char *pName, int value, int line)          { udTrace::Message("%s = %d/0x%x (int, line#=%d)", pName, value, value, line); }
+inline void udTrace_Variable(const char *pName, int64_t value, int line)      { udTrace::Message("%s = %lld/0x%llx (int64, line#=%d)", pName, value, value, line); }
+inline void udTrace_Variable(const char *pName, unsigned value, int line)     { udTrace::Message("%s = %u/0x%x (int, line#=%d)", pName, value, value, line); }
+inline void udTrace_Variable(const char *pName, uint64_t value, int line)     { udTrace::Message("%s = %llu/0x%llx (int64, line#=%d)", pName, value, value, line); }
+inline void udTrace_Variable(const char *pName, float value, int line)        { udTrace::Message("%s = %f (float, line#=%d)", pName, value, line); }
+inline void udTrace_Variable(const char *pName, double value, int line)       { udTrace::Message("%s = %lf (double line#=%d)", pName, value, line); }
+inline void udTrace_Variable(const char *pName, bool value, int line)         { udTrace::Message("%s = %s (line#=%d)", pName, value ? "true" : "false", line); }
 
 
 
 #if UD_DEBUG
 
-# define UDTRACE_ON     0
+# define UDTRACE_ON     0     // Set to 1 to enable, set to 2 for printf on entry/exit of every function
 # define UDASSERT_ON    1
 # define UDRELASSERT_ON 1
 
@@ -64,7 +68,7 @@ inline void udTrace_Variable<bool>(const char *pName, bool value) { udTrace::Mes
 # define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__)
 # define UDTRACE_SCOPE(id) udTrace __udtrace##__LINE__(id)
 # define UDTRACE_MESSAGE(format,...) udTrace::Message(format,__VA_ARGS__)
-# define UDTRACE_VARIABLE(var) udTrace_Variable(#var, var)
+# define UDTRACE_VARIABLE(var) udTrace_Variable(#var, var, __LINE__)
 #else
 # define UDTRACE()
 # define UDTRACE_SCOPE(id)

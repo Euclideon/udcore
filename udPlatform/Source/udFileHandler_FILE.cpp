@@ -29,6 +29,11 @@
 #include <memory.h>
 #include <sys/stat.h>
 
+#if UDPLATFORM_NACL
+# define fseeko fseek
+# define ftello ftell
+#endif
+
 // Declarations of the fall-back standard handler that uses crt FILE as a back-end
 static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
 static udFile_SeekWriteHandlerFunc  udFileHandler_FILESeekWrite;
@@ -47,6 +52,7 @@ struct udFile_FILE : public udFile
 // Implementation of OpenHandler to access the crt FILE i/o functions
 udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
+  UDTRACE();
   udFile_FILE *pFile = nullptr;
   udResult result;
   const char *pMode;
@@ -115,6 +121,7 @@ epilogue:
 // Implementation of SeekReadHandler to access the crt FILE i/o functions
 static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
+  UDTRACE();
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
   udResult result;
   size_t actualRead;
@@ -139,6 +146,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 // Implementation of SeekWriteHandler to access the crt FILE i/o functions
 static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
 {
+  UDTRACE();
   udResult result;
   size_t actualWritten;
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
@@ -163,6 +171,7 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
 // Implementation of CloseHandler to access the crt FILE i/o functions
 static udResult udFileHandler_FILEClose(udFile **ppFile)
 {
+  UDTRACE();
   udFile_FILE *pFile = static_cast<udFile_FILE*>(*ppFile);
   udResult result;
 
