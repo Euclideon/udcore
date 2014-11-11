@@ -43,6 +43,9 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes = nullptr);
 
 // Get performance information
+const char *udFile_GetFilename(udFile *pFile);
+
+// Get performance information
 udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pRequestsInFlight);
 
 // Seek and read some data

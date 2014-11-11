@@ -29,14 +29,15 @@ typedef udResult udFile_BlockForPipelinedRequestHandlerFunc(udFile *pFile, udFil
 // Close the file and free all resources allocated, including the udFile structure itself
 typedef udResult udFile_CloseHandlerFunc(udFile **ppFile);
 
-// The base file structure, hile handlers are expected to extend the udFile structure to include custom data to manage state.
+// The base file structure, file handlers are expected to zero this structure and extend the to include custom data to manage state.
 struct udFile
 {
+  const char *pFilenameCopy;              // Set by udFile, not handlers. A copy of the filename used to open the file
+  udMutex *pMutex;                        // Set by udFile, not handlers. Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
   udFile_SeekReadHandlerFunc *fpRead;
   udFile_SeekWriteHandlerFunc *fpWrite;
   udFile_BlockForPipelinedRequestHandlerFunc *fpBlockPipedRequest;
   udFile_CloseHandlerFunc *fpClose;
-  udMutex *pMutex;    // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads, OpenHandlerFunc's need only set to null
   uint32_t msAccumulator;
   uint32_t requestsInFlight;
   uint64_t totalBytes;

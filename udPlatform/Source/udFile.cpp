@@ -85,6 +85,7 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
       result = pHandler->fpOpen(ppFile, pFilename, flags, pFileLengthInBytes);
       if (result == udR_Success)
       {
+        (*ppFile)->pFilenameCopy = udStrdup(pFilename);
         if (flags & udFOF_Multithread)
           (*ppFile)->pMutex = udCreateMutex();
         goto epilogue;
@@ -96,6 +97,15 @@ epilogue:
   return result;
 }
 
+// ****************************************************************************
+// Author: Dave Pevreal, November 2014
+const char *udFile_GetFilename(udFile *pFile)
+{
+  if (pFile)
+    return pFile->pFilenameCopy;
+  else
+    return nullptr;
+}
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
@@ -232,6 +242,7 @@ udResult udFile_Close(udFile **ppFile)
   {
     if ((*ppFile)->pMutex)
       udDestroyMutex(&(*ppFile)->pMutex);
+    udFree((*ppFile)->pFilenameCopy);
     return (*ppFile)->fpClose(ppFile);
   }
   else

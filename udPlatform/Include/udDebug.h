@@ -4,6 +4,8 @@
 #include "udPlatform.h"
 #include "udResult.h"
 
+#define UDDEBUG_PRINTF_SHOW_THREAD_ID 0
+
 // *********************************************************************
 // Outputs a string to debug console
 // *********************************************************************
@@ -12,7 +14,7 @@ void udDebugPrintf(const char *format, ...);
 class udTrace
 {
 public:
-  udTrace(const char *);
+  udTrace(const char *, int traceLevel);
   ~udTrace();
   static void Message(const char *pFormat, ...); // Print a message at the indentation level of the current trace
 
@@ -21,6 +23,9 @@ public:
   bool entryPrinted;
   static UDTHREADLOCAL udTrace *head;
   static UDTHREADLOCAL int depth;
+  static int GetThreadId();
+
+private:
   static UDTHREADLOCAL int threadId;
 };
 
@@ -35,7 +40,7 @@ inline void udTrace_Variable(const char *pName, uint64_t value, int line)     { 
 inline void udTrace_Variable(const char *pName, float value, int line)        { udTrace::Message("%s = %f (float, line#=%d)", pName, value, line); }
 inline void udTrace_Variable(const char *pName, double value, int line)       { udTrace::Message("%s = %lf (double line#=%d)", pName, value, line); }
 inline void udTrace_Variable(const char *pName, bool value, int line)         { udTrace::Message("%s = %s (line#=%d)", pName, value ? "true" : "false", line); }
-
+void udTrace_Memory(const char *pName, void *pMem, int length, int line);
 
 
 #if UD_DEBUG
@@ -46,7 +51,9 @@ inline void udTrace_Variable(const char *pName, bool value, int line)         { 
 
 #elif UD_RELEASE
 
+#if !defined(UDTRACE_ON)
 # define UDTRACE_ON     0
+# endif
 # define UDASSERT_ON    0
 # define UDRELASSERT_ON 1
 
@@ -65,15 +72,17 @@ inline void udTrace_Variable(const char *pName, bool value, int line)         { 
 
 
 #if UDTRACE_ON
-# define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__)
+# define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__, UDTRACE_ON)
 # define UDTRACE_SCOPE(id) udTrace __udtrace##__LINE__(id)
 # define UDTRACE_MESSAGE(format,...) udTrace::Message(format,__VA_ARGS__)
 # define UDTRACE_VARIABLE(var) udTrace_Variable(#var, var, __LINE__)
+# define UDTRACE_MEMORY(var,length) udTrace_Memory(#var, var, length, __LINE__)
 #else
 # define UDTRACE()
 # define UDTRACE_SCOPE(id)
 # define UDTRACE_MESSAGE(format,...)
 # define UDTRACE_VARIABLE(var)
+# define UDTRACE_MEMORY(var,length)
 #endif // UDTRACE_ON
 
 // TODO: Make assertion system handle pop-up window where possible

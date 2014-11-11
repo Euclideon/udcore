@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL
+#include <sched.h>
 #include <pthread.h>
 #include <semaphore.h>
 #endif
@@ -19,6 +20,34 @@ udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)
 #else
 #error Unknown platform
 #endif
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, November 2014
+void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority)
+{
+  if (threadHandle)
+  {
+#if UDPLATFORM_WINDOWS
+    switch (priority)
+    {
+      case udTP_Lowest:   SetThreadPriority((HANDLE)threadHandle, THREAD_PRIORITY_LOWEST); break;
+      case udTP_Low:      SetThreadPriority((HANDLE)threadHandle, THREAD_PRIORITY_BELOW_NORMAL); break;
+      case udTP_Normal:   SetThreadPriority((HANDLE)threadHandle, THREAD_PRIORITY_NORMAL); break;
+      case udTP_High:     SetThreadPriority((HANDLE)threadHandle, THREAD_PRIORITY_ABOVE_NORMAL); break;
+      case udTP_Highest:  SetThreadPriority((HANDLE)threadHandle, THREAD_PRIORITY_HIGHEST); break;
+    }
+#elif UDPLATFORM_LINUX
+    int policy = sched_getscheduler(0);
+    int lowest = sched_get_priority_min(policy);
+    int highest = sched_get_priority_max(policy);
+    int pthreadPrio = (priority * (highest - lowest) / udTP_Highest) + lowest;
+    pthread_setschedprio((pthread_t)threadHandle, pthreadPrio);
+#elif UDPLATFORM_NACL
+#else
+#   error Unknown platform
+#endif
+  }
 }
 
 // ***************************************************************************************

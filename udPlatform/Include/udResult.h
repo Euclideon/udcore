@@ -17,6 +17,7 @@ enum udResult
   udR_RenderAlreadyInProgress,
   udR_BufferTooSmall,
   udR_VersionMismatch,
+  udR_ObjectTypeMismatch,
 
   udR_Writer_InitFailure, 
   udR_Writer_WritePointCloudHeaderFailure, 

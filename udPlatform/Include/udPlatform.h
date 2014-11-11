@@ -145,9 +145,11 @@ protected:
 struct udSemaphore;
 struct udMutex;
 typedef uint64_t udThreadHandle;
+enum udThreadPriority { udTP_Lowest, udTP_Low, udTP_Normal, udTP_High, udTP_Highest };
 
 typedef uint32_t (udThreadStart)(void *data);
 udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
+void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority);
 void udDestroyThread(udThreadHandle threadHandle);
 
 udSemaphore *udCreateSemaphore(int maxValue, int initialValue);

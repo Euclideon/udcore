@@ -63,11 +63,10 @@ const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t 
 // udStrAtoi behaves much like atoi, optionally giving the number of characters parsed
 // and the radix can be supplied to parse hex(16) or binary(2) numbers
 int32_t udStrAtoi(const char *s, int *pCharCount = nullptr, int radix = 10);
-// udStrAtoi behaves much like atol, optionally giving the number of characters parsed
-// and the radix can be supplied to parse hex(16) or binary(2) numbers
 int64_t udStrAtoi64(const char *s, int *pCharCount = nullptr, int radix = 10);
 // udStrAtof behaves much like atol, but much faster and optionally gives the number of characters parsed
 float udStrAtof(const char *s, int *pCharCount = nullptr);
+double udStrAtof64(const char *s, int *pCharCount = nullptr);
 // Split a line into an array of tokens
 int udTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens);
 
@@ -75,6 +74,7 @@ int udTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxT
 // String comparison functions that can be relied upon, NULL-safe
 // *********************************************************************
 int udStrcmp(const char *s1, const char *s2);
+int udStrcmpi(const char *s1, const char *s2);
 bool udStrBeginsWith(const char *s, const char *prefix);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
 

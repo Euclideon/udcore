@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>
 #include <math.h>
 #include <sys/stat.h>
 
@@ -161,6 +162,22 @@ int udStrcmp(const char *s1, const char *s2)
   do
   {
     result = *s1 - *s2;
+  } while (!result && *s1++ && *s2++);
+  
+  return result;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2014
+int udStrcmpi(const char *s1, const char *s2)
+{
+  if (!s1) s1 = s_udStrEmptyString;
+  if (!s2) s2 = s_udStrEmptyString;
+
+  int result;
+  do
+  {
+    result = tolower(*s1) - tolower(*s2);
   } while (!result && *s1++ && *s2++);
   
   return result;
@@ -422,6 +439,49 @@ float udStrAtof(const char *s, int *pCharCount)
     ++charCount;
     float e = (float)udStrAtoi(s + charCount, &secondaryCharCount);
     result *= powf(10, e);
+  }
+  if (pCharCount)
+    *pCharCount = preCharCount + charCount + secondaryCharCount;
+  return result * negate;
+}
+
+
+// *********************************************************************
+// Author: Dave Pevreal, August 2014
+double udStrAtof64(const char *s, int *pCharCount)
+{
+  if (!s) s = s_udStrEmptyString;
+  int preCharCount = 0;
+  int charCount = 0;
+  int secondaryCharCount = 0;
+
+  double negate = 1.0f;
+  while (s[preCharCount] == ' ' || s[preCharCount] == '\t')
+    ++preCharCount;
+
+  // Process negation separately
+  if (s[preCharCount] == '-')
+  {
+    negate = -1.0f;
+    ++preCharCount;
+  }
+  s += preCharCount;
+
+  double result = (double)udStrAtoi64(s, &charCount);
+  if (s[charCount] == '.')
+  {
+    ++charCount;
+    int32_t fraction = udStrAtoi(s + charCount, &secondaryCharCount);
+    if (result >= 0.f)
+      result += fraction / pow(10.0, secondaryCharCount);
+    else
+      result -= fraction / pow(10.0, secondaryCharCount);
+  }
+  if (s[charCount] == 'e' || s[charCount] == 'E')
+  {
+    ++charCount;
+    double e = (double)udStrAtoi64(s + charCount, &secondaryCharCount);
+    result *= pow(10, e);
   }
   if (pCharCount)
     *pCharCount = preCharCount + charCount + secondaryCharCount;
