@@ -362,17 +362,17 @@ static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, 
   mz_zip_archive_file_stat stat;
   if (!mz_zip_reader_file_stat(s_pZip, index, &stat))
     return udR_File_OpenFailure;
-  udFile_MiniZFile *pFile = (udFile_MiniZFile *)udAllocFlags(sizeof(udFile_MiniZFile) + stat.m_uncomp_size, udAF_Zero);
+  udFile_MiniZFile *pFile = (udFile_MiniZFile *)udAllocFlags(sizeof(udFile_MiniZFile) + (size_t)stat.m_uncomp_size, udAF_Zero);
   if (!pFile)
     return udR_MemoryAllocationFailure;
 
-  if (!mz_zip_reader_extract_to_mem(s_pZip, index, pFile->data, stat.m_uncomp_size, 0))
+  if (!mz_zip_reader_extract_to_mem(s_pZip, index, pFile->data, (size_t)stat.m_uncomp_size, 0))
   {
     udFree(pFile);
     return udR_File_ReadFailure;
   }
 
-  pFile->length = stat.m_uncomp_size;
+  pFile->length = (size_t)stat.m_uncomp_size;
   pFile->fPos = 0;
   pFile->fpRead = udFileHandler_MiniZSeekRead;
   pFile->fpClose = udFileHandler_MiniZClose;
