@@ -4,7 +4,7 @@
 #include "udPlatform.h"
 #include "udResult.h"
 
-#define UDDEBUG_PRINTF_SHOW_THREAD_ID 0
+#define UDDEBUG_PRINTF_SHOW_THREAD_ID 1
 
 // *********************************************************************
 // Outputs a string to debug console

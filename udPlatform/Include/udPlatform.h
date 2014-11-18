@@ -241,7 +241,8 @@ template <typename T> void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pF
 #endif  //  __MEMORY_DEBUG__
 
 UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
-#define udAllocStack(type, count, flags)   (flags & udAF_Zero) ? (type*)__udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
+// Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
+#define udAllocStack(type, count, flags)   ((flags | udAF_None) & udAF_Zero) ? (type*)__udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
 #define udFreeStack(pMemory)  
 
 #if __MEMORY_DEBUG__

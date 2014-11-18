@@ -256,7 +256,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   udFile_HTTP *pFile = nullptr;
   struct hostent *hp;
   
-  size_t actualHeaderLen;
+  int actualHeaderLen;
 
   // Automatically fail if trying to write to files on http
   result = udR_File_OpenFailure;
