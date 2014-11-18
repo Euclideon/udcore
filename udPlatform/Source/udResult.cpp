@@ -27,6 +27,8 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_BufferTooSmall),
   RESULTINFO(udR_VersionMismatch),
   RESULTINFO(udR_ObjectTypeMismatch),
+  RESULTINFO(udR_NodeLimitExceeded),
+  RESULTINFO(udR_BlockLimitExceeded),
 
   RESULTINFO(udR_Writer_InitFailure), 
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure), 

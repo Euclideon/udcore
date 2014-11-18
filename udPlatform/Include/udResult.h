@@ -18,6 +18,8 @@ enum udResult
   udR_BufferTooSmall,
   udR_VersionMismatch,
   udR_ObjectTypeMismatch,
+  udR_NodeLimitExceeded,
+  udR_BlockLimitExceeded,
 
   udR_Writer_InitFailure, 
   udR_Writer_WritePointCloudHeaderFailure, 
