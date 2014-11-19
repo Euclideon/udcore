@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <new>
-#include <memory.h>
 
 #if defined(_WIN64) || defined(__amd64__)
   //64-bit code
@@ -34,14 +33,17 @@
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
+# include <memory.h>
 # define UDPLATFORM_WINDOWS 1
 # define UDPLATFORM_LINUX   0
 # define UDPLATFORM_NACL    0
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
+# include <memory.h>
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   1
 # define UDPLATFORM_NACL    0
 #elif defined(__native_client__)
+# include <string.h>
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   0
 # define UDPLATFORM_NACL    1
@@ -283,7 +285,7 @@ void udMemoryDebugTrackingDeinit();
 # define __FUNC_NAME__ "unknown"
 #endif
 
-#if UDPLATFORM_NACL
+#if UDPLATFORM_NACL && !defined(nullptr)
 # define nullptr NULL
 #endif
 

@@ -26,7 +26,6 @@
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include <stdio.h>
-#include <memory.h>
 #include <sys/stat.h>
 
 #if UDPLATFORM_NACL

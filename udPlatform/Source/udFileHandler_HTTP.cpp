@@ -6,12 +6,15 @@
 # define _CRT_SECURE_NO_WARNINGS
 
 #include "udPlatform.h"
+
+#if !UDPLATFORM_NACL
+
 #include "udPlatformUtil.h"
 #include "udFileHandler.h"
 #if UDPLATFORM_WINDOWS
 # include <winsock2.h>
 #define snprintf _snprintf
-#else
+#elif UDPLATFORM_LINUX
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
@@ -21,7 +24,6 @@
 # define SOCKET_ERROR -1
 #endif
 #include <stdio.h>
-#include <memory.h>
 
 static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
 static udFile_SeekReadHandlerFunc                 udFileHandler_HTTPSeekRead;
@@ -432,4 +434,4 @@ epilogue:
   return result;
 }
 
-
+#endif // !UDPLATFORM_NACL
