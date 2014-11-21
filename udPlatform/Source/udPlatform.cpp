@@ -300,6 +300,10 @@ void udMemoryOutputLeaks()
         udDebugPrintf("%s(%d): Allocation 0x%p Address 0x%p, size %u\n", track.pFile, track.line, (void*)track.allocationNumber, track.pMemory, track.size);
       }
     }
+    else
+    {
+      udDebugPrintf("All tracked allocations freed\n");
+    }
 
 #if UDPLATFORM_WINDOWS    
     uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
@@ -356,6 +360,12 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
 #endif
   MemTrack track = { pMemory, size, pFile, line, gAllocationCount };  
 
+  if (pMemoryTrackingMap->find(size_t(pMemory)) != pMemoryTrackingMap->end())
+  {
+    udDebugPrintf("Tracked allocation already exists %p at File %s, line %d", pMemory, pFile, line); 
+    __debugbreak(); 
+  }
+
   (*pMemoryTrackingMap)[size_t(pMemory)] = track; 
 
   ++gAllocationCount;  
@@ -399,7 +409,7 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
     if (it == pMemoryTrackingMap->end())
     {
       udDebugPrintf("Error freeing address %p at File %s, line %d, did not find a matching allocation", pMemory, pFile, line); 
-      __debugbreak(); 
+      //__debugbreak(); 
       goto epilogue;
     }
     UDASSERT(it->second.pMemory == (pMemory), "Pointers didn't match");
