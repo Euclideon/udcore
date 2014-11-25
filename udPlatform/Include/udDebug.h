@@ -51,7 +51,7 @@ void udTrace_Memory(const char *pName, void *pMem, int length, int line);
 #elif UD_RELEASE
 
 #if !defined(UDTRACE_ON)
-# define UDTRACE_ON     1
+# define UDTRACE_ON     0
 # endif
 # define UDASSERT_ON    0
 # define UDRELASSERT_ON 1
