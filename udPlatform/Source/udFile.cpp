@@ -33,30 +33,33 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   udFile *pFile = nullptr;
   char *pMemory = nullptr;
   int64_t length = 0;
-  size_t alreadyRead = 0;
+  size_t alreadyRead = 0, attemptRead, actualRead;
 
   udResult result = udFile_Open(&pFile, pFilename, udFOF_Read, &length); // NOTE: Length can be zero. Chrome does this on cached files.
   if (result != udR_Success)
     goto epilogue;
-
+  
   // This loop attempts to avoid two codepaths by using length if it's
   // present, but ultimately reading until end-of-file is reached.
-  size_t attemptRead, actualRead;
   do
   {
-    if ((size_t)length == alreadyRead)
-      length += 1048576;
+    if (!length || alreadyRead > (size_t)length)
+      length += 16;
     result = udR_MemoryAllocationFailure;
-    void *pNewMem = udRealloc(pMemory, (size_t)length + 1);
+    void *pNewMem = udRealloc(pMemory, (size_t)length + 1); // Note always allocating 1 extra byte
     if (!pNewMem)
       goto epilogue;
     pMemory = (char*)pNewMem;
-    attemptRead = (size_t)length + 1 - alreadyRead;
-    result = udFile_SeekRead(pFile, pMemory, attemptRead, 0, udFSW_SeekCur, &actualRead);
+
+    attemptRead = (size_t)length + 1 - alreadyRead; // Note attempt to read 1 extra byte so EOF is detected
+    result = udFile_SeekRead(pFile, pMemory + alreadyRead, attemptRead, 0, udFSW_SeekCur, &actualRead);
     if (result != udR_Success)
       goto epilogue;
     alreadyRead += actualRead;
   } while (attemptRead == actualRead);
+
+
+  UDASSERT(length >= alreadyRead, "Logic error in read loop");
   if ((size_t)length != alreadyRead)
   {
     length = alreadyRead;
