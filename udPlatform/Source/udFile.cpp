@@ -32,19 +32,39 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
     return udR_InvalidParameter_;
   udFile *pFile = nullptr;
   char *pMemory = nullptr;
-  int64_t length;
+  int64_t length = 0;
+  size_t alreadyRead = 0;
 
-  udResult result = udFile_Open(&pFile, pFilename, udFOF_Read, &length);
+  udResult result = udFile_Open(&pFile, pFilename, udFOF_Read, &length); // NOTE: Length can be zero. Chrome does this on cached files.
   if (result != udR_Success)
     goto epilogue;
   
-  result = udR_MemoryAllocationFailure;
-  pMemory = (char*)udAlloc((size_t)length + 1);
-  if (!pMemory)
-    goto epilogue;
+  size_t attemptRead, actualRead;
+  do
+  {
+    if ((size_t)length == alreadyRead)
+      length += 1048576;
+    result = udR_MemoryAllocationFailure;
+    void *pNewMem = udRealloc(pMemory, (size_t)length + 1);
+    if (!pNewMem)
+      goto epilogue;
+    pMemory = (char*)pNewMem;
+    attemptRead = (size_t)length + 1 - alreadyRead;
+    result = udFile_SeekRead(pFile, pMemory, attemptRead, 0, udFSW_SeekCur, &actualRead);
+    if (result != udR_Success)
+      goto epilogue;
+    alreadyRead += actualRead;
+  } while (attemptRead == actualRead);
+  if ((size_t)length != alreadyRead)
+  {
+    length = alreadyRead;
+    void *pNewMem = udRealloc(pMemory, (size_t)length + 1);
+    if (!pNewMem)
+      goto epilogue;
+    pMemory = (char*)pNewMem;
+  }
   pMemory[length] = 0; // A nul-terminator for text files
 
-  result = udFile_SeekRead(pFile, pMemory, (size_t)length);
   if (result != udR_Success)
     goto epilogue;
 

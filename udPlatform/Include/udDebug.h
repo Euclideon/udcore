@@ -4,12 +4,11 @@
 #include "udPlatform.h"
 #include "udResult.h"
 
-#define UDDEBUG_PRINTF_SHOW_THREAD_ID 1
-
-// *********************************************************************
 // Outputs a string to debug console
-// *********************************************************************
 void udDebugPrintf(const char *format, ...);
+
+// Optional, set this pointer to redirect debug printfs
+extern void (*gpudDebugPrintfOutputCallback)(const char *pString);
 
 class udTrace
 {
@@ -52,7 +51,7 @@ void udTrace_Memory(const char *pName, void *pMem, int length, int line);
 #elif UD_RELEASE
 
 #if !defined(UDTRACE_ON)
-# define UDTRACE_ON     0
+# define UDTRACE_ON     1
 # endif
 # define UDASSERT_ON    0
 # define UDRELASSERT_ON 1

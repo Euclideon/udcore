@@ -176,7 +176,7 @@ protected:
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
-#define __MEMORY_DEBUG__  1
+#define __MEMORY_DEBUG__  0
 #define __BREAK_ON_MEMORY_ALLOCATION_FAILURE (_DEBUG)
 
 #if __MEMORY_DEBUG__

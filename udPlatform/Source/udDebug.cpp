@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+void (*gpudDebugPrintfOutputCallback)(const char *pString) = nullptr;
+
 // *********************************************************************
 void udDebugPrintf(const char *format, ...)
 {
@@ -11,21 +13,36 @@ void udDebugPrintf(const char *format, ...)
   char buffer[300];
   int prefix = 0;
 
-#if UDDEBUG_PRINTF_SHOW_THREAD_ID
-  udSprintf(buffer, sizeof(buffer), "%02d>", udTrace::GetThreadId());
-  prefix = (int)strlen(buffer);
-#endif
+  static bool multiThreads = false;
+  static int lastThread = -1;
+
+  if (!multiThreads && lastThread != -1 && lastThread != udTrace::GetThreadId())
+    multiThreads = true;
+
+  if (multiThreads)
+  {
+    udSprintf(buffer, sizeof(buffer), "%02d>", udTrace::GetThreadId());
+    prefix = (int)strlen(buffer);
+  }
+
   va_start(args, format);
 #if UDPLATFORM_NACL
   vsprintf(buffer + prefix, format, args);
 #else
   vsnprintf(buffer + prefix, sizeof(buffer)-prefix, format, args);
 #endif
+  if (gpudDebugPrintfOutputCallback)
+  {
+    gpudDebugPrintfOutputCallback(buffer);
+  }
+  else
+  {
 #ifdef _WIN32
-  OutputDebugStringA(buffer);
+    OutputDebugStringA(buffer);
 #else
-  fprintf(stderr, "%s", buffer);
+    fprintf(stderr, "%s", buffer);
 #endif
+  }
 }
 
 UDTHREADLOCAL udTrace *udTrace::head = NULL;
@@ -49,7 +66,7 @@ udTrace::udTrace(const char *a_functionName, int traceLevel)
   {
     threadId = nextThreadId++;
     if (traceLevel)
-      udDebugPrintf("%02d> Thread started with %s\n", threadId, a_functionName);
+      udDebugPrintf("Thread %d started with %s\n", threadId, a_functionName);
   }
   functionName = a_functionName;
   next = head;
@@ -57,7 +74,7 @@ udTrace::udTrace(const char *a_functionName, int traceLevel)
   entryPrinted = false;
   if (traceLevel > 1)
   {
-    udDebugPrintf("%02d>%*.s Entering %s\n", threadId, depth*2, "", functionName);
+    udDebugPrintf("%*.s Entering %s\n", depth*2, "", functionName);
     entryPrinted = true;
   }
   ++depth;
@@ -69,7 +86,7 @@ udTrace::~udTrace()
   --depth;
   head = next;
   if (entryPrinted)
-    udDebugPrintf("%02d>%*.s Exiting  %s\n", threadId, depth*2, "", functionName);
+    udDebugPrintf("%*.s Exiting  %s\n", depth*2, "", functionName);
 }
 
 // ***************************************************************************************
@@ -99,10 +116,10 @@ void udTrace::Message(const char *pFormat, ...)
           pParent1 = head->next->next->next->functionName;
       }
     }
-    udDebugPrintf("%02d>%*.s Within  %s->%s->%s->%s\n", threadId, (depth-1)*2, "", pParent2, pParent1, pParent0, head->functionName);
+    udDebugPrintf("%*.s Within  %s->%s->%s->%s\n", (depth-1)*2, "", pParent2, pParent1, pParent0, head->functionName);
     head->entryPrinted = true;
   }
-  udDebugPrintf("%02d>%*.s %s\n", threadId, head ? head->depth*2 : 0, "", buffer);
+  udDebugPrintf("%*.s %s\n", head ? head->depth*2 : 0, "", buffer);
 }
 
 
