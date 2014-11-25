@@ -38,7 +38,9 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   udResult result = udFile_Open(&pFile, pFilename, udFOF_Read, &length); // NOTE: Length can be zero. Chrome does this on cached files.
   if (result != udR_Success)
     goto epilogue;
-  
+
+  // This loop attempts to avoid two codepaths by using length if it's
+  // present, but ultimately reading until end-of-file is reached.
   size_t attemptRead, actualRead;
   do
   {
