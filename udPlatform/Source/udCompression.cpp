@@ -98,7 +98,7 @@ udResult udMiniZCompressor_InitStream(udMiniZCompressor *pCompressor, void *pDes
   pCompressor->pStream->zfree = MiniZCompressor_Free;
   pCompressor->pStream->opaque = (void*)pCompressor;
 
-  status = udComp_deflateInit2(pCompressor->pStream, MZ_BEST_COMPRESSION, MZ_DEFLATED, WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
+  status = udComp_deflateInit2(pCompressor->pStream, MZ_UBER_COMPRESSION, MZ_DEFLATED, WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
   if (status != MZ_OK) 
   {
     return udR_Failure_;
@@ -192,7 +192,7 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
   stream.zfree = MiniZCompressor_Free;
   stream.opaque = (void*)pCompressor;
 
-  status = udComp_deflateInit2(&stream, MZ_BEST_COMPRESSION, MZ_DEFLATED, WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
+  status = udComp_deflateInit2(&stream, MZ_UBER_COMPRESSION, MZ_DEFLATED, WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
   if (status != MZ_OK) 
   {
     return udR_Failure_;
