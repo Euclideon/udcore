@@ -33,40 +33,53 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   udFile *pFile = nullptr;
   char *pMemory = nullptr;
   int64_t length = 0;
-  size_t alreadyRead = 0, attemptRead, actualRead;
+  size_t actualRead;
 
   udResult result = udFile_Open(&pFile, pFilename, udFOF_Read, &length); // NOTE: Length can be zero. Chrome does this on cached files.
   if (result != udR_Success)
     goto epilogue;
-  
-  // This loop attempts to avoid two codepaths by using length if it's
-  // present, but ultimately reading until end-of-file is reached.
-  do
-  {
-    if (!length || alreadyRead > (size_t)length)
-      length += 16;
-    result = udR_MemoryAllocationFailure;
-    void *pNewMem = udRealloc(pMemory, (size_t)length + 1); // Note always allocating 1 extra byte
-    if (!pNewMem)
-      goto epilogue;
-    pMemory = (char*)pNewMem;
 
-    attemptRead = (size_t)length + 1 - alreadyRead; // Note attempt to read 1 extra byte so EOF is detected
-    result = udFile_SeekRead(pFile, pMemory + alreadyRead, attemptRead, 0, udFSW_SeekCur, &actualRead);
+  if (length)
+  {
+    pMemory = (char*)udAlloc((size_t)length + 1); // Note always allocating 1 extra byte
+    result = udFile_SeekRead(pFile, pMemory, length, 0, udFSW_SeekCur, &actualRead);
     if (result != udR_Success)
       goto epilogue;
-    alreadyRead += actualRead;
-  } while (attemptRead == actualRead);
-
-
-  UDASSERT(length >= alreadyRead, "Logic error in read loop");
-  if ((size_t)length != alreadyRead)
-  {
-    length = alreadyRead;
-    void *pNewMem = udRealloc(pMemory, (size_t)length + 1);
-    if (!pNewMem)
+    if (actualRead != (size_t)length)
+    {
+      result = udR_File_ReadFailure;
       goto epilogue;
-    pMemory = (char*)pNewMem;
+    }
+  }
+  else
+  {
+    udDebugPrintf("udFile_Load: %s open succeeded, length unknown\n", pFilename);
+    size_t alreadyRead = 0, attemptRead = 0;
+    length = 16;
+    for (actualRead = 0; attemptRead == actualRead; alreadyRead += actualRead)
+    {
+      if (alreadyRead > (size_t)length)
+        length += 16;
+      result = udR_MemoryAllocationFailure;
+      void *pNewMem = udRealloc(pMemory, (size_t)length + 1); // Note always allocating 1 extra byte
+      if (!pNewMem)
+        goto epilogue;
+      pMemory = (char*)pNewMem;
+
+      attemptRead = (size_t)length + 1 - alreadyRead; // Note attempt to read 1 extra byte so EOF is detected
+      result = udFile_SeekRead(pFile, pMemory + alreadyRead, attemptRead, 0, udFSW_SeekCur, &actualRead);
+      if (result != udR_Success)
+        goto epilogue;
+    }
+    UDASSERT(length >= alreadyRead, "Logic error in read loop");
+    if ((size_t)length != alreadyRead)
+    {
+      length = alreadyRead;
+      void *pNewMem = udRealloc(pMemory, (size_t)length + 1);
+      if (!pNewMem)
+        goto epilogue;
+      pMemory = (char*)pNewMem;
+    }
   }
   pMemory[length] = 0; // A nul-terminator for text files
 

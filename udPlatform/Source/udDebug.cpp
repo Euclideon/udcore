@@ -16,8 +16,11 @@ void udDebugPrintf(const char *format, ...)
   static bool multiThreads = false;
   static int lastThread = -1;
 
-  if (!multiThreads && lastThread != -1 && lastThread != udTrace::GetThreadId())
-    multiThreads = true;
+  if (!multiThreads)
+  {
+    multiThreads = (lastThread != udTrace::GetThreadId());
+    lastThread = udTrace::GetThreadId();
+  }
 
   if (multiThreads)
   {
@@ -124,7 +127,7 @@ void udTrace::Message(const char *pFormat, ...)
 
 
 // ***************************************************************************************
-void udTrace_Memory(const char *pName, void *pMem, int length, int line)
+void udTrace_Memory(const char *pName, const void *pMem, int length, int line)
 {
   char format[100];
   udTrace::Message("Dump of memory for %s (%d bytes at %p, line #%d)", pName, length, pMem, line);
@@ -137,7 +140,7 @@ void udTrace_Memory(const char *pName, void *pMem, int length, int line)
     memcpy(p, pMem, n);
     format[n * 5] = 0; // nul terminate in the correct spot
     udTrace::Message(format, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[14], p[14], p[15]);
-    pMem = ((char*)pMem)+n;
+    pMem = ((const char*)pMem)+n;
     length -= n;
   }
 }

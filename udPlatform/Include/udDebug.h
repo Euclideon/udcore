@@ -39,7 +39,7 @@ inline void udTrace_Variable(const char *pName, uint64_t value, int line)     { 
 inline void udTrace_Variable(const char *pName, float value, int line)        { udTrace::Message("%s = %f (float, line#=%d)", pName, value, line); }
 inline void udTrace_Variable(const char *pName, double value, int line)       { udTrace::Message("%s = %lf (double line#=%d)", pName, value, line); }
 inline void udTrace_Variable(const char *pName, bool value, int line)         { udTrace::Message("%s = %s (line#=%d)", pName, value ? "true" : "false", line); }
-void udTrace_Memory(const char *pName, void *pMem, int length, int line);
+void udTrace_Memory(const char *pName, const void *pMem, int length, int line);
 
 
 #if UD_DEBUG
@@ -72,7 +72,7 @@ void udTrace_Memory(const char *pName, void *pMem, int length, int line);
 
 #if UDTRACE_ON
 # define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__, UDTRACE_ON)
-# define UDTRACE_SCOPE(id) udTrace __udtrace##__LINE__(id)
+# define UDTRACE_SCOPE(id) udTrace __udtrace##__LINE__(id, UDTRACE_ON)
 # define UDTRACE_MESSAGE(format,...) udTrace::Message(format,__VA_ARGS__)
 # define UDTRACE_VARIABLE(var) udTrace_Variable(#var, var, __LINE__)
 # define UDTRACE_MEMORY(var,length) udTrace_Memory(#var, var, length, __LINE__)
