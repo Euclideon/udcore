@@ -184,7 +184,10 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
 
   result = udR_File_ReadFailure;
   if (pFile == nullptr || pFile->fpRead == nullptr)
+  {
+    result = udR_InvalidParameter_;
     goto epilogue;
+  }
 
   if (pFile->pMutex)
     udLockMutex(pFile->pMutex);
