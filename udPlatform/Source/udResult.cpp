@@ -30,9 +30,9 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_NodeLimitExceeded),
   RESULTINFO(udR_BlockLimitExceeded),
 
-  RESULTINFO(udR_Writer_InitFailure), 
-  RESULTINFO(udR_Writer_WritePointCloudHeaderFailure), 
-  RESULTINFO(udR_Writer_WriteBlockHeaderFailure), 
+  RESULTINFO(udR_Writer_InitFailure),
+  RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),
+  RESULTINFO(udR_Writer_WriteBlockHeaderFailure),
   RESULTINFO(udR_Writer_WriteBlockFailure),
   RESULTINFO(udR_Writer_ReadBlockFailure),
   RESULTINFO(udR_Writer_ReadNextBlockFailure),
@@ -41,11 +41,12 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_Writer_WriteResourceFailure),
   RESULTINFO(udR_Writer_DeinitFailure),
 
-  RESULTINFO(udR_BlockInfoArrayExhausted), 
+  RESULTINFO(udR_BlockInfoArrayExhausted),
 
   RESULTINFO(udR_File_OpenFailure),
   RESULTINFO(udR_File_CloseFailure),
   RESULTINFO(udR_File_NoFileJobsAvailable),
+  RESULTINFO(udR_File_SeekFailure),
   RESULTINFO(udR_File_ReadFailure),
   RESULTINFO(udR_File_WriteFailure),
   RESULTINFO(udR_File_FailedToAddFileJob),

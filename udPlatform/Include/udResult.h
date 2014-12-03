@@ -21,9 +21,9 @@ enum udResult
   udR_NodeLimitExceeded,
   udR_BlockLimitExceeded,
 
-  udR_Writer_InitFailure, 
-  udR_Writer_WritePointCloudHeaderFailure, 
-  udR_Writer_WriteBlockHeaderFailure, 
+  udR_Writer_InitFailure,
+  udR_Writer_WritePointCloudHeaderFailure,
+  udR_Writer_WriteBlockHeaderFailure,
   udR_Writer_WriteBlockFailure,
   udR_Writer_ReadBlockFailure,
   udR_Writer_ReadNextBlockFailure,
@@ -32,11 +32,12 @@ enum udResult
   udR_Writer_WriteResourceFailure,
   udR_Writer_DeinitFailure,
 
-  udR_BlockInfoArrayExhausted, 
+  udR_BlockInfoArrayExhausted,
 
   udR_File_OpenFailure,
   udR_File_CloseFailure,
   udR_File_NoFileJobsAvailable,
+  udR_File_SeekFailure,
   udR_File_ReadFailure,
   udR_File_WriteFailure,
   udR_File_FailedToAddFileJob,
