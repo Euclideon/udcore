@@ -13,9 +13,3 @@ charset = utf-8
 indent_style = tab
 indent_size = 4
 tab_width = 4
-
-# premake source uses tabs
-[bin/premake/**]
-indent_style = tab
-indent_size = 4
-tab_width = 4

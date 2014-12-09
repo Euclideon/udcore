@@ -2,7 +2,7 @@
 // Copyright (c) Euclideon Pty Ltd
 //
 // Creator: Dave Pevreal, March 2014
-// 
+//
 
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
@@ -17,7 +17,7 @@ struct udFileHandler
   char prefix[16];              // The prefix that this handler will respond to, eg 'http:', or an empty string for regular filenames
 };
 
-static udFileHandler s_handlers[MAX_HANDLERS] = 
+static udFileHandler s_handlers[MAX_HANDLERS] =
 {
   { udFileHandler_FILEOpen, "" }    // Default file handler
 };
@@ -55,11 +55,12 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   {
     udDebugPrintf("udFile_Load: %s open succeeded, length unknown\n", pFilename);
     size_t alreadyRead = 0, attemptRead = 0;
-    length = 16;
+    length = 16384;
     for (actualRead = 0; attemptRead == actualRead; alreadyRead += actualRead)
     {
+//      udDebugPrintf("Loop already: %zd, attempt: %zd, actual: %zd (%lld)", alreadyRead, attemptRead, actualRead, length);
       if (alreadyRead > (size_t)length)
-        length += 16;
+        length += 16384;
       result = udR_MemoryAllocationFailure;
       void *pNewMem = udRealloc(pMemory, (size_t)length + 1); // Note always allocating 1 extra byte
       if (!pNewMem)
