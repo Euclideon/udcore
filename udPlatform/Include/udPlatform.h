@@ -22,7 +22,7 @@
    //32-bit code
 # define UD_64BIT (0)
 # define UD_32BIT (1)
-# define UD_WORD_SHIFT  5   // 5 bits for 32 bit pointer  
+# define UD_WORD_SHIFT  5   // 5 bits for 32 bit pointer
 # define UD_WORD_BITS   32
 # define UD_WORD_BYTES  4
 # define UD_WORD_MAX    0x7fffffffL
@@ -176,13 +176,13 @@ protected:
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
-#define __MEMORY_DEBUG__  1
+#define __MEMORY_DEBUG__  0
 #define __BREAK_ON_MEMORY_ALLOCATION_FAILURE (_DEBUG)
 
 #if __MEMORY_DEBUG__
 # define IF_MEMORY_DEBUG(x,y) ,x,y
-#else 
-# define IF_MEMORY_DEBUG(x,y) 
+#else
+# define IF_MEMORY_DEBUG(x,y)
 #endif //  __MEMORY_DEBUG__
 
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL
@@ -245,7 +245,7 @@ template <typename T> void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pF
 UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
 #define udAllocStack(type, count, flags)   ((flags | udAF_None) & udAF_Zero) ? (type*)__udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
-#define udFreeStack(pMemory)  
+#define udFreeStack(pMemory)
 
 #if __MEMORY_DEBUG__
 void udMemoryDebugTrackingInit();
@@ -270,9 +270,9 @@ void udMemoryDebugTrackingDeinit();
 #if defined(__GNUC__)
 # define udUnusedParam(x) __attribute__((__unused__))x
 #elif defined(_WIN32)
-# define udUnusedParam(x) 
-#else 
-# define udUnusedParam(x) 
+# define udUnusedParam(x)
+#else
+# define udUnusedParam(x)
 #endif
 
 
