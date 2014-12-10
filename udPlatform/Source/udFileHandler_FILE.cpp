@@ -2,7 +2,8 @@
 // Copyright (c) Euclideon Pty Ltd
 //
 // Creator: Dave Pevreal, April 2014
-// 
+//
+
 #define _FILE_OFFSET_BITS 64
 #if defined(_MSC_VER)
 # define _CRT_SECURE_NO_WARNINGS
@@ -15,7 +16,7 @@
 # endif //_OFF_T_DEFINED
 #elif defined(__linux__)
 # if !defined(_LARGEFILE_SOURCE )
-  // This must be set for linux to expose fseeko and ftello 
+  // This must be set for linux to expose fseeko and ftello
 # error "_LARGEFILE_SOURCE  not defined"
 #endif
 
@@ -43,6 +44,7 @@ static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
 struct udFile_FILE : public udFile
 {
   FILE *pCrtFile;
+  udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
 };
 
 
@@ -60,7 +62,7 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   {
     result = udFileExists(pFilename, pFileLengthInBytes);
     if (result != udR_Success)
-      goto epilogue;
+      *pFileLengthInBytes = 0;
   }
   result = udR_MemoryAllocationFailure;
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
@@ -70,7 +72,7 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile->fpRead = udFileHandler_FILESeekRead;
   pFile->fpWrite = udFileHandler_FILESeekWrite;
   pFile->fpClose = udFileHandler_FILEClose;
-  
+
   result = udR_File_OpenFailure;
   pMode = "";
 
@@ -99,6 +101,14 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   if (pFile->pCrtFile == nullptr)
     goto epilogue;
 
+  if (flags & udFOF_Multithread)
+  {
+    result = udR_InternalError;
+    pFile->pMutex = udCreateMutex();
+    if (!pFile->pMutex)
+      goto epilogue;
+  }
+
   *ppFile = pFile;
   pFile = nullptr;
   result = udR_Success;
@@ -125,6 +135,8 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   udResult result;
   size_t actualRead;
 
+  if (pFILE->pMutex)
+    udLockMutex(pFILE->pMutex);
   if (seekOffset != 0 || seekWhence != udFSW_SeekCur)
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
@@ -135,6 +147,8 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   result = udR_Success;
 
 //epilogue:
+  if (pFILE->pMutex)
+    udReleaseMutex(pFILE->pMutex);
 
   return result;
 }
@@ -150,6 +164,9 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   size_t actualWritten;
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
 
+  if (pFILE->pMutex)
+    udLockMutex(pFILE->pMutex);
+
   if (seekOffset != 0 || seekWhence != udFSW_SeekCur)
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
@@ -160,6 +177,8 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   result = udR_Success;
 
 //epilogue:
+  if (pFILE->pMutex)
+    udReleaseMutex(pFILE->pMutex);
 
   return result;
 }
@@ -171,16 +190,19 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
 static udResult udFileHandler_FILEClose(udFile **ppFile)
 {
   UDTRACE();
-  udFile_FILE *pFile = static_cast<udFile_FILE*>(*ppFile);
+  udFile_FILE *pFILE = static_cast<udFile_FILE*>(*ppFile);
   udResult result;
 
   *ppFile = nullptr;
 
   result = udR_File_CloseFailure;
-  if (fclose(pFile->pCrtFile) == 0)
+  if (fclose(pFILE->pCrtFile) == 0)
     result = udR_Success;
 
-  udFree(pFile);
+  if (pFILE->pMutex)
+    udDestroyMutex(&pFILE->pMutex);
+
+  udFree(pFILE);
   result = udR_Success;
 
 //epilogue:

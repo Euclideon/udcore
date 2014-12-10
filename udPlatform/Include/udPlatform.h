@@ -127,6 +127,8 @@ public:
   int32_t Get()                 { return m_value; }
   // Set a new value, returning the previous value
   int32_t Set(int32_t v)        { return udInterlockedExchange(&m_value, v); }
+  // Compare exchange to a new value, returning true if set was successful
+  bool TestAndSet(int32_t v, int32_t expected) { return udInterlockedCompareExchange(&m_value, v, expected) == expected; }
   // Set to the minimum of the existing or new value
   void SetMin(int32_t v)        { udInterlockedMin(&m_value, v); }
   // Set to the maximum of the existing or new value

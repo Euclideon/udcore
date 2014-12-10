@@ -8,6 +8,7 @@
 #include "udPlatformUtil.h"
 
 #define MAX_HANDLERS 16
+#define CONTENT_LOAD_CHUNK_SIZE 32768 // When loading an entire file of unknown size, read in chunks of this many bytes
 
 udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
 
@@ -55,12 +56,11 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   {
     udDebugPrintf("udFile_Load: %s open succeeded, length unknown\n", pFilename);
     size_t alreadyRead = 0, attemptRead = 0;
-    length = 16384;
+    length = CONTENT_LOAD_CHUNK_SIZE;
     for (actualRead = 0; attemptRead == actualRead; alreadyRead += actualRead)
     {
-//      udDebugPrintf("Loop already: %zd, attempt: %zd, actual: %zd (%lld)", alreadyRead, attemptRead, actualRead, length);
       if (alreadyRead > (size_t)length)
-        length += 16384;
+        length += CONTENT_LOAD_CHUNK_SIZE;
       result = udR_MemoryAllocationFailure;
       void *pNewMem = udRealloc(pMemory, (size_t)length + 1); // Note always allocating 1 extra byte
       if (!pNewMem)
@@ -125,8 +125,6 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
       if (result == udR_Success)
       {
         (*ppFile)->pFilenameCopy = udStrdup(pFilename);
-        if (flags & udFOF_Multithread)
-          (*ppFile)->pMutex = udCreateMutex();
         goto epilogue;
       }
     }
@@ -190,8 +188,6 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
     goto epilogue;
   }
 
-  if (pFile->pMutex)
-    udLockMutex(pFile->pMutex);
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
   result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFile->fpBlockPipedRequest ? pPipelinedRequest : nullptr);
@@ -203,9 +199,6 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   if (!pPipelinedRequest || !pFile->fpBlockPipedRequest)
     udUpdateFilePerformance(pFile, actualRead);
-
-  if (pFile->pMutex)
-    udReleaseMutex(pFile->pMutex);
 
   if (pActualRead)
     *pActualRead = actualRead;
@@ -231,11 +224,7 @@ udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLengt
   if (pFile == nullptr || pFile->fpRead == nullptr)
     goto epilogue;
 
-  if (pFile->pMutex)
-    udLockMutex(pFile->pMutex);
   result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten ? pActualWritten : &actualWritten);
-  if (pFile->pMutex)
-    udReleaseMutex(pFile->pMutex);
 
   // If the caller isn't checking the actual written (ie it's null), and it's not the requested amount, return an error when full amount isn't actually written
   if (result == udR_Success && pActualWritten == nullptr && actualWritten != bufferLength)
@@ -282,8 +271,6 @@ udResult udFile_Close(udFile **ppFile)
 
   if (*ppFile != nullptr && (*ppFile)->fpClose != nullptr)
   {
-    if ((*ppFile)->pMutex)
-      udDestroyMutex(&(*ppFile)->pMutex);
     udFree((*ppFile)->pFilenameCopy);
     return (*ppFile)->fpClose(ppFile);
   }

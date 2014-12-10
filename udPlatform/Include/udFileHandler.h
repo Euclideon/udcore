@@ -4,10 +4,10 @@
 // Copyright (c) Euclideon Pty Ltd
 //
 // Creator: Dave Pevreal
-// 
+//
 // This module allows new file handlers to be registered with the system, and is used
 // internally to provide file i/o to direct file system, http and other future protocols
-// 
+//
 #include "udPlatform.h"
 #include "udFile.h"
 
@@ -33,7 +33,6 @@ typedef udResult udFile_CloseHandlerFunc(udFile **ppFile);
 struct udFile
 {
   const char *pFilenameCopy;              // Set by udFile, not handlers. A copy of the filename used to open the file
-  udMutex *pMutex;                        // Set by udFile, not handlers. Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
   udFile_SeekReadHandlerFunc *fpRead;
   udFile_SeekWriteHandlerFunc *fpWrite;
   udFile_BlockForPipelinedRequestHandlerFunc *fpBlockPipedRequest;

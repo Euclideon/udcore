@@ -72,12 +72,14 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line);
 
 #if UDTRACE_ON
 # define UDTRACE() udTrace __udtrace##__LINE__(__FUNCTION__, UDTRACE_ON)
+# define UDTRACE_LINE() udTrace::Message("Line %d\n", __LINE__)
 # define UDTRACE_SCOPE(id) udTrace __udtrace##__LINE__(id, UDTRACE_ON)
 # define UDTRACE_MESSAGE(format,...) udTrace::Message(format,__VA_ARGS__)
 # define UDTRACE_VARIABLE(var) udTrace_Variable(#var, var, __LINE__)
 # define UDTRACE_MEMORY(var,length) udTrace_Memory(#var, var, length, __LINE__)
 #else
 # define UDTRACE()
+# define UDTRACE_LINE()
 # define UDTRACE_SCOPE(id)
 # define UDTRACE_MESSAGE(format,...)
 # define UDTRACE_VARIABLE(var)
@@ -117,7 +119,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line);
 #   define __breakOnErrorString() __debugbreak()
 # else
 #   define __breakOnErrorString()
-# endif 
+# endif
 # define PRINT_ERROR_STRING(...) do {udDebugPrintf("%s : ", __FUNCTION__); udDebugPrintf(__VA_ARGS__); __breakOnErrorString(); } while (false)
 
 #else

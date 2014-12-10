@@ -2,7 +2,7 @@
 // Copyright (c) Euclideon Pty Ltd
 //
 // Creator: Dave Pevreal, March 2014
-// 
+//
 # define _CRT_SECURE_NO_WARNINGS
 
 #include "udPlatform.h"
@@ -44,6 +44,7 @@ static char s_HTTPGetString[] = "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Eucl
 // The udFile derivative for supporting HTTP
 struct udFile_HTTP : public udFile
 {
+  udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
   udURL url;
   int64_t length;
   int64_t currentOffset;
@@ -77,7 +78,7 @@ static udResult udFileHandler_HTTPOpenSocket(udFile_HTTP *pFile)
     if (connect(pFile->sock, (struct sockaddr*)&pFile->server, sizeof(pFile->server)) == SOCKET_ERROR)
       goto epilogue;
   }
-  
+
   // TODO: TCP_NODELAY disables the Nagle algorithm.
   //       SO_KEEPALIVE enables periodic 'liveness' pings, if supported by the OS.
 
@@ -128,7 +129,7 @@ static udResult udFileHandler_HTTPSendRequest(udFile_HTTP *pFile, int len)
     if (send(pFile->sock, pFile->recvBuffer, len, 0) == SOCKET_ERROR)
       goto epilogue;
   }
-  
+
   result = udR_Success;
 
 epilogue:
@@ -139,7 +140,7 @@ epilogue:
 
 
 // ----------------------------------------------------------------------------
-// Receive a response for a GET packet, parsing the string header before 
+// Receive a response for a GET packet, parsing the string header before
 // delivering the payload
 // Author: Dave Pevreal, March 2014
 static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, size_t bufferLength, size_t *pActualRead)
@@ -159,7 +160,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     udDebugPrintf("Unable to open socket\n");
     goto epilogue;
   }
-  
+
   result = udR_File_OpenFailure; // For now, all failures will be generic file failure
 
   recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
@@ -257,7 +258,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   udResult result;
   udFile_HTTP *pFile = nullptr;
   struct hostent *hp;
-  
+
   int actualHeaderLen;
 
   // Automatically fail if trying to write to files on http
@@ -269,6 +270,14 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile = udAllocType(udFile_HTTP, 1, udAF_Zero);
   if (!pFile)
     goto epilogue;
+
+  if (flags & udFOF_Multithread)
+  {
+    result = udR_InternalError;
+    pFile->pMutex = udCreateMutex();
+    if (!pFile->pMutex)
+      goto epilogue;
+  }
 
   pFile->url.Construct();
   pFile->wsInitialised = false;
@@ -344,6 +353,9 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
   udFile_HTTP *pFile = static_cast<udFile_HTTP *>(pBaseFile);
   int64_t offset = pFile->currentOffset;
 
+  if (pFile->pMutex)
+    udLockMutex(pFile->pMutex);
+
   switch (seekWhence)
   {
     case udFSW_SeekSet: offset = seekOffset; break;
@@ -352,7 +364,7 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
   }
   //udDebugPrintf("\nSeekRead: %lld bytes at offset %lld\n", bufferLength, offset);
   size_t actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPGetString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain(), offset, offset + bufferLength-1);
-  
+
   result = udFileHandler_HTTPSendRequest(pFile, (int)actualHeaderLen);
   if (result != udR_Success)
     goto epilogue;
@@ -374,6 +386,9 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
 
 epilogue:
 
+  if (pFile->pMutex)
+    udReleaseMutex(pFile->pMutex);
+
   return result;
 }
 
@@ -384,6 +399,10 @@ epilogue:
 static udResult udFileHandler_HTTPBlockForPipelinedRequest(udFile *pBaseFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead)
 {
   udFile_HTTP *pFile = static_cast<udFile_HTTP *>(pBaseFile);
+
+  if (pFile->pMutex)
+    udLockMutex(pFile->pMutex);
+
   void *pBuffer = (void*)(pPipelinedRequest->reserved[0]);
   size_t bufferLength = (size_t)(pPipelinedRequest->reserved[1]);
   int sockID = (int)pPipelinedRequest->reserved[2];
@@ -397,6 +416,9 @@ static udResult udFileHandler_HTTPBlockForPipelinedRequest(udFile *pBaseFile, ud
   {
     result = udFileHandler_HTTPRecvGET(pFile, pBuffer, bufferLength, pActualRead);
   }
+
+  if (pFile->pMutex)
+    udReleaseMutex(pFile->pMutex);
 
   return result;
 }
@@ -425,6 +447,8 @@ static udResult udFileHandler_HTTPClose(udFile **ppFile)
       pFile->wsInitialised = false;
     }
 #endif
+    if (pFile->pMutex)
+      udDestroyMutex(&pFile->pMutex);
     udFree(pFile);
   }
 

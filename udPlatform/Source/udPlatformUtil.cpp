@@ -12,13 +12,13 @@
 #if UDPLATFORM_WINDOWS
 #include <io.h>
 #include <mmsystem.h>
-#elif UDPLATFORM_LINUX
+#else
 #include "dirent.h"
 #include <time.h>
 #include <sys/time.h>
 static const uint64_t nsec_per_sec = 1000000000; // 1 billion nanoseconds in one second
 static const uint64_t nsec_per_msec = 1000000;   // 1 million nanoseconds in one millisecond
-static const uint64_t usec_per_msec = 1000;      // 1 thousand microseconds in one millisecond
+//static const uint64_t usec_per_msec = 1000;      // 1 thousand microseconds in one millisecond
 #endif
 
 static char s_udStrEmptyString[] = "";
@@ -29,9 +29,6 @@ uint32_t udGetTimeMs()
 {
 #if UDPLATFORM_WINDOWS
   return timeGetTime();
-#elif UDPLATFORM_NACL
-  // TODO
-  return 0;
 #else
   //struct timeval now;
   //gettimeofday(&now, NULL);
@@ -53,9 +50,6 @@ uint64_t udPerfCounterStart()
   LARGE_INTEGER p;
   QueryPerformanceCounter(&p);
   return p.QuadPart;
-#elif UDPLATFORM_NACL
-  // TODO
-  return 0;
 #else
   uint64_t nsec_count;
   struct timespec ts1;
@@ -81,12 +75,9 @@ float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end)
   // TODO: Come back and tidy this up to be integer
 
   double delta = (double)(p.QuadPart - startValue);
-  
+
   double ms = (delta) ? (1000.0 / (f.QuadPart / delta)) : 0.0;
   return (float)ms;
-#elif UDPLATFORM_NACL
-  // TODO
-  return 0;
 #else
   if (!end)
     end = udPerfCounterStart();
@@ -163,7 +154,7 @@ int udStrcmp(const char *s1, const char *s2)
   {
     result = *s1 - *s2;
   } while (!result && *s1++ && *s2++);
-  
+
   return result;
 }
 
@@ -179,7 +170,7 @@ int udStrcmpi(const char *s1, const char *s2)
   {
     result = tolower(*s1) - tolower(*s2);
   } while (!result && *s1++ && *s2++);
-  
+
   return result;
 }
 
@@ -192,7 +183,7 @@ size_t udStrlen(const char *str)
   size_t len = 0;
   while (*str++)
     ++len;
-  
+
   return len;
 }
 
@@ -217,14 +208,14 @@ bool udStrBeginsWith(const char *s, const char *prefix)
 char *udStrdup(const char *s, size_t additionalChars)
 {
   if (!s) s = s_udStrEmptyString;
-  
+
   size_t len = udStrlen(s) + 1;
   char *dup = udAllocType(char, len + additionalChars, udAF_None);
   memcpy(dup, s, len);
   return dup;
 }
 
-  
+
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex)
@@ -697,7 +688,7 @@ udResult udURL::SetURL(const char *pURLText)
   m_pScheme = s_udStrEmptyString;
   m_pDomain = s_udStrEmptyString;
   m_pPath = s_udStrEmptyString;
-  
+
   if (pURLText)
   {
     // Take a copy of the entire string
@@ -709,7 +700,7 @@ udResult udURL::SetURL(const char *pURLText)
 
     // Isolate the scheme
     udStrchr(p, ":/", &i); // Find the colon that breaks the scheme, but don't search past a slash
-    
+
     if (p[i] == ':') // Test in case of malformed url (potentially allowing a default scheme such as 'http'
     {
       m_pScheme = p;
@@ -757,17 +748,17 @@ udResult udURL::SetURL(const char *pURLText)
 #pragma pack(2)
 struct udBMPHeader
 {
-    uint16_t  bfType;            // must be 'BM' 
+    uint16_t  bfType;            // must be 'BM'
     uint32_t  bfSize;            // size of the whole .bmp file
     uint16_t  bfReserved1;       // must be 0
     uint16_t  bfReserved2;       // must be 0
-    uint32_t  bfOffBits;     
+    uint32_t  bfOffBits;
 
     uint32_t  biSize;            // size of the structure
     int32_t   biWidth;           // image width
     int32_t   biHeight;          // image height
     uint16_t  biPlanes;          // bitplanes
-    uint16_t  biBitCount;        // resolution 
+    uint16_t  biBitCount;        // resolution
     uint32_t  biCompression;     // compression
     uint32_t  biSizeImage;       // size of the image
     int32_t   biXPelsPerMeter;   // pixels per meter X
@@ -800,14 +791,14 @@ udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColo
   header.biSize = 0x28; // sizeof(BITMAPINFOHEADER);
   header.biWidth = width;
   header.biHeight = height;
-  header.biPlanes = 1;	
+  header.biPlanes = 1;
   header.biBitCount = 24;
   header.biCompression = 0; /*BI_RGB*/
   header.biSizeImage = 0;
-  header.biXPelsPerMeter = 0x0ec4;  
-  header.biYPelsPerMeter = 0x0ec4;     
-  header.biClrUsed = 0;	
-  header.biClrImportant = 0; 
+  header.biXPelsPerMeter = 0x0ec4;
+  header.biYPelsPerMeter = 0x0ec4;
+  header.biClrUsed = 0;
+  header.biClrImportant = 0;
 
   result = udFile_Open(&pFile, pFilename, udFOF_Write | udFOF_Create);
   if (result != udR_Success)
@@ -821,7 +812,7 @@ udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColo
   {
     for (int x = 0; x < width; ++x)
       memcpy(&pLine[x*3], &((uint8_t*)pColorData)[y * pitchInBytes + x * 4], 3);
-    
+
     result = udFile_SeekWrite(pFile, pLine, paddedLineSize);
     if (result != udR_Success)
       goto error;
@@ -1033,7 +1024,7 @@ udResult udCloseDir(udFindDir **ppFindDir)
   if (pFindData->pDir)
     closedir(pFindData->pDir);
 #endif
-  
+
   udFree(*ppFindDir);
   return udR_Success;
 }

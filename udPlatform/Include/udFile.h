@@ -4,10 +4,10 @@
 // Copyright (c) Euclideon Pty Ltd
 //
 // Creator: Dave Pevreal, March 2014
-// 
+//
 // This module is used to perform file i/o, with a number of handlers provided internally.
 // The module can be extended to provide custom handlers
-// 
+//
 
 #include "udPlatform.h"
 #include "udResult.h"
