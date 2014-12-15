@@ -62,6 +62,5 @@ udResult udFile_Close(udFile **ppFile);
 
 // Optional handlers (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP();
-udResult udFile_RegisterNaclHTTP(void*);
 
 #endif // UDFILE_H

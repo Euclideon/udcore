@@ -2,6 +2,7 @@
 #define UDPLATFORM_UTIL_H
 
 #include "udPlatform.h"
+#include <stdio.h>
 
 // *********************************************************************
 // Some simple utility template functions
@@ -33,11 +34,11 @@ float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end = 0); // Get e
 
 
 // *********************************************************************
-// Some string functions that are safe, 
-//  - on success all return the length of the result in characters 
+// Some string functions that are safe,
+//  - on success all return the length of the result in characters
 //    (including null) which is always greater than zero
 //  - on overflow a zero returned, also note that
-//    a function designed to overwrite the destination (eg udStrcpy) 
+//    a function designed to overwrite the destination (eg udStrcpy)
 //    will clear the destination. Functions designed to work
 //    with a valid destination (eg udStrcat) will leave the
 //    the destination unaltered.
@@ -145,8 +146,8 @@ uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
 
 
 // *********************************************************************
-// Add a string to a dynamic table of unique strings. 
-// Initialise pStringTable to NULL and stringTableLength to 0, 
+// Add a string to a dynamic table of unique strings.
+// Initialise pStringTable to NULL and stringTableLength to 0,
 // and table will be reallocated as necessary
 // *********************************************************************
 int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString);
@@ -194,7 +195,7 @@ public:
   //    GetPath             - Get the complete path (eg pass to fopen)
   //    GetFilenameWithExt  - Get the filename and extension, without the path
   //    GetExt              - Get just the extension (starting with the dot)
-  const char *GetPath() const            { return m_path; }  
+  const char *GetPath() const            { return m_path; }
   const char *GetFilenameWithExt() const { return m_path + m_filenameIndex; }
   const char *GetExt() const             { return m_path + m_extensionIndex; }
 
