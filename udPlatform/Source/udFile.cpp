@@ -72,7 +72,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
       if (result != udR_Success)
         goto epilogue;
     }
-    UDASSERT(length >= alreadyRead, "Logic error in read loop");
+    UDASSERT((size_t)length >= alreadyRead, "Logic error in read loop");
     if ((size_t)length != alreadyRead)
     {
       length = alreadyRead;

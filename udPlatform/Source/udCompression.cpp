@@ -1,38 +1,38 @@
 // To prevent collisions with other apps using miniz
 #define mz_adler32 udComp_adler32
 #define mz_crc32 udComp_crc32
-#define mz_free udComp_free                                    
-#define mz_version  udComp_version 
-#define mz_deflateEnd udComp_deflateEnd                              
-#define mz_deflateBound udComp_deflateBound                            
-#define mz_compressBound udComp_compressBound                           
-#define mz_inflateInit2 udComp_inflateInit2                            
-#define mz_inflateInit udComp_inflateInit                             
-#define mz_inflateEnd udComp_inflateEnd                              
-#define mz_error udComp_error                                   
-#define tinfl_decompress udCompTInf_decompress                           
-#define tinfl_decompress_mem_to_heap udCompTInf_decompress_mem_to_heap               
-#define tinfl_decompress_mem_to_mem udCompTInf_decompress_mem_to_mem                
-#define tinfl_decompress_mem_to_callback udCompTInf_decompress_mem_to_callback           
-#define tdefl_compress udCompTDefl_compress                             
-#define tdefl_compress_buffer udCompTDefl_compress_buffer                      
-#define tdefl_init udCompTDefl_init                                 
-#define tdefl_get_prev_return_status udCompTDefl_get_prev_return_status               
-#define tdefl_get_adler32 udCompTDefl_get_adler32                          
-#define tdefl_compress_mem_to_output udCompTDefl_compress_mem_to_output               
-#define tdefl_compress_mem_to_heap udCompTDefl_compress_mem_to_heap                 
-#define tdefl_compress_mem_to_mem udCompTDefl_compress_mem_to_mem                  
-#define tdefl_create_comp_flags_from_zip_params udCompTDefl_create_comp_flags_from_zip_params    
+#define mz_free udComp_free
+#define mz_version  udComp_version
+#define mz_deflateEnd udComp_deflateEnd
+#define mz_deflateBound udComp_deflateBound
+#define mz_compressBound udComp_compressBound
+#define mz_inflateInit2 udComp_inflateInit2
+#define mz_inflateInit udComp_inflateInit
+#define mz_inflateEnd udComp_inflateEnd
+#define mz_error udComp_error
+#define tinfl_decompress udCompTInf_decompress
+#define tinfl_decompress_mem_to_heap udCompTInf_decompress_mem_to_heap
+#define tinfl_decompress_mem_to_mem udCompTInf_decompress_mem_to_mem
+#define tinfl_decompress_mem_to_callback udCompTInf_decompress_mem_to_callback
+#define tdefl_compress udCompTDefl_compress
+#define tdefl_compress_buffer udCompTDefl_compress_buffer
+#define tdefl_init udCompTDefl_init
+#define tdefl_get_prev_return_status udCompTDefl_get_prev_return_status
+#define tdefl_get_adler32 udCompTDefl_get_adler32
+#define tdefl_compress_mem_to_output udCompTDefl_compress_mem_to_output
+#define tdefl_compress_mem_to_heap udCompTDefl_compress_mem_to_heap
+#define tdefl_compress_mem_to_mem udCompTDefl_compress_mem_to_mem
+#define tdefl_create_comp_flags_from_zip_params udCompTDefl_create_comp_flags_from_zip_params
 #define tdefl_write_image_to_png_file_in_memory_ex udCompTDefl_write_image_to_png_file_in_memory_ex
-#define tdefl_write_image_to_png_file_in_memory udCompTDefl_write_image_to_png_file_in_memory   
-#define mz_deflateInit2 udComp_deflateInit2                           
-#define mz_deflateReset udComp_deflateReset                           
-#define mz_deflate udComp_deflate                                
-#define mz_inflate udComp_inflate                                
-#define mz_uncompress udComp_uncompress                             
-#define mz_deflateInit udComp_deflateInit                            
-#define mz_compress2 udComp_compress2                              
-#define mz_compress udComp_compress          
+#define tdefl_write_image_to_png_file_in_memory udCompTDefl_write_image_to_png_file_in_memory
+#define mz_deflateInit2 udComp_deflateInit2
+#define mz_deflateReset udComp_deflateReset
+#define mz_deflate udComp_deflate
+#define mz_inflate udComp_inflate
+#define mz_uncompress udComp_uncompress
+#define mz_deflateInit udComp_deflateInit
+#define mz_compress2 udComp_compress2
+#define mz_compress udComp_compress
 
 #define mz_zip_writer_init_from_reader udComp_zip_writer_init_from_reader
 #define mz_zip_reader_end udComp_mz_zip_reader_end
@@ -42,8 +42,8 @@
 
 #define MINIZ_NO_STDIO
 #define MINIZ_NO_TIME
-#define MINIZ_NO_MALLOC 
-#include "miniz.c"
+#define MINIZ_NO_MALLOC
+#include "miniz/miniz.c"
 
 #define WINDOW_BITS (-MZ_DEFAULT_WINDOW_BITS)
 #include "udPlatform.h"
@@ -73,7 +73,7 @@ udResult udMiniZCompressor_Create(udMiniZCompressor **ppCompressor)
   {
     return udR_MemoryAllocationFailure;
   }
-  
+
   pCompressor->pStream = nullptr;
 
   *ppCompressor = pCompressor;
@@ -84,7 +84,7 @@ udResult udMiniZCompressor_Create(udMiniZCompressor **ppCompressor)
 // Author: David Ely, September 2014
 udResult udMiniZCompressor_InitStream(udMiniZCompressor *pCompressor, void *pDestBuffer, size_t size)
 {
-  if (!size || size > 0xFFFFFFFFU || pDestBuffer == nullptr) 
+  if (!size || size > 0xFFFFFFFFU || pDestBuffer == nullptr)
   {
     return udR_InvalidParameter_;
   }
@@ -99,7 +99,7 @@ udResult udMiniZCompressor_InitStream(udMiniZCompressor *pCompressor, void *pDes
   pCompressor->pStream->opaque = (void*)pCompressor;
 
   status = udComp_deflateInit2(pCompressor->pStream, MZ_UBER_COMPRESSION, MZ_DEFLATED, WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
-  if (status != MZ_OK) 
+  if (status != MZ_OK)
   {
     return udR_Failure_;
   }
@@ -111,7 +111,7 @@ udResult udMiniZCompressor_InitStream(udMiniZCompressor *pCompressor, void *pDes
 // Author: David Ely, September 2014
 udResult udMiniZCompressor_DeflateStream(udMiniZCompressor *pCompressor, void *pStream, size_t size, size_t *pCompressedSize)
 {
-  if (!size || size > 0xFFFFFFFFU || pStream == nullptr) 
+  if (!size || size > 0xFFFFFFFFU || pStream == nullptr)
   {
     return udR_InvalidParameter_;
   }
@@ -179,7 +179,7 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
   mz_stream stream;
   memset(&stream, 0, sizeof(stream));
 
-  if ((sourceLength | destLength) > 0xFFFFFFFFU) 
+  if ((sourceLength | destLength) > 0xFFFFFFFFU)
   {
     return udR_InvalidParameter_;
   }
@@ -193,7 +193,7 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
   stream.opaque = (void*)pCompressor;
 
   status = udComp_deflateInit2(&stream, MZ_UBER_COMPRESSION, MZ_DEFLATED, WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
-  if (status != MZ_OK) 
+  if (status != MZ_OK)
   {
     return udR_Failure_;
   }
@@ -217,9 +217,9 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
 // ----------------------------------------------------------------------------
 // Author: David Ely, September 2014
 static void *MiniZCompressor_Alloc(void *pOpaque, size_t IF_UDASSERT(items), size_t IF_UDASSERT(size))
-{ 
+{
   UDASSERT(items * size == (sizeof(udMiniZCompressor) - sizeof(mz_stream*)), "Error allocation for the incorrect size");
-  return pOpaque; 
+  return pOpaque;
 }
 
 // ----------------------------------------------------------------------------
@@ -276,12 +276,12 @@ udResult udMiniZDecompressor_Inflate(udMiniZDecompressor *pDecompressor, void *p
   }
 
   tinfl_init(&pDecompressor->decompressor);
-  
-  mz_uint8* pCurrentDest = (mz_uint8*)pDest; 
-  tinfl_status status = udCompTInf_decompress(&pDecompressor->decompressor, (const mz_uint8*)pSource, &sourceLength, 
-                                              (mz_uint8*)pDest, pCurrentDest, &destLength, 
+
+  mz_uint8* pCurrentDest = (mz_uint8*)pDest;
+  tinfl_status status = udCompTInf_decompress(&pDecompressor->decompressor, (const mz_uint8*)pSource, &sourceLength,
+                                              (mz_uint8*)pDest, pCurrentDest, &destLength,
                                               TINFL_FLAG_COMPUTE_ADLER32 | TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
-  
+
   if (status != TINFL_STATUS_DONE)
   {
     return udR_Failure_;
