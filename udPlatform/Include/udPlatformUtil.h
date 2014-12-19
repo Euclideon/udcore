@@ -144,6 +144,11 @@ inline uint32_t udCountBits8(uint8_t a_number)
 // Create (or optionally update) a standard 32-bit CRC
 uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
 
+// *********************************************************************
+// Simple base64 decoder, output can be same memory as input
+// Pass zero for outputLength to count output bytes without actually writing
+// Returns actual number of bytes after decoding
+size_t udDecodeBase64(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength);
 
 // *********************************************************************
 // Add a string to a dynamic table of unique strings.

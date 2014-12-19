@@ -19,10 +19,12 @@ struct udCryptoCipherContext;
 // Initialise a cipher
 udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers cipher, udCryptoPaddingMode padMode, const uint8_t *pKey);
 
-// Encrypt some data (depending on padding scheme, *pPaddedCipherTextLen may be greater than plainTextLen)
-udResult udCrypto_EncryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, const uint8_t *pPlainText, size_t plainTextLen, uint8_t *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr);
+// ECB Mode (not secure on it's own, used as a building block for other modes)
+udResult udCrypto_EncryptECB(udCryptoCipherContext *pCtx, const uint8_t *pPlainText, size_t plainTextLen, uint8_t *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr);
+udResult udCrypto_DecryptECB(udCryptoCipherContext *pCtx, const uint8_t *pCipherText, size_t cipherTextLen, uint8_t *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen = nullptr);
 
-// Decrypt some data (depending on padding scheme, *pActualplainTextLen may be less than cipherTextLen)
+// CBC Mode (secure only when IV is never reused with the same key)
+udResult udCrypto_EncryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, const uint8_t *pPlainText, size_t plainTextLen, uint8_t *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr);
 udResult udCrypto_DecryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, const uint8_t *pCipherText, size_t cipherTextLen, uint8_t *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen = nullptr);
 
 // Free resources

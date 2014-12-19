@@ -481,6 +481,34 @@ double udStrAtof64(const char *s, int *pCharCount)
 
 
 // *********************************************************************
+// Author: Dave Pevreal, December 2014
+size_t udDecodeBase64(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength)
+{
+  static char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  uint32_t accum = 0; // Accumulator for incoming data (read 6 bits at a time)
+  int accumBits = 0;
+  size_t outputIndex = 0;
+  for (size_t inputIndex = 0;inputIndex < length; )
+  {
+    char *c = strchr(b64, pString[inputIndex++]);
+    if (c)
+    {
+      accum |= uint32_t(c - b64) << (16 - accumBits - 6); // Store in accumulator, starting at high byte
+      if ((accumBits += 6) >= 8)
+      {
+        if (outputIndex < outputLength)
+          pOutput[outputIndex] = uint8_t(accum >> 8);
+        ++outputIndex;
+        accum <<= 8;
+        accumBits -= 8;
+      }
+    }
+  }
+  return outputIndex;
+}
+
+
+// *********************************************************************
 // Author: Dave Pevreal, March 2014
 int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString)
 {

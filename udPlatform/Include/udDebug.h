@@ -39,7 +39,7 @@ inline void udTrace_Variable(const char *pName, uint64_t value, int line)     { 
 inline void udTrace_Variable(const char *pName, float value, int line)        { udTrace::Message("%s = %f (float, line#=%d)", pName, value, line); }
 inline void udTrace_Variable(const char *pName, double value, int line)       { udTrace::Message("%s = %lf (double line#=%d)", pName, value, line); }
 inline void udTrace_Variable(const char *pName, bool value, int line)         { udTrace::Message("%s = %s (line#=%d)", pName, value ? "true" : "false", line); }
-void udTrace_Memory(const char *pName, const void *pMem, int length, int line);
+void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 0);
 
 
 #if UD_DEBUG

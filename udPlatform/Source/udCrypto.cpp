@@ -84,6 +84,102 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
+udResult udCrypto_EncryptECB(udCryptoCipherContext *pCtx, const uint8_t *pPlainText, size_t plainTextLen, uint8_t *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen)
+{
+  udResult result;
+  size_t paddedCliperTextLen;
+
+  result = udR_InvalidParameter_;
+  if (!pCtx || !pPlainText || !pCipherText)
+    goto epilogue;
+
+  paddedCliperTextLen = plainTextLen;
+  switch (pCtx->padMode)
+  {
+    case udCPM_None:
+      if ((plainTextLen % pCtx->blockSize) != 0)
+      {
+        result = udR_BlockLimitExceeded; // TODO: Add better error code
+        goto epilogue;
+      }
+      break;
+    // TODO: Add a padding mode
+    default:
+      result = udR_InvalidConfiguration;
+      goto epilogue;
+  }
+
+  result = udR_BufferTooSmall;
+  if (paddedCliperTextLen < cipherTextLen)
+    goto epilogue;
+
+  switch (pCtx->cipher)
+  {
+    case udCC_AES128:
+    case udCC_AES256:
+      for (size_t i = 0; i < plainTextLen; i += pCtx->blockSize)
+        udCrypto::aes_encrypt(pPlainText + i, pCipherText + i, pCtx->keySchedule, pCtx->keyLengthInBits);
+      break;
+  }
+
+  if (pPaddedCipherTextLen)
+    *pPaddedCipherTextLen = paddedCliperTextLen;
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, December 2014
+udResult udCrypto_DecryptECB(udCryptoCipherContext *pCtx, const uint8_t *pCipherText, size_t cipherTextLen, uint8_t *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen)
+{
+  udResult result;
+  size_t actualPlainTextLen;
+
+  result = udR_InvalidParameter_;
+  if (!pCtx || !pPlainText || !pCipherText)
+    goto epilogue;
+
+  actualPlainTextLen = cipherTextLen;
+  switch (pCtx->padMode)
+  {
+    case udCPM_None:
+      if ((cipherTextLen % pCtx->blockSize) != 0)
+      {
+        result = udR_BlockLimitExceeded; // TODO: Add better error code
+        goto epilogue;
+      }
+      break;
+    // TODO: Add a padding mode
+    default:
+      result = udR_InvalidConfiguration;
+      goto epilogue;
+  }
+
+  result = udR_BufferTooSmall;
+  if (actualPlainTextLen < plainTextLen)
+    goto epilogue;
+
+  switch (pCtx->cipher)
+  {
+    case udCC_AES128:
+    case udCC_AES256:
+      for (size_t i = 0; i < plainTextLen; i += pCtx->blockSize)
+        udCrypto::aes_encrypt(pCipherText + i, pPlainText + i, pCtx->keySchedule, pCtx->keyLengthInBits);
+      break;
+  }
+
+  if (pActualPlainTextLen)
+    *pActualPlainTextLen = actualPlainTextLen;
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, December 2014
 udResult udCrypto_EncryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, const uint8_t *pPlainText, size_t plainTextLen, uint8_t *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen)
 {
   udResult result;

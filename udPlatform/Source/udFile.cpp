@@ -8,7 +8,7 @@
 #include "udPlatformUtil.h"
 
 #define MAX_HANDLERS 16
-#define CONTENT_LOAD_CHUNK_SIZE 32768 // When loading an entire file of unknown size, read in chunks of this many bytes
+#define CONTENT_LOAD_CHUNK_SIZE 65536 // When loading an entire file of unknown size, read in chunks of this many bytes
 
 udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
 
