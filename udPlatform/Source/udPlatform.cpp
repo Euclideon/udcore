@@ -207,9 +207,9 @@ void udReleaseMutex(udMutex *pMutex)
 }
 
 
-#if __MEMORY_DEBUG__  
+#if __MEMORY_DEBUG__
 # if defined(_MSC_VER)
-#   pragma warning(disable:4530) //  C++ exception handler used, but unwind semantics are not enabled. 
+#   pragma warning(disable:4530) //  C++ exception handler used, but unwind semantics are not enabled.
 # endif
 #include <map>
 
@@ -266,7 +266,7 @@ void udMemoryDebugTrackingDeinit()
   delete pMemoryTrackingMap;
   pMemoryTrackingMap = NULL;
 
-#if UDPLATFORM_WINDOWS    
+#if UDPLATFORM_WINDOWS
   uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
   if (!bResult)
   {
@@ -291,7 +291,7 @@ void udMemoryOutputLeaks()
 #endif
     if (pMemoryTrackingMap->size() > 0)
     {
-      udDebugPrintf("%d Allocations\n", uint32_t(gAllocationCount)); 
+      udDebugPrintf("%d Allocations\n", uint32_t(gAllocationCount));
 
       udDebugPrintf("%d Memory leaks detected\n", pMemoryTrackingMap->size());
       for (MemTrackMap::iterator memIt = pMemoryTrackingMap->begin(); memIt != pMemoryTrackingMap->end(); ++memIt)
@@ -305,7 +305,7 @@ void udMemoryOutputLeaks()
       udDebugPrintf("All tracked allocations freed\n");
     }
 
-#if UDPLATFORM_WINDOWS    
+#if UDPLATFORM_WINDOWS
     uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
     if (!bResult)
     {
@@ -329,7 +329,7 @@ void udMemoryOutputAllocInfo(void *pAlloc)
   const MemTrack &track = (*pMemoryTrackingMap)[size_t(pAlloc)];
   udDebugPrintf("%s(%d): Allocation 0x%p Address 0x%p, size %u\n", track.pFile, track.line, (void*)track.allocationNumber, track.pMemory, track.size);
 
-#if UDPLATFORM_WINDOWS    
+#if UDPLATFORM_WINDOWS
   uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
   if (!bResult)
   {
@@ -340,11 +340,11 @@ void udMemoryOutputAllocInfo(void *pAlloc)
 
 static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile, int line)
 {
-  if (gAddressToBreakOnAllocation == (uint64_t)pMemory || gAllocationCount == gAllocationCountToBreakOn) 
-  { 
-    udDebugPrintf("Allocation 0x%p address 0x%p, at File %s, line %d", (void*)gAllocationCount, pMemory, pFile, line); 
-    __debugbreak(); 
-  } 
+  if (gAddressToBreakOnAllocation == (uint64_t)pMemory || gAllocationCount == gAllocationCountToBreakOn)
+  {
+    udDebugPrintf("Allocation 0x%p address 0x%p, at File %s, line %d", (void*)gAllocationCount, pMemory, pFile, line);
+    __debugbreak();
+  }
 
 #if UDPLATFORM_WINDOWS
   uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
@@ -356,23 +356,23 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
 #endif
 
 #if UDASSERT_ON
-  size_t sizeOfMap = pMemoryTrackingMap->size();  
+  size_t sizeOfMap = pMemoryTrackingMap->size();
 #endif
-  MemTrack track = { pMemory, size, pFile, line, gAllocationCount };  
+  MemTrack track = { pMemory, size, pFile, line, gAllocationCount };
 
   if (pMemoryTrackingMap->find(size_t(pMemory)) != pMemoryTrackingMap->end())
   {
-    udDebugPrintf("Tracked allocation already exists %p at File %s, line %d", pMemory, pFile, line); 
-    __debugbreak(); 
+    udDebugPrintf("Tracked allocation already exists %p at File %s, line %d", pMemory, pFile, line);
+    __debugbreak();
   }
 
-  (*pMemoryTrackingMap)[size_t(pMemory)] = track; 
+  (*pMemoryTrackingMap)[size_t(pMemory)] = track;
 
-  ++gAllocationCount;  
+  ++gAllocationCount;
 
   UDASSERT(pMemoryTrackingMap->size() > sizeOfMap, "map didn't grow") // I think this is incorrect as the map may not need to grow if its reusing a slot that has been freed.
 
-#if UDPLATFORM_WINDOWS    
+#if UDPLATFORM_WINDOWS
   uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
   if (!bResult)
   {
@@ -381,18 +381,18 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
 #endif
 }
 
-static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)   
+static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 {
 # if UDASSERT_ON
-  size_t sizeOfMap; 
+  size_t sizeOfMap;
 # endif
 
 
-  if (gAddressToBreakOnFree == (uint64_t)pMemory) 
-  { 
-    udDebugPrintf("Allocation 0x%p address 0x%p, at File %s, line %d", (void*)gAllocationCount, pMemory, pFile, line); 
-    __debugbreak(); 
-  } 
+  if (gAddressToBreakOnFree == (uint64_t)pMemory)
+  {
+    udDebugPrintf("Allocation 0x%p address 0x%p, at File %s, line %d", (void*)gAllocationCount, pMemory, pFile, line);
+    __debugbreak();
+  }
 
 #if UDPLATFORM_WINDOWS
   uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
@@ -408,23 +408,23 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
     MemTrackMap::iterator it = pMemoryTrackingMap->find(size_t(pMemory));
     if (it == pMemoryTrackingMap->end())
     {
-      udDebugPrintf("Error freeing address %p at File %s, line %d, did not find a matching allocation", pMemory, pFile, line); 
-      //__debugbreak(); 
+      udDebugPrintf("Error freeing address %p at File %s, line %d, did not find a matching allocation", pMemory, pFile, line);
+      //__debugbreak();
       goto epilogue;
     }
     UDASSERT(it->second.pMemory == (pMemory), "Pointers didn't match");
 
 # if UDASSERT_ON
-    sizeOfMap = pMemoryTrackingMap->size(); 
+    sizeOfMap = pMemoryTrackingMap->size();
 # endif
-    pMemoryTrackingMap->erase(it); 
+    pMemoryTrackingMap->erase(it);
 
     UDASSERT(pMemoryTrackingMap->size() < sizeOfMap, "map didn't shrink");
   }
 
 epilogue:
 
-#if UDPLATFORM_WINDOWS    
+#if UDPLATFORM_WINDOWS
  uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
   if (!bResult)
   {
@@ -443,7 +443,7 @@ epilogue:
 
 #define UD_DEFAULT_ALIGNMENT (8)
 
-void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
+void *udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if defined(_MSC_VER)
   void *pMemory = (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, UD_DEFAULT_ALIGNMENT) : _aligned_malloc(size, UD_DEFAULT_ALIGNMENT);
@@ -456,14 +456,14 @@ void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char *
 #if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   if (!pMemory)
   {
-    udDebugPrintf("_udAlloc failure, %llu", size);
+    udDebugPrintf("udAlloc failure, %llu", size);
     __debugbreak();
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   return pMemory;
 }
 
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
+void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if defined(_MSC_VER)
   void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, alignment) : _aligned_malloc(size, alignment);
@@ -471,7 +471,7 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_
 #if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   if (!pMemory)
   {
-    udDebugPrintf("_udAllocAligned failure, %llu", size);
+    udDebugPrintf("udAllocAligned failure, %llu", size);
     __debugbreak();
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
@@ -501,7 +501,7 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_
   return pMemory;
 }
 
-void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int line))
+void *udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if __MEMORY_DEBUG__
   if (pMemory)
@@ -518,7 +518,7 @@ void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, 
 #if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   if (!pMemory)
   {
-    udDebugPrintf("_udRealloc failure, %llu", size);
+    udDebugPrintf("udRealloc failure, %llu", size);
     __debugbreak();
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
@@ -528,7 +528,7 @@ void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, 
   return pMemory;
 }
 
-void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int line))
+void *udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if __MEMORY_DEBUG__
   if (pMemory)
@@ -542,7 +542,7 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 #if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
   if (!pMemory)
   {
-    udDebugPrintf("_udReallocAligned failure, %llu", size);
+    udDebugPrintf("udReallocAligned failure, %llu", size);
     __debugbreak();
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
@@ -551,36 +551,35 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 #elif defined(__GNUC__)
   if (!pMemory)
   {
-    pMemory = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(pFile, line));
+    pMemory = udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(pFile, line));
   }
   else
   {
-    void *pNewMem = _udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(pFile, line));
+    void *pNewMem = udAllocAligned(size, alignment, udAF_None IF_MEMORY_DEBUG(pFile, line));
 
     size_t *pSize = (size_t*)((uint8_t*)pMemory - sizeof(size_t));
     memcpy(pNewMem, pMemory, *pSize);
-    _udFree(&pMemory IF_MEMORY_DEBUG(pFile, line));
+    udFree(pMemory IF_MEMORY_DEBUG(pFile, line));
 
     return pNewMem;
   }
 #endif
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
-  
+
   return pMemory;
 }
 
-void _udFree(void **ppMemory IF_MEMORY_DEBUG(const char * pFile, int line))
+void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line))
 {
-  if (*ppMemory)
+  if (pMemory)
   {
-    DebugTrackMemoryFree(*ppMemory, pFile, line);
+    DebugTrackMemoryFree(pMemory, pFile, line);
 #if defined(_MSC_VER)
-    _aligned_free(*ppMemory);
+    _aligned_free(pMemory);
 #else
-    free(*ppMemory);
+    free(pMemory);
 #endif // defined(_MSC_VER)
-    *ppMemory = NULL;
   }
 }
 
@@ -601,7 +600,7 @@ udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 
 #elif UDPLATFORM_LINUX
 
-// see http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system for 
+// see http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system for
 // explanation.
 
 #if !defined(_SC_PHYS_PAGES)

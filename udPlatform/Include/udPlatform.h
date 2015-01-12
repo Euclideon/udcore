@@ -187,6 +187,10 @@ protected:
 # define IF_MEMORY_DEBUG(x,y)
 #endif //  __MEMORY_DEBUG__
 
+#if UDPLATFORM_NACL && !defined(nullptr)
+# define nullptr NULL
+#endif
+
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <alloca.h>
 #endif
@@ -201,48 +205,36 @@ enum udAllocationFlags
 inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
 
 
-void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int  line));
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int  line));
+void *udAlloc(size_t size, udAllocationFlags flags = udAF_None IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
 
-void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int  line));
-void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int  line));
+#define udAllocFlags(size, flags) udAlloc(size, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
+#define udAllocType(type, count, flags) (type*)udAlloc(sizeof(type) * (count), flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-void _udFree(void **pMemory IF_MEMORY_DEBUG(const char * pFile, int  line));
+void *udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+void *udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
 
-template <typename T> void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile, int  line)) { if (pMemory) { pMemory->~T(); _udFree((void**)&pMemory IF_MEMORY_DEBUG(pFile, line)); pMemory = NULL; } }
+template <typename T>
+void udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
+{
+  void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
+
+  _udFree((void*)pMemory IF_MEMORY_DEBUG(pFile, line));
+  pMemory = nullptr;
+}
 
 
-#if __MEMORY_DEBUG__
-#  define udAlloc(size) _udAlloc(size, udAF_None, __FILE__, __LINE__)
+#define udNew(type, ...) new (udAlloc(sizeof(type), udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
+template <typename T>
+void udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
+{
+  if (pMemory)
+  {
+    pMemory->~T();
+    udFree(pMemory IF_MEMORY_DEBUG(pFile, line));
+  }
+}
 
-#  define udAllocFlags(size, flags) _udAlloc(size, flags, __FILE__, __LINE__)
-#  define udAllocType(type, count, flags) (type*)_udAlloc(sizeof(type) * (count), flags, __FILE__, __LINE__)
-#  define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags, __FILE__, __LINE__)
-
-#  define udRealloc(pMemory, size) _udRealloc(pMemory, size, __FILE__, __LINE__)
-#  define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment, __FILE__, __LINE__)
-
-#  define udFree(pMemory) _udFree((void**)&pMemory, __FILE__, __LINE__)
-
-#  define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None, __FILE__, __LINE__)) type(__VA_ARGS__)
-#  define udDelete(pMemory) _udDelete(pMemory, __FILE__, __LINE__)
-
-#else //  __MEMORY_DEBUG__
-#  define udAlloc(size) _udAlloc(size, udAF_None)
-
-#  define udAllocFlags(size, flags) _udAlloc(size, flags)
-#  define udAllocType(type, count, flags) (type*)_udAlloc(sizeof(type) * (count), flags)
-#  define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags)
-
-#  define udRealloc(pMemory, size) _udRealloc(pMemory, size)
-#  define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment)
-
-#  define udFree(pMemory) _udFree((void**)&pMemory)
-
-#  define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None)) type(__VA_ARGS__)
-#  define udDelete(pMemory) _udDelete(pMemory)
-
-#endif  //  __MEMORY_DEBUG__
 
 UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
@@ -287,9 +279,6 @@ void udMemoryDebugTrackingDeinit();
 # define __FUNC_NAME__ "unknown"
 #endif
 
-#if UDPLATFORM_NACL && !defined(nullptr)
-# define nullptr NULL
-#endif
 
 // Disabled Warnings
 #if defined(_MSC_VER)
