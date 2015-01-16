@@ -175,7 +175,7 @@ static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest)
+udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest *pPipelinedRequest)
 {
   UDTRACE();
   udResult result;
@@ -190,7 +190,7 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
 
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
-  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFile->fpBlockPipedRequest ? pPipelinedRequest : nullptr);
+  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFilePos, pFile->fpBlockPipedRequest ? pPipelinedRequest : nullptr);
 
   // Save off the actualRead in the request for the case where the handler doesn't support piped requests
   if (pPipelinedRequest && !pFile->fpBlockPipedRequest)
@@ -214,7 +214,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
+udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos)
 {
   UDTRACE();
   udResult result;
@@ -224,7 +224,7 @@ udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLengt
   if (pFile == nullptr || pFile->fpRead == nullptr)
     goto epilogue;
 
-  result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten ? pActualWritten : &actualWritten);
+  result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten ? pActualWritten : &actualWritten, pFilePos);
 
   // If the caller isn't checking the actual written (ie it's null), and it's not the requested amount, return an error when full amount isn't actually written
   if (result == udR_Success && pActualWritten == nullptr && actualWritten != bufferLength)

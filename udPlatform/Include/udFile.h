@@ -18,7 +18,8 @@ enum udFileOpenFlags
   udFOF_Read  = 1,
   udFOF_Write = 2,
   udFOF_Create = 4,
-  udFOF_Multithread = 8
+  udFOF_Multithread = 8,
+  udFOF_FastOpen = 16   // No checks performed, file length not supported. Currently only functional for HTTP
 };
 // Inline of operator to allow flags to be combined and retain type-safety
 inline udFileOpenFlags operator|(udFileOpenFlags a, udFileOpenFlags b) { return (udFileOpenFlags)(int(a) | int(b)); }
@@ -49,10 +50,10 @@ const char *udFile_GetFilename(udFile *pFile);
 udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pRequestsInFlight);
 
 // Seek and read some data
-udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);
+udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);
 
 // Seek and write some data
-udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr);
+udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr, int64_t *pFilePos = nullptr);
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead = nullptr);

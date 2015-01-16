@@ -128,7 +128,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekReadHandler to access the crt FILE i/o functions
-static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
+static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   UDTRACE();
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
@@ -141,6 +141,10 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
   actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
+
+  if (pFilePos)
+    *pFilePos = ftell(pFILE->pCrtFile);
+
   if (pActualRead)
     *pActualRead = actualRead;
 
@@ -157,7 +161,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekWriteHandler to access the crt FILE i/o functions
-static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten)
+static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos)
 {
   UDTRACE();
   udResult result;
@@ -171,8 +175,12 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
   actualWritten = fwrite(pBuffer, 1, bufferLength, pFILE->pCrtFile);
+
   if (pActualWritten)
     *pActualWritten = actualWritten;
+
+  if (pFilePos)
+    *pFilePos = ftell(pFILE->pCrtFile);
 
   result = udR_Success;
 

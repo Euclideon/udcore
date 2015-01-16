@@ -316,7 +316,7 @@ struct udFile_MiniZFile : public udFile
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2014
 // Implementation of SeekReadHandler to access a file in the registered zip
-static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
+static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   udFile_MiniZFile *pFile = static_cast<udFile_MiniZFile *>(a_pFile);
   size_t newPos;
@@ -332,8 +332,13 @@ static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size
     return udR_File_ReadFailure;
   size_t actualRead = (newPos + bufferLength) > pFile->length ? pFile->length - newPos : bufferLength;
   memcpy(pBuffer, pFile->data + newPos, actualRead);
+
+  pFile->fPos = newPos + actualRead;
+  if (pFilePos)
+    *pFilePos = pFile->fPos;
   if (pActualRead)
     *pActualRead = actualRead;
+
   return udR_Success;
 }
 

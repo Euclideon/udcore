@@ -292,6 +292,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
     goto epilogue;
 
 #if UDPLATFORM_WINDOWS
+  // TODO: Only do this once and reference count
   if (WSAStartup(MAKEWORD(2, 2), &pFile->wsaData))
   {
     udDebugPrintf("WSAStartup failed\n");
@@ -312,6 +313,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile->server.sin_family = AF_INET;
   pFile->server.sin_port = htons((u_short) pFile->url.GetPort());
 
+  // TODO: Support for udFOF_FastOpen
   result = udR_Failure_;
   actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPHeaderString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain());
   if (actualHeaderLen < 0)
@@ -347,7 +349,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Implementation of SeekReadHandler via HTTP
 // Author: Dave Pevreal, March 2014
-static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest)
+static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest *pPipelinedRequest)
 {
   udResult result;
   udFile_HTTP *pFile = static_cast<udFile_HTTP *>(pBaseFile);
@@ -383,6 +385,9 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
     result = udFileHandler_HTTPRecvGET(pFile, pBuffer, bufferLength, pActualRead);
   }
   pFile->currentOffset = offset + bufferLength;
+
+  if (pFilePos)
+    *pFilePos = pFile->currentOffset;
 
 epilogue:
 
