@@ -20,6 +20,7 @@ enum udResult
   udR_ObjectTypeMismatch,
   udR_NodeLimitExceeded,
   udR_BlockLimitExceeded,
+  udR_CorruptData,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,
