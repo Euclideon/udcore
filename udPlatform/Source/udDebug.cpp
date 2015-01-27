@@ -127,6 +127,14 @@ void udTrace::Message(const char *pFormat, ...)
 
 
 // ***************************************************************************************
+void udTrace::ShowCallstack()
+{
+  udDebugPrintf("Callstack:\n");
+  for (udTrace *p = head; p; p = p->next)
+    udDebugPrintf("  %s\n", p->functionName);
+}
+
+// ***************************************************************************************
 void udTrace_Memory(const char *pName, const void *pMem, int length, int line)
 {
   char format[100];

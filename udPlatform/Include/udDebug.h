@@ -16,6 +16,7 @@ public:
   udTrace(const char *, int traceLevel);
   ~udTrace();
   static void Message(const char *pFormat, ...); // Print a message at the indentation level of the current trace
+  static void ShowCallstack();
 
   const char *functionName;
   udTrace *next;
