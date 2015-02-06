@@ -30,6 +30,9 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_NodeLimitExceeded),
   RESULTINFO(udR_BlockLimitExceeded),
   RESULTINFO(udR_CorruptData),
+  RESULTINFO(udR_CompressionInputExhausted),
+  RESULTINFO(udR_CompressionOutputExhausted),
+  RESULTINFO(udR_CompressionError),
 
   RESULTINFO(udR_Writer_InitFailure),
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),

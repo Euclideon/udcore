@@ -21,6 +21,9 @@ enum udResult
   udR_NodeLimitExceeded,
   udR_BlockLimitExceeded,
   udR_CorruptData,
+  udR_CompressionInputExhausted,
+  udR_CompressionOutputExhausted,
+  udR_CompressionError,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,

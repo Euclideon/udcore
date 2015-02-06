@@ -284,7 +284,11 @@ udResult udMiniZDecompressor_Inflate(udMiniZDecompressor *pDecompressor, void *p
 
   if (status != TINFL_STATUS_DONE)
   {
-    return udR_Failure_;
+    if (status == TINFL_STATUS_NEEDS_MORE_INPUT)
+      return udR_CompressionInputExhausted;
+    if (status == TINFL_STATUS_HAS_MORE_OUTPUT)
+      return udR_CompressionOutputExhausted;
+    return udR_CompressionError;
   }
 
   if (pInflatedSize)
