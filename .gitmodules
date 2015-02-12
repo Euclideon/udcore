@@ -1,0 +1,3 @@
+[submodule "legacy"]
+	path = legacy
+	url = git@bne-fs-git-001.euclideon.local:rnd/legacy.git
