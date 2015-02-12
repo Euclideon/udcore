@@ -89,7 +89,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 
 // TODO: Make assertion system handle pop-up window where possible
 #if UDASSERT_ON
-# define UDASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } }
+# define UDASSERT(condition, ...) do { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } } while (0)
 # define IF_UDASSERT(x) x
 #else
 # define UDASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
@@ -97,7 +97,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 #endif // UDASSERT_ON
 
 #if UDRELASSERT_ON
-# define UDRELASSERT(condition, ...) { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } }
+# define UDRELASSERT(condition, ...) do { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } } while(0)
 # define IF_UDRELASSERT(x) x
 #else
 # define UDRELASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
