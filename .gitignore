@@ -122,6 +122,7 @@ $RECYCLE.BIN/
 # ===========
 
 *.o
+*.a
 
 Makefile
 *.make
