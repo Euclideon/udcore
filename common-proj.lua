@@ -29,6 +29,19 @@ configuration { "windows" }
 configuration { "linux" }
 --	links { "gl" }
 
+configuration { "NaCl64" }
+	defines { "__native_client__" }
+	targetsuffix "64"
+
+configuration { "NaCl32" }
+	defines { "__native_client__" }
+	targetsuffix "32"
+
+configuration { "NaClARM" }
+	defines { "__native_client__" }
+	targetsuffix "ARM"
+
+configuration { "PNaCl" }
+	defines { "__native_client__" }
+
 configuration {}
-
-
