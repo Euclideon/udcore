@@ -6,6 +6,20 @@ targetname "%{prj.name}"
 targetdir "Output/Lib"
 objdir "Output/Intermediate/%{prj.name}"
 
+flags { "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
+floatingpoint "Fast"
+vectorextensions "SSE2"
+
+-- TODO: the original project files had some options that premake can't express, we should add them to premake?
+--  * NoFloatingPointExceptions
+--  * Function Level Linking
+--  * Enable string pooling
+--  * Inline function expansion
+--  * Enable intrinsic functions
+--  * Randomize base address
+--  * Profile
+
+
 -- configurations
 configuration { "Debug" }
 	defines { "_DEBUG" }
@@ -20,6 +34,7 @@ configuration { "DebugOpt" }
 configuration { "Release" }
 	defines { "NDEBUG" }
 	optimize "Full"
+	flags { "NoFramePointer", "NoBufferSecurityCheck" }
 
 -- platform config
 configuration { "windows" }
