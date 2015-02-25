@@ -10,6 +10,9 @@ flags { "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
 floatingpoint "Fast"
 vectorextensions "SSE2"
 
+configuration { "linux" }
+	buildoptions { "-std=c++11" }
+
 -- TODO: the original project files had some options that premake can't express, we should add them to premake?
 --  * NoFloatingPointExceptions
 --  * Function Level Linking
