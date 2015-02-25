@@ -9,7 +9,6 @@ objdir "Output/Intermediate/%{prj.name}"
 flags { "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
 floatingpoint "Fast"
 vectorextensions "SSE2"
-buildoptions { "-std=c++11" }
 
 configuration { "linux" }
 	buildoptions { "-std=c++11" }
