@@ -37,7 +37,7 @@ configuration { "DebugOpt" }
 configuration { "Release" }
 	defines { "NDEBUG" }
 	optimize "Full"
-	flags { "NoFramePointer", "NoBufferSecurityCheck" }
+	flags { "Symbols", "NoFramePointer", "NoBufferSecurityCheck" }
 
 -- platform config
 configuration { "windows" }
@@ -61,5 +61,11 @@ configuration { "NaClARM" }
 
 configuration { "PNaCl" }
 	defines { "__native_client__" }
+
+configuration { "windows", "Release", "vs2012" }
+	buildoptions { "/d2Zi+" }
+
+configuration { "windows", "Release", "vs2013" }
+	buildoptions { "/Zo" }
 
 configuration {}
