@@ -43,7 +43,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   if (length)
   {
     pMemory = (char*)udAlloc((size_t)length + 1); // Note always allocating 1 extra byte
-    result = udFile_SeekRead(pFile, pMemory, length, 0, udFSW_SeekCur, &actualRead);
+    result = udFile_SeekRead(pFile, pMemory, (size_t)length, 0, udFSW_SeekCur, &actualRead);
     if (result != udR_Success)
       goto epilogue;
     if (actualRead != (size_t)length)

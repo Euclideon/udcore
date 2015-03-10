@@ -3,7 +3,8 @@
 //
 // Creator: Dave Pevreal, March 2014
 //
-# define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "udPlatform.h"
 

@@ -8,7 +8,6 @@ objdir "Output/Intermediate/%{prj.name}"
 
 flags { "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
 floatingpoint "Fast"
-vectorextensions "SSE2"
 
 configuration { "linux" }
 	buildoptions { "-std=c++11" }
@@ -43,6 +42,9 @@ configuration { "Release" }
 configuration { "windows" }
 	defines { "WIN32", "_WINDOWS" }
 	links { "kernel32.lib", "user32.lib", "gdi32.lib", "winspool.lib", "comdlg32.lib", "advapi32.lib", "shell32.lib", "ole32.lib", "oleaut32.lib", "uuid.lib", "odbc32.lib", "odbccp32.lib" }
+
+configuration { "windows", "x86" }
+	vectorextensions "SSE2"
 
 configuration { "linux" }
 	links { "pthread" }
