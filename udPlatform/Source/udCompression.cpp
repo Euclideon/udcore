@@ -202,7 +202,7 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
   if (status != MZ_STREAM_END)
   {
     udComp_deflateEnd(&stream);
-    return udR_Failure_;
+    return udR_CompressionOutputExhausted;
   }
 
   *pCompressedSize = stream.total_out;
