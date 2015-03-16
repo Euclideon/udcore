@@ -59,4 +59,14 @@ enum udResult
 // Return a human-friendly string fro a given result code
 const char *udResultAsString(udResult result);
 
+// Some helper macros that assume an exit path label "epilogue" and a local variable "result"
+
+#define UD_ERROR_BREAK_ON_ERROR 0  // Set to 1 to have the debugger break on error
+
+#define UD_ERROR_IF(x, code)      do { if (x) { result = code; if (UD_ERROR_BREAK_ON_ERROR && code) __debugbreak(); goto epilogue; }                  } while(0)
+#define UD_ERROR_NULL(ptr, code)  do { if (ptr == nullptr) { result = code; if (UD_ERROR_BREAK_ON_ERROR) __debugbreak(); goto epilogue; }             } while(0)
+#define UD_ERROR_CHECK(funcCall)  do { result = funcCall; if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR) __debugbreak(); goto epilogue; }  } while(0)
+#define UD_ERROR_HANDLE()         do { if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR) __debugbreak(); goto epilogue; }                     } while(0)
+
+
 #endif // UDRESULT_H

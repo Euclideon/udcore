@@ -7,7 +7,7 @@
 #include <semaphore.h>
 #endif
 
-// ***************************************************************************************
+// ****************************************************************************
 udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)
 {
 #if UDPLATFORM_WINDOWS
@@ -22,7 +22,7 @@ udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData)
 #endif
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 // Author: Dave Pevreal, November 2014
 void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority)
 {
@@ -50,7 +50,7 @@ void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority)
   }
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 void udDestroyThread(udThreadHandle *pThreadHandle)
 {
   if (pThreadHandle)
@@ -66,7 +66,7 @@ void udDestroyThread(udThreadHandle *pThreadHandle)
   }
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
 {
 #if UDPLATFORM_WINDOWS
@@ -83,7 +83,7 @@ udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
 #endif
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 void udDestroySemaphore(udSemaphore **ppSemaphore)
 {
   if (ppSemaphore && *ppSemaphore)
@@ -103,7 +103,7 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
   }
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
 {
   if (pSemaphore)
@@ -119,7 +119,7 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
   }
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 {
   if (pSemaphore)
@@ -140,7 +140,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
   return -1;
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 udMutex *udCreateMutex()
 {
 #if UDPLATFORM_WINDOWS
@@ -156,7 +156,7 @@ udMutex *udCreateMutex()
 #endif
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 void udDestroyMutex(udMutex **ppMutex)
 {
   if (ppMutex && *ppMutex)
@@ -176,7 +176,7 @@ void udDestroyMutex(udMutex **ppMutex)
   }
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 void udLockMutex(udMutex *pMutex)
 {
   if (pMutex)
@@ -191,7 +191,7 @@ void udLockMutex(udMutex *pMutex)
   }
 }
 
-// ***************************************************************************************
+// ****************************************************************************
 void udReleaseMutex(udMutex *pMutex)
 {
   if (pMutex)
@@ -233,7 +233,7 @@ static MemTrackMap *pMemoryTrackingMap;
 
 static udMutex *pMemoryTrackingMutex;
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void udMemoryDebugTrackingInit()
 {
@@ -264,7 +264,7 @@ void udMemoryDebugTrackingInit()
   }
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void udMemoryDebugTrackingDeinit()
 {
@@ -287,7 +287,7 @@ void udMemoryDebugTrackingDeinit()
 #endif
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void udMemoryOutputLeaks()
 {
@@ -315,7 +315,7 @@ void udMemoryOutputLeaks()
   }
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void udMemoryOutputAllocInfo(void *pAlloc)
 {
@@ -362,7 +362,7 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
   udReleaseMutex(pMemoryTrackingMutex);
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 {
@@ -424,7 +424,7 @@ void udMemoryDebugLogMemoryStats()
 
 
 #define UD_DEFAULT_ALIGNMENT (8)
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
@@ -446,7 +446,7 @@ void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char *
   return pMemory;
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
@@ -486,7 +486,7 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_
   return pMemory;
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int line))
 {
@@ -515,7 +515,7 @@ void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, 
   return pMemory;
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int line))
 {
@@ -559,7 +559,7 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
   return pMemory;
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line))
 {
@@ -574,7 +574,7 @@ void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line
   }
 }
 
-// ---------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Author: David Ely
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 {

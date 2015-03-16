@@ -21,11 +21,14 @@ struct udChunkedArray
   T *PushFront();
   udResult GrowBack(uint32_t numberOfNewElements);
 
-  void PopBack();
-  void PopFront();
+  bool PopBack(T *pData = nullptr);
+  bool PopFront(T *pData = nullptr);
 
-  uint32_t ChunkElementCount() { return chunkElementCount; }
-  size_t ElementSize() { return sizeof(T); }
+  // Remove the element at index, swapping with the last element to ensure array is contiguous
+  void RemoveSwapLast(size_t index);
+
+  uint32_t ChunkElementCount()      { return chunkElementCount; }
+  size_t ElementSize()              { return sizeof(T); }
 
   template <typename _T, uint32_t _chunkElementCount>
   struct chunk
@@ -322,24 +325,30 @@ inline T *udChunkedArray<T,chunkElementCount>::PushFront()
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
-inline void udChunkedArray<T, chunkElementCount>::PopBack()
+inline bool udChunkedArray<T, chunkElementCount>::PopBack(T *pDest)
 {
   if (length)
   {
+    if (pDest)
+      *pDest = *GetElement(length - 1);
     --length;
 
     if (length == 0)
       inset = 0;
+    return true;
   }
+  return false;
 }
 
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
-inline void udChunkedArray<T, chunkElementCount>::PopFront()
+inline bool udChunkedArray<T, chunkElementCount>::PopFront(T *pDest)
 {
   if (length)
   {
+    if (pDest)
+      *pDest = *GetElement(inset);
     ++inset;
     if (inset == chunkElementCount)
     {
@@ -356,6 +365,21 @@ inline void udChunkedArray<T, chunkElementCount>::PopFront()
 
     if (length == 0)
       inset = 0;
+    return true;
   }
+  return false;
 }
+
+
+// --------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2015
+template <typename T, uint32_t chunkElementCount>
+inline void udChunkedArray<T, chunkElementCount>::RemoveSwapLast(size_t index)
+{
+  // Only copy the last element over if the element being removed isn't the last element
+  if (index != (length - 1))
+    SetElement(index, *GetElement(length - 1));
+  PopBack();
+}
+
 #endif // UDCHUNKEDARRAY_H

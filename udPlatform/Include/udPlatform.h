@@ -239,6 +239,7 @@ void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  lin
 
 
 #define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
+#define udNewFlags(type, extra, flags, ...) new (_udAlloc(sizeof(type) + extra, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
 
 template <typename T>
 void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))

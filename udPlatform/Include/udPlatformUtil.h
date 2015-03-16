@@ -16,6 +16,25 @@ inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { ret
 #define udBitFieldClear(composite, id)      ((composite) & ~(udCastToTypeOf(id##Mask, composite) << id##Shift)            // Clear a field, generally used before updating just one field of a composite
 #define udBitFieldSet(composite, id, value) ((composite) | ((udCastToTypeOf(value, composite) & id##Mask) << id##Shift))  // NOTE! Field should be cleared first, most common case is building a composite from zero
 
+template <typename T>
+T *udAddBytes(T *ptr, size_t bytes) { return (T*)(bytes + (char*)ptr); }
+
+// Template to read from a pointer, does a hard cast to allow reading into const char arrays
+template <typename T, typename P>
+inline udResult udReadFromPointer(T *pDest, P *&pSrc, int *pBytesRemaining = nullptr, int arrayCount = 1)
+{
+  int bytesRequired = (int)sizeof(T) * arrayCount;
+  if (pBytesRemaining)
+  {
+    if (*pBytesRemaining < bytesRequired)
+      return udR_CountExceeded;
+    *pBytesRemaining -= bytesRequired;
+  }
+  memcpy((void*)pDest, pSrc, bytesRequired);
+  pSrc = udAddBytes(pSrc, bytesRequired);
+  return udR_Success;
+}
+
 // *********************************************************************
 // Time and timing
 // *********************************************************************
