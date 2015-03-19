@@ -205,37 +205,45 @@ enum udAllocationFlags
 inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
 
 
-void *udAlloc(size_t size, udAllocationFlags flags = udAF_None IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
-void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+void *_udAlloc(size_t size, udAllocationFlags flags = udAF_None IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+#define udAlloc(size) _udAlloc(size, udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-#define udAllocFlags(size, flags) udAlloc(size, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
-#define udAllocType(type, count, flags) (type*)udAlloc(sizeof(type) * (count), flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
+void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+#define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-void *udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
-void *udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+#define udAllocFlags(size, flags) _udAlloc(size, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
+#define udAllocType(type, count, flags) (type*)_udAlloc(sizeof(type) * (count), flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
+
+void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+#define udRealloc(pMemory, size) _udRealloc(pMemory, size IF_MEMORY_DEBUG(__FILE__, __LINE__))
+
+void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+#define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 template <typename T>
-void udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
+void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
-  void *pActualPtr = (void*)pMemory;
-  if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
-  {
-    void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
-    _udFree((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
-  }
+  void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
+
+  _udFreeInternal((void*)pMemory IF_MEMORY_DEBUG(pFile, line));
+  pMemory = nullptr;
 }
+#define udFree(pMemory) _udFree(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 
-#define udNew(type, ...) new (udAlloc(sizeof(type), udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
+#define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
+
 template <typename T>
-void udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
+void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
   if (pMemory)
   {
     pMemory->~T();
-    udFree(pMemory IF_MEMORY_DEBUG(pFile, line));
+    _udFree(pMemory IF_MEMORY_DEBUG(pFile, line));
   }
 }
+#define udDelete(pMemory) _udDelete(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
+
 
 
 UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }

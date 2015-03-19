@@ -230,19 +230,21 @@ struct MemTrack
 typedef std::map<size_t, MemTrack> MemTrackMap;
 
 static MemTrackMap *pMemoryTrackingMap;
-#if UDPLATFORM_WINDOWS
-static HANDLE memoryTrackingMutex;
-#endif
 
+static udMutex *pMemoryTrackingMutex;
+
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
 void udMemoryDebugTrackingInit()
 {
-#if UDPLATFORM_WINDOWS
-  memoryTrackingMutex = CreateMutexA(NULL, false,  "DebugMemoryTrackingMutex");
-  if (!memoryTrackingMutex)
+  if (pMemoryTrackingMutex)
+  {
+    return;
+  }
+  if (!pMemoryTrackingMutex)
   {
     PRINT_ERROR_STRING("Failed to create memory tracking mutex %d", GetLastError());
   }
-#endif
 
   if (!pMemoryTrackingMap)
   {
@@ -250,45 +252,29 @@ void udMemoryDebugTrackingInit()
   }
 }
 
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
 void udMemoryDebugTrackingDeinit()
 {
   UDASSERT(pMemoryTrackingMap, "pMemoryTrackingMap is NULL");
 
-#if UDPLATFORM_WINDOWS
-  uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
-  if (result != WAIT_OBJECT_0)
-  {
-    PRINT_ERROR_STRING("WaitForSingleObject returned an error %d", result);
-    return;
-  }
-#endif
+  udLockMutex(pMemoryTrackingMutex);
 
   delete pMemoryTrackingMap;
   pMemoryTrackingMap = NULL;
 
-#if UDPLATFORM_WINDOWS
-  uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
-  if (!bResult)
-  {
-    PRINT_ERROR_STRING("ReleaseMutex returned an error %d", GetLastError());
-  }
-
-  CloseHandle(memoryTrackingMutex);
-#endif
+  udReleaseMutex(pMemoryTrackingMutex);
+  udDestroyMutex(&pMemoryTrackingMutex);
 }
 
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
 void udMemoryOutputLeaks()
 {
   if (pMemoryTrackingMap)
   {
-#if UDPLATFORM_WINDOWS
-    uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
-    if (result != WAIT_OBJECT_0)
-    {
-      PRINT_ERROR_STRING("WaitForSingleObject returned an error %d", result);
-      return;
-    }
-#endif
+    udLockMutex(pMemoryTrackingMutex);
+
     if (pMemoryTrackingMap->size() > 0)
     {
       udDebugPrintf("%d Allocations\n", uint32_t(gAllocationCount));
@@ -305,37 +291,20 @@ void udMemoryOutputLeaks()
       udDebugPrintf("All tracked allocations freed\n");
     }
 
-#if UDPLATFORM_WINDOWS
-    uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
-    if (!bResult)
-    {
-      PRINT_ERROR_STRING("ReleaseMutex returned an error %d", GetLastError());
-    }
-#endif
+    udReleaseMutex(pMemoryTrackingMutex);
   }
 }
 
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
 void udMemoryOutputAllocInfo(void *pAlloc)
 {
-#if UDPLATFORM_WINDOWS
-  uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
-  if (result != WAIT_OBJECT_0)
-  {
-    PRINT_ERROR_STRING("WaitForSingleObject returned an error %d", result);
-    return;
-  }
-#endif
+  udLockMutex(pMemoryTrackingMutex);
 
   const MemTrack &track = (*pMemoryTrackingMap)[size_t(pAlloc)];
   udDebugPrintf("%s(%d): Allocation 0x%p Address 0x%p, size %u\n", track.pFile, track.line, (void*)track.allocationNumber, track.pMemory, track.size);
 
-#if UDPLATFORM_WINDOWS
-  uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
-  if (!bResult)
-  {
-    PRINT_ERROR_STRING("ReleaseMutex returned an error %d", GetLastError());
-  }
-#endif
+  udReleaseMutex(pMemoryTrackingMutex);
 }
 
 static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile, int line)
@@ -346,14 +315,12 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
     __debugbreak();
   }
 
-#if UDPLATFORM_WINDOWS
-  uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
-  if (result != WAIT_OBJECT_0)
+  if (!pMemoryTrackingMutex)
   {
-    PRINT_ERROR_STRING("WaitForSingleObject returned an error %d", result);
-    return;
+    udMemoryDebugTrackingInit();
   }
-#endif
+
+  udLockMutex(pMemoryTrackingMutex);
 
 #if UDASSERT_ON
   size_t sizeOfMap = pMemoryTrackingMap->size();
@@ -372,15 +339,11 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
 
   UDASSERT(pMemoryTrackingMap->size() > sizeOfMap, "map didn't grow"); // I think this is incorrect as the map may not need to grow if its reusing a slot that has been freed.
 
-#if UDPLATFORM_WINDOWS
-  uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
-  if (!bResult)
-  {
-    PRINT_ERROR_STRING("ReleaseMutex returned an error %d", GetLastError());
-  }
-#endif
+  udReleaseMutex(pMemoryTrackingMutex);
 }
 
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
 static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 {
 # if UDASSERT_ON
@@ -394,14 +357,7 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
     __debugbreak();
   }
 
-#if UDPLATFORM_WINDOWS
-  uint32_t result = WaitForSingleObject(memoryTrackingMutex, INFINITE);
-  if (result != WAIT_OBJECT_0)
-  {
-    PRINT_ERROR_STRING("WaitForSingleObject returned an error %d", result);
-    return;
-  }
-#endif
+  udLockMutex(pMemoryTrackingMutex);
 
   if (pMemoryTrackingMap)
   {
@@ -424,15 +380,7 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 
 epilogue:
 
-#if UDPLATFORM_WINDOWS
- uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
-  if (!bResult)
-  {
-    PRINT_ERROR_STRING("ReleaseMutex returned an error %d", GetLastError());
-  }
-#else
-;
-#endif
+ udReleaseMutex(pMemoryTrackingMutex);
 }
 
 #else
@@ -442,8 +390,9 @@ epilogue:
 
 
 #define UD_DEFAULT_ALIGNMENT (8)
-
-void *udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
+void *_udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if defined(_MSC_VER)
   void *pMemory = (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, UD_DEFAULT_ALIGNMENT) : _aligned_malloc(size, UD_DEFAULT_ALIGNMENT);
@@ -463,7 +412,9 @@ void *udAlloc(size_t size, udAllocationFlags flags IF_MEMORY_DEBUG(const char * 
   return pMemory;
 }
 
-void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
+void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if defined(_MSC_VER)
   void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc(nullptr, size, 1, alignment) : _aligned_malloc(size, alignment);
@@ -501,7 +452,9 @@ void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_M
   return pMemory;
 }
 
-void *udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int line))
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
+void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if __MEMORY_DEBUG__
   if (pMemory)
@@ -528,7 +481,9 @@ void *udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile, i
   return pMemory;
 }
 
-void *udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int line))
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
+void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile, int line))
 {
 #if __MEMORY_DEBUG__
   if (pMemory)
@@ -570,7 +525,9 @@ void *udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DE
   return pMemory;
 }
 
-void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line))
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
+void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line))
 {
   if (pMemory)
   {
@@ -583,6 +540,8 @@ void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line))
   }
 }
 
+// ---------------------------------------------------------------------------------------
+// Author: David Ely
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 {
 #if UDPLATFORM_WINDOWS
