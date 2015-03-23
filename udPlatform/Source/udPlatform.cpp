@@ -241,9 +241,21 @@ void udMemoryDebugTrackingInit()
   {
     return;
   }
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL
+  {
+    pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    if (mutex)
+    {
+      pthread_mutex_init(mutex, NULL);
+    }
+    pMemoryTrackingMutex = (udMutex*)mutex;
+  }
+#else
+  pMemoryTrackingMutex = udCreateMutex();
+#endif
   if (!pMemoryTrackingMutex)
   {
-    PRINT_ERROR_STRING("Failed to create memory tracking mutex %d", GetLastError());
+    PRINT_ERROR_STRING("Failed to create memory tracking mutex\n");
   }
 
   if (!pMemoryTrackingMap)
@@ -264,7 +276,15 @@ void udMemoryDebugTrackingDeinit()
   pMemoryTrackingMap = NULL;
 
   udReleaseMutex(pMemoryTrackingMutex);
+
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL
+  pthread_mutex_t *mutex = (pthread_mutex_t *)pMemoryTrackingMutex;
+  pthread_mutex_destroy(mutex);
+  free(pMemoryTrackingMutex);
+  pMemoryTrackingMutex = nullptr;
+#else
   udDestroyMutex(&pMemoryTrackingMutex);
+#endif
 }
 
 // ---------------------------------------------------------------------------------------
@@ -381,6 +401,20 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 epilogue:
 
  udReleaseMutex(pMemoryTrackingMutex);
+}
+
+void udMemoryDebugLogMemoryStats()
+{
+  udDebugPrintf("Memory Stats\n");
+
+  uint32_t totalMemory = 0;
+  for (MemTrackMap::iterator memIt = pMemoryTrackingMap->begin(); memIt != pMemoryTrackingMap->end(); ++memIt)
+  {
+    const MemTrack &track = memIt->second;
+    totalMemory += track.size;
+  }
+
+  udDebugPrintf("Total allocated Memory %d\n", totalMemory);
 }
 
 #else
