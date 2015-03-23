@@ -31,6 +31,14 @@
 #define UD_RAD2DEG(rad)  ((rad)*57.295779513082320876798154814105)
 #define UD_DEG2RAD(deg)  ((deg)*0.01745329251994329576923690768489)
 
+#define UD_PIf           float(UD_PI)
+#define UD_2PIf          float(UD_2PI)
+#define UD_HALF_PIf      float(UD_HALF_PI)
+#define UD_ROOT_2f       float(UD_ROOT_2)
+#define UD_INV_ROOT_2f   float(UD_INV_ROOT_2)
+#define UD_RAD2DEGf(rad) float(UD_RAD2DEG(rad))
+#define UD_DEG2RADf(deg) float(UD_DEG2RAD(deg))
+
 #if defined(__cplusplus)
 
 // prototypes
@@ -53,10 +61,23 @@ float udCos(float f);
 double udCos(double d);
 float udTan(float f);
 double udTan(double d);
+float udASin(float f);
+double udASin(double d);
 float udACos(float f);
 double udACos(double d);
 float udATan(float f);
 double udATan(double d);
+float udATan2(float y, float x);
+double udATan2(double y, double x);
+
+// rounding functions
+float udRound(float f);
+double udRound(double d);
+float udFloor(float f);
+double udFloor(double d);
+float udCeil(float f);
+double udCeil(double d);
+template <typename T> T udRoundEven(T t);
 
 // typical linear algebra functions
 template <typename T> udVector2<T> abs(const udVector2<T> &v);
@@ -77,6 +98,7 @@ template <typename T> T dot3(const udVector3<T> &v1, const udVector3<T> &v2);
 template <typename T> T dot3(const udVector4<T> &v1, const udVector4<T> &v2);
 template <typename T> T dot4(const udVector4<T> &v1, const udVector4<T> &v2);
 template <typename T> T doth(const udVector3<T> &v3, const udVector4<T> &v4);
+template <typename T> T dotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2);
 
 template <typename T> T magSq2(const udVector2<T> &v);
 template <typename T> T magSq2(const udVector3<T> &v);
@@ -105,6 +127,7 @@ template <typename T> udVector4<T> normalize2(const udVector4<T> &v);
 template <typename T> udVector3<T> normalize3(const udVector3<T> &v);
 template <typename T> udVector4<T> normalize3(const udVector4<T> &v);
 template <typename T> udVector4<T> normalize4(const udVector4<T> &v);
+template <typename T> udQuaternion<T> normalizeQ(const udQuaternion<T> &q);
 
 // matrix and quat functions
 template <typename T> udVector2<T> mul(const udMatrix4x4<T> &m, const udVector2<T> &v);
@@ -262,10 +285,14 @@ struct udQuaternion
 
   udVector3<T> apply(const udVector3<T> &v);
 
+  udVector3<T> eulerAngles();
+
   // static members
   static udQuaternion<T> identity()  { udQuaternion<T> r = { T(0), T(0), T(0), T(1) }; return r; }
 
   static udQuaternion<T> create(const udVector3<T> &axis, T rad);
+  static udQuaternion<T> create(const udVector3<T> &ypr);
+
   template <typename U>
   static udQuaternion<T> create(const udQuaternion<U> &_q) { udQuaternion<T> r = { T(_q.x), T(_q.y), T(_q.z), T(_q.w) }; return r; }
 };
@@ -323,14 +350,22 @@ struct udMatrix4x4
   static udMatrix4x4<T> rotationY(T rad, const udVector3<T> &t = udVector3<T>::zero());
   static udMatrix4x4<T> rotationZ(T rad, const udVector3<T> &t = udVector3<T>::zero());
   static udMatrix4x4<T> rotationAxis(const udVector3<T> &axis, T rad, const udVector3<T> &t = udVector3<T>::zero());
-  static udMatrix4x4<T> rotationPYR(const udVector3<T> &pyr, const udVector3<T> &t = udVector3<T>::zero());
-  static udMatrix4x4<T> rotationQ(const udQuaternion<T> &q, const udVector3<T> &t = udVector3<T>::zero());
+  static udMatrix4x4<T> rotationYPR(T y, T p, T r, const udVector3<T> &t = udVector3<T>::zero());
+  static udMatrix4x4<T> rotationYPR(const udVector3<T> &ypr, const udVector3<T> &t = udVector3<T>::zero()) { return rotationYPR(ypr.x, ypr.y, ypr.z, t); }
+  static udMatrix4x4<T> rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t = udVector3<T>::zero());
 
-  static udMatrix4x4<T> translation(const udVector3<T> &t);
+  static udMatrix4x4<T> translation(T x, T y, T z);
+  static udMatrix4x4<T> translation(const udVector3<T> &t) { return translation(t.x, t.y, t.z); }
+
+  static udMatrix4x4<T> scaleUniform(T s, const udVector3<T> &t = udVector3<T>::zero()) { return scaleNonUniform(s, s, s, t); }
+  static udMatrix4x4<T> scaleNonUniform(T x, T y, T z, const udVector3<T> &t = udVector3<T>::zero());
+  static udMatrix4x4<T> scaleNonUniform(const udVector3<T> &s, const udVector3<T> &t = udVector3<T>::zero()) { return scaleNonUniform(s.x, s.y, s.z, t); }
 
   static udMatrix4x4<T> perspective(T fovY, T aspectRatio, T near, T far);
   static udMatrix4x4<T> ortho(T left, T right, T bottom, T top, T near = T(0), T far = T(1));
   static udMatrix4x4<T> orthoForScreeen(T width, T height, T near = T(0), T far = T(1));
+
+  static udMatrix4x4<T> lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up = udVector3<T>::create(T(0), T(0), T(1)));
 };
 template <typename T>
 udMatrix4x4<T> operator *(T f, const udMatrix4x4<T> &m) { return m*f; }

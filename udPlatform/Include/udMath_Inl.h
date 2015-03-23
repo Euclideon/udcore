@@ -1,4 +1,3 @@
-
 #include "udPlatform.h"
 
 #include <float.h>
@@ -29,10 +28,37 @@ UDFORCE_INLINE float udCos(float f) { return cosf(f); }
 UDFORCE_INLINE double udCos(double d) { return cos(d); }
 UDFORCE_INLINE float udTan(float f) { return tanf(f); }
 UDFORCE_INLINE double udTan(double d) { return tan(d); }
+UDFORCE_INLINE float udASin(float f) { return asinf(f); }
+UDFORCE_INLINE double udASin(double d) { return asin(d); }
 UDFORCE_INLINE float udACos(float f) { return acosf(f); }
 UDFORCE_INLINE double udACos(double d) { return acos(d); }
 UDFORCE_INLINE float udATan(float f) { return atanf(f); }
 UDFORCE_INLINE double udATan(double d) { return atan(d); }
+UDFORCE_INLINE float udATan2(float y, float x) { return atan2f(y, x); }
+UDFORCE_INLINE double udATan2(double y, double x) { return atan2(y, x); }
+
+UDFORCE_INLINE float udRound(float f) { return f >= 0.0f ? floorf(f + 0.5f) : ceilf(f - 0.5f); }
+UDFORCE_INLINE double udRound(double d) { return d >= 0.0 ? floor(d + 0.5) : ceil(d - 0.5); }
+UDFORCE_INLINE float udFloor(float f) { return floorf(f); }
+UDFORCE_INLINE double udFloor(double d) { return floor(d); }
+UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
+UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
+
+template <typename T> T udRoundEven(T t)
+{
+  int integer = (int)t;
+  T integerPart = udFloor(t);
+  T fractionalPart = t - integer;
+
+  if (fractionalPart > T(0.5) || fractionalPart < T(0.5))
+    return udRound(t);
+  else if ((integer % 2) == 0)
+    return integerPart;
+  else if (integer < 0)
+    return integerPart - T(1.0); // Negative values should be +1 negative
+  else
+    return integerPart + T(1.0);
+}
 
 template <typename T> udVector2<T> abs(const udVector2<T> &v) { udVector2<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y }; return r; }
 template <typename T> udVector3<T> abs(const udVector3<T> &v) { udVector3<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y, v.z<T(0)?-v.z:v.z }; return r; }
@@ -52,6 +78,7 @@ template <typename T> T dot3(const udVector3<T> &v1, const udVector3<T> &v2) { r
 template <typename T> T dot3(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z; }
 template <typename T> T dot4(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z + v1.w*v2.w; }
 template <typename T> T doth(const udVector3<T> &v3, const udVector4<T> &v4) { return v3.x*v4.x + v3.y*v4.y + v3.z*v4.z + v4.w; }
+template <typename T> T dotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return q1.x*q2.x + q1.y*q2.y + q1.z*q2.z + q1.w*q2.w; }
 
 template <typename T> T magSq2(const udVector2<T> &v) { return v.x*v.x + v.y*v.y; }
 template <typename T> T magSq2(const udVector3<T> &v) { return v.x*v.x + v.y*v.y; }
@@ -80,6 +107,7 @@ template <typename T> udVector4<T> normalize2(const udVector4<T> &v) { T s = udR
 template <typename T> udVector3<T> normalize3(const udVector3<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z); udVector3<T> r = { v.x*s, v.y*s, v.z*s }; return r; }
 template <typename T> udVector4<T> normalize3(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z); udVector4<T> r = { v.x*s, v.y*s, v.z*s, v.w }; return r; }
 template <typename T> udVector4<T> normalize4(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udVector4<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
+template <typename T> udQuaternion<T> normalizeQ(const udQuaternion<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udQuaternion<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
 
 
 // many kinds of mul...
@@ -141,6 +169,16 @@ udMatrix4x4<T> mul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2)
   r.m._33 = m1.m._30*m2.m._03 + m1.m._31*m2.m._13 + m1.m._32*m2.m._23 + m1.m._33*m2.m._33;
   return r;
 }
+template <typename T>
+udQuaternion<T> mul(const udQuaternion<T> &q1, const udQuaternion<T> &q2)
+{
+  udQuaternion<T> r;
+  r.x =  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x;
+  r.y = -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y;
+  r.z =  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z;
+  r.w = -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w;
+  return r;
+}
 
 template <typename T>
 udVector2<T> lerp(const udVector2<T> &v1, const udVector2<T> &v2, T t)
@@ -192,8 +230,48 @@ udQuaternion<T> lerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t)
 template <typename T>
 udQuaternion<T> slerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t)
 {
+  //http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+
+  // quaternion to return
   udQuaternion<T> r;
-  UDASSERT(false, "TODO");
+
+  // Calculate angle between them.
+  T cosHalfTheta = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
+
+  // if q1=q2 or q1=-q2 then theta = 0 and we can return q1
+  if (abs(cosHalfTheta) >= T(1))
+  {
+    r.w = q1.w;
+    r.x = q1.x;
+    r.y = q1.y;
+    r.z = q1.z;
+    return r;
+  }
+
+  // Calculate temporary values.
+  T halfTheta = udACos(cosHalfTheta);
+  T sinHalfTheta = udSqrt(T(1) - cosHalfTheta*cosHalfTheta);
+
+  // if theta = 180 degrees then result is not fully defined
+  // we could rotate around any axis normal to qa or qb
+  if (fabs(sinHalfTheta) < T(0.001)) // fabs is floating point absolute
+  {
+    r.w = (q1.w * T(0.5) + q2.w * T(0.5));
+    r.x = (q1.x * T(0.5) + q2.x * T(0.5));
+    r.y = (q1.y * T(0.5) + q2.y * T(0.5));
+    r.z = (q1.z * T(0.5) + q2.z * T(0.5));
+    return r;
+  }
+
+  //calculate Quaternion.
+  T ratioA = sin((1 - t) * halfTheta) / sinHalfTheta;
+  T ratioB = sin(t * halfTheta) / sinHalfTheta;
+
+  r.w = (q1.w * ratioA + q2.w * ratioB);
+  r.x = (q1.x * ratioA + q2.x * ratioB);
+  r.y = (q1.y * ratioA + q2.y * ratioB);
+  r.z = (q1.z * ratioA + q2.z * ratioB);
+
   return r;
 }
 
@@ -245,16 +323,15 @@ udMatrix4x4<T> inverse(const udMatrix4x4<T> &m)
 template <typename T>
 udQuaternion<T> inverse(const udQuaternion<T> &q)
 {
-  udQuaternion<T> r;
-  UDASSERT(false, "TODO");
+  T s = T(1)/(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+  udQuaternion<T> r = { -q.x*s, -q.y*s, -q.z*s, q.w*s };
   return r;
 }
 
 template <typename T>
 udQuaternion<T> conjugate(const udQuaternion<T> &q)
 {
-  udQuaternion<T> r;
-  UDASSERT(false, "TODO");
+  udQuaternion<T> r = { -q.x, -q.y, -q.z, q.w };
   return r;
 }
 
@@ -299,6 +376,17 @@ udVector3<T> udQuaternion<T>::apply(const udVector3<T> &v)
 {
   udVector3<T> r;
   UDASSERT(false, "TODO");
+  return r;
+}
+
+template <typename T>
+udVector3<T> udQuaternion<T>::eulerAngles()
+{
+  udVector3<T> r = {
+    udATan2(T(2) * (w*x + y*z), T(1) - T(2)*(x*x + y*y)),
+    udASin(T(2) * (w*y - z*x)),
+    udATan2(T(2) * (w*z + x*y), T(1) - T(2)*(y*y + z*z))
+  };
   return r;
 }
 
@@ -371,7 +459,7 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationY(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = {   c ,T(0), -s,T(0),
+  udMatrix4x4<T> r = {   c ,T(0), -s, T(0),
                        T(0),T(1),T(0),T(0),
                          s ,T(0),  c ,T(0),
                        t.x, t.y, t.z, T(1) };
@@ -408,7 +496,7 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationAxis(const udVector3<T> &axis, T rad, con
 }
 
 template <typename T>
-udMatrix4x4<T> udMatrix4x4<T>::rotationPYR(const udVector3<T> &pyr, const udVector3<T> &t)
+udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 {
   udMatrix4x4<T> r = translation(t);
   UDASSERT(false, "TODO");
@@ -416,7 +504,7 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationPYR(const udVector3<T> &pyr, const udVect
 }
 
 template <typename T>
-udMatrix4x4<T> udMatrix4x4<T>::rotationQ(const udQuaternion<T> &q, const udVector3<T> &t)
+udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t)
 {
   udMatrix4x4<T> r = translation(t);
   UDASSERT(false, "TODO");
@@ -424,12 +512,22 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationQ(const udQuaternion<T> &q, const udVecto
 }
 
 template <typename T>
-udMatrix4x4<T> udMatrix4x4<T>::translation(const udVector3<T> &t)
+udMatrix4x4<T> udMatrix4x4<T>::translation(T x, T y, T z)
 {
   udMatrix4x4<T> r = { T(1),T(0),T(0),T(0),
                        T(0),T(1),T(0),T(0),
                        T(0),T(0),T(1),T(0),
-                       t.x, t.y, t.z, T(1) };
+                         x,   y,   z, T(1) };
+  return r;
+}
+
+template <typename T>
+udMatrix4x4<T> udMatrix4x4<T>::scaleNonUniform(T x, T y, T z, const udVector3<T> &t)
+{
+  udMatrix4x4<T> r = {   x,  T(0), T(0), T(0),
+                       T(0),   y,  T(0), T(0),
+                       T(0), T(0),   z,  T(0),
+                       t.x,  t.y,  t.z,  T(1) };
   return r;
 }
 
@@ -464,11 +562,51 @@ udMatrix4x4<T> udMatrix4x4<T>::orthoForScreeen(T width, T height, T near, T far)
   return r;
 }
 
+template <typename T>
+udMatrix4x4<T> udMatrix4x4<T>::lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up)
+{
+  udVector3<T> y = normalize3(at - from);
+  udVector3<T> x = normalize3(cross3(y, up));
+  udVector3<T> z = cross3(x, y);
+  udMatrix4x4<T> r = { x.x,    x.y,    x.z,    0,
+                       y.x,    y.y,    y.z,    0,
+                       z.x,    z.y,    z.z,    0,
+                       from.x, from.y, from.z, 1 };
+  return r;
+}
 
 template <typename T>
 udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &axis, T rad)
 {
+  T a = rad*T(0.5);
+  T s = udSin(a);
+  udQuaternion<T> r = { axis.x*s,
+                        axis.y*s,
+                        axis.z*s,
+                        udCos(a) };
+  return r;
+}
+
+template <typename T>
+udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &ypr)
+{
+  UDASSERT(false, "CHECK ME! YPR LOOKS WRONG");
   udQuaternion<T> r;
-  UDASSERT(false, "TODO");
+
+  // Assuming the angles are in radians.
+  T c1 = udCos(pyr.z / 2); //Yaw
+  T s1 = udSin(pyr.z / 2); //Yaw
+  T c2 = udCos(pyr.x / 2); //Pitch
+  T s2 = udSin(pyr.x / 2); //Pitch
+  T c3 = udCos(pyr.y / 2); //Roll
+  T s3 = udSin(pyr.y / 2); //Roll
+  T c1c2 = c1 * c2;
+  T s1s2 = s1 * s2;
+
+  r.w = c1c2 * c3 - s1s2 * s3;
+  r.x = c1c2 * s3 + s1s2 * c3;
+  r.y = s1 * c2 * c3 + c1 * s2 * s3;
+  r.z = c1 * s2 * c3 - s1 * c2 * s3;
+
   return r;
 }
