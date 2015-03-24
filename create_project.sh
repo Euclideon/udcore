@@ -24,7 +24,7 @@ fi
 # perform action
 if [[ $ACTION == "1" ]] ; then
 	echo "Creating GNU Makefile..."
-	bin/premake/bin/premake5 gmake
+	bin/premake/premake5 gmake
 elif [[ $ACTION == "2" ]] ; then
 	echo "Creating MonoDevelop project..."
 	bin/premake/premake5 monodevelop
