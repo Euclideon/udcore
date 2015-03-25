@@ -9,5 +9,8 @@ project "udPlatform"
 	includedirs { "../3rdParty" }
 	includedirs { "Include" }
 
+	configuration { "windows" }
+		includedirs { "../3rdParty/sdl2/include" }
+
 	-- include common stuff
 	dofile "../common-proj.lua"
