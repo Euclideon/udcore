@@ -147,8 +147,8 @@ udVector2<T> lerp(const udVector2<T> &v1, const udVector2<T> &v2, T t)
 {
   udVector2<T> r;
   T invT = T(1)-t;
-  r.x = v1.x*invT + v2.x*t
-  r.y = v1.y*invT + v2.y*t
+  r.x = v1.x*invT + v2.x*t;
+  r.y = v1.y*invT + v2.y*t;
   return r;
 }
 template <typename T>

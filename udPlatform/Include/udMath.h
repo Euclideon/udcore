@@ -1,6 +1,8 @@
 #if !defined(UDMATH_H)
 #define UDMATH_H
 
+#include "udResult.h"
+
 //      O_O
 // YOU'RE JOKING!
 #if defined(near)
