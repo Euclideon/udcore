@@ -370,7 +370,7 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
 
   ++gAllocationCount;
 
-  UDASSERT(pMemoryTrackingMap->size() > sizeOfMap, "map didn't grow") // I think this is incorrect as the map may not need to grow if its reusing a slot that has been freed.
+  UDASSERT(pMemoryTrackingMap->size() > sizeOfMap, "map didn't grow"); // I think this is incorrect as the map may not need to grow if its reusing a slot that has been freed.
 
 #if UDPLATFORM_WINDOWS
   uint32_t bResult = ReleaseMutex(memoryTrackingMutex);
