@@ -217,10 +217,12 @@ void *udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DE
 template <typename T>
 void udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
-  void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
-
-  _udFree((void*)pMemory IF_MEMORY_DEBUG(pFile, line));
-  pMemory = nullptr;
+  void *pActualPtr = (void*)pMemory;
+  if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  {
+    void _udFree(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
+    _udFree((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
+  }
 }
 
 
