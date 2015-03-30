@@ -498,9 +498,9 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationAxis(const udVector3<T> &axis, T rad, con
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 {
-  udMatrix4x4<T> r = translation(t);
+  udMatrix4x4<T> m = translation(t);
   UDASSERT(false, "TODO");
-  return r;
+  return m;
 }
 
 template <typename T>
@@ -594,12 +594,12 @@ udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &ypr)
   udQuaternion<T> r;
 
   // Assuming the angles are in radians.
-  T c1 = udCos(pyr.z / 2); //Yaw
-  T s1 = udSin(pyr.z / 2); //Yaw
-  T c2 = udCos(pyr.x / 2); //Pitch
-  T s2 = udSin(pyr.x / 2); //Pitch
-  T c3 = udCos(pyr.y / 2); //Roll
-  T s3 = udSin(pyr.y / 2); //Roll
+  T c1 = udCos(ypr.z / 2); //Yaw
+  T s1 = udSin(ypr.z / 2); //Yaw
+  T c2 = udCos(ypr.x / 2); //Pitch
+  T s2 = udSin(ypr.x / 2); //Pitch
+  T c3 = udCos(ypr.y / 2); //Roll
+  T s3 = udSin(ypr.y / 2); //Roll
   T c1c2 = c1 * c2;
   T s1s2 = s1 * s2;
 
