@@ -17,7 +17,7 @@
 #elif defined(__linux__)
 # if !defined(_LARGEFILE_SOURCE )
   // This must be set for linux to expose fseeko and ftello
-# error "_LARGEFILE_SOURCE  not defined"
+# define _LARGEFILE_SOURCE
 #endif
 
 #endif
