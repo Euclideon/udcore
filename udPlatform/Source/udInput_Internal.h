@@ -14,6 +14,8 @@ struct InputState
 extern InputState gInputState[2];
 extern int gCurrentInputState;
 
+extern unsigned char udAsciiToUDKey[128];
+
 void udInput_Init();
 void udInput_Update();
 

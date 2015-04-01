@@ -36,7 +36,6 @@ float udInput_State(udInputDevice device, int control, int deviceIndex = -1);
 
 unsigned int udInput_LockMouseOnButtons(unsigned int buttonBits);
 
-
 // controls for devices
 enum udMouseControls
 {
@@ -212,6 +211,13 @@ enum udKeyCodes
 
   udKC_Max
 };
+
+
+inline udKeyCodes udInput_AsciiToKeyCode(unsigned char c)
+{
+  extern unsigned char udAsciiToUDKey[128];
+  return (udKeyCodes)udAsciiToUDKey[c];
+}
 
 
 // internal
