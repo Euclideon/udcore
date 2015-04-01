@@ -23,6 +23,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_MemoryAllocationFailure),
   RESULTINFO(udR_CountExceeded),
   RESULTINFO(udR_ObjectNotFound),
+  RESULTINFO(udR_ParentNotFound),
   RESULTINFO(udR_RenderAlreadyInProgress),
   RESULTINFO(udR_BufferTooSmall),
   RESULTINFO(udR_VersionMismatch),

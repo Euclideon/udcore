@@ -14,6 +14,7 @@ enum udResult
   udR_MemoryAllocationFailure,
   udR_CountExceeded,
   udR_ObjectNotFound,
+  udR_ParentNotFound,
   udR_RenderAlreadyInProgress,
   udR_BufferTooSmall,
   udR_VersionMismatch,
