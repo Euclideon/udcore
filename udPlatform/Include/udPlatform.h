@@ -225,7 +225,7 @@ void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  lin
 {
   void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
 
-  _udFreeInternal((void*)pMemory IF_MEMORY_DEBUG(pFile, line));
+  _udFreeInternal((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
   pMemory = nullptr;
 }
 #define udFree(pMemory) _udFree(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
