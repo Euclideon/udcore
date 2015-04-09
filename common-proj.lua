@@ -6,11 +6,8 @@ targetname "%{prj.name}"
 targetdir "Output/Lib"
 objdir "Output/Intermediate/%{prj.name}"
 
-flags { "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
+flags { "C++11", "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
 floatingpoint "Fast"
-
-configuration { "linux" }
-	buildoptions { "-std=c++11" }
 
 -- TODO: the original project files had some options that premake can't express, we should add them to premake?
 --  * NoFloatingPointExceptions
@@ -36,7 +33,9 @@ configuration { "DebugOpt" }
 configuration { "Release" }
 	defines { "NDEBUG" }
 	optimize "Full"
-	flags { "Symbols", "NoFramePointer", "NoBufferSecurityCheck" }
+	flags { "NoFramePointer", "NoBufferSecurityCheck" }
+configuration { "Release", "not Emscripten" }
+	flags { "Symbols" }
 
 -- platform config
 configuration { "windows" }
