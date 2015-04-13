@@ -72,6 +72,9 @@ template <typename T> udVector4<T> min(const udVector4<T> &v1, const udVector4<T
 template <typename T> udVector2<T> max(const udVector2<T> &v1, const udVector2<T> &v2) { udVector2<T> r = { v1.x>v2.x?v1.x:v2.x, v1.y>v2.y?v1.y:v2.y }; return r; }
 template <typename T> udVector3<T> max(const udVector3<T> &v1, const udVector3<T> &v2) { udVector3<T> r = { v1.x>v2.x?v1.x:v2.x, v1.y>v2.y?v1.y:v2.y, v1.z>v2.z?v1.z:v2.z }; return r; }
 template <typename T> udVector4<T> max(const udVector4<T> &v1, const udVector4<T> &v2) { udVector4<T> r = { v1.x>v2.x?v1.x:v2.x, v1.y>v2.y?v1.y:v2.y, v1.z>v2.z?v1.z:v2.z, v1.w>v2.w?v1.w:v2.w }; return r; }
+template <typename T> udVector2<T> clamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max) { udVector2<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y) }; return r; }
+template <typename T> udVector3<T> clamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max) { udVector3<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y), v.z<_min.z?_min.z:(v.z>_max.z?_max.z:v.z) }; return r; }
+template <typename T> udVector4<T> clamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max) { udVector4<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y), v.z<_min.z?_min.z:(v.z>_max.z?_max.z:v.z), v.w<_min.w?_min.w:(v.w>_max.w?_max.w:v.w) }; return r; }
 
 template <typename T> T dot2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
 template <typename T> T dot2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
@@ -116,10 +119,10 @@ template <typename T> udQuaternion<T> normalizeQ(const udQuaternion<T> &v) { T s
 template <typename T>
 udMatrix4x4<T> mul(const udMatrix4x4<T> &m, T f)
 {
-  udMatrix4x4<T> r = { m.a[0]*f, m.a[1]*f, m.a[2]*f, m.a[3]*f,
-                       m.a[4]*f, m.a[5]*f, m.a[6]*f, m.a[7]*f,
-                       m.a[8]*f, m.a[9]*f, m.a[10]*f,m.a[11]*f,
-                       m.a[12]*f,m.a[13]*f,m.a[14]*f,m.a[15]*f };
+  udMatrix4x4<T> r = {{{ m.a[0]*f, m.a[1]*f, m.a[2]*f, m.a[3]*f,
+                         m.a[4]*f, m.a[5]*f, m.a[6]*f, m.a[7]*f,
+                         m.a[8]*f, m.a[9]*f, m.a[10]*f,m.a[11]*f,
+                         m.a[12]*f,m.a[13]*f,m.a[14]*f,m.a[15]*f }}};
   return r;
 }
 template <typename T>
@@ -280,12 +283,10 @@ udQuaternion<T> slerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t)
 template <typename T>
 udMatrix4x4<T> transpose(const udMatrix4x4<T> &m)
 {
-  udMatrix4x4<T> r = {
-    m.a[0], m.a[4], m.a[8], m.a[12],
-    m.a[1], m.a[5], m.a[9], m.a[13],
-    m.a[2], m.a[6], m.a[10], m.a[14],
-    m.a[3], m.a[7], m.a[11], m.a[15]
-  };
+  udMatrix4x4<T> r = {{{ m.a[0], m.a[4], m.a[8], m.a[12],
+                         m.a[1], m.a[5], m.a[9], m.a[13],
+                         m.a[2], m.a[6], m.a[10], m.a[14],
+                         m.a[3], m.a[7], m.a[11], m.a[15] }}};
   return r;
 }
 
@@ -396,40 +397,40 @@ udVector3<T> udQuaternion<T>::eulerAngles()
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::identity()
 {
-  udMatrix4x4<T> r = { T(1),T(0),T(0),T(0),
-                       T(0),T(1),T(0),T(0),
-                       T(0),T(0),T(1),T(0),
-                       T(0),T(0),T(0),T(1) };
+  udMatrix4x4<T> r = {{{ T(1),T(0),T(0),T(0),
+                         T(0),T(1),T(0),T(0),
+                         T(0),T(0),T(1),T(0),
+                         T(0),T(0),T(0),T(1) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::create(const T m[16])
 {
-  udMatrix4x4<T> r = { m[0], m[1], m[2], m[3],
-                       m[4], m[5], m[6], m[7],
-                       m[8], m[9], m[10],m[11],
-                       m[12],m[13],m[14],m[15] };
+  udMatrix4x4<T> r = {{{ m[0], m[1], m[2], m[3],
+                         m[4], m[5], m[6], m[7],
+                         m[8], m[9], m[10],m[11],
+                         m[12],m[13],m[14],m[15] }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::create(T _00, T _10, T _20, T _30, T _01, T _11, T _21, T _31, T _02, T _12, T _22, T _32, T _03, T _13, T _23, T _33)
 {
-  udMatrix4x4<T> r = { _00, _10, _20, _30,  // NOTE: remember, this looks a bit funny because we store columns (axiis) contiguous!
-                       _01, _11, _21, _31,
-                       _02, _12, _22, _32,
-                       _03, _13, _23, _33 };
+  udMatrix4x4<T> r = {{{ _00, _10, _20, _30,  // NOTE: remember, this looks a bit funny because we store columns (axiis) contiguous!
+                         _01, _11, _21, _31,
+                         _02, _12, _22, _32,
+                         _03, _13, _23, _33 }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::create(const udVector4<T> &xColumn, const udVector4<T> &yColumn, const udVector4<T> &zColumn, const udVector4<T> &wColumn)
 {
-  udMatrix4x4<T> r = { xColumn.x, xColumn.y, xColumn.z, xColumn.w,
-                       yColumn.x, yColumn.y, yColumn.z, yColumn.w,
-                       zColumn.x, zColumn.y, zColumn.z, zColumn.w,
-                       wColumn.x, wColumn.y, wColumn.z, wColumn.w };
+  udMatrix4x4<T> r = {{{ xColumn.x, xColumn.y, xColumn.z, xColumn.w,
+                         yColumn.x, yColumn.y, yColumn.z, yColumn.w,
+                         zColumn.x, zColumn.y, zColumn.z, zColumn.w,
+                         wColumn.x, wColumn.y, wColumn.z, wColumn.w }}};
   return r;
 }
 
@@ -437,10 +438,10 @@ template <typename T>
 template <typename U> // OMG, nested templates... I didn't even know this was a thing!
 udMatrix4x4<T> udMatrix4x4<T>::create(const udMatrix4x4<U> &_m)
 {
-  udMatrix4x4<T> r = { T(_m.m._00), T(_m.m._10), T(_m.m._20), T(_m.m._30),
-                       T(_m.m._01), T(_m.m._11), T(_m.m._21), T(_m.m._31),
-                       T(_m.m._02), T(_m.m._12), T(_m.m._22), T(_m.m._32),
-                       T(_m.m._03), T(_m.m._13), T(_m.m._23), T(_m.m._33) };
+  udMatrix4x4<T> r = {{{ T(_m.m._00), T(_m.m._10), T(_m.m._20), T(_m.m._30),
+                         T(_m.m._01), T(_m.m._11), T(_m.m._21), T(_m.m._31),
+                         T(_m.m._02), T(_m.m._12), T(_m.m._22), T(_m.m._32),
+                         T(_m.m._03), T(_m.m._13), T(_m.m._23), T(_m.m._33) }}};
   return r;
 }
 
@@ -449,10 +450,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationX(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = { T(1),T(0),T(0),T(0),
-                       T(0),  c ,  s ,T(0),
-                       T(0), -s ,  c ,T(0),
-                       t.x, t.y, t.z, T(1) };
+  udMatrix4x4<T> r = {{{ T(1),T(0),T(0),T(0),
+                         T(0),  c ,  s ,T(0),
+                         T(0), -s ,  c ,T(0),
+                         t.x, t.y, t.z, T(1) }}};
   return r;
 }
 
@@ -461,10 +462,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationY(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = {   c ,T(0), -s, T(0),
-                       T(0),T(1),T(0),T(0),
-                         s ,T(0),  c ,T(0),
-                       t.x, t.y, t.z, T(1) };
+  udMatrix4x4<T> r = {{{   c ,T(0), -s, T(0),
+                         T(0),T(1),T(0),T(0),
+                           s ,T(0),  c ,T(0),
+                         t.x, t.y, t.z, T(1) }}};
   return r;
 }
 
@@ -473,27 +474,24 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationZ(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = {   c ,  s ,T(0),T(0),
-                        -s ,  c ,T(0),T(0),
-                       T(0),T(0),T(1),T(0),
-                       t.x, t.y, t.z, T(1) };
+  udMatrix4x4<T> r = {{{   c ,  s ,T(0),T(0),
+                          -s ,  c ,T(0),T(0),
+                         T(0),T(0),T(1),T(0),
+                         t.x, t.y, t.z, T(1) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationAxis(const udVector3<T> &axis, T rad, const udVector3<T> &t)
 {
-  T c = cos(rad);
-  T s = sin(rad);
-
-  udVector3<T> n = normalize3(axis);
+  T c = udCos(rad);
+  T s = udSin(rad);
+  udVector3<T> n = axis;
   udVector3<T> a = (T(1) - c) * axis;
-
-  udMatrix4x4<T> r = {
-    a.x*n.x + c,     a.x*n.y + s*n.z, a.x*n.z - s*n.y, T(0),
-    a.y*n.x - s*n.z, a.y*n.y + c,     a.y*n.z + s*n.x, T(0),
-    a.z*n.x + s*n.y, a.z*n.y - s*n.x, a.z*n.z + c,     T(0),
-    t.x,             t.y,             t.z,             T(1) };
+  udMatrix4x4<T> r = {{{ a.x*n.x + c,     a.x*n.y + s*n.z, a.x*n.z - s*n.y, T(0),
+                         a.y*n.x - s*n.z, a.y*n.y + c,     a.y*n.z + s*n.x, T(0),
+                         a.z*n.x + s*n.y, a.z*n.y - s*n.x, a.z*n.z + c,     T(0),
+                         t.x,             t.y,             t.z,             T(1) }}};
   return r;
 }
 
@@ -516,51 +514,51 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVe
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::translation(T x, T y, T z)
 {
-  udMatrix4x4<T> r = { T(1),T(0),T(0),T(0),
-                       T(0),T(1),T(0),T(0),
-                       T(0),T(0),T(1),T(0),
-                         x,   y,   z, T(1) };
+  udMatrix4x4<T> r = {{{ T(1),T(0),T(0),T(0),
+                         T(0),T(1),T(0),T(0),
+                         T(0),T(0),T(1),T(0),
+                         x,   y,   z, T(1) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::scaleNonUniform(T x, T y, T z, const udVector3<T> &t)
 {
-  udMatrix4x4<T> r = {   x,  T(0), T(0), T(0),
-                       T(0),   y,  T(0), T(0),
-                       T(0), T(0),   z,  T(0),
-                       t.x,  t.y,  t.z,  T(1) };
+  udMatrix4x4<T> r = {{{   x,  T(0), T(0), T(0),
+                         T(0),   y,  T(0), T(0),
+                         T(0), T(0),   z,  T(0),
+                         t.x,  t.y,  t.z,  T(1) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::perspective(T fovY, T aspectRatio, T near, T far)
 {
-  float fov = udTan(fovY / T(2));
-  udMatrix4x4<T> r = { T(1)/(aspectRatio*fov), T(0),         T(0),                            T(0),
-                       T(0),                   T(0),         (far + near) / (far - near),     T(1),
-                       T(0),                   T(1)/fov,     T(0),                            T(0),
-                       T(0),                   T(0),         -(T(2)*far*near) / (far - near), T(0) };
+  T fov = udTan(fovY / T(2));
+  udMatrix4x4<T> r = {{{ T(1)/(aspectRatio*fov), T(0),         T(0),                            T(0),
+                         T(0),                   T(0),         (far + near) / (far - near),     T(1),
+                         T(0),                   T(1)/fov,     T(0),                            T(0),
+                         T(0),                   T(0),         -(T(2)*far*near) / (far - near), T(0) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::ortho(T left, T right, T bottom, T top, T near, T far)
 {
-  udMatrix4x4<T> r = { T(2) / (right - left),            T(0),                             T(0),                         T(0),
-                       T(0),                             T(0),                             T(2) / (far - near),          T(0),
-                       T(0),                             T(2) / (top - bottom),            T(0),                         T(0),
-                       -(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), T(1) };
+  udMatrix4x4<T> r = {{{ T(2) / (right - left),            T(0),                             T(0),                         T(0),
+                         T(0),                             T(0),                             T(2) / (far - near),          T(0),
+                         T(0),                             T(2) / (top - bottom),            T(0),                         T(0),
+                         -(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), T(1) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::orthoForScreeen(T width, T height, T near, T far)
 {
-  udMatrix4x4<T> r = { T(2) / width, T(0),           T(0),                         T(0),
-                       T(0),         -T(2) / height, T(0),                         T(0),
-                       T(0),         T(0),           T(2) / (far - near),          T(0),
-                       T(-1),        T(1),          -(far + near) / (far - near), T(1) };
+  udMatrix4x4<T> r = {{{ T(2) / width, T(0),           T(0),                         T(0),
+                         T(0),         -T(2) / height, T(0),                         T(0),
+                         T(0),         T(0),           T(2) / (far - near),          T(0),
+                         T(-1),        T(1),          -(far + near) / (far - near), T(1) }}};
   return r;
 }
 
@@ -570,10 +568,10 @@ udMatrix4x4<T> udMatrix4x4<T>::lookAt(const udVector3<T> &from, const udVector3<
   udVector3<T> y = normalize3(at - from);
   udVector3<T> x = normalize3(cross3(y, up));
   udVector3<T> z = cross3(x, y);
-  udMatrix4x4<T> r = { x.x,    x.y,    x.z,    0,
-                       y.x,    y.y,    y.z,    0,
-                       z.x,    z.y,    z.z,    0,
-                       from.x, from.y, from.z, 1 };
+  udMatrix4x4<T> r = {{{ x.x,    x.y,    x.z,    0,
+                         y.x,    y.y,    y.z,    0,
+                         z.x,    z.y,    z.z,    0,
+                         from.x, from.y, from.z, 1 }}};
   return r;
 }
 

@@ -92,6 +92,9 @@ template <typename T> udVector4<T> max(const udVector4<T> &v1, const udVector4<T
 template <typename T> udVector2<T> min(const udVector2<T> &v1, const udVector2<T> &v2);
 template <typename T> udVector3<T> min(const udVector3<T> &v1, const udVector3<T> &v2);
 template <typename T> udVector4<T> min(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> udVector2<T> clamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max);
+template <typename T> udVector3<T> clamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max);
+template <typename T> udVector4<T> clamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max);
 
 template <typename T> T dot2(const udVector2<T> &v1, const udVector2<T> &v2);
 template <typename T> T dot2(const udVector3<T> &v1, const udVector3<T> &v2);
@@ -334,6 +337,8 @@ struct udMatrix4x4
 
   udMatrix4x4<T>& operator *=(const udMatrix4x4<T> &m)     { *this = mul(*this, m); return *this; }
   udMatrix4x4<T>& operator *=(T f)                         { *this = mul(*this, f); return *this; }
+
+  bool operator ==(const udMatrix4x4& rh) const            { return memcmp(this, &rh, sizeof(*this)) == 0; }
 
   udMatrix4x4<T>& transpose();
   T determinant();
