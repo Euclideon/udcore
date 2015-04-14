@@ -49,6 +49,8 @@ template <typename T> struct udQuaternion;
 template <typename T> struct udMatrix4x4;
 
 // math functions
+float udAbs(float f);
+double udAbs(double d);
 float udPow(float f, float n);
 double udPow(double d, double n);
 float udRSqrt(float f);

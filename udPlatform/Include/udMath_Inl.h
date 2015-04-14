@@ -16,6 +16,8 @@
 # undef min
 #endif
 
+UDFORCE_INLINE float udAbs(float f) { return f < 0.f ? -f : f; }
+UDFORCE_INLINE double udAbs(double d) { return d < 0.0 ? -d : d; }
 UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
 UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
