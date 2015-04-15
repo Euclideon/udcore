@@ -8,15 +8,6 @@
 // Some simple utility template functions
 // *********************************************************************
 
-template <typename T>
-inline T udMax(const T &a, const T &b) { return (a > b) ? a : b;  }
-
-template <typename T>
-inline T udMin(const T &a, const T &b) { return (a < b) ? a : b;  }
-
-template <typename T>
-inline T udClamp(const T &a, const T &minVal, const T &maxVal) { return udMin(udMax(a, minVal), maxVal);  }
-
 template <typename SourceType, typename DestType>
 inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { return DestType(source); }
 

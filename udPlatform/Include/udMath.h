@@ -3,21 +3,6 @@
 
 #include "udResult.h"
 
-//      O_O
-// YOU'RE JOKING!
-#if defined(near)
-# undef near
-#endif
-#if defined(far)
-# undef far
-#endif
-#if defined(max)
-# undef max
-#endif
-#if defined(min)
-# undef min
-#endif
-
 #if defined(_MSC_VER)
 // warning C4201: nonstandard extension used : nameless struct/union
 # pragma warning(disable: 4201)
@@ -49,8 +34,6 @@ template <typename T> struct udQuaternion;
 template <typename T> struct udMatrix4x4;
 
 // math functions
-float udAbs(float f);
-double udAbs(double d);
 float udPow(float f, float n);
 double udPow(double d, double n);
 float udRSqrt(float f);
@@ -81,82 +64,88 @@ float udCeil(float f);
 double udCeil(double d);
 template <typename T> T udRoundEven(T t);
 
+
 // typical linear algebra functions
-template <typename T> udVector2<T> abs(const udVector2<T> &v);
-template <typename T> udVector3<T> abs(const udVector3<T> &v);
-template <typename T> udVector4<T> abs(const udVector4<T> &v);
+template <typename T> T            udAbs(T v);
+template <typename T> udVector2<T> udAbs(const udVector2<T> &v);
+template <typename T> udVector3<T> udAbs(const udVector3<T> &v);
+template <typename T> udVector4<T> udAbs(const udVector4<T> &v);
 
-template <typename T> udVector2<T> max(const udVector2<T> &v1, const udVector2<T> &v2);
-template <typename T> udVector3<T> max(const udVector3<T> &v1, const udVector3<T> &v2);
-template <typename T> udVector4<T> max(const udVector4<T> &v1, const udVector4<T> &v2);
-template <typename T> udVector2<T> min(const udVector2<T> &v1, const udVector2<T> &v2);
-template <typename T> udVector3<T> min(const udVector3<T> &v1, const udVector3<T> &v2);
-template <typename T> udVector4<T> min(const udVector4<T> &v1, const udVector4<T> &v2);
-template <typename T> udVector2<T> clamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max);
-template <typename T> udVector3<T> clamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max);
-template <typename T> udVector4<T> clamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max);
+template <typename T> T            udMax(T a, T b);
+template <typename T> udVector2<T> udMax(const udVector2<T> &v1, const udVector2<T> &v2);
+template <typename T> udVector3<T> udMax(const udVector3<T> &v1, const udVector3<T> &v2);
+template <typename T> udVector4<T> udMax(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> T            udMin(T a, T b);
+template <typename T> udVector2<T> udMin(const udVector2<T> &v1, const udVector2<T> &v2);
+template <typename T> udVector3<T> udMin(const udVector3<T> &v1, const udVector3<T> &v2);
+template <typename T> udVector4<T> udMin(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> T            udClamp(T v, T _min, T _max);
+template <typename T> udVector2<T> udClamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max);
+template <typename T> udVector3<T> udClamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max);
+template <typename T> udVector4<T> udClamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max);
 
-template <typename T> T dot2(const udVector2<T> &v1, const udVector2<T> &v2);
-template <typename T> T dot2(const udVector3<T> &v1, const udVector3<T> &v2);
-template <typename T> T dot2(const udVector4<T> &v1, const udVector4<T> &v2);
-template <typename T> T dot3(const udVector3<T> &v1, const udVector3<T> &v2);
-template <typename T> T dot3(const udVector4<T> &v1, const udVector4<T> &v2);
-template <typename T> T dot4(const udVector4<T> &v1, const udVector4<T> &v2);
-template <typename T> T doth(const udVector3<T> &v3, const udVector4<T> &v4);
-template <typename T> T dotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2);
+template <typename T> T udDot2(const udVector2<T> &v1, const udVector2<T> &v2);
+template <typename T> T udDot2(const udVector3<T> &v1, const udVector3<T> &v2);
+template <typename T> T udDot2(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> T udDot3(const udVector3<T> &v1, const udVector3<T> &v2);
+template <typename T> T udDot3(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> T udDot4(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> T udDoth(const udVector3<T> &v3, const udVector4<T> &v4);
+template <typename T> T udDotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2);
 
-template <typename T> T magSq2(const udVector2<T> &v);
-template <typename T> T magSq2(const udVector3<T> &v);
-template <typename T> T magSq2(const udVector4<T> &v);
-template <typename T> T magSq3(const udVector3<T> &v);
-template <typename T> T magSq3(const udVector4<T> &v);
-template <typename T> T magSq4(const udVector4<T> &v);
+template <typename T> T udMagSq2(const udVector2<T> &v);
+template <typename T> T udMagSq2(const udVector3<T> &v);
+template <typename T> T udMagSq2(const udVector4<T> &v);
+template <typename T> T udMagSq3(const udVector3<T> &v);
+template <typename T> T udMagSq3(const udVector4<T> &v);
+template <typename T> T udMagSq4(const udVector4<T> &v);
 
-template <typename T> T mag2(const udVector2<T> &v);
-template <typename T> T mag2(const udVector3<T> &v);
-template <typename T> T mag2(const udVector4<T> &v);
-template <typename T> T mag3(const udVector3<T> &v);
-template <typename T> T mag3(const udVector4<T> &v);
-template <typename T> T mag4(const udVector4<T> &v);
+template <typename T> T udMag2(const udVector2<T> &v);
+template <typename T> T udMag2(const udVector3<T> &v);
+template <typename T> T udMag2(const udVector4<T> &v);
+template <typename T> T udMag3(const udVector3<T> &v);
+template <typename T> T udMag3(const udVector4<T> &v);
+template <typename T> T udMag4(const udVector4<T> &v);
 
-template <typename T> T cross2(const udVector2<T> &v1, const udVector2<T> &v2);
-template <typename T> T cross2(const udVector3<T> &v1, const udVector3<T> &v2);
-template <typename T> T cross2(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> T udCross2(const udVector2<T> &v1, const udVector2<T> &v2);
+template <typename T> T udCross2(const udVector3<T> &v1, const udVector3<T> &v2);
+template <typename T> T udCross2(const udVector4<T> &v1, const udVector4<T> &v2);
 
-template <typename T> udVector3<T> cross3(const udVector3<T> &v1, const udVector3<T> &v2);
-template <typename T> udVector3<T> cross3(const udVector4<T> &v1, const udVector4<T> &v2);
+template <typename T> udVector3<T> udCross3(const udVector3<T> &v1, const udVector3<T> &v2);
+template <typename T> udVector3<T> udCross3(const udVector4<T> &v1, const udVector4<T> &v2);
 
-template <typename T> udVector2<T> normalize2(const udVector2<T> &v);
-template <typename T> udVector3<T> normalize2(const udVector3<T> &v);
-template <typename T> udVector4<T> normalize2(const udVector4<T> &v);
-template <typename T> udVector3<T> normalize3(const udVector3<T> &v);
-template <typename T> udVector4<T> normalize3(const udVector4<T> &v);
-template <typename T> udVector4<T> normalize4(const udVector4<T> &v);
-template <typename T> udQuaternion<T> normalizeQ(const udQuaternion<T> &q);
+template <typename T> udVector2<T> udNormalize2(const udVector2<T> &v);
+template <typename T> udVector3<T> udNormalize2(const udVector3<T> &v);
+template <typename T> udVector4<T> udNormalize2(const udVector4<T> &v);
+template <typename T> udVector3<T> udNormalize3(const udVector3<T> &v);
+template <typename T> udVector4<T> udNormalize3(const udVector4<T> &v);
+template <typename T> udVector4<T> udNormalize4(const udVector4<T> &v);
+template <typename T> udQuaternion<T> udNormalizeQ(const udQuaternion<T> &q);
 
 // matrix and quat functions
-template <typename T> udVector2<T> mul(const udMatrix4x4<T> &m, const udVector2<T> &v);
-template <typename T> udVector3<T> mul(const udMatrix4x4<T> &m, const udVector3<T> &v);
-template <typename T> udVector4<T> mul(const udMatrix4x4<T> &m, const udVector4<T> &v);
-template <typename T> udMatrix4x4<T> mul(const udMatrix4x4<T> &m, T f);
-template <typename T> udMatrix4x4<T> mul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2);
+template <typename T> udVector2<T> udMul(const udMatrix4x4<T> &m, const udVector2<T> &v);
+template <typename T> udVector3<T> udMul(const udMatrix4x4<T> &m, const udVector3<T> &v);
+template <typename T> udVector4<T> udMul(const udMatrix4x4<T> &m, const udVector4<T> &v);
+template <typename T> udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, T f);
+template <typename T> udMatrix4x4<T> udMul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2);
 
-template <typename T> udVector2<T> lerp(const udVector2<T> &v1, const udVector2<T> &v2, T t);
-template <typename T> udVector3<T> lerp(const udVector3<T> &v1, const udVector3<T> &v2, T t);
-template <typename T> udVector4<T> lerp(const udVector4<T> &v1, const udVector4<T> &v2, T t);
-template <typename T> udQuaternion<T> lerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
-template <typename T> udMatrix4x4<T> lerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, T t);
+template <typename T> T udLerp(T a, T b, T t);
+template <typename T> udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, T t);
+template <typename T> udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, T t);
+template <typename T> udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, T t);
+template <typename T> udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
+template <typename T> udMatrix4x4<T> udLerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, T t);
 
-template <typename T> udMatrix4x4<T> transpose(const udMatrix4x4<T> &m);
+template <typename T> udMatrix4x4<T> udTranspose(const udMatrix4x4<T> &m);
 
-template <typename T> T determinant(const udMatrix4x4<T> &m);
+template <typename T> T udDeterminant(const udMatrix4x4<T> &m);
 
-template <typename T> udQuaternion<T> inverse(const udQuaternion<T> &q);
-template <typename T> udMatrix4x4<T> inverse(const udMatrix4x4<T> &m);
+template <typename T> udQuaternion<T> udInverse(const udQuaternion<T> &q);
+template <typename T> udMatrix4x4<T>  udInverse(const udMatrix4x4<T> &m);
 
-template <typename T> udQuaternion<T> conjugate(const udQuaternion<T> &q);
+template <typename T> udQuaternion<T> udConjugate(const udQuaternion<T> &q);
 
-template <typename T> udQuaternion<T> slerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
+template <typename T> udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
 
 
 // types
@@ -331,12 +320,12 @@ struct udMatrix4x4
     } m;
   };
 
-  udMatrix4x4<T> operator *(const udMatrix4x4<T> &m) const { return mul(*this, m); }
-  udMatrix4x4<T> operator *(T f) const                     { return mul(*this, f); }
-  udVector4<T> operator *(const udVector4<T> &v) const     { return mul(*this, v); }
+  udMatrix4x4<T> operator *(const udMatrix4x4<T> &m) const { return udMul(*this, m); }
+  udMatrix4x4<T> operator *(T f) const                     { return udMul(*this, f); }
+  udVector4<T> operator *(const udVector4<T> &v) const     { return udMul(*this, v); }
 
-  udMatrix4x4<T>& operator *=(const udMatrix4x4<T> &m)     { *this = mul(*this, m); return *this; }
-  udMatrix4x4<T>& operator *=(T f)                         { *this = mul(*this, f); return *this; }
+  udMatrix4x4<T>& operator *=(const udMatrix4x4<T> &m)     { *this = udMul(*this, m); return *this; }
+  udMatrix4x4<T>& operator *=(T f)                         { *this = udMul(*this, f); return *this; }
 
   bool operator ==(const udMatrix4x4& rh) const            { return memcmp(this, &rh, sizeof(*this)) == 0; }
 
@@ -368,9 +357,9 @@ struct udMatrix4x4
   static udMatrix4x4<T> scaleNonUniform(T x, T y, T z, const udVector3<T> &t = udVector3<T>::zero());
   static udMatrix4x4<T> scaleNonUniform(const udVector3<T> &s, const udVector3<T> &t = udVector3<T>::zero()) { return scaleNonUniform(s.x, s.y, s.z, t); }
 
-  static udMatrix4x4<T> perspective(T fovY, T aspectRatio, T near, T far);
-  static udMatrix4x4<T> ortho(T left, T right, T bottom, T top, T near = T(0), T far = T(1));
-  static udMatrix4x4<T> orthoForScreeen(T width, T height, T near = T(0), T far = T(1));
+  static udMatrix4x4<T> perspective(T fovY, T aspectRatio, T znear, T zfar);
+  static udMatrix4x4<T> ortho(T left, T right, T bottom, T top, T znear = T(0), T zfar = T(1));
+  static udMatrix4x4<T> orthoForScreeen(T width, T height, T znear = T(0), T zfar = T(1));
 
   static udMatrix4x4<T> lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up = udVector3<T>::create(T(0), T(0), T(1)));
 };
