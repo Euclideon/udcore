@@ -216,6 +216,7 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags IF_
 
 void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
 #define udRealloc(pMemory, size) _udRealloc(pMemory, size IF_MEMORY_DEBUG(__FILE__, __LINE__))
+#define udReallocType(pMemory, type, count) (type*)_udRealloc(pMemory, sizeof(type) * (count) IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
 #define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment IF_MEMORY_DEBUG(__FILE__, __LINE__))
