@@ -179,8 +179,8 @@ unsigned char udAsciiToUDKey[128] =
   udKC_Apostrophe, // 39	047	27	00100111	'	&#39;	 	Single quote
   udKC_Unknown, // 40	050	28	00101000	(	&#40;	 	Open parenthesis (or open bracket)
   udKC_Unknown, // 41	051	29	00101001	)	&#41;	 	Close parenthesis (or close bracket)
-  udKC_Unknown, // 42	052	2A	00101010	*	&#42;	 	Asterisk
-  udKC_Unknown, // 43	053	2B	00101011	+	&#43;	 	Plus
+  udKC_NumpadMultiply, // 42	052	2A	00101010	*	&#42;	 	Asterisk
+  udKC_NumpadPlus, // 43	053	2B	00101011	+	&#43;	 	Plus
   udKC_Comma, // 44	054	2C	00101100	,	&#44;	 	Comma
   udKC_Hyphen, // 45	055	2D	00101101	-	&#45;	 	Hyphen
   udKC_Period, // 46	056	2E	00101110	.	&#46;	 	Period, dot or full stop

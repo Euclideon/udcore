@@ -126,4 +126,23 @@ void udInput_UpdateInternal()
   // poll gamepads
   //...
 
+  // Fix up numpad
+  input.keys[0][udKC_NumpadMinus]   = input.keys[0][udKC_Hyphen];
+  input.keys[0][udKC_NumpadDivide]  = input.keys[0][udKC_ForwardSlash];
+  input.keys[0][udKC_NumpadDecimal] = input.keys[0][udKC_Period];
+  input.keys[0][udKC_NumpadEnter]   = input.keys[0][udKC_Enter];
+
+  input.keys[0][udKC_Numpad0]   = input.keys[0][udKC_0];
+  input.keys[0][udKC_Numpad1]   = input.keys[0][udKC_1];
+  input.keys[0][udKC_Numpad2]   = input.keys[0][udKC_2];
+  input.keys[0][udKC_Numpad3]   = input.keys[0][udKC_3];
+  input.keys[0][udKC_Numpad4]   = input.keys[0][udKC_4];
+
+  input.keys[0][udKC_Numpad5]   = input.keys[0][udKC_5];
+  input.keys[0][udKC_Numpad6]   = input.keys[0][udKC_6];
+  input.keys[0][udKC_Numpad7]   = input.keys[0][udKC_7];
+  input.keys[0][udKC_Numpad8]   = input.keys[0][udKC_8];
+  input.keys[0][udKC_Numpad9]   = input.keys[0][udKC_9];
+
+
 }
