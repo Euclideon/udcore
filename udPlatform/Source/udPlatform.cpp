@@ -407,14 +407,14 @@ void udMemoryDebugLogMemoryStats()
 {
   udDebugPrintf("Memory Stats\n");
 
-  uint32_t totalMemory = 0;
+  size_t totalMemory = 0;
   for (MemTrackMap::iterator memIt = pMemoryTrackingMap->begin(); memIt != pMemoryTrackingMap->end(); ++memIt)
   {
     const MemTrack &track = memIt->second;
     totalMemory += track.size;
   }
 
-  udDebugPrintf("Total allocated Memory %d\n", totalMemory);
+  udDebugPrintf("Total allocated Memory %llu\n", totalMemory);
 }
 
 #else
