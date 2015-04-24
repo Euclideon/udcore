@@ -3,8 +3,6 @@
 warnings "Extra"
 
 targetname "%{prj.name}"
-targetdir "Output/Lib"
-objdir "Output/Intermediate/%{prj.name}"
 
 flags { "C++11", "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
 floatingpoint "Fast"
@@ -18,6 +16,12 @@ floatingpoint "Fast"
 --  * Randomize base address
 --  * Profile
 
+
+objdir "Output/intermediate/%{prj.name}/%{cfg.buildcfg}_%{cfg.platform}"
+filter { "kind:SharedLib or StaticLib" }
+	targetdir "Output/lib/%{cfg.buildcfg}_%{cfg.platform}"
+filter { "kind:ConsoleApp or WindowedApp" }
+	targetdir "Output/bin/%{cfg.buildcfg}_%{cfg.platform}"
 
 -- configurations
 configuration { "Debug" }
