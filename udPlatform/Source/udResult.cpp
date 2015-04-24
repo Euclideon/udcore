@@ -56,6 +56,8 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_File_WriteFailure),
   RESULTINFO(udR_File_FailedToAddFileJob),
   RESULTINFO(udR_File_SocketError),
+
+  RESULTINFO(udR_UDI_MaxOctreeCountExceeded)
 };
 
 UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), _ResultCodeNotEnteredInStringsTable_);
