@@ -1,5 +1,5 @@
-#ifndef UDGROWABLEARRAY_H
-#define UDGROWABLEARRAY_H
+#ifndef UDCHUNKEDARRAY_H
+#define UDCHUNKEDARRAY_H
 #include "udPlatform.h"
 #include "udResult.h"
 
@@ -8,12 +8,12 @@
 template <typename T, uint32_t chunkElementCount>
 struct udChunkedArray
 {
-  udResult Init(uint32_t chunkCount = 1U);
+  udResult Init();
   udResult Deinit();
 
-  T &operator[](uint32_t index);
-  T *GetElement(uint32_t index);
-  void SetElement(uint32_t index, const T &data);
+  T &operator[](size_t index);
+  T *GetElement(size_t index);
+  void SetElement(size_t index, const T &data);
 
   T *PushBack();
   T *PushFront();
@@ -47,13 +47,13 @@ struct udChunkedArray
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
-inline udResult udChunkedArray<T,chunkElementCount>::Init(uint32_t _chunkCount)
+inline udResult udChunkedArray<T,chunkElementCount>::Init()
 {
   UDCOMPILEASSERT(chunkElementCount >= 32, _Chunk_Count_Must_Be_At_Least_32);
   udResult result = udR_Success;
   uint32_t c = 0;
 
-  chunkCount = _chunkCount;
+  chunkCount = 1;
   length = 0;
   inset = 0;
 
@@ -198,33 +198,33 @@ inline udResult udChunkedArray<T,chunkElementCount>::GrowBack(uint32_t numberOfN
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
-inline T &udChunkedArray<T,chunkElementCount>::operator[](uint32_t index)
+inline T &udChunkedArray<T,chunkElementCount>::operator[](size_t index)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  uint32_t chunkIndex = uint32_t(index / chunkElementCount);
+  size_t chunkIndex = index / chunkElementCount;
   return ppChunks[chunkIndex]->data[index % chunkElementCount];
 }
 
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
-inline T* udChunkedArray<T,chunkElementCount>::GetElement(uint32_t index)
+inline T* udChunkedArray<T,chunkElementCount>::GetElement(size_t  index)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  uint32_t chunkIndex = uint32_t(index / uint64_t(chunkElementCount));
+  size_t chunkIndex = index / chunkElementCount;
   return &ppChunks[chunkIndex]->data[index % chunkElementCount];
 }
 
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
-inline void udChunkedArray<T,chunkElementCount>::SetElement(uint32_t index, const T &data)
+inline void udChunkedArray<T,chunkElementCount>::SetElement(size_t index, const T &data)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  uint32_t chunkIndex = uint32_t(index / uint64_t(chunkElementCount));
+  size_t chunkIndex = index / chunkElementCount;
   ppChunks[chunkIndex]->data[index % chunkElementCount] = data;
 }
 
@@ -345,4 +345,4 @@ inline void udChunkedArray<T, chunkElementCount>::PopFront()
       inset = 0;
   }
 }
-#endif // UDGROWABLEARRAY_H
+#endif // UDCHUNKEDARRAY_H
