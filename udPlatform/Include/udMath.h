@@ -1,3 +1,4 @@
+#pragma once
 #if !defined(UDMATH_H)
 #define UDMATH_H
 

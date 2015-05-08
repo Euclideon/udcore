@@ -7,7 +7,6 @@ project "udPlatform"
 	files { "project.lua" }
 
 	includedirs { "../3rdParty" }
-	includedirs { "../3rdParty/GL/freeglut/static/Include" }
 	includedirs { "Include" }
 
 	-- include common stuff

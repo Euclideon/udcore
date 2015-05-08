@@ -492,9 +492,13 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationAxis(const udVector3<T> &axis, T rad, con
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 {
-  udMatrix4x4<T> m = translation(t);
-  UDASSERT(false, "TODO");
-  return m;
+  // TODO: THIS IS HORRIBLE!!! MAKE THE PROPER MATRIX DIRECTLY!!
+  udMatrix4x4<T> yMat = udMatrix4x4<T>::rotationZ(y);
+  udMatrix4x4<T> pMat = udMatrix4x4<T>::rotationX(p);
+  udMatrix4x4<T> rMat = udMatrix4x4<T>::rotationY(r);
+  udMatrix4x4<T> result = yMat*pMat*rMat;
+  result.axis.t = udVector4<T>::create(t, T(1));
+  return result;
 }
 
 template <typename T>
