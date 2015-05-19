@@ -44,6 +44,7 @@
 # define UDPLATFORM_NACL    0
 #elif defined(__native_client__)
 # include <string.h>
+# include <limits.h>
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   0
 # define UDPLATFORM_NACL    1

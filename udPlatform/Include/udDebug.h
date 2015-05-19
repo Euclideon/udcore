@@ -106,6 +106,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 
 #define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
 
+#define UDUNREACHABLE() UDASSERT(false, "Unreachable!")
 
 #if UD_DEBUG
 # define OUTPUT_ERROR_STRINGS (1)
