@@ -32,7 +32,14 @@
 # error "Unknown architecture (32/64 bit)"
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if defined(__native_client__)
+# include <string.h>
+# include <limits.h>
+# define UDPLATFORM_WINDOWS 0
+# define UDPLATFORM_LINUX   0
+# define UDPLATFORM_NACL    1
+# define USE_GLES
+#elif defined(_MSC_VER) || defined(__MINGW32__)
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
 # define UDPLATFORM_LINUX   0
@@ -42,12 +49,6 @@
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   1
 # define UDPLATFORM_NACL    0
-#elif defined(__native_client__)
-# include <string.h>
-# include <limits.h>
-# define UDPLATFORM_WINDOWS 0
-# define UDPLATFORM_LINUX   0
-# define UDPLATFORM_NACL    1
 #else
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   0
@@ -111,7 +112,11 @@ inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchang
 inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
-# define UDTHREADLOCAL __thread
+# if defined(__INTELLISENSE__)
+#   define UDTHREADLOCAL
+# else
+#   define UDTHREADLOCAL __thread
+# endif
 
 #else
 #error Unknown platform
@@ -160,7 +165,7 @@ void udDestroyThread(udThreadHandle threadHandle);
 udSemaphore *udCreateSemaphore(int maxValue, int initialValue);
 void udDestroySemaphore(udSemaphore **ppSemaphore);
 void udIncrementSemaphore(udSemaphore *pSemaphore, int count = 1);
-int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs); // Returns zero on success
+int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs = -1); // Returns zero on success
 
 udMutex *udCreateMutex();
 void udDestroyMutex(udMutex **ppMutex);

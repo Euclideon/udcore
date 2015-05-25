@@ -310,7 +310,7 @@ const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t 
   return nullptr;
 }
 
-
+#if UDPLATFORM_WINDOWS
 // *********************************************************************
 // Author: Dave Pevreal, June 2015
 udOSString::udOSString(const char *pString)
@@ -344,6 +344,7 @@ udOSString::~udOSString()
 {
   udFree(m_pAllocation);
 }
+#endif // UDPLATFORM_WINDOWS
 
 // *********************************************************************
 // Author: Dave Pevreal, August 2014

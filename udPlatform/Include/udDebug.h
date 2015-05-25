@@ -104,8 +104,11 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 # define IF_UDRELASSERT(x)
 #endif //UDRELASSERT_ON
 
-#define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
-
+#if UDPLATFORM_WINDOWS
+# define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1]
+#else
+# define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##a_error[(a_condition)?1:-1] __attribute__ ((unused))
+#endif
 #define UDUNREACHABLE() UDASSERT(false, "Unreachable!")
 
 #if UD_DEBUG
