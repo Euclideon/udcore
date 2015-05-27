@@ -48,6 +48,9 @@ char *udStrdup(const char *s, size_t additionalChars = 0);
 // udStrchr behaves much like strchr, optionally also providing the index
 // of the find, which will be the length if not found (ie when null is returned)
 const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex = nullptr);
+// udStrrchr behaves much like strrchr, optionally also providing the index
+// of the find, which will be the length if not found (ie when null is returned)
+const char *udStrrchr(const char *s, const char *pCharList, size_t *pIndex = nullptr);
 // udStrstr behaves much like strstr, though the length of s can be supplied for safety
 // (zero indicates assume nul-terminated). Optionally the function can provide the index
 // of the find, which will be the length if not found (ie when null is returned)

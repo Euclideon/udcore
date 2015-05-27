@@ -247,6 +247,37 @@ const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex)
 
 
 // *********************************************************************
+// Author: Samuel Surtees, May 2015
+const char *udStrrchr(const char *s, const char *pCharList, size_t *pIndex)
+{
+  if (!s) s = s_udStrEmptyString;
+  if (!pCharList) pCharList = s_udStrEmptyString;
+
+  size_t index;
+  size_t sLen = udStrlen(s);
+  size_t listLen = udStrlen(pCharList);
+
+  for (index = sLen; index > 0; --index)
+  {
+    for (size_t i = 0; i < listLen; ++i)
+    {
+      if (s[index - 1] == pCharList[i])
+      {
+        // Found, set index if required and return a pointer to the found character
+        if (pIndex)
+          *pIndex = index - 1;
+        return s + index - 1;
+      }
+    }
+  }
+  // Not found, but update the index if required
+  if (pIndex)
+    *pIndex = sLen;
+  return nullptr;
+}
+
+
+// *********************************************************************
 // Author: Dave Pevreal, March 2014
 const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t *pIndex)
 {
