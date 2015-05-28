@@ -253,20 +253,19 @@ const char *udStrrchr(const char *s, const char *pCharList, size_t *pIndex)
   if (!s) s = s_udStrEmptyString;
   if (!pCharList) pCharList = s_udStrEmptyString;
 
-  size_t index;
   size_t sLen = udStrlen(s);
   size_t listLen = udStrlen(pCharList);
 
-  for (index = sLen; index > 0; --index)
+  for (ptrdiff_t index = sLen - 1; index >= 0; --index)
   {
     for (size_t i = 0; i < listLen; ++i)
     {
-      if (s[index - 1] == pCharList[i])
+      if (s[index] == pCharList[i])
       {
         // Found, set index if required and return a pointer to the found character
         if (pIndex)
-          *pIndex = index - 1;
-        return s + index - 1;
+          *pIndex = index;
+        return s + index;
       }
     }
   }
