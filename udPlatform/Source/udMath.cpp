@@ -39,6 +39,10 @@ udResult udMath_Test()
   udAbs(-1);
   udAbs(v);
 
+  udFloat4x4 r = udFloat4x4::rotationYPR(3, 2, 0);
+  udFloat3 ypr = r.extractYPR();
+  udFloat4x4 r2 = udFloat4x4::rotationYPR(ypr);
+
   return udR_Success;
 }
 

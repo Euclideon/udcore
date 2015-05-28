@@ -334,6 +334,8 @@ struct udMatrix4x4
   T determinant();
   udMatrix4x4<T>& inverse();
 
+  udVector3<T> extractYPR();
+
   // static members
   static udMatrix4x4<T> identity();
 

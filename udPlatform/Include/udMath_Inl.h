@@ -353,6 +353,39 @@ udMatrix4x4<T>& udMatrix4x4<T>::inverse()
   return *this;
 }
 
+template <typename T>
+udVector3<T> udMatrix4x4<T>::extractYPR()
+{
+  // the world vectors
+  udVector3<T> right = udVector3<T>::create(1, 0, 0);
+  udVector3<T> forward = udVector3<T>::create(0, 1, 0);
+  udVector3<T> up = udVector3<T>::create(0, 0, 1);
+
+  udVector3<T> my = udNormalize3(axis.y.toVector3());
+  udVector3<T> mz = udNormalize3(axis.z.toVector3());
+
+  // calculate roll
+  udVector3<T> horizon = udNormalize3(udCross3(my, up));      // X vector assuming the camera is upright (has no roll)
+  udVector3<T> upright = udCross3(horizon, my);               // the Z vector assuming the camera is upright (has no roll)
+  T roll = udACos(udClamp(udDot3(mz, upright), T(-1), T(1))); // this is the roll angle, but the rotation direction is unknown
+  T rollDirection = udDot3(mz, horizon);                      // the sign represents if the roll is clockwise or counterclockwise
+  roll = rollDirection >= T(0) ? roll : T(UD_2PI) - roll;
+
+  // calculate pitch
+  udVector3<T> heading = udCross3(up, horizon);                 // heading vector (no pitch)
+  T pitch = udACos(udClamp(udDot3(my, heading), T(-1), T(1)));  // this is the pitch angle, but the rotation direction is unknown
+  T pitchDirection = udDot3(my, up);                            // the sign represents if the pitch is clockwise or counterclockwise
+  pitch = pitchDirection >= T(0) ? pitch : T(UD_2PI) - pitch;
+
+  // calculate yaw
+  T yaw = udACos(udClamp(udDot3(heading, forward), T(-1), T(1))); // this is the yaw angle, but the rotation direction is unknown
+  T yawDirection = udDot3(heading, right);                        // the sign represents if the yaw is clockwise or counterclockwise
+  yaw = yawDirection <= T(0) ? yaw : T(UD_2PI) - yaw;
+
+  return udVector3<T>::create(yaw, pitch, roll);
+}
+
+
 // udQuaternion members
 template <typename T>
 udQuaternion<T>& udQuaternion<T>::inverse()
@@ -492,12 +525,12 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationAxis(const udVector3<T> &axis, T rad, con
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 {
-  // TODO: THIS IS HORRIBLE!!! MAKE THE PROPER MATRIX DIRECTLY!!
-  udMatrix4x4<T> yMat = udMatrix4x4<T>::rotationZ(y);
-  udMatrix4x4<T> pMat = udMatrix4x4<T>::rotationX(p);
-  udMatrix4x4<T> rMat = udMatrix4x4<T>::rotationY(r);
-  udMatrix4x4<T> result = yMat*pMat*rMat;
-  result.axis.t = udVector4<T>::create(t, T(1));
+  T c1 = udCos(y), c2 = udCos(p), c3 = udCos(r);
+  T s1 = udSin(y), s2 = udSin(p), s3 = udSin(r);
+  udMatrix4x4<T> result = {{{  c1*c3-s1*s2*s3, c3*s1+c1*s2*s3, -c2*s3, T(0),
+                              -c2*s1,          c1*c2,           s2,    T(0),
+                               c1*s3+c3*s1*s2, s1*s3-c1*c3*s2,  c2*c3, T(0),
+                               t.x,            t.y,             t.z,   T(1) }}};
   return result;
 }
 
