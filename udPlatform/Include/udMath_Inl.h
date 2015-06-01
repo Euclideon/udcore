@@ -354,35 +354,63 @@ udMatrix4x4<T>& udMatrix4x4<T>::inverse()
 }
 
 template <typename T>
-udVector3<T> udMatrix4x4<T>::extractYPR()
+udVector3<T> udMatrix4x4<T>::extractYPR() const
 {
-  // the world vectors
-  udVector3<T> right = udVector3<T>::create(1, 0, 0);
-  udVector3<T> forward = udVector3<T>::create(0, 1, 0);
-  udVector3<T> up = udVector3<T>::create(0, 0, 1);
-
+  udVector3<T> mx = udNormalize3(axis.x.toVector3());
   udVector3<T> my = udNormalize3(axis.y.toVector3());
   udVector3<T> mz = udNormalize3(axis.z.toVector3());
 
-  // calculate roll
-  udVector3<T> horizon = udNormalize3(udCross3(my, up));      // X vector assuming the camera is upright (has no roll)
-  udVector3<T> upright = udCross3(horizon, my);               // the Z vector assuming the camera is upright (has no roll)
-  T roll = udACos(udClamp(udDot3(mz, upright), T(-1), T(1))); // this is the roll angle, but the rotation direction is unknown
-  T rollDirection = udDot3(mz, horizon);                      // the sign represents if the roll is clockwise or counterclockwise
-  roll = rollDirection >= T(0) ? roll : T(UD_2PI) - roll;
+  T Cy, Sy; // yaw
+  T Cp, Sp; // pitch
+  T Cr, Sr; // roll
 
-  // calculate pitch
-  udVector3<T> heading = udCross3(up, horizon);                 // heading vector (no pitch)
-  T pitch = udACos(udClamp(udDot3(my, heading), T(-1), T(1)));  // this is the pitch angle, but the rotation direction is unknown
-  T pitchDirection = udDot3(my, up);                            // the sign represents if the pitch is clockwise or counterclockwise
-  pitch = pitchDirection >= T(0) ? pitch : T(UD_2PI) - pitch;
+  // our YPR matrix looks like this:
+  // [ CyCr-SySpSr, -SyCp, CySr+CrSySp ] ** Remember, axiis are columns!
+  // [ CrSy+CySpSr,  CyCp, SySr-CyCrSp ]
+  // [    -SrCp,      Sp,     CrCp     ]
 
-  // calculate yaw
-  T yaw = udACos(udClamp(udDot3(heading, forward), T(-1), T(1))); // this is the yaw angle, but the rotation direction is unknown
-  T yawDirection = udDot3(heading, right);                        // the sign represents if the yaw is clockwise or counterclockwise
-  yaw = yawDirection <= T(0) ? yaw : T(UD_2PI) - yaw;
+  // we know sin(pitch) without doing any work!
+  Sp = my.z;
 
-  return udVector3<T>::create(yaw, pitch, roll);
+  // use trig identity (cos(p))^2 + (sin(p))^2 = 1, to find cos(p)
+  Cp = udSqrt(1.0f - Sp*Sp);
+
+  // There's an edge case when
+  if (Cp >= 0.00001f)
+  {
+    // find the rest from other cells
+    T factor = T(1)/Cp;
+    Sy = -my.x*factor;
+    Cy = my.y*factor;
+    Sr = -mx.z*factor;
+    Cr = mz.z*factor;
+  }
+  else
+  {
+    // if Cp = 0 and Sp = ±1 (pitch straight up or down), the above matrix becomes:
+    // [ CyCr-SySr,  0,  CySr+CrSySp ] ** Remember, axiis are columns!
+    // [ CrSy+CySr,  0,  SySr-CyCrSp ]
+    // [     0,      Sp,     0       ]
+    // we can't distinguish yaw from roll at this point,
+    // we'll assume zero roll and take the rotation as yaw:
+    Sr = 0.0f; //sin(0) = 0
+    Cr = 1.0f; //cos(0) = 1
+
+    // so we can now get the yaw:
+    // [ Cy, 0,  SySp ] ** Remember, axiis are columns!
+    // [ Sy, 0, -CySp ]
+    // [ 0,  Sp,  0   ]
+    Sy = mx.y;
+    Cy = mx.x;
+  }
+
+  // use tan(y) = sin(y) / cos(y)
+  // -> y = atan(sin(y) / cos(y))
+  // -> y = atan2(sin(y) , cos(y))
+  T y = atan2(Sy, Cy);
+  T p = atan2(Sp, Cp);
+  T r = atan2(Sr, Cr);
+  return udVector3<T>::create(y < T(0) ? y + T(UD_2PI) : y, p < T(0) ? p + T(UD_2PI) : p, r < T(0) ? r + T(UD_2PI) : r);
 }
 
 
