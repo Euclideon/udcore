@@ -37,6 +37,12 @@ template <typename T> struct udMatrix4x4;
 // math functions
 float udPow(float f, float n);
 double udPow(double d, double n);
+float udLogN(float f);
+double udLogN(double d);
+float udLog2(float f);
+double udLog2(double d);
+float udLog10(float f);
+double udLog10(double d);
 float udRSqrt(float f);
 double udRSqrt(double d);
 float udSqrt(float f);

@@ -5,6 +5,12 @@
 
 UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
+UDFORCE_INLINE float udLogN(float f) { return logf(f); }
+UDFORCE_INLINE double udLogN(double d) { return log(d); }
+UDFORCE_INLINE float udLog2(float f) { UDASSERT(false, "TODO!"); }
+UDFORCE_INLINE double udLog2(double d) { UDASSERT(false, "TODO!"); }
+UDFORCE_INLINE float udLog10(float f) { return log10f(f); }
+UDFORCE_INLINE double udLog10(double d) { return log10(d); }
 UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
 UDFORCE_INLINE double udRSqrt(double d) { return 1.0/sqrt(d); }
 UDFORCE_INLINE float udSqrt(float f) { return sqrtf(f); }
