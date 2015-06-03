@@ -329,11 +329,12 @@ udOSString::udOSString(const char *pString)
 udOSString::udOSString(const wchar_t *pString)
 {
   size_t len = wcslen(pString) + 1;
-  m_pUTF8 = udAllocType(char, len, udAF_None);
+  size_t allocSize = len * 2;
+  m_pUTF8 = udAllocType(char, allocSize, udAF_None);
   m_pWide = const_cast<wchar_t*>(pString);
   m_pAllocation = m_pUTF8;
 
-  if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, pString, -1, m_pUTF8, (int)len, nullptr, nullptr) == 0)
+  if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, pString, -1, m_pUTF8, (int)allocSize, nullptr, nullptr) == 0)
     *m_pUTF8 = 0;
 }
 

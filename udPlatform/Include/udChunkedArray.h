@@ -11,6 +11,8 @@ struct udChunkedArray
   udResult Init();
   udResult Deinit();
 
+  udResult Clear();
+
   T &operator[](size_t index);
   T *GetElement(size_t index);
   void SetElement(size_t index, const T &data);
@@ -103,6 +105,17 @@ inline udResult udChunkedArray<T,chunkElementCount>::Deinit()
   udFree(ppChunks);
 
   chunkCount = 0;
+  length = 0;
+  inset = 0;
+
+  return udR_Success;
+}
+
+// --------------------------------------------------------------------------
+// Author: Paul Fox, June 2015
+template <typename T, uint32_t chunkElementCount>
+inline udResult udChunkedArray<T, chunkElementCount>::Clear()
+{
   length = 0;
   inset = 0;
 
