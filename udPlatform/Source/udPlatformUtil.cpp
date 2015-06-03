@@ -312,6 +312,25 @@ const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t 
 
 
 // *********************************************************************
+// Author: Dave Pevreal, June 2015
+udOSString::udOSString(const char *pString)
+{
+  size_t len = udStrlen(pString) + 1;
+  m_pWide = (len < UDARRAYSIZE(m_buffer)) ? m_buffer : udAllocType(wchar_t, len, udAF_None);
+
+  if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, pString, -1, m_pWide, (int)len) == 0)
+    *m_pWide = 0;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, June 2015
+udOSString::~udOSString()
+{
+  if (m_pWide != m_buffer)
+    udFree(m_pWide);
+}
+
+// *********************************************************************
 // Author: Dave Pevreal, August 2014
 int udTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens)
 {

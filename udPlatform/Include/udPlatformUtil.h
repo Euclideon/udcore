@@ -73,6 +73,24 @@ int udStrcmpi(const char *s1, const char *s2);
 bool udStrBeginsWith(const char *s, const char *prefix);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
 
+#if UDPLATFORM_WINDOWS
+// *********************************************************************
+// Helper to convert a UTF8 string to wide char for Windows OS calls
+// *********************************************************************
+class udOSString
+{
+public:
+  udOSString(const char *pString);
+  ~udOSString();
+
+  operator wchar_t *() { return m_pWide; }
+  wchar_t *m_pWide;
+  wchar_t m_buffer[56]; // Round up class to 64 bytes total
+};
+#else
+# define udOSString(p) p
+#endif
+
 // *********************************************************************
 // Helper for growing an array as required TODO: Use configured memory allocators
 // *********************************************************************

@@ -97,9 +97,17 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
     result = udR_InvalidParameter_;
     goto epilogue;
   }
+
+#if UDPLATFORM_WINDOWS
+  pFile->pCrtFile = _wfopen(udOSString(pFilename), udOSString(pMode));
+#else
   pFile->pCrtFile = fopen(pFilename, pMode);
+#endif
   if (pFile->pCrtFile == nullptr)
+  {
+    result = udR_File_OpenFailure;
     goto epilogue;
+  }
 
   if (flags & udFOF_Multithread)
   {
@@ -120,7 +128,6 @@ epilogue:
       fclose(pFile->pCrtFile);
     udFree(pFile);
   }
-
   return result;
 }
 
