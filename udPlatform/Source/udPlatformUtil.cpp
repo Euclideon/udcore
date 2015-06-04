@@ -316,7 +316,9 @@ const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t 
 udOSString::udOSString(const char *pString)
 {
   size_t len = udStrlen(pString) + 1;
-  m_pWide = (len < UDARRAYSIZE(m_buffer)) ? m_buffer : udAllocType(wchar_t, len, udAF_None);
+  m_pUTF8 = const_cast<char*>(pString);
+  m_pWide = udAllocType(wchar_t, len, udAF_None);
+  m_pAllocation = m_pWide;
 
   if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, pString, -1, m_pWide, (int)len) == 0)
     *m_pWide = 0;
@@ -324,10 +326,22 @@ udOSString::udOSString(const char *pString)
 
 // *********************************************************************
 // Author: Dave Pevreal, June 2015
+udOSString::udOSString(const wchar_t *pString)
+{
+  size_t len = wcslen(pString) + 1;
+  m_pUTF8 = udAllocType(char, len, udAF_None);
+  m_pWide = const_cast<wchar_t*>(pString);
+  m_pAllocation = m_pUTF8;
+
+  if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, pString, -1, m_pUTF8, (int)len, nullptr, nullptr) == 0)
+    *m_pUTF8 = 0;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, June 2015
 udOSString::~udOSString()
 {
-  if (m_pWide != m_buffer)
-    udFree(m_pWide);
+  udFree(m_pAllocation);
 }
 
 // *********************************************************************
@@ -965,11 +979,14 @@ struct udFindDirData : public udFindDir
 {
 #if UDPLATFORM_WINDOWS
   HANDLE hFind;
-  WIN32_FIND_DATAA findFileData;
+  WIN32_FIND_DATAW findFileData;
+  char utf8Filename[2048];
 
   void SetMembers()
   {
-    pFilename = findFileData.cFileName;
+    // Take a copy of the filename after translation from wide-char to utf8
+    udStrcpy(utf8Filename, sizeof(utf8Filename), udOSString(findFileData.cFileName));
+    pFilename = utf8Filename;
     isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
   }
 #elif UDPLATFORM_LINUX
@@ -1020,7 +1037,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     udFilename fn;
     fn.SetFolder(pFolder);
     fn.SetFilenameWithExt("*.*");
-    pFindData->hFind = FindFirstFileA(fn.GetPath(), &pFindData->findFileData);
+    pFindData->hFind = FindFirstFileW(udOSString(fn.GetPath()), &pFindData->findFileData);
     if (pFindData->hFind == INVALID_HANDLE_VALUE)
     {
       result = udR_File_OpenFailure;
@@ -1068,7 +1085,7 @@ udResult udReadDir(udFindDir *pFindDir)
 
 #if UDPLATFORM_WINDOWS
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
-  if (!FindNextFileA(pFindData->hFind, &pFindData->findFileData))
+  if (!FindNextFileW(pFindData->hFind, &pFindData->findFileData))
   {
     return udR_ObjectNotFound;
   }

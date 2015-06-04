@@ -81,11 +81,14 @@ class udOSString
 {
 public:
   udOSString(const char *pString);
+  udOSString(const wchar_t *pString);
   ~udOSString();
 
-  operator wchar_t *() { return m_pWide; }
+  operator const wchar_t *() { return m_pWide; }
+  operator const char *() { return m_pUTF8; }
+  void *m_pAllocation;
   wchar_t *m_pWide;
-  wchar_t m_buffer[56]; // Round up class to 64 bytes total
+  char *m_pUTF8;
 };
 #else
 # define udOSString(p) p
