@@ -329,7 +329,7 @@ udOSString::udOSString(const char *pString)
 udOSString::udOSString(const wchar_t *pString)
 {
   size_t len = wcslen(pString) + 1;
-  size_t allocSize = len * 2;
+  size_t allocSize = len * 4;
   m_pUTF8 = udAllocType(char, allocSize, udAF_None);
   m_pWide = const_cast<wchar_t*>(pString);
   m_pAllocation = m_pUTF8;
