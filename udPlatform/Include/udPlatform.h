@@ -308,6 +308,12 @@ void udMemoryDebugLogMemoryStats();
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
 #define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof(_array[0]) )
 
+#ifdef __GNUC__
+#define memset32(dest,val,size) __stosd((unsigned int*)(dest),val,size)
+#else
+#define memset32(dest,val,size) __stosd((unsigned long*)(dest),val,size)
+#endif
+
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
 #include "udDebug.h"
