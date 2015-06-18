@@ -18,7 +18,7 @@ void udDebugPrintf(const char *format, ...)
 
   if (!multiThreads)
   {
-    multiThreads = (lastThread != udTrace::GetThreadId());
+    multiThreads = (lastThread!=-1) && (lastThread != udTrace::GetThreadId());
     lastThread = udTrace::GetThreadId();
   }
 
@@ -50,13 +50,13 @@ void udDebugPrintf(const char *format, ...)
 
 UDTHREADLOCAL udTrace *udTrace::head = NULL;
 UDTHREADLOCAL int udTrace::depth = 0;
-UDTHREADLOCAL int udTrace::threadId = 0;
+UDTHREADLOCAL int udTrace::threadId = -1;
 static udInterlockedInt32 nextThreadId;
 
 // ***************************************************************************************
 int udTrace::GetThreadId()
 {
-  if (!threadId)
+  if (threadId==-1)
     threadId = nextThreadId++;
 
   return threadId;
@@ -65,7 +65,7 @@ int udTrace::GetThreadId()
 // ***************************************************************************************
 udTrace::udTrace(const char *a_functionName, int traceLevel)
 {
-  if (!threadId)
+  if (threadId==-1)
   {
     threadId = nextThreadId++;
     if (traceLevel)
