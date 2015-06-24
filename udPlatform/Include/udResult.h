@@ -70,6 +70,7 @@ const char *udResultAsString(udResult result);
 #define UD_ERROR_NULL(ptr, code)  do { if (ptr == nullptr) { result = code; if (UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } goto epilogue; }             } while(0)
 #define UD_ERROR_CHECK(funcCall)  do { result = funcCall; if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } goto epilogue; }  } while(0)
 #define UD_ERROR_HANDLE()         do { if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } goto epilogue; }                     } while(0)
+#define UD_ERROR_SET(code)        do { result = code; if (UD_ERROR_BREAK_ON_ERROR) __debugbreak(); goto epilogue;                                         } while(0)
 
 
 #endif // UDRESULT_H

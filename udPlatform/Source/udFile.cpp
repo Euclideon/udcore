@@ -146,16 +146,15 @@ const char *udFile_GetFilename(udFile *pFile)
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_GetPerformance(udFile *pFile, float *pMBPerSec, uint32_t *pRequestsInFlight)
+udResult udFile_GetPerformance(udFile *pFile, udFilePerformance *pPerformance)
 {
   UDTRACE();
-  if (!pFile)
+  if (!pFile || !pPerformance)
     return udR_InvalidParameter_;
 
-  if (pMBPerSec)
-    *pMBPerSec = pFile->mbPerSec;
-  if (pRequestsInFlight)
-    *pRequestsInFlight = pFile->requestsInFlight;
+  pPerformance->throughput = pFile->totalBytes;
+  pPerformance->mbPerSec = pFile->mbPerSec;
+  pPerformance->requestsInFlight = pFile->requestsInFlight;
 
   return udR_Success;
 }
@@ -224,7 +223,15 @@ udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLengt
   if (pFile == nullptr || pFile->fpRead == nullptr)
     goto epilogue;
 
+  ++pFile->requestsInFlight;
+  pFile->msAccumulator -= udGetTimeMs();
   result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten ? pActualWritten : &actualWritten, pFilePos);
+
+  // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
+  udUpdateFilePerformance(pFile, actualWritten);
+
+  if (pActualWritten)
+    *pActualWritten = actualWritten;
 
   // If the caller isn't checking the actual written (ie it's null), and it's not the requested amount, return an error when full amount isn't actually written
   if (result == udR_Success && pActualWritten == nullptr && actualWritten != bufferLength)

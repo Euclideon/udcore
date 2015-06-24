@@ -34,6 +34,21 @@ inline udResult udReadFromPointer(T *pDest, P *&pSrc, int *pBytesRemaining = nul
   pSrc = udAddBytes(pSrc, bytesRequired);
   return udR_Success;
 }
+// Template to write to a pointer, the complementary function to udReadFromPointer
+template <typename T, typename P>
+inline udResult udWriteToPointer(T *pSrc, P *&pDest, int *pBytesRemaining = nullptr, int arrayCount = 1)
+{
+  int bytesRequired = (int)sizeof(T) * arrayCount;
+  if (pBytesRemaining)
+  {
+    if (*pBytesRemaining < bytesRequired)
+      return udR_CountExceeded;
+    *pBytesRemaining -= bytesRequired;
+  }
+  memcpy((void*)pDest, pSrc, bytesRequired);
+  pDest = udAddBytes(pDest, bytesRequired);
+  return udR_Success;
+}
 
 // *********************************************************************
 // Time and timing
@@ -301,6 +316,9 @@ struct udFindDir
 
 // Test for existence of a file, on OS FILESYSTEM only (not registered file handlers)
 udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes = nullptr);
+
+// Delete a file, on OS FILESYSTEM only (not registered file handlers)
+udResult udFileDelete(const char *pFilename);
 
 // Open a folder for reading
 udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder);

@@ -160,9 +160,11 @@ udResult udMiniZCompressor_Destroy(udMiniZCompressor **ppCompressor)
     return udR_InvalidParameter_;
   }
 
-  udFree((*ppCompressor)->pStream);
-
-  udFree(*ppCompressor);
+  if (*ppCompressor)
+  {
+    udFree((*ppCompressor)->pStream);
+    udFree(*ppCompressor);
+  }
   return udR_Success;
 }
 

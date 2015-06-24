@@ -37,6 +37,14 @@ struct udFilePipelinedRequest
   uint64_t reserved[6];
 };
 
+// A structure to return performance info about a given file
+struct udFilePerformance
+{
+  uint64_t throughput;
+  float mbPerSec;
+  int requestsInFlight;
+};
+
 // Load an entire file, appending a nul terminator. Calls Open/SeekRead/Close internally.
 udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes = nullptr);
 
@@ -47,7 +55,7 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
 const char *udFile_GetFilename(udFile *pFile);
 
 // Get performance information
-udResult udFile_GetPerformance(udFile *pFile, float *pKBPerSec, uint32_t *pRequestsInFlight);
+udResult udFile_GetPerformance(udFile *pFile, udFilePerformance *pPerformance);
 
 // Seek and read some data
 udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);

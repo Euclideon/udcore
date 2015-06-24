@@ -1030,6 +1030,13 @@ udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2014
+udResult udFileDelete(const char *pFilename)
+{
+  return remove(pFilename) == -1 ? udR_Failure_ : udR_Success;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2014
 udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
 {
   udResult result;
