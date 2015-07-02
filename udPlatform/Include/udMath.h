@@ -200,21 +200,22 @@ struct udVector3
   udVector3<T>& toVector2()               { return *(udVector2<T>*)this; }
   const udVector3<T>& toVector2() const   { return *(udVector2<T>*)this; }
 
-  udVector3<T> operator -() const                      { udVector3<T> r = { -x, -y, -z }; return r; }
+  udVector3<T> operator -() const                       { udVector3<T> r = { -x, -y, -z }; return r; }
 
-  udVector3<T> operator +(const udVector3<T> &v) const { udVector3<T> r = { x+v.x, y+v.y, z+v.z }; return r; }
-  udVector3<T> operator -(const udVector3<T> &v) const { udVector3<T> r = { x-v.x, y-v.y, z-v.z }; return r; }
-  udVector3<T> operator *(const udVector3<T> &v) const { udVector3<T> r = { x*v.x, y*v.y, z*v.z }; return r; }
-  udVector3<T> operator *(T f) const                   { udVector3<T> r = { x*f,   y*f,   z*f }; return r; }
-  udVector3<T> operator /(const udVector3<T> &v) const { udVector3<T> r = { x/v.x, y/v.y, z/v.z }; return r; }
-  udVector3<T> operator /(T f) const                   { udVector3<T> r = { x/f,   y/f,   z/f }; return r; }
-
-  udVector3<T>& operator +=(const udVector3<T> &v)     { x+=v.x; y+=v.y; z+=v.z; return *this; }
-  udVector3<T>& operator -=(const udVector3<T> &v)     { x-=v.x; y-=v.y; z-=v.z; return *this; }
-  udVector3<T>& operator *=(const udVector3<T> &v)     { x*=v.x; y*=v.y; z*=v.z; return *this; }
-  udVector3<T>& operator *=(T f)                       { x*=f;   y*=f;   z*=f;   return *this; }
-  udVector3<T>& operator /=(const udVector3<T> &v)     { x/=v.x; y/=v.y; z/=v.z; return *this; }
-  udVector3<T>& operator /=(T f)                       { x/=f;   y/=f;   z/=f;   return *this; }
+  udVector3<T> operator +(const udVector3<T> &v) const  { udVector3<T> r = { x+v.x, y+v.y, z+v.z }; return r; }
+  udVector3<T> operator -(const udVector3<T> &v) const  { udVector3<T> r = { x-v.x, y-v.y, z-v.z }; return r; }
+  udVector3<T> operator *(const udVector3<T> &v) const  { udVector3<T> r = { x*v.x, y*v.y, z*v.z }; return r; }
+  udVector3<T> operator *(T f) const                    { udVector3<T> r = { x*f,   y*f,   z*f }; return r; }
+  udVector3<T> operator /(const udVector3<T> &v) const  { udVector3<T> r = { x/v.x, y/v.y, z/v.z }; return r; }
+  udVector3<T> operator /(T f) const                    { udVector3<T> r = { x/f,   y/f,   z/f }; return r; }
+  bool         operator ==(const udVector3<T> &v) const { return x==v.x && y==v.y && z==v.z; }
+ 
+  udVector3<T>& operator +=(const udVector3<T> &v)      { x+=v.x; y+=v.y; z+=v.z; return *this; }
+  udVector3<T>& operator -=(const udVector3<T> &v)      { x-=v.x; y-=v.y; z-=v.z; return *this; }
+  udVector3<T>& operator *=(const udVector3<T> &v)      { x*=v.x; y*=v.y; z*=v.z; return *this; }
+  udVector3<T>& operator *=(T f)                        { x*=f;   y*=f;   z*=f;   return *this; }
+  udVector3<T>& operator /=(const udVector3<T> &v)      { x/=v.x; y/=v.y; z/=v.z; return *this; }
+  udVector3<T>& operator /=(T f)                        { x/=f;   y/=f;   z/=f;   return *this; }
 
   // static members
   static udVector3<T> zero()  { udVector3<T> r = { T(0), T(0), T(0) }; return r; }
