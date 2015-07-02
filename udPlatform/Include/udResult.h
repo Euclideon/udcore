@@ -50,6 +50,8 @@ enum udResult
 
   udR_UDI_MaxOctreeCountExceeded,
 
+  udR_EventNotHandled,
+
   udR_Count,
 
 
