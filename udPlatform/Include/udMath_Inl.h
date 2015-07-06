@@ -201,7 +201,7 @@ udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, T t)
   T invT = T(1)-t;
   r.x = v1.x*invT + v2.x*t;
   r.y = v1.y*invT + v2.y*t;
-  r.y = v1.z*invT + v2.z*t;
+  r.z = v1.z*invT + v2.z*t;
   return r;
 }
 template <typename T>
@@ -211,7 +211,7 @@ udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, T t)
   T invT = T(1)-t;
   r.x = v1.x*invT + v2.x*t;
   r.y = v1.y*invT + v2.y*t;
-  r.y = v1.z*invT + v2.z*t;
+  r.z = v1.z*invT + v2.z*t;
   r.w = v1.w*invT + v2.w*t;
   return r;
 }
@@ -227,7 +227,7 @@ udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t
   T invT = T(1)-t;
   r.x = q1.x*invT + q2.x*t;
   r.y = q1.y*invT + q2.y*t;
-  r.y = q1.z*invT + q2.z*t;
+  r.z = q1.z*invT + q2.z*t;
   r.w = q1.w*invT + q2.w*t;
   return r;
 }
@@ -439,7 +439,15 @@ template <typename T>
 udVector3<T> udQuaternion<T>::apply(const udVector3<T> &v)
 {
   udVector3<T> r;
-  UDASSERT(false, "TODO");
+
+  float vMult = 2.0f*(x*v.x + y*v.y + z*v.z);
+  float crossMult = 2.0f*w;
+  float pMult = crossMult*w - 1.0f;
+
+  r.x = pMult*v.x + vMult*x + crossMult*(y*v.z - z*v.y);
+  r.y = pMult*v.y + vMult*y + crossMult*(z*v.x - x*v.z);
+  r.z = pMult*v.z + vMult*z + crossMult*(x*v.y - y*v.x);
+
   return r;
 }
 
@@ -447,10 +455,11 @@ template <typename T>
 udVector3<T> udQuaternion<T>::eulerAngles()
 {
   udVector3<T> r = {
-    udATan2(T(2) * (w*x + y*z), T(1) - T(2)*(x*x + y*y)),
-    udASin(T(2) * (w*y - z*x)),
-    udATan2(T(2) * (w*z + x*y), T(1) - T(2)*(y*y + z*z))
+    udASin(T(2) * x*y + T(2) * z*w),
+    udATan2(T(2) * x*w - T(2) * y*z, T(1) - T(2) * x*x - T(2) * z*z),
+    udATan2(T(2) * y*w - T(2) * x*z, T(1) - T(2) * y*y - T(2) * z*z)
   };
+
   return r;
 }
 
@@ -630,9 +639,9 @@ udMatrix4x4<T> udMatrix4x4<T>::orthoForScreeen(T width, T height, T znear, T zfa
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up)
 {
-  udVector3<T> y = normalize3(at - from);
-  udVector3<T> x = normalize3(cross3(y, up));
-  udVector3<T> z = cross3(x, y);
+  udVector3<T> y = udNormalize3(at - from);
+  udVector3<T> x = udNormalize3(udCross3(y, up));
+  udVector3<T> z = udCross3(x, y);
   udMatrix4x4<T> r = {{{ x.x,    x.y,    x.z,    0,
                          y.x,    y.y,    y.z,    0,
                          z.x,    z.y,    z.z,    0,
@@ -655,7 +664,6 @@ udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &axis, T rad)
 template <typename T>
 udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &ypr)
 {
-  UDASSERT(false, "CHECK ME! YPR LOOKS WRONG");
   udQuaternion<T> r;
 
   // Assuming the angles are in radians.

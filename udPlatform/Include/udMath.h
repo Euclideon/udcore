@@ -209,7 +209,7 @@ struct udVector3
   udVector3<T> operator /(const udVector3<T> &v) const  { udVector3<T> r = { x/v.x, y/v.y, z/v.z }; return r; }
   udVector3<T> operator /(T f) const                    { udVector3<T> r = { x/f,   y/f,   z/f }; return r; }
   bool         operator ==(const udVector3<T> &v) const { return x==v.x && y==v.y && z==v.z; }
- 
+
   udVector3<T>& operator +=(const udVector3<T> &v)      { x+=v.x; y+=v.y; z+=v.z; return *this; }
   udVector3<T>& operator -=(const udVector3<T> &v)      { x-=v.x; y-=v.y; z-=v.z; return *this; }
   udVector3<T>& operator *=(const udVector3<T> &v)      { x*=v.x; y*=v.y; z*=v.z; return *this; }
@@ -276,7 +276,7 @@ struct udQuaternion
 {
   T x, y, z, w;
 
-  udQuaternion<T> operator *(const udQuaternion<T> &q) const { return mul(*this, q); }
+  udQuaternion<T> operator *(const udQuaternion<T> &q) const { return udMul(*this, q); }
   udQuaternion<T> operator *(T f) const                      { udQuaternion<T> r = { x*f, y*f, z*f, w*f }; return r; }
 
   udQuaternion<T>& operator *=(const udQuaternion<T> &q)     { *this = mul(*this, q); return *this; }
