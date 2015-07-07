@@ -135,6 +135,7 @@ template <typename T> udVector3<T> udMul(const udMatrix4x4<T> &m, const udVector
 template <typename T> udVector4<T> udMul(const udMatrix4x4<T> &m, const udVector4<T> &v);
 template <typename T> udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, T f);
 template <typename T> udMatrix4x4<T> udMul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2);
+template <typename T> udQuaternion<T> udMul(const udQuaternion<T> &q1, const udQuaternion<T> &q2);
 
 template <typename T> T udLerp(T a, T b, T t);
 template <typename T> udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, T t);
