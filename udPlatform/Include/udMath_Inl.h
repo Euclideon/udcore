@@ -7,8 +7,8 @@ UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
 UDFORCE_INLINE float udLogN(float f) { return logf(f); }
 UDFORCE_INLINE double udLogN(double d) { return log(d); }
-UDFORCE_INLINE float udLog2(float f) { UDASSERT(false, "TODO!"); }
-UDFORCE_INLINE double udLog2(double d) { UDASSERT(false, "TODO!"); }
+UDFORCE_INLINE float udLog2(float f) { UDASSERT(false, "TODO!"); return f; }   //Removed compiler warning until implemented
+UDFORCE_INLINE double udLog2(double d) { UDASSERT(false, "TODO!"); return d; } //Removed compiler warning until implemented
 UDFORCE_INLINE float udLog10(float f) { return log10f(f); }
 UDFORCE_INLINE double udLog10(double d) { return log10(d); }
 UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
@@ -455,9 +455,9 @@ template <typename T>
 udVector3<T> udQuaternion<T>::eulerAngles()
 {
   udVector3<T> r = {
+    udATan2(T(2) * y*w - T(2) * x*z, T(1) - T(2) * y*y - T(2) * z*z),
     udASin(T(2) * x*y + T(2) * z*w),
     udATan2(T(2) * x*w - T(2) * y*z, T(1) - T(2) * x*x - T(2) * z*z),
-    udATan2(T(2) * y*w - T(2) * x*z, T(1) - T(2) * y*y - T(2) * z*z)
   };
 
   return r;
@@ -581,7 +581,35 @@ template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t)
 {
   udMatrix4x4<T> r = translation(t);
-  UDASSERT(false, "TODO");
+  //UDASSERT(false, "TODO");
+
+  T sqw = q.w * q.w;
+  T sqx = q.x * q.x;
+  T sqy = q.y * q.y;
+  T sqz = q.z * q.z;
+
+  // invs (inverse square length) is only required if quaternion is not already normalised
+  T invs = T(1) / (sqx + sqy + sqz + sqw);
+
+  r.m._11 = (+sqx - sqy - sqz + sqw)*invs; // since sqw + sqx + sqy + sqz =1/invs*invs
+  r.m._22 = (-sqx + sqy - sqz + sqw)*invs;
+  r.m._00 = (-sqx - sqy + sqz + sqw)*invs;
+
+  T tmp1 = q.x*q.y;
+  T tmp2 = q.z*q.w;
+  r.m._21 = T(2) * (tmp1 + tmp2)*invs;
+  r.m._12 = T(2) * (tmp1 - tmp2)*invs;
+
+  tmp1 = q.x*q.z;
+  tmp2 = q.y*q.w;
+  r.m._01 = T(2) * (tmp1 - tmp2)*invs;
+  r.m._10 = T(2) * (tmp1 + tmp2)*invs;
+
+  tmp1 = q.y*q.z;
+  tmp2 = q.x*q.w;
+  r.m._02 = T(2) * (tmp1 + tmp2)*invs;
+  r.m._20 = T(2) * (tmp1 - tmp2)*invs;
+
   return r;
 }
 
@@ -667,12 +695,12 @@ udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &ypr)
   udQuaternion<T> r;
 
   // Assuming the angles are in radians.
-  T c1 = udCos(ypr.z / 2); //Yaw
-  T s1 = udSin(ypr.z / 2); //Yaw
-  T c2 = udCos(ypr.x / 2); //Pitch
-  T s2 = udSin(ypr.x / 2); //Pitch
-  T c3 = udCos(ypr.y / 2); //Roll
-  T s3 = udSin(ypr.y / 2); //Roll
+  T c1 = udCos(ypr.x / 2); //Yaw
+  T s1 = udSin(ypr.x / 2); //Yaw
+  T c2 = udCos(ypr.y / 2); //Pitch
+  T s2 = udSin(ypr.y / 2); //Pitch
+  T c3 = udCos(ypr.z / 2); //Roll
+  T s3 = udSin(ypr.z / 2); //Roll
   T c1c2 = c1 * c2;
   T s1s2 = s1 * s2;
 
