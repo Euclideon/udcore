@@ -265,12 +265,14 @@ void udMemoryOutputLeaks();
 void udMemoryOutputAllocInfo(void *pAlloc);
 void udMemoryDebugTrackingDeinit();
 void udMemoryDebugLogMemoryStats();
+void udValidateHeap();
 #else
 # define udMemoryDebugTrackingInit()
 # define udMemoryOutputLeaks()
 #define udMemoryOutputAllocInfo(pAlloc)
 #define udMemoryDebugTrackingDeinit()
 #define udMemoryDebugLogMemoryStats()
+#define udValidateHeap()
 #endif // __MEMORY_DEBUG__
 
 #if UDPLATFORM_WINDOWS

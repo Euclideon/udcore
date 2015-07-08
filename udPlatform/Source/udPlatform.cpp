@@ -233,6 +233,19 @@ static MemTrackMap *pMemoryTrackingMap;
 
 static udMutex *pMemoryTrackingMutex;
 
+#if UDPLATFORM_WINDOWS
+extern "C" extern HANDLE _crtheap;
+#endif // UDPLATFORM_WINDOWS
+
+// ----------------------------------------------------------------------------
+// Author: David Ely
+void udValidateHeap()
+{
+#if UDPLATFORM_WINDOWS
+  HeapValidate(_crtheap, 0, nullptr);
+#endif // UDPLATFORM_WINDOWS
+}
+
 // ----------------------------------------------------------------------------
 // Author: David Ely
 void udMemoryDebugTrackingInit()
@@ -369,7 +382,6 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 # if UDASSERT_ON
   size_t sizeOfMap;
 # endif
-
 
   if (gAddressToBreakOnFree == (uint64_t)pMemory)
   {
