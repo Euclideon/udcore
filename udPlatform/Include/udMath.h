@@ -294,7 +294,8 @@ struct udQuaternion
   static udQuaternion<T> identity()  { udQuaternion<T> r = { T(0), T(0), T(0), T(1) }; return r; }
 
   static udQuaternion<T> create(const udVector3<T> &axis, T rad);
-  static udQuaternion<T> create(const udVector3<T> &ypr);
+  static udQuaternion<T> create(const T _y, const T _p, const T _r);
+  static udQuaternion<T> create(const udVector3<T> &ypr) { return create(ypr.x, ypr.y, ypr.z); }
 
   template <typename U>
   static udQuaternion<T> create(const udQuaternion<U> &_q) { udQuaternion<T> r = { T(_q.x), T(_q.y), T(_q.z), T(_q.w) }; return r; }
