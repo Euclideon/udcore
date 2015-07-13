@@ -193,9 +193,13 @@ protected:
 # define IF_MEMORY_DEBUG(x,y)
 #endif //  __MEMORY_DEBUG__
 
-#if UDPLATFORM_NACL && !defined(nullptr)
-# define nullptr NULL
-#endif
+
+
+#if defined(__clang__) || defined(__GNUC__)
+# if __cplusplus <= 199711L && !defined(nullptr)
+#   define nullptr NULL
+# endif // !defined(nullptr) && __cplusplus <= 199711L
+#endif // defined(__clang__) || defined(__GNUC__)
 
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <alloca.h>
