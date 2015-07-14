@@ -313,7 +313,7 @@ void udValidateHeap();
 
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
-#define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof(_array[0]) )
+#define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof((_array)[0]) )
 
 #ifdef __GNUC__
 #define memset32(dest,val,size) __stosd((unsigned int*)(dest),val,size)
