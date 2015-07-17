@@ -194,12 +194,23 @@ protected:
 #endif //  __MEMORY_DEBUG__
 
 
+#if __cplusplus <= 199711L
+# define UDCPP11 0
+#else // __cplusplus <= 199711L
+# define UDCPP11 1
+#endif // __cplusplus <= 199711L
 
 #if defined(__clang__) || defined(__GNUC__)
-# if __cplusplus <= 199711L && !defined(nullptr)
+# if !UDCPP11 && !defined(nullptr)
 #   define nullptr NULL
-# endif // !defined(nullptr) && __cplusplus <= 199711L
+# endif // !UDCPP11 && !defined(nullptr)
 #endif // defined(__clang__) || defined(__GNUC__)
+
+#if UDCPP11 && !defined(_MSC_VER)
+# include <cstddef>
+  using std::nullptr_t;
+#endif //!defined(_MSC_VER)
+
 
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <alloca.h>
