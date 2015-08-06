@@ -4,7 +4,9 @@ warnings "Extra"
 
 targetname "%{prj.name}"
 
-flags { "C++11", "NoMinimalRebuild", "NoExceptions", "NoPCH", "NoIncrementalLink" }
+flags { "C++11", "NoMinimalRebuild", "NoPCH", "NoIncrementalLink" }
+exceptionhandling "Off"
+rtti "Off"
 floatingpoint "Fast"
 
 -- TODO: the original project files had some options that premake can't express, we should add them to premake?
