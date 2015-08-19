@@ -17,7 +17,7 @@ inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { ret
 #define udBitFieldSet(composite, id, value) ((composite) | ((udCastToTypeOf(value, composite) & id##Mask) << id##Shift))  // NOTE! Field should be cleared first, most common case is building a composite from zero
 
 template <typename T>
-T *udAddBytes(T *ptr, size_t bytes) { return (T*)(bytes + (char*)ptr); }
+T *udAddBytes(T *ptr, ptrdiff_t bytes) { return (T*)(bytes + (char*)ptr); }
 
 // Template to read from a pointer, does a hard cast to allow reading into const char arrays
 template <typename T, typename P>
