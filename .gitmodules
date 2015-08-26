@@ -1,3 +1,6 @@
 [submodule "legacy"]
 	path = legacy
 	url = git@bne-fs-git-001.euclideon.local:rnd/legacy.git
+[submodule "bin/premake/modules/qt"]
+	path = bin/premake/modules/qt
+	url = git@bne-fs-git-001.euclideon.local:programmers/premake-qt.git
