@@ -160,7 +160,7 @@ enum udThreadPriority { udTP_Lowest, udTP_Low, udTP_Normal, udTP_High, udTP_High
 typedef uint32_t (udThreadStart)(void *data);
 udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
 void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority);
-void udDestroyThread(udThreadHandle threadHandle);
+void udDestroyThread(udThreadHandle *pThreadHandle);
 
 udSemaphore *udCreateSemaphore(int maxValue, int initialValue);
 void udDestroySemaphore(udSemaphore **ppSemaphore);
