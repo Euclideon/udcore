@@ -12,5 +12,7 @@ project "udPlatform"
 	configuration { "windows" }
 		includedirs { "../3rdParty/sdl2/include" }
 
+	configuration {}
+
 	-- include common stuff
 	dofile "../common-proj.lua"

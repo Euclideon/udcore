@@ -45,6 +45,8 @@
 # define UDPLATFORM_LINUX   0
 # define UDPLATFORM_NACL    0
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
+# include <stddef.h>
+# include <limits.h>
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   1
