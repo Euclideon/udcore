@@ -196,11 +196,11 @@ protected:
 #endif //  __MEMORY_DEBUG__
 
 
-#if __cplusplus <= 199711L
-# define UDCPP11 0
-#else // __cplusplus <= 199711L
+#if __cplusplus >= 201103L || _MSC_VER >= 1700
 # define UDCPP11 1
-#endif // __cplusplus <= 199711L
+#else
+# define UDCPP11 0
+#endif
 
 #if defined(__clang__) || defined(__GNUC__)
 # if !UDCPP11 && !defined(nullptr)
