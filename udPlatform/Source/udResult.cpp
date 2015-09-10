@@ -34,6 +34,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_CompressionInputExhausted),
   RESULTINFO(udR_CompressionOutputExhausted),
   RESULTINFO(udR_CompressionError),
+  RESULTINFO(udR_Unsupported),
 
   RESULTINFO(udR_Writer_InitFailure),
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),

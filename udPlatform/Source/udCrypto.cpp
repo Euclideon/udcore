@@ -540,7 +540,7 @@ udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
   unsigned char derivedKey[64];
 
   UD_ERROR_IF(!pPassword || !pKey, udR_InvalidParameter_);
-  UD_ERROR_IF(keyLen > 20, udR_InvalidConfiguration); // Currently, only key lengths up to 20 bytes are supported, this can be extended if necessary
+  UD_ERROR_IF(keyLen > 20, udR_Unsupported); // Currently, only key lengths up to 20 bytes are supported, this can be extended if necessary
 
   // Hash the pass phrase
   UD_ERROR_CHECK(result = udCrypto_CreateHash(&pCtx, udCH_SHA1));
