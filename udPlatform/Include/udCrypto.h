@@ -44,7 +44,7 @@ struct udCryptoHashContext;
 udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash);
 
 // Digest some bytes
-udResult udCrypto_Digest(udCryptoHashContext *pCtx, const uint8_t *pBytes, size_t length);
+udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t length);
 
 // Digest some bytes
 udResult udCrypto_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t length, size_t *pActualHashLength = nullptr);
@@ -55,3 +55,6 @@ udResult udCrypto_DestroyHash(udCryptoHashContext **ppCtx);
 // Internal test of algorithms
 udResult udCrypto_TestCipher(udCryptoCiphers cipher);
 udResult udCrypto_TestHash(udCryptoHashes hash);
+
+// **** Key derivation functions ****
+udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen);

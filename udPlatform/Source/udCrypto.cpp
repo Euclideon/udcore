@@ -257,7 +257,7 @@ udResult udCrypto_DecryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, co
   }
 
   result = udR_BufferTooSmall;
-  if (actualPlainTextLen < plainTextLen)
+  if (actualPlainTextLen > plainTextLen)
     goto epilogue;
 
   switch (pCtx->cipher)
@@ -394,7 +394,7 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCrypto_Digest(udCryptoHashContext *pCtx, const uint8_t *pBytes, size_t length)
+udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t length)
 {
   if (!pCtx)
     return udR_InvalidParameter_;
@@ -402,7 +402,7 @@ udResult udCrypto_Digest(udCryptoHashContext *pCtx, const uint8_t *pBytes, size_
   switch (pCtx->hash)
   {
     case udCH_SHA1:
-      sha1_update(&pCtx->sha1, pBytes, length);
+      sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
       break;
     default:
       return udR_InvalidParameter_;
@@ -456,9 +456,9 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
   {
     case udCH_SHA1:
       {
-	      uint8_t text1[] = {"abc"};
-	      uint8_t text2[] = {"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"};
-	      uint8_t text3[] = {"aaaaaaaaaa"};
+	      char text1[] = {"abc"};
+	      char text2[] = {"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"};
+	      char text3[] = {"aaaaaaaaaa"};
 	      uint8_t hash1[SHA1_BLOCK_SIZE] = {0xa9,0x99,0x3e,0x36,0x47,0x06,0x81,0x6a,0xba,0x3e,0x25,0x71,0x78,0x50,0xc2,0x6c,0x9c,0xd0,0xd8,0x9d};
 	      uint8_t hash2[SHA1_BLOCK_SIZE] = {0x84,0x98,0x3e,0x44,0x1c,0x3b,0xd2,0x6e,0xba,0xae,0x4a,0xa1,0xf9,0x51,0x29,0xe5,0xe5,0x46,0x70,0xf1};
 	      uint8_t hash3[SHA1_BLOCK_SIZE] = {0x34,0xaa,0x97,0x3c,0xd4,0xc4,0xda,0xa4,0xf6,0x1e,0xeb,0x2b,0xdb,0xad,0x27,0x31,0x65,0x34,0x01,0x6f};
@@ -467,7 +467,7 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
         result = udCrypto_CreateHash(&pCtx, hash);
         if (result != udR_Success)
           goto epilogue;
-	      result = udCrypto_Digest(pCtx, text1, strlen((const char*)text1));
+	      result = udCrypto_Digest(pCtx, text1, strlen(text1));
         if (result != udR_Success)
           goto epilogue;
 	      result = udCrypto_Finalise(pCtx, buf, sizeof(buf));
@@ -483,7 +483,7 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
         result = udCrypto_CreateHash(&pCtx, hash);
         if (result != udR_Success)
           goto epilogue;
-	      result = udCrypto_Digest(pCtx, text2, strlen((const char*)text2));
+	      result = udCrypto_Digest(pCtx, text2, strlen(text2));
         if (result != udR_Success)
           goto epilogue;
 	      result = udCrypto_Finalise(pCtx, buf, sizeof(buf));
@@ -501,7 +501,7 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
           goto epilogue;
 	      for (int i = 0; i < 100000; ++i)
         {
-	        result = udCrypto_Digest(pCtx, text3, strlen((const char*)text3));
+	        result = udCrypto_Digest(pCtx, text3, strlen(text3));
           if (result != udR_Success)
             goto epilogue;
         }
@@ -527,3 +527,44 @@ epilogue:
   return result;
 }
 
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2015
+udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
+{
+  // Derive a secure key from a password string, using the same algorithm used by the Windows APIs to maintain interoperability with Geoverse
+  // See the remarks section of the MS documentation here: http://msdn.microsoft.com/en-us/library/aa379916(v=vs.85).aspx
+  udResult result;
+  udCryptoHashContext *pCtx = nullptr;
+  uint8_t passPhraseDigest[32];
+  size_t passPhraseDigestLen;
+  unsigned char derivedKey[64];
+
+  UD_ERROR_IF(!pPassword || !pKey, udR_InvalidParameter_);
+  UD_ERROR_IF(keyLen > 20, udR_Unsupported); // Currently, only key lengths up to 20 bytes are supported, this can be extended if necessary
+
+  // Hash the pass phrase
+  UD_ERROR_CHECK(result = udCrypto_CreateHash(&pCtx, udCH_SHA1));
+  UD_ERROR_CHECK(udCrypto_Digest(pCtx, "ud1971", 6)); // This is a special "salt" for our KDF to make it unique to UD
+  UD_ERROR_CHECK(udCrypto_Digest(pCtx, pPassword, strlen(pPassword))); // This is a special "salt" for our KDF to make it unique to UD
+  UD_ERROR_CHECK(udCrypto_Finalise(pCtx, passPhraseDigest, sizeof(passPhraseDigest), &passPhraseDigestLen));
+  UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
+  UD_ERROR_IF(passPhraseDigestLen != 20, udR_InternalError);
+
+  // Create a buffer of constant 0x36 xor'd with pass phrase hash
+  memset(derivedKey, 0x36, 64);  // We don't need to do the full algorithm as we only need the first 64 bytes
+  for (int i = 0; i < passPhraseDigestLen; i++)   // The passPhraseDigestLen is 20 bytes (SHA1)
+    derivedKey[i] ^= passPhraseDigest[i];
+
+  // Hash the result again and this gives us the key
+  UD_ERROR_CHECK(result = udCrypto_CreateHash(&pCtx, udCH_SHA1));
+  UD_ERROR_CHECK(udCrypto_Digest(pCtx, derivedKey, sizeof(derivedKey)));
+  UD_ERROR_CHECK(udCrypto_Finalise(pCtx, derivedKey, sizeof(derivedKey)));
+  UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
+
+  memcpy(pKey, derivedKey, keyLen);
+  result = udR_Success;
+
+epilogue:
+  udCrypto_DestroyHash(&pCtx);
+  return result;
+}
