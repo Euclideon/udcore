@@ -552,7 +552,7 @@ udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
 
   // Create a buffer of constant 0x36 xor'd with pass phrase hash
   memset(derivedKey, 0x36, 64);  // We don't need to do the full algorithm as we only need the first 64 bytes
-  for (int i = 0; i < passPhraseDigestLen; i++)   // The passPhraseDigestLen is 20 bytes (SHA1)
+  for (size_t i = 0; i < passPhraseDigestLen; i++)   // The passPhraseDigestLen is 20 bytes (SHA1)
     derivedKey[i] ^= passPhraseDigest[i];
 
   // Hash the result again and this gives us the key

@@ -4,7 +4,7 @@ warnings "Extra"
 
 targetname "%{prj.name}"
 
-flags { "C++11", "NoMinimalRebuild", "NoPCH", "NoIncrementalLink" }
+flags { "C++11", "NoMinimalRebuild", "NoPCH" }
 exceptionhandling "Off"
 rtti "Off"
 floatingpoint "Fast"
@@ -74,5 +74,11 @@ configuration { "windows", "Release", "vs2012" }
 
 configuration { "windows", "Release", "vs2013" }
 	buildoptions { "/Zo" }
+
+configuration { "windows", "Release" }
+	flags { "NoIncrementalLink" }
+
+configuration { "windows", "x64", "Debug" }
+	flags { "NoIncrementalLink" }
 
 configuration {}
