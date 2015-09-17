@@ -76,7 +76,11 @@ udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
   sem_t *sem = (sem_t *)udAlloc(sizeof(sem_t));
   (void)maxValue;
   if (sem)
-    sem_init(sem, 0, initialValue);
+  {
+    int result = sem_init(sem, 0, initialValue);
+    if (result == -1)
+      return nullptr;
+  }
   return (udSemaphore*)sem;
 #else
 # error Unknown platform
@@ -127,10 +131,17 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 #if UDPLATFORM_WINDOWS
     return WaitForSingleObject((HANDLE)pSemaphore, waitMs);
 #elif UDPLATFORM_LINUX
-    struct  timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec = waitMs * 1000;
-    return sem_timedwait((sem_t*)pSemaphore, &ts);
+    if (waitMs == -1)
+    {
+      return sem_wait((sem_t*)pSemaphore);
+    }
+    else
+    {
+      struct  timespec ts;
+      ts.tv_sec = 0;
+      ts.tv_nsec = waitMs * 1000;
+      return sem_timedwait((sem_t*)pSemaphore, &ts);
+    }
 #elif UDPLATFORM_NACL
     return sem_wait((sem_t*)pSemaphore);  // TODO: Need to find out timedwait equiv for NACL
 #else
