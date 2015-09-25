@@ -20,6 +20,8 @@ struct udChunkedArray
 
   T *PushBack();
   T *PushFront();
+  void PushBack(const T &v) { *PushBack() = v; }
+  void PushFront(const T &v) { *PushFront() = v; }
   udResult GrowBack(uint32_t numberOfNewElements);
 
   bool PopBack(T *pData = nullptr);
