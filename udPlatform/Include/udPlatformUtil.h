@@ -315,12 +315,12 @@ udResult udCloseDir(udFindDir **ppFindDir);
 // ---------------------------------------------------------------------------------------
 // Author: David Ely, May 2014
 #if UDPLATFORM_WINDOWS
-# define udSprintf(dest, destLength, ...) do { _snprintf_s((char*)dest, destLength, destLength, __VA_ARGS__); } while(false)
+# define udSprintf(dest, destLength, ...) _snprintf_s((char*)dest, destLength, destLength, __VA_ARGS__)
 #elif UDPLATFORM_NACL
 #include <stdio.h>
-# define udSprintf(dest, destLength, ...) do { sprintf((dest), __VA_ARGS__);  dest[(destLength) - 1] = '\0'; } while(false)
+# define udSprintf(dest, destLength, ...) sprintf((dest), __VA_ARGS__);  dest[(destLength) - 1] = '\0'
 #else
-# define udSprintf(dest, destLength, ...) do { snprintf(dest, destLength, __VA_ARGS__);  dest[destLength - 1] = '\0'; } while(false)
+# define udSprintf(dest, destLength, ...) snprintf(dest, destLength, __VA_ARGS__);  dest[destLength - 1] = '\0'
 #endif
 
 
