@@ -311,18 +311,7 @@ udResult udReadDir(udFindDir *pFindDir);
 // Free resources associated with the directory
 udResult udCloseDir(udFindDir **ppFindDir);
 
-
-// ---------------------------------------------------------------------------------------
-// Author: David Ely, May 2014
-#if UDPLATFORM_WINDOWS
-# define udSprintf(dest, destLength, ...) _snprintf_s((char*)dest, destLength, destLength, __VA_ARGS__)
-#elif UDPLATFORM_NACL
-#include <stdio.h>
-# define udSprintf(dest, destLength, ...) sprintf((dest), __VA_ARGS__);  dest[(destLength) - 1] = '\0'
-#else
-# define udSprintf(dest, destLength, ...) snprintf(dest, destLength, __VA_ARGS__);  dest[destLength - 1] = '\0'
-#endif
-
-
+// Write a formatted string to the buffer
+int udSprintf(char *pDest, size_t destlength, char *format, ...);
 
 #endif // UDPLATFORM_UTIL_H

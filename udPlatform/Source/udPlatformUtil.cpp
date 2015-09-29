@@ -1124,3 +1124,17 @@ udResult udCloseDir(udFindDir **ppFindDir)
   udFree(*ppFindDir);
   return udR_Success;
 }
+
+// ****************************************************************************
+// Author: Paul Fox, September 2015
+int udSprintf(char *pDest, size_t destlength, char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  int length = vsnprintf(pDest, destlength, format, args);
+  va_end(args);
+
+  pDest[destlength - 1] = '\0';
+
+  return length;
+}
