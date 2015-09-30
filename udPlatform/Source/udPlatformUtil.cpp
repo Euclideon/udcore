@@ -1127,7 +1127,7 @@ udResult udCloseDir(udFindDir **ppFindDir)
 
 // ****************************************************************************
 // Author: Paul Fox, September 2015
-int udSprintf(char *pDest, size_t destlength, char *format, ...)
+int udSprintf(char *pDest, size_t destlength, const char *format, ...)
 {
   va_list args;
   va_start(args, format);

@@ -312,6 +312,6 @@ udResult udReadDir(udFindDir *pFindDir);
 udResult udCloseDir(udFindDir **ppFindDir);
 
 // Write a formatted string to the buffer
-int udSprintf(char *pDest, size_t destlength, char *format, ...);
+int udSprintf(char *pDest, size_t destlength, const char *format, ...);
 
 #endif // UDPLATFORM_UTIL_H
