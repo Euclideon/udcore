@@ -25,6 +25,8 @@ struct udChunkedArray
   bool PopBack(T *pData = nullptr);
   bool PopFront(T *pData = nullptr);
 
+  // Remove the element at index, moving all elements after to fill the gap.
+  void RemoveAt(size_t index);
   // Remove the element at index, swapping with the last element to ensure array is contiguous
   void RemoveSwapLast(size_t index);
 
@@ -392,6 +394,56 @@ inline void udChunkedArray<T, chunkElementCount>::RemoveSwapLast(size_t index)
   if (index != (length - 1))
     SetElement(index, *GetElement(length - 1));
   PopBack();
+}
+
+
+// --------------------------------------------------------------------------
+// Author: Samuel Surtees, October 2015
+template <typename T, uint32_t chunkElementCount>
+inline void udChunkedArray<T, chunkElementCount>::RemoveAt(size_t index)
+{
+  UDASSERT(index < length, "Index out of bounds");
+
+  if (index == 0)
+  {
+    PopFront();
+  }
+  else if (index == (length - 1))
+  {
+    PopBack();
+  }
+  else
+  {
+    index += inset;
+
+    size_t chunkIndex = index / chunkElementCount;
+
+    // Move within the chunk of the remove item
+    if ((index % chunkElementCount) != (chunkElementCount - 1)) // If there are items after the remove item
+      memmove(&ppChunks[chunkIndex]->data[index % chunkElementCount], &ppChunks[chunkIndex]->data[(index + 1) % chunkElementCount], sizeof(T) * (chunkElementCount - 1 - (index % chunkElementCount)));
+
+    // Handle middle chunks
+    for (size_t i = (chunkIndex + 1); i < (chunkCount - 1); ++i)
+    {
+      // Move first item down
+      memcpy(&ppChunks[i - 1]->data[chunkElementCount - 1], &ppChunks[i]->data[0], sizeof(T));
+
+      // Move remaining items
+      memmove(&ppChunks[i]->data[0], &ppChunks[i]->data[1], sizeof(T) * (chunkElementCount - 1));
+    }
+
+    // Handle last chunk
+    if (chunkIndex != (chunkCount - 1))
+    {
+      // Move first item down
+      memcpy(&ppChunks[chunkCount - 2]->data[chunkElementCount - 1], &ppChunks[chunkCount - 1]->data[0], sizeof(T));
+
+      // Move remaining items
+      memmove(&ppChunks[chunkCount - 1]->data[0], &ppChunks[chunkCount - 1]->data[1], sizeof(T) * ((length + (inset - 1)) % chunkElementCount));
+    }
+
+    PopBack();
+  }
 }
 
 #endif // UDCHUNKEDARRAY_H
