@@ -977,6 +977,46 @@ epilogue:
   return result;
 }
 
+// ****************************************************************************
+// Author: Dave Pevreal, October 2015
+const char *udCommaInt(int64_t n)
+{
+  static char buffers[32][32]; // 32 cycling buffers of 32 characters, which is enough for biggest 64-bit integer
+  static int bufferIndex = 0;
+  char *pBuf = buffers[bufferIndex];
+  bufferIndex = (bufferIndex + 1) % 32;
+  uint64_t v = (uint64_t)n;
+
+  int i = 0;
+  if (n < 0)
+  {
+    pBuf[i++] = '-';
+    v = (uint64_t)-n;
+  }
+
+  // Get the column variable to be the first column containing anything
+  uint64_t col = 1;
+  int digitCount = 1;
+  while (v >= col * 10)
+  {
+    col = col * 10;
+    ++digitCount;
+  }
+  do
+  {
+    uint64_t c = v / col;
+    pBuf[i++] = (char)('0' + c);
+    if ((--digitCount % 3) == 0 && digitCount)
+      pBuf[i++] = ',';
+    v -= c * col;
+    col = col / 10;
+  } while (digitCount);
+  pBuf[i++] = 0;
+
+  return pBuf;
+}
+
+
 struct udFindDirData : public udFindDir
 {
 #if UDPLATFORM_WINDOWS
