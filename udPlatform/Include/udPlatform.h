@@ -93,9 +93,15 @@ inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return _Interlo
 inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return _InterlockedExchange((volatile long*)dest, exchange); }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return _InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
 # if UD_32BIT
-inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
+template <typename T>
+inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return _InterlockedExchange((volatile long*)dest, (long)exchange); }
+template <typename T>
+inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
 # else // UD_32BIT
-inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer(dest, exchange, comparand); }
+template <typename T>
+inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return _InterlockedExchangePointer((volatile PVOID*)dest, exchange); }
+template <typename T>
+inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer((volatile PVOID*)dest, exchange, comparand); }
 # endif // UD_32BIT
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
@@ -109,8 +115,9 @@ inline long udInterlockedPostIncrement(volatile int32_t *p) { return __sync_fetc
 inline long udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, -1); }
 inline long udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetch_and_add(p, -1); }
 inline long udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return __sync_lock_test_and_set(dest, exchange); }
+inline void *udInterlockedExchangePointer(void * volatile* dest, void *exchange) { return __sync_lock_test_and_set(dest, comparand, exchange); }
 inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
-inline void *udInterlockedCompareExchangePointer(void ** volatile dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
+inline void *udInterlockedCompareExchangePointer(void * volatile* dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
 # if defined(__INTELLISENSE__)
