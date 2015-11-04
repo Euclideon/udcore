@@ -464,40 +464,41 @@ int64_t udStrAtoi64(const char *s, int *pCharCount, int radix)
 float udStrAtof(const char *s, int *pCharCount)
 {
   if (!s) s = s_udStrEmptyString;
-  int preCharCount = 0;
   int charCount = 0;
-  int secondaryCharCount = 0;
+  int tmpCharCount = 0;
 
   float negate = 1.0f;
-  while (s[preCharCount] == ' ' || s[preCharCount] == '\t')
-    ++preCharCount;
+  while (s[charCount] == ' ' || s[charCount] == '\t')
+    ++charCount;
 
   // Process negation separately
-  if (s[preCharCount] == '-')
+  if (s[charCount] == '-')
   {
     negate = -1.0f;
-    ++preCharCount;
+    ++charCount;
   }
-  s += preCharCount;
 
-  float result = (float)udStrAtoi(s, &charCount);
+  float result = (float)udStrAtoi(s + charCount, &tmpCharCount);
+  charCount += tmpCharCount;
   if (s[charCount] == '.')
   {
     ++charCount;
-    int32_t fraction = udStrAtoi(s + charCount, &secondaryCharCount);
+    int32_t fraction = udStrAtoi(s + charCount, &tmpCharCount);
+    charCount += tmpCharCount;
     if (result >= 0.f)
-      result += fraction / powf(10.f, (float)secondaryCharCount);
+      result += fraction / powf(10.f, (float)tmpCharCount);
     else
-      result -= fraction / powf(10.f, (float)secondaryCharCount);
+      result -= fraction / powf(10.f, (float)tmpCharCount);
   }
   if (s[charCount] == 'e' || s[charCount] == 'E')
   {
     ++charCount;
-    float e = (float)udStrAtoi(s + charCount, &secondaryCharCount);
+    float e = (float)udStrAtoi(s + charCount, &tmpCharCount);
+    charCount += tmpCharCount;
     result *= powf(10, e);
   }
   if (pCharCount)
-    *pCharCount = preCharCount + charCount + secondaryCharCount;
+    *pCharCount = charCount;
   return result * negate;
 }
 
@@ -507,40 +508,41 @@ float udStrAtof(const char *s, int *pCharCount)
 double udStrAtof64(const char *s, int *pCharCount)
 {
   if (!s) s = s_udStrEmptyString;
-  int preCharCount = 0;
   int charCount = 0;
-  int secondaryCharCount = 0;
+  int tmpCharCount = 0;
 
   double negate = 1.0f;
-  while (s[preCharCount] == ' ' || s[preCharCount] == '\t')
-    ++preCharCount;
+  while (s[charCount] == ' ' || s[charCount] == '\t')
+    ++charCount;
 
   // Process negation separately
-  if (s[preCharCount] == '-')
+  if (s[charCount] == '-')
   {
     negate = -1.0f;
-    ++preCharCount;
+    ++charCount;
   }
-  s += preCharCount;
 
-  double result = (double)udStrAtoi64(s, &charCount);
+  double result = (double)udStrAtoi64(s + charCount, &tmpCharCount);
+  charCount += tmpCharCount;
   if (s[charCount] == '.')
   {
     ++charCount;
-    int32_t fraction = udStrAtoi(s + charCount, &secondaryCharCount);
-    if (result >= 0.f)
-      result += fraction / pow(10.0, secondaryCharCount);
+    int64_t fraction = udStrAtoi64(s + charCount, &tmpCharCount);
+    charCount += tmpCharCount;
+    if (result >= 0.0)
+      result += fraction / pow(10.0, (float)tmpCharCount);
     else
-      result -= fraction / pow(10.0, secondaryCharCount);
+      result -= fraction / pow(10.0, (float)tmpCharCount);
   }
   if (s[charCount] == 'e' || s[charCount] == 'E')
   {
     ++charCount;
-    double e = (double)udStrAtoi64(s + charCount, &secondaryCharCount);
+    double e = (double)udStrAtoi64(s + charCount, &tmpCharCount);
+    charCount += tmpCharCount;
     result *= pow(10, e);
   }
   if (pCharCount)
-    *pCharCount = preCharCount + charCount + secondaryCharCount;
+    *pCharCount = charCount;
   return result * negate;
 }
 
