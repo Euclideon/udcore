@@ -6,7 +6,6 @@
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
 #include <stdlib.h>
-#include <new>
 
 #if defined(_WIN64) || defined(__amd64__)
   //64-bit code
@@ -255,22 +254,6 @@ void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  lin
 #define udFree(pMemory) _udFree(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 
-#define udNew(type, ...) new (_udAlloc(sizeof(type), udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
-#define udNewFlags(type, extra, flags, ...) new (_udAlloc(sizeof(type) + extra, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))) type(__VA_ARGS__)
-
-template <typename T>
-void _udDelete(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
-{
-  if (pMemory)
-  {
-    pMemory->~T();
-    _udFree(pMemory IF_MEMORY_DEBUG(pFile, line));
-  }
-}
-#define udDelete(pMemory) _udDelete(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
-
-
-
 UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
 #define udAllocStack(type, count, flags)   ((flags | udAF_None) & udAF_Zero) ? (type*)__udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
@@ -322,7 +305,6 @@ void udValidateHeap();
 // Disabled Warnings
 #if defined(_MSC_VER)
 #pragma warning(disable:4127) // conditional expression is constant
-#pragma warning(disable:4577) // 'noexcept' used with no exception handling mode specified; termination on exception is not guaranteed
 #endif //defined(_MSC_VER)
 
 
