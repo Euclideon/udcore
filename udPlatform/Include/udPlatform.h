@@ -322,6 +322,7 @@ void udValidateHeap();
 // Disabled Warnings
 #if defined(_MSC_VER)
 #pragma warning(disable:4127) // conditional expression is constant
+#pragma warning(disable:4577) // 'noexcept' used with no exception handling mode specified; termination on exception is not guaranteed
 #endif //defined(_MSC_VER)
 
 

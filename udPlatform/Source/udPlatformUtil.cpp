@@ -530,9 +530,9 @@ double udStrAtof64(const char *s, int *pCharCount)
     int64_t fraction = udStrAtoi64(s + charCount, &tmpCharCount);
     charCount += tmpCharCount;
     if (result >= 0.0)
-      result += fraction / pow(10.0, (float)tmpCharCount);
+      result += fraction / pow(10.0, (double)tmpCharCount);
     else
-      result -= fraction / pow(10.0, (float)tmpCharCount);
+      result -= fraction / pow(10.0, (double)tmpCharCount);
   }
   if (s[charCount] == 'e' || s[charCount] == 'E')
   {

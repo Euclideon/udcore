@@ -111,6 +111,7 @@ udResult udMiniZCompressor_InitStream(udMiniZCompressor *pCompressor, void *pDes
 // Author: David Ely, September 2014
 udResult udMiniZCompressor_DeflateStream(udMiniZCompressor *pCompressor, void *pStream, size_t size, size_t *pCompressedSize)
 {
+  int status;
   if (!size || size > 0xFFFFFFFFU || pStream == nullptr)
   {
     return udR_InvalidParameter_;
@@ -132,7 +133,7 @@ udResult udMiniZCompressor_DeflateStream(udMiniZCompressor *pCompressor, void *p
     flush = MZ_OK;
   }
 
-  int status = udComp_deflate(pCompressor->pStream, flush);
+  status = udComp_deflate(pCompressor->pStream, flush);
   if (status != statusCheck)
   {
     udComp_deflateEnd(pCompressor->pStream);
@@ -142,7 +143,7 @@ udResult udMiniZCompressor_DeflateStream(udMiniZCompressor *pCompressor, void *p
   if (pCompressedSize)
   {
     *pCompressedSize = pCompressor->pStream->total_out;
-    int status = udComp_deflateEnd(pCompressor->pStream);
+    status = udComp_deflateEnd(pCompressor->pStream);
     if (status != MZ_OK)
     {
       return udR_Failure_;
