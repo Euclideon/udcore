@@ -1,12 +1,13 @@
 #ifndef UDNEW_H
 #define UDNEW_H
 
-#if _MSC_VER && _MSC_VER > 1800
-#define _HAS_EXCEPTIONS 0
+#if defined(UDPLATFORM_H)
+// udPlatform includes one or more system header files which indirectly include vcruntime.h, which defines _HAS_EXCEPTIONS
+#error "udNew.h must be included before udPlatform.h"
 #endif
 
-#if defined(UDPLATFORM_H)
-#error "udNew.h must be included before udPlatform.h"
+#if _MSC_VER && _MSC_VER > 1800
+#define _HAS_EXCEPTIONS 0
 #endif
 
 #include <new>

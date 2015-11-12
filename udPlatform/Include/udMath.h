@@ -330,11 +330,11 @@ struct udMatrix4x4
     } m;
   };
 
-  udMatrix4x4<T> operator *(const udMatrix4x4<T> &m) const { return udMul(*this, m); }
+  udMatrix4x4<T> operator *(const udMatrix4x4<T> &m2) const{ return udMul(*this, m2); }
   udMatrix4x4<T> operator *(T f) const                     { return udMul(*this, f); }
   udVector4<T> operator *(const udVector4<T> &v) const     { return udMul(*this, v); }
 
-  udMatrix4x4<T>& operator *=(const udMatrix4x4<T> &m)     { *this = udMul(*this, m); return *this; }
+  udMatrix4x4<T>& operator *=(const udMatrix4x4<T> &m2)    { *this = udMul(*this, m2); return *this; }
   udMatrix4x4<T>& operator *=(T f)                         { *this = udMul(*this, f); return *this; }
 
   bool operator ==(const udMatrix4x4& rh) const            { return memcmp(this, &rh, sizeof(*this)) == 0; }
