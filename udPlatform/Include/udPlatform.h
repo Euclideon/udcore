@@ -94,7 +94,7 @@ inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) {
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return _InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
 # if UD_32BIT
 template <typename T>
-inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return _InterlockedExchange((volatile long*)dest, (long)exchange); }
+inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return (void*)_InterlockedExchange((volatile long*)dest, (long)exchange); }
 template <typename T>
 inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
 # else // UD_32BIT
