@@ -360,6 +360,8 @@ struct udMatrix4x4
   static udMatrix4x4<T> rotationAxis(const udVector3<T> &axis, T rad, const udVector3<T> &t = udVector3<T>::zero());
   static udMatrix4x4<T> rotationYPR(T y, T p, T r, const udVector3<T> &t = udVector3<T>::zero());
   static udMatrix4x4<T> rotationYPR(const udVector3<T> &ypr, const udVector3<T> &t = udVector3<T>::zero()) { return rotationYPR(ypr.x, ypr.y, ypr.z, t); }
+
+  //Creates a rotation matrix with post translation. Assumes the quaternion is normalized
   static udMatrix4x4<T> rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t = udVector3<T>::zero());
 
   static udMatrix4x4<T> translation(T x, T y, T z);
