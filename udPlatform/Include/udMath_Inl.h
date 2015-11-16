@@ -455,9 +455,9 @@ template <typename T>
 udVector3<T> udQuaternion<T>::eulerAngles()
 {
   udVector3<T> r = {
-    udATan2(T(2) * y*w - T(2) * x*z, T(1) - T(2) * y*y - T(2) * z*z),
-    udASin(T(2) * x*y + T(2) * z*w),
-    udATan2(T(2) * x*w - T(2) * y*z, T(1) - T(2) * x*x - T(2) * z*z),
+    udASin(T(-2) * (x * z - w * y)),  //Yaw
+    udATan2(T(2) * (y * z + w * x), w * w - x * x - y * y + z * z), //Pitch
+    udATan2(T(2) * (x * y + w * z), w * w + x * x - y * y - z * z), // Roll
   };
 
   return r;
@@ -580,35 +580,17 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t)
 {
-  udMatrix4x4<T> r = translation(t);
-  //UDASSERT(false, "TODO");
+  //This function makes the assumption the quaternion is normalized
+  T qx2 = q.x * q.x;
+  T qy2 = q.y * q.y;
+  T qz2 = q.z * q.z;
 
-  T sqw = q.w * q.w;
-  T sqx = q.x * q.x;
-  T sqy = q.y * q.y;
-  T sqz = q.z * q.z;
-
-  // invs (inverse square length) is only required if quaternion is not already normalised
-  T invs = T(1) / (sqx + sqy + sqz + sqw);
-
-  r.m._11 = (+sqx - sqy - sqz + sqw)*invs; // since sqw + sqx + sqy + sqz =1/invs*invs
-  r.m._22 = (-sqx + sqy - sqz + sqw)*invs;
-  r.m._00 = (-sqx - sqy + sqz + sqw)*invs;
-
-  T tmp1 = q.x*q.y;
-  T tmp2 = q.z*q.w;
-  r.m._21 = T(2) * (tmp1 + tmp2)*invs;
-  r.m._12 = T(2) * (tmp1 - tmp2)*invs;
-
-  tmp1 = q.x*q.z;
-  tmp2 = q.y*q.w;
-  r.m._01 = T(2) * (tmp1 - tmp2)*invs;
-  r.m._10 = T(2) * (tmp1 + tmp2)*invs;
-
-  tmp1 = q.y*q.z;
-  tmp2 = q.x*q.w;
-  r.m._02 = T(2) * (tmp1 + tmp2)*invs;
-  r.m._20 = T(2) * (tmp1 - tmp2)*invs;
+  udMatrix4x4<T> r = {{{
+    1 - 2 * qy2 - 2 * qz2,      2 * q.x*q.y + 2 * q.z*q.w,  2 * q.x*q.z - 2 * q.y*q.w,  T(0),
+    2 * q.x*q.y - 2 * q.z*q.w,  1 - 2 * qx2 - 2 * qz2    ,  2 * q.y*q.z + 2 * q.x*q.w,  T(0),
+    2 * q.x*q.z + 2 * q.y*q.w,  2 * q.y*q.z - 2 * q.x*q.w,  1 - 2 * qx2 - 2 * qy2,      T(0),
+    t.x,                        t.y,                        t.z,                        T(1)
+  }}};
 
   return r;
 }
@@ -703,11 +685,13 @@ udQuaternion<T> udQuaternion<T>::create(const T _y, const T _p, const T _r)
   T s3 = udSin(_r / 2); //Roll
   T c1c2 = c1 * c2;
   T s1s2 = s1 * s2;
+  T c1s2 = c1 * s2;
+  T s1c2 = s1 * c2;
 
   r.w = c1c2 * c3 - s1s2 * s3;
-  r.x = c1c2 * s3 + s1s2 * c3;
-  r.y = s1 * c2 * c3 + c1 * s2 * s3;
-  r.z = c1 * s2 * c3 - s1 * c2 * s3;
+  r.x = c1s2 * c3 - s1c2 * s3;
+  r.y = c1c2 * s3 + s1s2 * c3;
+  r.z = c1s2 * s3 + s1c2 * c3;
 
   return r;
 }
