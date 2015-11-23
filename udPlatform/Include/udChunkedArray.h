@@ -458,13 +458,10 @@ inline void udChunkedArray<T, chunkElementCount>::Insert(size_t index, T *pData 
   // Make room for new element
   PushBack();
 
-  int iMinusOne;
-
   // Move each element at and after the insertion point to the right by one
   for (int i = length - 1; i > index; --i)
   {
-    iMinusOne = i - 1;
-    memcpy(&ppChunks[i / chunkElementCount]->data[i % chunkElementCount], &ppChunks[iMinusOne / chunkElementCount]->data[iMinusOne % chunkElementCount], sizeof(T));
+    memcpy(&ppChunks[i / chunkElementCount]->data[i % chunkElementCount], &ppChunks[(i - 1) / chunkElementCount]->data[(i - 1) % chunkElementCount], sizeof(T));
   }
 
   // Copy the new element into the insertion point
