@@ -464,8 +464,9 @@ inline void udChunkedArray<T, chunkElementCount>::Insert(size_t index, T *pData 
     memcpy(&ppChunks[i / chunkElementCount]->data[i % chunkElementCount], &ppChunks[(i - 1) / chunkElementCount]->data[(i - 1) % chunkElementCount], sizeof(T));
   }
 
-  // Copy the new element into the insertion point
-  memcpy(&ppChunks[index / chunkElementCount]->data[index % chunkElementCount], pData, sizeof(T));
+  // Copy the new element into the insertion point if it exists
+  if (pData != nullptr)
+    memcpy(&ppChunks[index / chunkElementCount]->data[index % chunkElementCount], pData, sizeof(T));
 }
 
 #endif // UDCHUNKEDARRAY_H
