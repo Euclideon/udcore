@@ -29,6 +29,8 @@ struct udChunkedArray
   void RemoveAt(size_t index);
   // Remove the element at index, swapping with the last element to ensure array is contiguous
   void RemoveSwapLast(size_t index);
+  // Insert the element at index, pushing and moving all elements after to make space.
+  void Insert(size_t index, T *pData = nullptr);
 
   uint32_t ChunkElementCount()      { return chunkElementCount; }
   size_t ElementSize()              { return sizeof(T); }
@@ -444,6 +446,29 @@ inline void udChunkedArray<T, chunkElementCount>::RemoveAt(size_t index)
 
     PopBack();
   }
+}
+
+// --------------------------------------------------------------------------
+// Author: Bryce Kiefer, November 2015
+template <typename T, uint32_t chunkElementCount>
+inline void udChunkedArray<T, chunkElementCount>::Insert(size_t index, T *pData /*= nullptr*/)
+{
+  UDASSERT(index <= length, "Index out of bounds");
+
+  // Make room for new element
+  PushBack();
+
+  int iMinusOne;
+
+  // Move each element at and after the insertion point to the right by one
+  for (int i = length - 1; i > index; --i)
+  {
+    iMinusOne = i - 1;
+    memcpy(&ppChunks[i / chunkElementCount]->data[i % chunkElementCount], &ppChunks[iMinusOne / chunkElementCount]->data[iMinusOne % chunkElementCount], sizeof(T));
+  }
+
+  // Copy the new element into the insertion point
+  memcpy(&ppChunks[index / chunkElementCount]->data[index % chunkElementCount], pData, sizeof(T));
 }
 
 #endif // UDCHUNKEDARRAY_H
