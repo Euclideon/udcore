@@ -225,7 +225,7 @@ udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLengt
 
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
-  result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten ? pActualWritten : &actualWritten, pFilePos);
+  result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualWritten, pFilePos);
 
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   udUpdateFilePerformance(pFile, actualWritten);
