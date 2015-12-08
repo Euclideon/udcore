@@ -14,16 +14,21 @@
 #define UD_HALF_PI       1.5707963267948966192313216916398
 #define UD_ROOT_2        1.4142135623730950488016887242097
 #define UD_INV_ROOT_2    0.70710678118654752440084436210485
-#define UD_RAD2DEG(rad)  ((rad)*57.295779513082320876798154814105)
-#define UD_DEG2RAD(deg)  ((deg)*0.01745329251994329576923690768489)
+#define UD_RAD2DEGVAL    57.295779513082320876798154814105
+#define UD_DEG2RADVAL    0.01745329251994329576923690768489
+#define UD_RAD2DEG(rad)  ((rad)*UD_RAD2DEGVAL)
+#define UD_DEG2RAD(deg)  ((deg)*UD_DEG2RADVAL)
+
 
 #define UD_PIf           float(UD_PI)
 #define UD_2PIf          float(UD_2PI)
 #define UD_HALF_PIf      float(UD_HALF_PI)
 #define UD_ROOT_2f       float(UD_ROOT_2)
 #define UD_INV_ROOT_2f   float(UD_INV_ROOT_2)
-#define UD_RAD2DEGf(rad) float(UD_RAD2DEG(rad))
-#define UD_DEG2RADf(deg) float(UD_DEG2RAD(deg))
+#define UD_RAD2DEGVALf   float(UD_RAD2DEGVAL)
+#define UD_DEG2RADVALf   float(UD_DEG2RADVAL)
+#define UD_RAD2DEGf(rad) ((rad)*UD_RAD2DEGVALf)
+#define UD_DEG2RADf(deg) ((deg)*UD_DEG2RADVALf)
 
 #if defined(__cplusplus)
 
