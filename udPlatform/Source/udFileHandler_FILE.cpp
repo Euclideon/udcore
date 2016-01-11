@@ -148,16 +148,19 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
   actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
-
-  if (pFilePos)
-    *pFilePos = ftello(pFILE->pCrtFile);
-
   if (pActualRead)
     *pActualRead = actualRead;
+  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
+
+  if (pFilePos)
+  {
+    *pFilePos = ftello(pFILE->pCrtFile);
+    UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
+  }
 
   result = udR_Success;
 
-//epilogue:
+epilogue:
   if (pFILE->pMutex)
     udReleaseMutex(pFILE->pMutex);
 
@@ -182,16 +185,19 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
   actualWritten = fwrite(pBuffer, 1, bufferLength, pFILE->pCrtFile);
-
   if (pActualWritten)
     *pActualWritten = actualWritten;
+  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
 
   if (pFilePos)
+  {
     *pFilePos = ftello(pFILE->pCrtFile);
+    UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
+  }
 
   result = udR_Success;
 
-//epilogue:
+epilogue:
   if (pFILE->pMutex)
     udReleaseMutex(pFILE->pMutex);
 
