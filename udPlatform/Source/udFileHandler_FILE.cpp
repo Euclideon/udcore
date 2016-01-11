@@ -150,7 +150,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
 
   if (pFilePos)
-    *pFilePos = ftell(pFILE->pCrtFile);
+    *pFilePos = ftello(pFILE->pCrtFile);
 
   if (pActualRead)
     *pActualRead = actualRead;
@@ -187,7 +187,7 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
     *pActualWritten = actualWritten;
 
   if (pFilePos)
-    *pFilePos = ftell(pFILE->pCrtFile);
+    *pFilePos = ftello(pFILE->pCrtFile);
 
   result = udR_Success;
 
