@@ -175,6 +175,7 @@ struct udVector2
   udVector2<T> operator *(T f) const                   { udVector2<T> r = { x*f,   y*f }; return r; }
   udVector2<T> operator /(const udVector2<T> &v) const { udVector2<T> r = { x/v.x, y/v.y }; return r; }
   udVector2<T> operator /(T f) const                   { udVector2<T> r = { x/f,   y/f }; return r; }
+  T            operator [](int index) const            { return ((T*)this)[index]; }
 
   udVector2<T>& operator +=(const udVector2<T> &v)     { x+=v.x; y+=v.y; return *this; }
   udVector2<T>& operator -=(const udVector2<T> &v)     { x-=v.x; y-=v.y; return *this; }
@@ -182,6 +183,7 @@ struct udVector2
   udVector2<T>& operator *=(T f)                       { x*=f;   y*=f;   return *this; }
   udVector2<T>& operator /=(const udVector2<T> &v)     { x/=v.x; y/=v.y; return *this; }
   udVector2<T>& operator /=(T f)                       { x/=f;   y/=f;   return *this; }
+  T&            operator [](int index)                 { return ((T*)this)[index]; }
 
   // static members
   static udVector2<T> zero()      { udVector2<T> r = { T(0), T(0) }; return r; }
