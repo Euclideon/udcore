@@ -37,6 +37,21 @@ UDFORCE_INLINE double udFloor(double d) { return floor(d); }
 UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
 UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
 
+UDFORCE_INLINE int udHighestBitValue(int i)
+{
+  int tmp = i;
+  int result = 0;
+  while (tmp)
+  {
+    result = (tmp & (~tmp + 1)); // grab lowest bit
+    tmp &= ~result; // clear lowest bit
+  }
+  return result;
+}
+
+UDFORCE_INLINE bool udIsPowerOfTwo(int i) { return !(i & (i - 1)); }
+UDFORCE_INLINE int udPowerOfTwoAbove(int v) { return udIsPowerOfTwo(v) ? v : udHighestBitValue(v) << 1; }
+
 template <typename T> T udRoundEven(T t)
 {
   int integer = (int)t;
@@ -185,6 +200,13 @@ T udLerp(T a, T b, T t)
 {
   return a + (b-a)*t;
 }
+
+template <typename T>
+T udBiLerp(T a, T b, T c, T d, float t1, float t2)
+{
+  return udLerp(udLerp(a, b, t1), udLerp(c, d, t1),t2);
+}
+
 template <typename T>
 udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, T t)
 {
