@@ -175,7 +175,7 @@ struct udVector2
   udVector2<T> operator *(T f) const                   { udVector2<T> r = { x*f,   y*f }; return r; }
   udVector2<T> operator /(const udVector2<T> &v) const { udVector2<T> r = { x/v.x, y/v.y }; return r; }
   udVector2<T> operator /(T f) const                   { udVector2<T> r = { x/f,   y/f }; return r; }
-  T            operator [](int index) const            { return ((T*)this)[index]; }
+  T            operator [](size_t index) const         { return ((T*)this)[index]; }
 
   udVector2<T>& operator +=(const udVector2<T> &v)     { x+=v.x; y+=v.y; return *this; }
   udVector2<T>& operator -=(const udVector2<T> &v)     { x-=v.x; y-=v.y; return *this; }
@@ -183,7 +183,7 @@ struct udVector2
   udVector2<T>& operator *=(T f)                       { x*=f;   y*=f;   return *this; }
   udVector2<T>& operator /=(const udVector2<T> &v)     { x/=v.x; y/=v.y; return *this; }
   udVector2<T>& operator /=(T f)                       { x/=f;   y/=f;   return *this; }
-  T&            operator [](int index)                 { return ((T*)this)[index]; }
+  T&            operator [](size_t index)              { return ((T*)this)[index]; }
 
   // static members
   static udVector2<T> zero()      { udVector2<T> r = { T(0), T(0) }; return r; }
@@ -217,6 +217,7 @@ struct udVector3
   udVector3<T> operator /(const udVector3<T> &v) const  { udVector3<T> r = { x/v.x, y/v.y, z/v.z }; return r; }
   udVector3<T> operator /(T f) const                    { udVector3<T> r = { x/f,   y/f,   z/f }; return r; }
   bool         operator ==(const udVector3<T> &v) const { return x==v.x && y==v.y && z==v.z; }
+  T            operator [](size_t index) const          { return ((T*)this)[index]; }
 
   udVector3<T>& operator +=(const udVector3<T> &v)      { x+=v.x; y+=v.y; z+=v.z; return *this; }
   udVector3<T>& operator -=(const udVector3<T> &v)      { x-=v.x; y-=v.y; z-=v.z; return *this; }
@@ -224,6 +225,7 @@ struct udVector3
   udVector3<T>& operator *=(T f)                        { x*=f;   y*=f;   z*=f;   return *this; }
   udVector3<T>& operator /=(const udVector3<T> &v)      { x/=v.x; y/=v.y; z/=v.z; return *this; }
   udVector3<T>& operator /=(T f)                        { x/=f;   y/=f;   z/=f;   return *this; }
+  T&            operator [](size_t index)               { return ((T*)this)[index]; }
 
   // static members
   static udVector3<T> zero()  { udVector3<T> r = { T(0), T(0), T(0) }; return r; }
@@ -256,6 +258,7 @@ struct udVector4
   udVector4<T> operator *(T f) const                   { udVector4<T> r = { x*f,   y*f,   z*f,   w*f }; return r; }
   udVector4<T> operator /(const udVector4<T> &v) const { udVector4<T> r = { x/v.x, y/v.y, z/v.z, w/v.w }; return r; }
   udVector4<T> operator /(T f) const                   { udVector4<T> r = { x/f,   y/f,   z/f,   w/f }; return r; }
+  T            operator [](size_t index) const         { return ((T*)this)[index]; }
 
   udVector4<T>& operator +=(const udVector4<T> &v)     { x+=v.x; y+=v.y; z+=v.z; w+=v.w; return *this; }
   udVector4<T>& operator -=(const udVector4<T> &v)     { x-=v.x; y-=v.y; z-=v.z; w-=v.w; return *this; }
@@ -263,6 +266,7 @@ struct udVector4
   udVector4<T>& operator *=(T f)                       { x*=f;   y*=f;   z*=f;   w*=f;   return *this; }
   udVector4<T>& operator /=(const udVector4<T> &v)     { x/=v.x; y/=v.y; z/=v.z; w/=v.w; return *this; }
   udVector4<T>& operator /=(T f)                       { x/=f;   y/=f;   z/=f;   w/=f;   return *this; }
+  T&            operator [](size_t index)              { return ((T*)this)[index]; }
 
   // static members
   static udVector4<T> zero()      { udVector4<T> r = { T(0), T(0), T(0), T(0) }; return r; }
@@ -286,9 +290,11 @@ struct udQuaternion
 
   udQuaternion<T> operator *(const udQuaternion<T> &q) const { return udMul(*this, q); }
   udQuaternion<T> operator *(T f) const                      { udQuaternion<T> r = { x*f, y*f, z*f, w*f }; return r; }
+  T            operator [](size_t index) const               { return ((T*)this)[index]; }
 
   udQuaternion<T>& operator *=(const udQuaternion<T> &q)     { *this = mul(*this, q); return *this; }
   udQuaternion<T>& operator *=(T f)                          { x*=f; y*=f; z*=f; w*=f; return *this; }
+  T&            operator [](size_t index)                    { return ((T*)this)[index]; }
 
   udQuaternion<T>& inverse();
   udQuaternion<T>& conjugate();
