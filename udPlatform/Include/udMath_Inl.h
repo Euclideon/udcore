@@ -37,20 +37,20 @@ UDFORCE_INLINE double udFloor(double d) { return floor(d); }
 UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
 UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
 
-UDFORCE_INLINE int udHighestBitValue(int i)
+template <typename T>
+T udHighestBitValue(T i)
 {
-  int tmp = i;
-  int result = 0;
-  while (tmp)
+  T result = 0;
+  while (i)
   {
-    result = (tmp & (~tmp + 1)); // grab lowest bit
-    tmp &= ~result; // clear lowest bit
+    result = (i & (~i + 1)); // grab lowest bit
+    i &= ~result; // clear lowest bit
   }
   return result;
 }
 
-UDFORCE_INLINE bool udIsPowerOfTwo(int i) { return !(i & (i - 1)); }
-UDFORCE_INLINE int udPowerOfTwoAbove(int v) { return udIsPowerOfTwo(v) ? v : udHighestBitValue(v) << 1; }
+template <typename T> bool udIsPowerOfTwo(T i) { return !(i & (i - 1)); }
+template <typename T> T udPowerOfTwoAbove(T v) { return udIsPowerOfTwo(v) ? v : udHighestBitValue(v) << 1; }
 
 template <typename T> T udRoundEven(T t)
 {

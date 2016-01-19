@@ -77,9 +77,9 @@ double udFloor(double d);
 float udCeil(float f);
 double udCeil(double d);
 template <typename T> T udRoundEven(T t);
-int udPowerOfTwoAbove(int i);
-bool udIsPowerOfTwo(int i);
-int udHighestBitValue(int i);
+template <typename T> T udPowerOfTwoAbove(T i);
+template <typename T> bool udIsPowerOfTwo(T i);
+template <typename T> T udHighestBitValue(T i);
 
 // typical linear algebra functions
 template <typename T> T            udAbs(T v);
@@ -399,7 +399,24 @@ udMatrix4x4<T> operator *(T f, const udMatrix4x4<T> &m) { return m*f; }
 
 
 // typedef's for typed vectors/matices
-typedef udVector2<int>    udInt2;
+typedef udVector2<short>        udShort2;
+typedef udVector3<short>        udShort3;
+typedef udVector4<short>        udShort4;
+typedef udVector2<int>          udInt2;
+typedef udVector3<int>          udInt3;
+typedef udVector4<int>          udInt4;
+typedef udVector2<long long>    udLong2;
+typedef udVector3<long long>    udLong3;
+typedef udVector4<long long>    udLong4;
+typedef udVector2<unsigned short>        udUShort2;
+typedef udVector3<unsigned short>        udUShort3;
+typedef udVector4<unsigned short>        udUShort4;
+typedef udVector2<unsigned int>          udUInt2;
+typedef udVector3<unsigned int>          udUInt3;
+typedef udVector4<unsigned int>          udUInt4;
+typedef udVector2<unsigned long long>    udULong2;
+typedef udVector3<unsigned long long>    udULong3;
+typedef udVector4<unsigned long long>    udULong4;
 typedef udVector4<float>  udFloat4;
 typedef udVector3<float>  udFloat3;
 typedef udVector2<float>  udFloat2;
