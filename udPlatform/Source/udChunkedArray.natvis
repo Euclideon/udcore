@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="udChunkedArray&lt;*,*&gt;">
+    <Expand>
+      <Item Name="[size]">length</Item>
+      <Item Name="[capacity]">chunkCount * $T2</Item>
+      <IndexListItems>
+        <Size>length</Size>
+        <ValueNode>(ppChunks[($i + inset) / $T2]->data[($i + inset) % $T2])</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>
