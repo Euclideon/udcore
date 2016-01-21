@@ -235,47 +235,37 @@ udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t
 template <typename T>
 udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t)
 {
-  //http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-
   // quaternion to return
-  udQuaternion<T> r;
+  udQuaternion<T> r = q2;
 
   // Calculate angle between them.
-  T cosHalfTheta = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
+  T cosTheta = udDotQ(q1, r);
 
-  // if q1=q2 or q1=-q2 then theta = 0 and we can return q1
-  if (udAbs(cosHalfTheta) >= T(1))
+  // If cosTheta < 0, one quaternion needs to be negated
+  if (cosTheta < T(0))
   {
-    r.w = q1.w;
-    r.x = q1.x;
-    r.y = q1.y;
-    r.z = q1.z;
-    return r;
+    r.w = -q2.w;
+    r.x = -q2.x;
+    r.y = -q2.y;
+    cosTheta = -cosTheta;
   }
+
+  // if q1=q2 or q1=-q2 then theta = 1 and we can return r
+  if (cosTheta >= T(1))
+    return udLerp(q1, r, t);
 
   // Calculate temporary values.
-  T halfTheta = udACos(cosHalfTheta);
-  T sinHalfTheta = udSqrt(T(1) - cosHalfTheta*cosHalfTheta);
-
-  // if theta = 180 degrees then result is not fully defined
-  // we could rotate around any axis normal to qa or qb
-  if (fabs(sinHalfTheta) < T(0.001)) // fabs is floating point absolute
-  {
-    r.w = (q1.w * T(0.5) + q2.w * T(0.5));
-    r.x = (q1.x * T(0.5) + q2.x * T(0.5));
-    r.y = (q1.y * T(0.5) + q2.y * T(0.5));
-    r.z = (q1.z * T(0.5) + q2.z * T(0.5));
-    return r;
-  }
+  T theta = udACos(cosTheta);
+  T sinTheta = udSqrt(T(1) - cosTheta*cosTheta);
 
   //calculate Quaternion.
-  T ratioA = sin((1 - t) * halfTheta) / sinHalfTheta;
-  T ratioB = sin(t * halfTheta) / sinHalfTheta;
+  T ratioA = udSin((T(1) - t) * theta) / sinTheta;
+  T ratioB = udSin(t * theta) / sinTheta;
 
-  r.w = (q1.w * ratioA + q2.w * ratioB);
-  r.x = (q1.x * ratioA + q2.x * ratioB);
-  r.y = (q1.y * ratioA + q2.y * ratioB);
-  r.z = (q1.z * ratioA + q2.z * ratioB);
+  r.w = (q1.w * ratioA + r.w * ratioB);
+  r.x = (q1.x * ratioA + r.x * ratioB);
+  r.y = (q1.y * ratioA + r.y * ratioB);
+  r.z = (q1.z * ratioA + r.z * ratioB);
 
   return r;
 }

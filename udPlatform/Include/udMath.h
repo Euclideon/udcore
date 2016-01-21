@@ -3,6 +3,8 @@
 #define UDMATH_H
 
 #include "udResult.h"
+#include <stdint.h> //Included for uint32_t (et al) (non-VS)
+#include <stddef.h> //Included for size_t for vector[size_t] operations (non-VS)
 
 #if defined(_MSC_VER)
 // warning C4201: nonstandard extension used : nameless struct/union
