@@ -445,9 +445,9 @@ template <typename T>
 udVector3<T> udQuaternion<T>::eulerAngles()
 {
   udVector3<T> r = {
-    udASin(T(-2) * (x * z - w * y)),  //Yaw
+    udATan2(T(2) * (x * y + w * z), w * w + x * x - y * y - z * z), // Yaw
     udATan2(T(2) * (y * z + w * x), w * w - x * x - y * y + z * z), //Pitch
-    udATan2(T(2) * (x * y + w * z), w * w + x * x - y * y - z * z), // Roll
+    udASin(T(-2) * (x * z - w * y)),  //Roll
   };
 
   return r;
