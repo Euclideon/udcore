@@ -172,6 +172,8 @@ struct udVector2
   T x, y;
 
   udVector2<T> operator -() const                      { udVector2<T> r = { -x, -y }; return r; }
+  bool         operator ==(const udVector2<T> &v) const { return x == v.x && y == v.y; }
+  bool         operator !=(const udVector2<T> &v) const { return !(*this == v); }
 
   udVector2<T> operator +(const udVector2<T> &v) const { udVector2<T> r = { x+v.x, y+v.y }; return r; }
   udVector2<T> operator -(const udVector2<T> &v) const { udVector2<T> r = { x-v.x, y-v.y }; return r; }
@@ -213,6 +215,8 @@ struct udVector3
   const udVector3<T>& toVector2() const   { return *(udVector2<T>*)this; }
 
   udVector3<T> operator -() const                       { udVector3<T> r = { -x, -y, -z }; return r; }
+  bool         operator ==(const udVector2<T> &v) const { return x == v.x && y == v.y && z == v.z; }
+  bool         operator !=(const udVector2<T> &v) const { return !(*this == v); }
 
   udVector3<T> operator +(const udVector3<T> &v) const  { udVector3<T> r = { x+v.x, y+v.y, z+v.z }; return r; }
   udVector3<T> operator -(const udVector3<T> &v) const  { udVector3<T> r = { x-v.x, y-v.y, z-v.z }; return r; }
@@ -255,6 +259,8 @@ struct udVector4
   const udVector2<T>& toVector2() const   { return *(udVector2<T>*)this; }
 
   udVector4<T> operator -() const                      { udVector4<T> r = { -x, -y, -z, -w }; return r; }
+  bool         operator ==(const udVector2<T> &v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
+  bool         operator !=(const udVector2<T> &v) const { return !(*this == v); }
 
   udVector4<T> operator +(const udVector4<T> &v) const { udVector4<T> r = { x+v.x, y+v.y, z+v.z, w+v.w }; return r; }
   udVector4<T> operator -(const udVector4<T> &v) const { udVector4<T> r = { x-v.x, y-v.y, z-v.z, w-v.w }; return r; }
