@@ -16,6 +16,7 @@ struct udChunkedArray
   T &operator[](size_t index);
   const T &operator[](size_t index) const;
   T *GetElement(size_t index);
+  const T *GetElement(size_t index) const;
   void SetElement(size_t index, const T &data);
 
   T *PushBack();
@@ -244,6 +245,17 @@ inline const T &udChunkedArray<T, chunkElementCount>::operator[](size_t index) c
 // Author: David Ely, May 2015
 template <typename T, uint32_t chunkElementCount>
 inline T* udChunkedArray<T,chunkElementCount>::GetElement(size_t  index)
+{
+  UDASSERT(index < length, "Index out of bounds");
+  index += inset;
+  size_t chunkIndex = index / chunkElementCount;
+  return &ppChunks[chunkIndex]->data[index % chunkElementCount];
+}
+
+// --------------------------------------------------------------------------
+// Author: Khan Maxfield, January 2016
+template <typename T, uint32_t chunkElementCount>
+inline const T* udChunkedArray<T, chunkElementCount>::GetElement(size_t  index) const
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
