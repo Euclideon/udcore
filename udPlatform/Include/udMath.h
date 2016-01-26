@@ -399,24 +399,24 @@ udMatrix4x4<T> operator *(T f, const udMatrix4x4<T> &m) { return m*f; }
 
 
 // typedef's for typed vectors/matices
-typedef udVector2<short>        udShort2;
-typedef udVector3<short>        udShort3;
-typedef udVector4<short>        udShort4;
-typedef udVector2<int>          udInt2;
-typedef udVector3<int>          udInt3;
-typedef udVector4<int>          udInt4;
-typedef udVector2<long long>    udLong2;
-typedef udVector3<long long>    udLong3;
-typedef udVector4<long long>    udLong4;
-typedef udVector2<unsigned short>        udUShort2;
-typedef udVector3<unsigned short>        udUShort3;
-typedef udVector4<unsigned short>        udUShort4;
-typedef udVector2<unsigned int>          udUInt2;
-typedef udVector3<unsigned int>          udUInt3;
-typedef udVector4<unsigned int>          udUInt4;
-typedef udVector2<unsigned long long>    udULong2;
-typedef udVector3<unsigned long long>    udULong3;
-typedef udVector4<unsigned long long>    udULong4;
+typedef udVector2<int16_t>  udShort2;
+typedef udVector3<int16_t>  udShort3;
+typedef udVector4<int16_t>  udShort4;
+typedef udVector2<int32_t>  udInt2;
+typedef udVector3<int32_t>  udInt3;
+typedef udVector4<int32_t>  udInt4;
+typedef udVector2<int64_t>  udLong2;
+typedef udVector3<int64_t>  udLong3;
+typedef udVector4<int64_t>  udLong4;
+typedef udVector2<uint16_t> udUShort2;
+typedef udVector3<uint16_t> udUShort3;
+typedef udVector4<uint16_t> udUShort4;
+typedef udVector2<uint32_t> udUInt2;
+typedef udVector3<uint32_t> udUInt3;
+typedef udVector4<uint32_t> udUInt4;
+typedef udVector2<uint64_t> udULong2;
+typedef udVector3<uint64_t> udULong3;
+typedef udVector4<uint64_t> udULong4;
 typedef udVector4<float>  udFloat4;
 typedef udVector3<float>  udFloat3;
 typedef udVector2<float>  udFloat2;
