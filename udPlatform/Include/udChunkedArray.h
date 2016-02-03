@@ -21,9 +21,10 @@ struct udChunkedArray
 
   T *PushBack();
   T *PushFront();
-  void PushBack(const T &v) { *PushBack() = v; }
-  void PushFront(const T &v) { *PushFront() = v; }
+  udResult PushBack(const T &v);
+  udResult PushFront(const T &v);
   udResult GrowBack(size_t numberOfNewElements);
+  udResult ReserveBack(size_t newCapacity);
 
   bool PopBack(T *pData = nullptr);
   bool PopFront(T *pData = nullptr);
@@ -55,6 +56,11 @@ struct udChunkedArray
   size_t inset;
 
   udResult AddChunks(size_t numberOfNewChunks);
+
+  //Does not zero memory
+  udResult PushBack(T **ppElement);
+  //Does not zero memory
+  udResult PushFront(T **ppElement);
 };
 
 // --------------------------------------------------------------------------
@@ -169,7 +175,7 @@ inline udResult udChunkedArray<T,chunkElementCount>::AddChunks(size_t numberOfNe
 }
 
 // --------------------------------------------------------------------------
-// Author: David Ely, May 2015
+// Author: Khan Maxfield, February 2016
 template <typename T, size_t chunkElementCount>
 inline udResult udChunkedArray<T,chunkElementCount>::GrowBack(size_t numberOfNewElements)
 {
@@ -180,16 +186,9 @@ inline udResult udChunkedArray<T,chunkElementCount>::GrowBack(size_t numberOfNew
   size_t newLength = oldLength + numberOfNewElements;
   size_t prevUsedChunkCount = (oldLength + chunkElementCount - 1) / chunkElementCount;
 
-  const size_t capacity = chunkElementCount * chunkCount;
-  if (newLength > capacity)
-  {
-    size_t requiredEntries = newLength - capacity;
-    size_t numberOfNewChunksToAdd = (requiredEntries + chunkElementCount - 1) / chunkElementCount;
-
-    udResult result = AddChunks(numberOfNewChunksToAdd);
-    if (result != udR_Success)
-      return result;
-  }
+  udResult res = ReserveBack(length + numberOfNewElements);
+  if (res != udR_Success)
+    return res;
 
   // Zero new elements
   size_t newUsedChunkCount = (newLength + chunkElementCount - 1) / chunkElementCount;
@@ -217,6 +216,21 @@ inline udResult udChunkedArray<T,chunkElementCount>::GrowBack(size_t numberOfNew
   length += numberOfNewElements;
 
   return udR_Success;
+}
+
+// --------------------------------------------------------------------------
+// Author: Khan Maxfield, February 2016
+template <typename T, size_t chunkElementCount>
+inline udResult udChunkedArray<T, chunkElementCount>::ReserveBack(size_t newCapacity)
+{
+  udResult res = udR_Success;
+  size_t oldCapacity = chunkElementCount * chunkCount - inset;
+  if (newCapacity > oldCapacity)
+  {
+    size_t newChunksCount = (newCapacity - oldCapacity + chunkElementCount - 1) / chunkElementCount;
+    res = AddChunks(newChunksCount);
+  }
+  return res;
 }
 
 // --------------------------------------------------------------------------
@@ -275,28 +289,59 @@ inline void udChunkedArray<T,chunkElementCount>::SetElement(size_t index, const 
 }
 
 // --------------------------------------------------------------------------
-// Author: David Ely, May 2015
+// Author: Khan Maxfield, February 2016
+template <typename T, size_t chunkElementCount>
+inline udResult udChunkedArray<T, chunkElementCount>::PushBack(T **ppElement)
+{
+  UDASSERT(ppElement, "parameter is null");
+
+  udResult res = ReserveBack(length + 1);
+  if (res != udR_Success)
+    return res;
+
+  size_t newIndex = inset + length;
+  size_t chunkIndex = size_t(newIndex / chunkElementCount);
+
+  *ppElement = ppChunks[chunkIndex]->data + (newIndex % chunkElementCount);
+
+  ++length;
+  return udR_Success;
+}
+
+// --------------------------------------------------------------------------
+// Author: Khan Maxfield, February 2016
 template <typename T, size_t chunkElementCount>
 inline T *udChunkedArray<T,chunkElementCount>::PushBack()
 {
-  size_t newIndex = inset + length;
-  if (newIndex >= (chunkElementCount * chunkCount))
-    AddChunks(1);
+  T *pElement = nullptr;
 
-  size_t chunkIndex = size_t(newIndex / chunkElementCount);
+  if (PushBack(&pElement) == udR_Success)
+    memset(pElement, 0, sizeof(T));
 
-  T *pElement = &ppChunks[chunkIndex]->data[newIndex % chunkElementCount];
-  memset(pElement, 0, sizeof(T));
-
-  ++length;
   return pElement;
 }
 
 // --------------------------------------------------------------------------
-// Author: David Ely, May 2015
+// Author: Khan Maxfield, February 2016
 template <typename T, size_t chunkElementCount>
-inline T *udChunkedArray<T,chunkElementCount>::PushFront()
+inline udResult udChunkedArray<T, chunkElementCount>::PushBack(const T &v)
 {
+  T *pElement = nullptr;
+
+  udResult res = PushBack(&pElement);
+  if (res == udR_Success)
+    *pElement = v;
+
+  return res;
+}
+
+// --------------------------------------------------------------------------
+// Author: Khan Maxfield, February 2016
+template <typename T, size_t chunkElementCount>
+inline udResult udChunkedArray<T, chunkElementCount>::PushFront(T **ppElement)
+{
+  UDASSERT(ppElement, "parameter is null");
+
   if (inset)
   {
     --inset;
@@ -310,7 +355,7 @@ inline T *udChunkedArray<T,chunkElementCount>::PushFront()
       {
         chunk_t **ppNewChunks = udAllocType(chunk_t*, (ptrArraySize + ptrArrayInc), udAF_Zero);
         if (!ppNewChunks)
-          return nullptr;
+          return udR_MemoryAllocationFailure;
 
         ptrArraySize += ptrArrayInc;
         memcpy(ppNewChunks + 1, ppChunks, chunkCount * sizeof(chunk_t*));
@@ -335,7 +380,7 @@ inline T *udChunkedArray<T,chunkElementCount>::PushFront()
         if (!pNewBlock)
         {
           memmove(ppChunks, ppChunks + 1, chunkCount * sizeof(chunk_t*));
-          return nullptr;
+          return udR_MemoryAllocationFailure;
         }
         ppChunks[0] = pNewBlock;
         ++chunkCount;
@@ -346,10 +391,36 @@ inline T *udChunkedArray<T,chunkElementCount>::PushFront()
 
   ++length;
 
-  T *pElement = ppChunks[0]->data + inset;
-  memset(pElement, 0, sizeof(T));
+  *ppElement = ppChunks[0]->data + inset;
+
+  return udR_Success;
+}
+
+// --------------------------------------------------------------------------
+// Author: Khan Maxfield, February 2016
+template <typename T, size_t chunkElementCount>
+inline T *udChunkedArray<T,chunkElementCount>::PushFront()
+{
+  T *pElement = nullptr;
+
+  if (PushFront(&pElement) == udR_Success)
+    memset(pElement, 0, sizeof(T));
 
   return pElement;
+}
+
+// --------------------------------------------------------------------------
+// Author: Khan Maxfield, February 2016
+template <typename T, size_t chunkElementCount>
+inline udResult udChunkedArray<T, chunkElementCount>::PushFront(const T &v)
+{
+  T *pElement = nullptr;
+
+  udResult res = PushFront(&pElement);
+  if (res == udR_Success)
+    *pElement = v;
+
+  return res;
 }
 
 // --------------------------------------------------------------------------
@@ -400,18 +471,18 @@ inline bool udChunkedArray<T, chunkElementCount>::PopFront(T *pDest)
   return false;
 }
 
-
 // --------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2015
 template <typename T, size_t chunkElementCount>
 inline void udChunkedArray<T, chunkElementCount>::RemoveSwapLast(size_t index)
 {
+  UDASSERT(index < length, "Index out of bounds");
+
   // Only copy the last element over if the element being removed isn't the last element
   if (index != (length - 1))
     SetElement(index, *GetElement(length - 1));
   PopBack();
 }
-
 
 // --------------------------------------------------------------------------
 // Author: Samuel Surtees, October 2015
@@ -470,7 +541,8 @@ inline void udChunkedArray<T, chunkElementCount>::Insert(size_t index, T *pData 
   UDASSERT(index <= length, "Index out of bounds");
 
   // Make room for new element
-  PushBack();
+  IF_UDASSERT(T* res = ) PushBack();
+  UDASSERT(res != nullptr, "PushBack failed");
 
   // Move each element at and after the insertion point to the right by one
   for (size_t i = length - 1; i > index; --i)
