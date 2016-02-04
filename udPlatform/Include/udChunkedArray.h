@@ -10,7 +10,6 @@ struct udChunkedArray
 {
   udResult Init();
   udResult Deinit();
-
   udResult Clear();
 
   T &operator[](size_t index);
@@ -19,25 +18,27 @@ struct udChunkedArray
   const T *GetElement(size_t index) const;
   void SetElement(size_t index, const T &data);
 
-  T *PushBack();
-  T *PushFront();
   udResult PushBack(const T &v);
+  udResult PushBack(T **ppElement);               // NOTE: Does not zero memory, can fail if memory allocation fails
+  T *PushBack();                                  // DEPRECATED: Please use PushBack(const T&) or PushBack(T **)
+
   udResult PushFront(const T &v);
-  udResult GrowBack(size_t numberOfNewElements);
-  udResult ReserveBack(size_t newCapacity);
+  udResult PushFront(T **ppElement);              // NOTE: Does not zero memory, can fail if memory allocation fails
+  T *PushFront();                                 // DEPRECATED: Please use PushFront(const T&) or PushFront(T **)
 
-  bool PopBack(T *pData = nullptr);
-  bool PopFront(T *pData = nullptr);
+  bool PopBack(T *pData = nullptr);               // Returns false if no element to pop
+  bool PopFront(T *pData = nullptr);              // Returns false if no element to pop
 
-  // Remove the element at index, moving all elements after to fill the gap.
-  void RemoveAt(size_t index);
-  // Remove the element at index, swapping with the last element to ensure array is contiguous
-  void RemoveSwapLast(size_t index);
-  // Insert the element at index, pushing and moving all elements after to make space.
-  void Insert(size_t index, T *pData = nullptr);
+  udResult GrowBack(size_t numberOfNewElements);  // Push back a number of new elements, zeroing the memory
+  udResult ReserveBack(size_t newCapacity);       // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
+  udResult AddChunks(size_t numberOfNewChunks);   // Add a given number of chunks capacity without changing 'length'
 
-  size_t ChunkElementCount()      { return chunkElementCount; }
-  size_t ElementSize()              { return sizeof(T); }
+  void RemoveAt(size_t index);                    // Remove the element at index, moving all elements after to fill the gap.
+  void RemoveSwapLast(size_t index);              // Remove the element at index, swapping with the last element to ensure array is contiguous
+  void Insert(size_t index, T *pData = nullptr);  // Insert the element at index, pushing and moving all elements after to make space.
+
+  size_t ChunkElementCount()                      { return chunkElementCount; }
+  size_t ElementSize()                            { return sizeof(T); }
 
   template <typename _T, size_t _chunkElementCount>
   struct chunk
@@ -54,13 +55,6 @@ struct udChunkedArray
 
   size_t length;
   size_t inset;
-
-  udResult AddChunks(size_t numberOfNewChunks);
-
-  //Does not zero memory
-  udResult PushBack(T **ppElement);
-  //Does not zero memory
-  udResult PushFront(T **ppElement);
 };
 
 // --------------------------------------------------------------------------
