@@ -19,26 +19,27 @@ struct udChunkedArray
   void SetElement(size_t index, const T &data);
 
   udResult PushBack(const T &v);
-  udResult PushBack(T **ppElement);               // NOTE: Does not zero memory, can fail if memory allocation fails
-  T *PushBack();                                  // DEPRECATED: Please use PushBack(const T&) or PushBack(T **)
+  udResult PushBack(T **ppElement);              // NOTE: Does not zero memory, can fail if memory allocation fails
+  T *PushBack();                                 // DEPRECATED: Please use PushBack(const T&) or PushBack(T **)
+                                                 
+  udResult PushFront(const T &v);                
+  udResult PushFront(T **ppElement);             // NOTE: Does not zero memory, can fail if memory allocation fails
+  T *PushFront();                                // DEPRECATED: Please use PushFront(const T&) or PushFront(T **)
 
-  udResult PushFront(const T &v);
-  udResult PushFront(T **ppElement);              // NOTE: Does not zero memory, can fail if memory allocation fails
-  T *PushFront();                                 // DEPRECATED: Please use PushFront(const T&) or PushFront(T **)
+  udResult Insert(size_t index, const T *pData = nullptr);  // Insert the element at index, pushing and moving all elements after to make space.
 
-  bool PopBack(T *pData = nullptr);               // Returns false if no element to pop
-  bool PopFront(T *pData = nullptr);              // Returns false if no element to pop
+  bool PopBack(T *pData = nullptr);              // Returns false if no element to pop
+  bool PopFront(T *pData = nullptr);             // Returns false if no element to pop
+  void RemoveAt(size_t index);                   // Remove the element at index, moving all elements after to fill the gap.
+  void RemoveSwapLast(size_t index);             // Remove the element at index, swapping with the last element to ensure array is contiguous
 
-  udResult GrowBack(size_t numberOfNewElements);  // Push back a number of new elements, zeroing the memory
-  udResult ReserveBack(size_t newCapacity);       // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
-  udResult AddChunks(size_t numberOfNewChunks);   // Add a given number of chunks capacity without changing 'length'
+  udResult GrowBack(size_t numberOfNewElements); // Push back a number of new elements, zeroing the memory
+  udResult ReserveBack(size_t newCapacity);      // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
+  udResult AddChunks(size_t numberOfNewChunks);  // Add a given number of chunks capacity without changing 'length'
 
-  void RemoveAt(size_t index);                    // Remove the element at index, moving all elements after to fill the gap.
-  void RemoveSwapLast(size_t index);              // Remove the element at index, swapping with the last element to ensure array is contiguous
-  void Insert(size_t index, T *pData = nullptr);  // Insert the element at index, pushing and moving all elements after to make space.
 
-  size_t ChunkElementCount()                      { return chunkElementCount; }
-  size_t ElementSize()                            { return sizeof(T); }
+  size_t ChunkElementCount()                     { return chunkElementCount; }
+  size_t ElementSize()                           { return sizeof(T); }
 
   template <typename _T, size_t _chunkElementCount>
   struct chunk
@@ -530,13 +531,19 @@ inline void udChunkedArray<T, chunkElementCount>::RemoveAt(size_t index)
 // --------------------------------------------------------------------------
 // Author: Bryce Kiefer, November 2015
 template <typename T, size_t chunkElementCount>
-inline void udChunkedArray<T, chunkElementCount>::Insert(size_t index, T *pData /*= nullptr*/)
+inline udResult udChunkedArray<T, chunkElementCount>::Insert(size_t index, const T *pData)
 {
   UDASSERT(index <= length, "Index out of bounds");
 
   // Make room for new element
-  IF_UDASSERT(T* res = ) PushBack();
-  UDASSERT(res != nullptr, "PushBack failed");
+  udResult result = GrowBack(1);
+  if (result != udR_Success)
+    return result;
+
+  // TODO: This should be changed to a per-chunk loop, 
+  // using memmove to move all but the last element, and a 
+  // memcpy from the previous chunk for the (now first)
+  // element of each chunk
 
   // Move each element at and after the insertion point to the right by one
   for (size_t i = length - 1; i > index; --i)
@@ -547,6 +554,8 @@ inline void udChunkedArray<T, chunkElementCount>::Insert(size_t index, T *pData 
   // Copy the new element into the insertion point if it exists
   if (pData != nullptr)
     memcpy(&ppChunks[index / chunkElementCount]->data[index % chunkElementCount], pData, sizeof(T));
+
+  return result;
 }
 
 #endif // UDCHUNKEDARRAY_H
