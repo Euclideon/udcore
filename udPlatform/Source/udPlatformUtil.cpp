@@ -204,14 +204,16 @@ bool udStrBeginsWith(const char *s, const char *prefix)
 
 
 // *********************************************************************
-// Author: Dave Pevreal, March 2014
+// Author: Khan Maxfield, February 2016
 char *udStrdup(const char *s, size_t additionalChars)
 {
   if (!s) s = s_udStrEmptyString;
 
   size_t len = udStrlen(s) + 1;
   char *dup = udAllocType(char, len + additionalChars, udAF_None);
-  memcpy(dup, s, len);
+  if(dup)
+    memcpy(dup, s, len);
+
   return dup;
 }
 
