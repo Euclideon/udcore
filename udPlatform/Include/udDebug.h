@@ -65,8 +65,8 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 #   define __debugbreak() raise(SIGTRAP)
 #   define DebugBreak() raise(SIGTRAP)
 # else
-#   define __debugbreak()
-#   define DebugBreak()
+#   define __debugbreak() {}
+#   define DebugBreak() {}
 # endif
 #endif
 

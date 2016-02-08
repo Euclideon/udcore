@@ -543,7 +543,7 @@ udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
   UD_ERROR_IF(keyLen > 20, udR_Unsupported); // Currently, only key lengths up to 20 bytes are supported, this can be extended if necessary
 
   // Hash the pass phrase
-  UD_ERROR_CHECK(result = udCrypto_CreateHash(&pCtx, udCH_SHA1));
+  UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, udCH_SHA1));
   UD_ERROR_CHECK(udCrypto_Digest(pCtx, "ud1971", 6)); // This is a special "salt" for our KDF to make it unique to UD
   UD_ERROR_CHECK(udCrypto_Digest(pCtx, pPassword, strlen(pPassword))); // This is a special "salt" for our KDF to make it unique to UD
   UD_ERROR_CHECK(udCrypto_Finalise(pCtx, passPhraseDigest, sizeof(passPhraseDigest), &passPhraseDigestLen));
@@ -556,7 +556,7 @@ udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
     derivedKey[i] ^= passPhraseDigest[i];
 
   // Hash the result again and this gives us the key
-  UD_ERROR_CHECK(result = udCrypto_CreateHash(&pCtx, udCH_SHA1));
+  UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, udCH_SHA1));
   UD_ERROR_CHECK(udCrypto_Digest(pCtx, derivedKey, sizeof(derivedKey)));
   UD_ERROR_CHECK(udCrypto_Finalise(pCtx, derivedKey, sizeof(derivedKey)));
   UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));

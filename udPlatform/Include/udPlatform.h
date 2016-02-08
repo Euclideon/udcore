@@ -292,15 +292,6 @@ void udValidateHeap();
 
 #define udUnused(x) (void)x
 
-#if defined(__GNUC__)
-# define udUnusedParam(x) __attribute__((__unused__))x
-#elif defined(_WIN32)
-# define udUnusedParam(x)
-#else
-# define udUnusedParam(x)
-#endif
-
-
 #if defined(_MSC_VER)
 # define __FUNC_NAME__ __FUNCTION__
 #elif defined(__GNUC__)

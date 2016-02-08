@@ -4,8 +4,8 @@ ECHO Select the type of project you would like to create:
 ECHO 1. Visual Studio 2015 Solution
 ECHO 2. Visual Studio 2013 Solution
 ECHO 3. Visual Studio 2010 Solution
-ECHO 4. CodeLite
-ECHO 5. GNU Makefile
+ECHO 4. CodeLite (Linux)
+ECHO 5. GNU Makefile (Linux)
 
 CHOICE /N /C:12345 /M "[1-5]:"
 
@@ -18,11 +18,11 @@ GOTO END
 
 :FIVE
  ECHO Creating GNU Makefile...
- bin\premake\premake5.exe gmake
+ bin\premake\premake5.exe gmake --os=linux
  GOTO END
 :FOUR
  ECHO Creating CodeLite Project...
- bin\premake\premake5.exe codelite
+ bin\premake\premake5.exe codelite --os=linux
  GOTO END
 :THREE
  ECHO Creating VS2010 Project...

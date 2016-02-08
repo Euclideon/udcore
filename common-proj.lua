@@ -4,7 +4,7 @@ warnings "Extra"
 
 targetname "%{prj.name}"
 
-flags { "C++11", "NoMinimalRebuild", "NoPCH" }
+flags { "NoMinimalRebuild", "NoPCH" }
 exceptionhandling "Off"
 rtti "Off"
 floatingpoint "Fast"
@@ -28,12 +28,12 @@ filter { "kind:ConsoleApp or WindowedApp" }
 -- configurations
 configuration { "Debug" }
 	defines { "_DEBUG" }
-	optimize "Debug"
+	optimize "Off"
 	flags { "Symbols" }
 
 configuration { "DebugOpt" }
 	defines { "_DEBUG" }
-	optimize "On"
+	optimize "Debug"
 	flags { "Symbols" }
 
 configuration { "Release" }
@@ -53,6 +53,7 @@ configuration { "windows", "x86" }
 
 configuration { "linux" }
 	links { "pthread" }
+	links { "rt" }
 
 configuration { "NaCl64" }
 	defines { "__native_client__" }
