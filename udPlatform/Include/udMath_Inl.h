@@ -7,8 +7,8 @@ UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
 UDFORCE_INLINE float udLogN(float f) { return logf(f); }
 UDFORCE_INLINE double udLogN(double d) { return log(d); }
-UDFORCE_INLINE float udLog2(float f) { UDASSERT(false, "TODO!"); return f; }   //Removed compiler warning until implemented
-UDFORCE_INLINE double udLog2(double d) { UDASSERT(false, "TODO!"); return d; } //Removed compiler warning until implemented
+UDFORCE_INLINE float udLog2(float f) { return log2f(f); }
+UDFORCE_INLINE double udLog2(double d) { return log2(d); }
 UDFORCE_INLINE float udLog10(float f) { return log10f(f); }
 UDFORCE_INLINE double udLog10(double d) { return log10(d); }
 UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
