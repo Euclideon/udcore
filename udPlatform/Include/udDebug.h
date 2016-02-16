@@ -62,11 +62,19 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 #if defined(__GNUC__)
 # if UD_DEBUG
 #   include <signal.h>
-#   define __debugbreak() raise(SIGTRAP)
-#   define DebugBreak() raise(SIGTRAP)
+#   if !defined(__debugbreak)
+#     define __debugbreak() raise(SIGTRAP)
+#   endif // !defined(__debugbreak)
+#   if !defined(DebugBreak)
+#     define DebugBreak() raise(SIGTRAP)
+#   endif // !defined(DebugBreak)
 # else
-#   define __debugbreak() {}
-#   define DebugBreak() {}
+#   if !defined(__debugbreak)
+#     define __debugbreak() {}
+#   endif // !defined(__debugbreak)
+#   if !defined(DebugBreak)
+#     define DebugBreak() {}
+#   endif // !defined(DebugBreak)
 # endif
 #endif
 
