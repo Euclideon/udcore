@@ -1,5 +1,3 @@
-#include "udPlatform.h"
-
 #include <float.h>
 #include <math.h>
 
@@ -83,6 +81,7 @@ template <typename T> T            udAbs(T v) { return v < T(0) ? -v : v; }
 template <typename T> udVector2<T> udAbs(const udVector2<T> &v) { udVector2<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y }; return r; }
 template <typename T> udVector3<T> udAbs(const udVector3<T> &v) { udVector3<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y, v.z<T(0)?-v.z:v.z }; return r; }
 template <typename T> udVector4<T> udAbs(const udVector4<T> &v) { udVector4<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y, v.z<T(0)?-v.z:v.z, v.w<T(0)?-v.w:v.w }; return r; }
+template <typename T> udQuaternion<T> udAbs(const udQuaternion<T> &q) { udQuaternion<T> r = { q.x<T(0) ? -q.x : q.x, q.y<T(0) ? -q.y : q.y, q.z<T(0) ? -q.z : q.z, q.w<T(0) ? -q.w : q.w }; return r; }
 
 template <typename T> T            udMax(T a, T b) { return (a > b) ? a : b; }
 template <typename T> udVector2<T> udMin(const udVector2<T> &v1, const udVector2<T> &v2) { udVector2<T> r = { v1.x<v2.x?v1.x:v2.x, v1.y<v2.y?v1.y:v2.y }; return r; }
@@ -102,6 +101,13 @@ template <typename T> udVector4<T> udSaturate(const udVector2<T> &v) { return ud
 template <typename T> udVector4<T> udSaturate(const udVector3<T> &v) { return udClamp(v, udVector3<T>::zero(), udVector3<T>::one()); }
 template <typename T> udVector4<T> udSaturate(const udVector4<T> &v) { return udClamp(v, udVector4<T>::zero(), udVector4<T>::one()); }
 
+template <typename V, typename T> bool udIsUnitLength(const V &v, T epsilon) { return udAbs(typename V::ElementType(1) - udMag(v)) < typename V::ElementType(epsilon); }
+
+template <typename T> UDFORCE_INLINE T udDot(const udVector2<T> &v1, const udVector2<T> &v2) { return udDot2(v1, v2); }
+template <typename T> UDFORCE_INLINE T udDot(const udVector3<T> &v1, const udVector3<T> &v2) { return udDot3(v1, v2); }
+template <typename T> UDFORCE_INLINE T udDot(const udVector4<T> &v1, const udVector4<T> &v2) { return udDot4(v1, v2); }
+template <typename T> UDFORCE_INLINE T udDot(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return udDotQ(q1, q2); }
+
 template <typename T> T udDot2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
 template <typename T> T udDot2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
 template <typename T> T udDot2(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
@@ -111,12 +117,25 @@ template <typename T> T udDot4(const udVector4<T> &v1, const udVector4<T> &v2) {
 template <typename T> T udDoth(const udVector3<T> &v3, const udVector4<T> &v4) { return v3.x*v4.x + v3.y*v4.y + v3.z*v4.z + v4.w; }
 template <typename T> T udDotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return q1.x*q2.x + q1.y*q2.y + q1.z*q2.z + q1.w*q2.w; }
 
+
+template <typename T> T UDFORCE_INLINE udMagSq(const udVector2<T> &v) { return udMagSq2(v); }
+template <typename T> T UDFORCE_INLINE udMagSq(const udVector3<T> &v) { return udMagSq3(v); }
+template <typename T> T UDFORCE_INLINE udMagSq(const udVector4<T> &v) { return udMagSq4(v); }
+template <typename T> T UDFORCE_INLINE udMagSq(const udQuaternion<T> &q) { return udMagSqQ(q); }
+
 template <typename T> T udMagSq2(const udVector2<T> &v) { return v.x*v.x + v.y*v.y; }
 template <typename T> T udMagSq2(const udVector3<T> &v) { return v.x*v.x + v.y*v.y; }
 template <typename T> T udMagSq2(const udVector4<T> &v) { return v.x*v.x + v.y*v.y; }
 template <typename T> T udMagSq3(const udVector3<T> &v) { return v.x*v.x + v.y*v.y + v.z*v.z; }
 template <typename T> T udMagSq3(const udVector4<T> &v) { return v.x*v.x + v.y*v.y + v.z*v.z; }
 template <typename T> T udMagSq4(const udVector4<T> &v) { return v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w; }
+template <typename T> T udMagSqQ(const udQuaternion<T> &q) { return q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w; }
+
+
+template <typename T> T UDFORCE_INLINE udMag(const udVector2<T> &v) { return udMag2(v); }
+template <typename T> T UDFORCE_INLINE udMag(const udVector3<T> &v) { return udMag3(v); }
+template <typename T> T UDFORCE_INLINE udMag(const udVector4<T> &v) { return udMag4(v); }
+template <typename T> T UDFORCE_INLINE udMag(const udQuaternion<T> &v) { return udMagQ(v); }
 
 template <typename T> T udMag2(const udVector2<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
 template <typename T> T udMag2(const udVector3<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
@@ -124,6 +143,10 @@ template <typename T> T udMag2(const udVector4<T> &v) { return udSqrt(v.x*v.x + 
 template <typename T> T udMag3(const udVector3<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
 template <typename T> T udMag3(const udVector4<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
 template <typename T> T udMag4(const udVector4<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); }
+template <typename T> T udMagQ(const udQuaternion<T> &q) { return udSqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w); }
+
+template <typename T> UDFORCE_INLINE T udCross(const udVector2<T> &v1, const udVector2<T> &v2) { return udCross2(v1, v2); }
+template <typename T> UDFORCE_INLINE udVector3<T> udCross(const udVector3<T> &v1, const udVector3<T> &v2) { return udCross3(v1, v2); }
 
 template <typename T> T udCross2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
 template <typename T> T udCross2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
@@ -131,6 +154,12 @@ template <typename T> T udCross2(const udVector4<T> &v1, const udVector4<T> &v2)
 
 template <typename T> udVector3<T> udCross3(const udVector3<T> &v1, const udVector3<T> &v2) { udVector3<T> r = { v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x }; return r; }
 template <typename T> udVector3<T> udCross3(const udVector4<T> &v1, const udVector4<T> &v2) { udVector3<T> r = { v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x }; return r; }
+
+
+template <typename T> UDFORCE_INLINE udVector2<T> udNormalize(const udVector2<T> &v) { return udNormalize2(v); }
+template <typename T> UDFORCE_INLINE udVector3<T> udNormalize(const udVector3<T> &v) { return udNormalize3(v); }
+template <typename T> UDFORCE_INLINE udVector4<T> udNormalize(const udVector4<T> &v) { return udNormalize4(v); }
+template <typename T> UDFORCE_INLINE udQuaternion<T> udNormalize(const udQuaternion<T> &q) { return udNormalizeQ(q); }
 
 template <typename T> udVector2<T> udNormalize2(const udVector2<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector2<T> r = { v.x*s, v.y*s }; return r; }
 template <typename T> udVector3<T> udNormalize2(const udVector3<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector3<T> r = { v.x*s, v.y*s, v.z }; return r; }
@@ -140,6 +169,79 @@ template <typename T> udVector4<T> udNormalize3(const udVector4<T> &v) { T s = u
 template <typename T> udVector4<T> udNormalize4(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udVector4<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
 template <typename T> udQuaternion<T> udNormalizeQ(const udQuaternion<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udQuaternion<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
 
+
+template <typename V, typename T>
+inline bool udEqualApprox(const V &a, const V &b, T epsilon)
+{
+  typedef typename V::ElementType ET;
+  V d = udAbs(a - b);
+
+  ET error = ET(0);
+  for (int i = 0; i < V::ElementCount; ++i)
+    error += d[i];
+
+  if (error > ET(epsilon))
+    return false;
+
+  return true;
+}
+
+template <typename T>
+inline udQuaternion<T> udRandUnitQuaternion()
+{
+  udVector3<T> axis = udRandUnitVector3<T>();
+
+  // Random rotation between -2PI and 2PI
+  T r = udNormalisedRand<T>() * T(4.0) * T(UD_PI) - T(UD_2PI);
+  return udNormalizeQ(udQuaternion<T>::create(axis, r));
+}
+
+template <typename T>
+inline T udNormalisedRand()
+{
+  return T(udRand()) / T(UD_RAND_MAX);
+}
+
+template <typename T> udVector2<T> udRandUnitVector2()
+{
+  UDASSERT(false, "TODO: Implemente me");
+  // TODO: Implemente me
+  return udVector2<T>::zero();
+}
+
+template <typename T>
+inline udVector3<T> udRandUnitVector3()
+{
+  T azimuth = udNormalisedRand<T>() * T(UD_2PI) - T(UD_PI);
+  T theta = udNormalisedRand<T>() * T(UD_PI);
+  // z up world
+  udVector3<T> v =
+  {
+    udSin(theta) * udCos(azimuth),
+    udCos(theta),
+    udSin(theta) * udSin(azimuth)
+  };
+  return v;
+}
+
+template <typename T> udVector4<T> udRandUnitVector4()
+{
+  UDASSERT(false, "TODO: Implemente me");
+  // TODO: Implemente me
+  return udVector4<T>::zero();
+}
+
+template <typename T>
+inline T udNormaliseRotation(T rad, T absRange)
+{
+  absRange = udAbs(absRange);
+  if (rad > absRange || rad < -absRange)
+  {
+    T c = T(int64_t(rad / absRange));
+    return rad - (c * absRange);
+  }
+  return rad;
+}
 
 // many kinds of mul...
 template <typename T>
@@ -295,39 +397,38 @@ udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t
 }
 
 template <typename T>
-udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t)
+udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, T t)
 {
-  // quaternion to return
-  udQuaternion<T> r = q2;
+#if UDASSERT_ON
+  const T epsilon = T(1.0 / 4096);
+  const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
+#endif
+  udQuaternion<T> q2 = _q2;
 
-  // Calculate angle between them.
-  T cosTheta = udDotQ(q1, r);
+  UDASSERT(udIsUnitLength(q1, epsilon), "q1 is not normalized, magnitude %f\n", udMagQ(q1));
+  UDASSERT(udIsUnitLength(q2, epsilon), "q2 is not normalized, magnitude %f\n", udMagQ(q2));
 
-  // If cosTheta < 0, one quaternion needs to be negated
-  if (cosTheta < T(0))
+  T cosHalfTheta = udDotQ(q1, q2); // Dot product of 2 quaterions results in cos(theta/2)
+
+  if (cosHalfTheta < T(0)) // Rotation is greater than PI
   {
-    r.w = -q2.w;
-    r.x = -q2.x;
-    r.y = -q2.y;
-    cosTheta = -cosTheta;
+    q2 = -_q2;
+    cosHalfTheta = -cosHalfTheta;
   }
 
-  // if q1=q2 or q1=-q2 then theta = 1 and we can return r
-  if (cosTheta >= T(1))
-    return udLerp(q1, r, t);
+  T halfTheta = udACos(cosHalfTheta);
 
-  // Calculate temporary values.
-  T theta = udACos(cosTheta);
-  T sinTheta = udSqrt(T(1) - cosTheta*cosTheta);
+  UDASSERT(udAbs(2.0 * halfTheta - T(UD_PI)) >= thetaEpsilon, "The angle between q1 and q2 is too close to PI, theta %.6f", T(2.0) * halfTheta);
 
-  //calculate Quaternion.
-  T ratioA = udSin((T(1) - t) * theta) / sinTheta;
-  T ratioB = udSin(t * theta) / sinTheta;
+  T sinHalfTheta = udSqrt(T(1) - cosHalfTheta * cosHalfTheta);
+  T ratioA = udSin(halfTheta * (T(1) - t)) / sinHalfTheta;
+  T ratioB = udSin(halfTheta * t) / sinHalfTheta;
 
-  r.w = (q1.w * ratioA + r.w * ratioB);
-  r.x = (q1.x * ratioA + r.x * ratioB);
-  r.y = (q1.y * ratioA + r.y * ratioB);
-  r.z = (q1.z * ratioA + r.z * ratioB);
+  udQuaternion<T> r;
+  r.w = (q1.w * ratioA + q2.w * ratioB);
+  r.x = (q1.x * ratioA + q2.x * ratioB);
+  r.y = (q1.y * ratioA + q2.y * ratioB);
+  r.z = (q1.z * ratioA + q2.z * ratioB);
 
   return r;
 }
@@ -488,23 +589,23 @@ udQuaternion<T>& udQuaternion<T>::conjugate()
 }
 
 template <typename T>
-udVector3<T> udQuaternion<T>::apply(const udVector3<T> &v)
+udVector3<T> udQuaternion<T>::apply(const udVector3<T> &v) const
 {
   udVector3<T> r;
 
-  float vMult = 2.0f*(x*v.x + y*v.y + z*v.z);
-  float crossMult = 2.0f*w;
-  float pMult = crossMult*w - 1.0f;
+  T a = w*w - (x*x + y*y + z*z);
+  T b = 2.0f*w;
+  T c = 2.0f*(x*v.x + y*v.y + z*v.z);
 
-  r.x = pMult*v.x + vMult*x + crossMult*(y*v.z - z*v.y);
-  r.y = pMult*v.y + vMult*y + crossMult*(z*v.x - x*v.z);
-  r.z = pMult*v.z + vMult*z + crossMult*(x*v.y - y*v.x);
+  r.x = a*v.x + b*(y*v.z - z*v.y) + c*x;
+  r.y = a*v.y + b*(z*v.x - x*v.z) + c*y;
+  r.z = a*v.z + b*(x*v.y - y*v.x) + c*z;
 
   return r;
 }
 
 template <typename T>
-udVector3<T> udQuaternion<T>::eulerAngles()
+udVector3<T> udQuaternion<T>::eulerAngles() const
 {
   udVector3<T> r = {
     udATan2(T(2) * (x * y + w * z), w * w + x * x - y * y - z * z), // Yaw
@@ -632,6 +733,7 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t)
 {
+  UDASSERT(udIsUnitLength(q, T(1.0 / 4096)), "q is not normalized, magnitude %f\n", udMagQ(q));
   //This function makes the assumption the quaternion is normalized
   T qx2 = q.x * q.x;
   T qy2 = q.y * q.y;
@@ -714,6 +816,7 @@ udMatrix4x4<T> udMatrix4x4<T>::lookAt(const udVector3<T> &from, const udVector3<
 template <typename T>
 udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &axis, T rad)
 {
+  UDASSERT(udIsUnitLength(axis, T(1.0 / 4096)), "axis is not normalized, magnitude %f\n", udMag(axis));
   T a = rad*T(0.5);
   T s = udSin(a);
   udQuaternion<T> r = { axis.x*s,
