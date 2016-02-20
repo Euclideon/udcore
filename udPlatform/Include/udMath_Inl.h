@@ -184,6 +184,30 @@ udMatrix4x4<T> udMul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2)
   r.m._33 = m1.m._30*m2.m._03 + m1.m._31*m2.m._13 + m1.m._32*m2.m._23 + m1.m._33*m2.m._33;
   return r;
 }
+
+template <typename T>
+udMatrix4x4<T> udAdd(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2)
+{
+  udMatrix4x4<T> r;
+  r.m._00 = m1.m._00+m2.m._00;
+  r.m._01 = m1.m._01+m2.m._01;
+  r.m._02 = m1.m._02+m2.m._02;
+  r.m._03 = m1.m._03+m2.m._03;
+  r.m._10 = m1.m._10+m2.m._10;
+  r.m._11 = m1.m._11+m2.m._11;
+  r.m._12 = m1.m._12+m2.m._12;
+  r.m._13 = m1.m._13+m2.m._13;
+  r.m._20 = m1.m._20+m2.m._20;
+  r.m._21 = m1.m._21+m2.m._21;
+  r.m._22 = m1.m._22+m2.m._22;
+  r.m._23 = m1.m._23+m2.m._23;
+  r.m._30 = m1.m._30+m2.m._30;
+  r.m._31 = m1.m._31+m2.m._31;
+  r.m._32 = m1.m._32+m2.m._32;
+  r.m._33 = m1.m._33+m2.m._33;
+  return r;
+}
+
 template <typename T>
 udQuaternion<T> udMul(const udQuaternion<T> &q1, const udQuaternion<T> &q2)
 {

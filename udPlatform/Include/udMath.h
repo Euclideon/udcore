@@ -355,6 +355,8 @@ struct udMatrix4x4
 
   udMatrix4x4<T> operator *(const udMatrix4x4<T> &m2) const{ return udMul(*this, m2); }
   udMatrix4x4<T> operator *(T f) const                     { return udMul(*this, f); }
+  udMatrix4x4<T> operator +(const udMatrix4x4<T> &m2) const { return udAdd(*this, m2); }  
+  udMatrix4x4<T> operator -(const udMatrix4x4<T> &m2) const { return udAdd(*this, m2*-1); }
   udVector4<T> operator *(const udVector4<T> &v) const     { return udMul(*this, v); }
 
   udMatrix4x4<T>& operator *=(const udMatrix4x4<T> &m2)    { *this = udMul(*this, m2); return *this; }
