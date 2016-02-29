@@ -7,10 +7,19 @@ UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
 UDFORCE_INLINE float udLogN(float f) { return logf(f); }
 UDFORCE_INLINE double udLogN(double d) { return log(d); }
-UDFORCE_INLINE float udLog2(float f) { return log2f(f); }
-UDFORCE_INLINE double udLog2(double d) { return log2(d); }
 UDFORCE_INLINE float udLog10(float f) { return log10f(f); }
 UDFORCE_INLINE double udLog10(double d) { return log10(d); }
+UDFORCE_INLINE float udLog(float f, float base) { return udLogN(f) / udLogN(base); }
+UDFORCE_INLINE double udLog(double f, double base) { return udLogN(f) / udLogN(base); }
+
+#if defined(_MSC_VER) && _MSC_VER >= 1800
+UDFORCE_INLINE float udLog2(float f) { return log2f(f); }
+UDFORCE_INLINE double udLog2(double d) { return log2(d); }
+#else
+UDFORCE_INLINE float udLog2(float f) { return udLog(f, 2.f); }
+UDFORCE_INLINE double udLog2(double d) { return udLog(d, 2.0); }
+#endif
+
 UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
 UDFORCE_INLINE double udRSqrt(double d) { return 1.0/sqrt(d); }
 UDFORCE_INLINE float udSqrt(float f) { return sqrtf(f); }
@@ -36,6 +45,8 @@ UDFORCE_INLINE float udFloor(float f) { return floorf(f); }
 UDFORCE_INLINE double udFloor(double d) { return floor(d); }
 UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
 UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
+UDFORCE_INLINE float udMod(float f, float den) { return fmodf(f, den); }
+UDFORCE_INLINE double udMod(double d, double den) { return fmod(d, den); }
 
 template <typename T>
 T udHighestBitValue(T i)
