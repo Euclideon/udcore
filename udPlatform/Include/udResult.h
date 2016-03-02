@@ -26,6 +26,7 @@ enum udResult
   udR_CompressionOutputExhausted,
   udR_CompressionError,
   udR_Unsupported,
+  udR_Timeout,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,

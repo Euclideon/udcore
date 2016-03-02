@@ -4,6 +4,7 @@
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL
 #include <sched.h>
 #include <pthread.h>
+#include <errno.h>
 #include <semaphore.h>
 #endif
 
@@ -64,6 +65,60 @@ void udDestroyThread(udThreadHandle *pThreadHandle)
 #endif
     *pThreadHandle = 0;
   }
+}
+
+// ****************************************************************************
+udResult udJoinThread(udThreadHandle *pThreadHandle, int waitMs)
+{
+  if (!pThreadHandle)
+    return udR_InvalidParameter_;
+
+#if UDPLATFORM_WINDOWS
+  UDCOMPILEASSERT(INFINITE == UDTHREAD_WAIT_INFINITE, "Infinite constants don't match");
+
+  DWORD result = WaitForSingleObject((HANDLE)(*pThreadHandle), (DWORD)waitMs);
+  if (result)
+  {
+    if (result == WAIT_TIMEOUT)
+      return udR_Timeout;
+
+    return udR_Failure_;
+  }
+#else
+  if (waitMs == UDTHREAD_WAIT_INFINITE)
+  {
+    int result = pthread_join((pthread_t)(*pThreadHandle), nullptr);
+    if (result)
+    {
+      if (result == EINVAL)
+	      return udR_InvalidParameter_;
+
+      return udR_Failure_;
+    }
+  }
+  else
+  {
+    timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += waitMs / 1000;
+    ts.tv_nsec += long(waitMs % 1000) * 1000000L;
+
+    int result = pthread_timedjoin_np((pthread_t)(*pThreadHandle), nullptr, &ts);
+    if (result )
+    {
+      if (result == ETIMEDOUT)
+	      return udR_Timeout;
+
+      if (result == EINVAL)
+	      return udR_InvalidParameter_;
+
+      return udR_Failure_;
+    }
+  }
+#endif
+  *pThreadHandle = 0;
+
+  return udR_Success;
 }
 
 // ****************************************************************************
@@ -131,15 +186,18 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 #if UDPLATFORM_WINDOWS
     return WaitForSingleObject((HANDLE)pSemaphore, waitMs);
 #elif UDPLATFORM_LINUX
-    if (waitMs == -1)
+    if (waitMs == UDTHREAD_WAIT_INFINITE)
     {
       return sem_wait((sem_t*)pSemaphore);
     }
     else
     {
       struct  timespec ts;
-      ts.tv_sec = 0;
-      ts.tv_nsec = waitMs * 1000;
+      if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+        return -1;
+
+      ts.tv_sec += waitMs / 1000;
+      ts.tv_nsec += long(waitMs % 1000) * 1000000L;
       return sem_timedwait((sem_t*)pSemaphore, &ts);
     }
 #elif UDPLATFORM_NACL
