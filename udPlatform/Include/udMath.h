@@ -30,7 +30,7 @@
 #define UD_RAD2DEGf(rad) ((rad)*UD_RAD2DEGVALf)
 #define UD_DEG2RADf(deg) ((deg)*UD_DEG2RADVALf)
 
-#define UD_RAND_MAX 0x7FFFFFFF
+#define UD_EPSILON       float(1.0f / 1024.0f)
 
 #if defined(__cplusplus)
 
@@ -42,14 +42,6 @@ template <typename T> struct udQuaternion;
 template <typename T> struct udMatrix4x4;
 
 // math functions
-void udSeedRand(uint32_t seed);
-int udRand();
-template <typename T> T udNormalisedRand();
-template <typename T> udVector2<T> udRandUnitVector2();
-template <typename T> udVector3<T> udRandUnitVector3();
-template <typename T> udVector4<T> udRandUnitVector4();
-template <typename T> udQuaternion<T> udRandUnitQuaternion();
-
 float udPow(float f, float n);
 double udPow(double d, double n);
 float udLogN(float f);
@@ -117,7 +109,7 @@ template <typename T> udVector2<T> udSaturate(const udVector2<T> &v);
 template <typename T> udVector3<T> udSaturate(const udVector3<T> &v);
 template <typename T> udVector4<T> udSaturate(const udVector4<T> &v);
 
-template <typename V, typename T> bool udIsUnitLength(const V &v, T epsilon);
+template <typename V, typename T> bool udIsUnitLength(const V &v, T epsilon = UD_EPSILON);
 
 template <typename T> T udDot(const udVector2<T> &v1, const udVector2<T> &v2);
 template <typename T> T udDot(const udVector3<T> &v1, const udVector3<T> &v2);
@@ -206,7 +198,7 @@ template <typename T> udMatrix4x4<T>  udInverse(const udMatrix4x4<T> &m);
 template <typename T> udQuaternion<T> udConjugate(const udQuaternion<T> &q);
 template <typename T> udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
 
-template <typename V, typename T> bool udEqualApprox(const V &a, const V &b, T epsilon);
+template <typename V> bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilon = UD_EPSILON);
 
 // types
 template <typename T>
@@ -360,6 +352,9 @@ struct udQuaternion
 
   udQuaternion<T>& operator *=(const udQuaternion<T> &q)     { *this = mul(*this, q); return *this; }
   udQuaternion<T>& operator *=(T f)                          { x*=f; y*=f; z*=f; w*=f; return *this; }
+  udQuaternion<T>& operator +=(const udQuaternion<T> &q)     { x += q.x; y += q.y; z += q.z; w += q.w; return *this; }
+  udQuaternion<T>& operator -=(const udQuaternion<T> &q)     { x -= q.x; y -= q.y; z -= q.z; w -= q.w; return *this; }
+
   T&            operator [](size_t index)                    { return ((T*)this)[index]; }
 
   udQuaternion<T>& inverse();

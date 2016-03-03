@@ -1,22 +1,10 @@
 #include "stdlib.h"
 #include "udPlatform.h"
 #include "udMath.h"
+#include "udRand.h"
 
-#define EXHASTIVE_TESTS 0
+#define EXHAUSTIVE_TESTS 0
 #define TEST_ASSERTS 0
-
-UDTHREADLOCAL uint32_t __udRandomState = 0;
-void udSeedRand(uint32_t seed)
-{
-  __udRandomState = seed;
-}
-
-int udRand()
-{
-  __udRandomState = (__udRandomState * 1103515245 + 12345) & UD_RAND_MAX;
-  return __udRandomState;
-}
-
 
 // This test slerps 2 quaterions rotating about the -Y axis (backwards) q0 theta PI/4 and q1 theta 3PI/4
 template <typename T>
@@ -309,7 +297,7 @@ bool udMath_Test()
   udAbs(-1);
   udAbs(v);
 
-  udSeedRand(0x5555);
+  udRandSetSeed(nullptr, 0x5555);
 
   if (!EqualApproxUnitTest<udVector2<float>>())
     return false;
@@ -374,7 +362,7 @@ bool udMath_Test()
   if (!udQuaternion_SlerpBasicUnitTest<float>())
     return false;
 
-  int incrementCount = EXHASTIVE_TESTS ? 1024 : 256;
+  int incrementCount = EXHAUSTIVE_TESTS ? 1024 : 256;
 
   if (!udQuaternion_SlerpDefinedInputsTest<double>(incrementCount))
     return false;

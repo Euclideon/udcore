@@ -169,9 +169,8 @@ template <typename T> udVector4<T> udNormalize3(const udVector4<T> &v) { T s = u
 template <typename T> udVector4<T> udNormalize4(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udVector4<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
 template <typename T> udQuaternion<T> udNormalizeQ(const udQuaternion<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udQuaternion<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
 
-
-template <typename V, typename T>
-inline bool udEqualApprox(const V &a, const V &b, T epsilon)
+template <typename V>
+inline bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilon)
 {
   typedef typename V::ElementType ET;
   V d = udAbs(a - b);
@@ -184,51 +183,6 @@ inline bool udEqualApprox(const V &a, const V &b, T epsilon)
     return false;
 
   return true;
-}
-
-template <typename T>
-inline udQuaternion<T> udRandUnitQuaternion()
-{
-  udVector3<T> axis = udRandUnitVector3<T>();
-
-  // Random rotation between -2PI and 2PI
-  T r = udNormalisedRand<T>() * T(4.0) * T(UD_PI) - T(UD_2PI);
-  return udNormalizeQ(udQuaternion<T>::create(axis, r));
-}
-
-template <typename T>
-inline T udNormalisedRand()
-{
-  return T(udRand()) / T(UD_RAND_MAX);
-}
-
-template <typename T> udVector2<T> udRandUnitVector2()
-{
-  UDASSERT(false, "TODO: Implemente me");
-  // TODO: Implemente me
-  return udVector2<T>::zero();
-}
-
-template <typename T>
-inline udVector3<T> udRandUnitVector3()
-{
-  T azimuth = udNormalisedRand<T>() * T(UD_2PI) - T(UD_PI);
-  T theta = udNormalisedRand<T>() * T(UD_PI);
-  // z up world
-  udVector3<T> v =
-  {
-    udSin(theta) * udCos(azimuth),
-    udCos(theta),
-    udSin(theta) * udSin(azimuth)
-  };
-  return v;
-}
-
-template <typename T> udVector4<T> udRandUnitVector4()
-{
-  UDASSERT(false, "TODO: Implemente me");
-  // TODO: Implemente me
-  return udVector4<T>::zero();
 }
 
 template <typename T>
