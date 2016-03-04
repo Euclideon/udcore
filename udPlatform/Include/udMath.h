@@ -99,6 +99,10 @@ template <typename T> T            udClamp(T v, T _min, T _max);
 template <typename T> udVector2<T> udClamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max);
 template <typename T> udVector3<T> udClamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max);
 template <typename T> udVector4<T> udClamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max);
+template <typename T> T            udSaturate(const T &v);
+template <typename T> udVector2<T> udSaturate(const udVector2<T> &v);
+template <typename T> udVector3<T> udSaturate(const udVector3<T> &v);
+template <typename T> udVector4<T> udSaturate(const udVector4<T> &v);
 
 template <typename T> T udDot2(const udVector2<T> &v1, const udVector2<T> &v2);
 template <typename T> T udDot2(const udVector3<T> &v1, const udVector3<T> &v2);
