@@ -309,6 +309,17 @@ void udValidateHeap();
 #pragma warning(disable:4127) // conditional expression is constant
 #endif //defined(_MSC_VER)
 
+#if defined(__GNUC__)
+# define UD_GCC_VERSION (GNUC__ * 10000 + __GNUC_MINOR__ * 100  + __GNUC_PATCHLEVEL__)
+# if UD_GCC_VERSION < 50101
+#   pragma GCC diagnostic ignored "-Wmissing-field-initializers" 
+# endif // GCC_VERSION < 50101
+#endif
+
+
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wmissing-field-initializers" 
+#endif   
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
 #define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof((_array)[0]) )

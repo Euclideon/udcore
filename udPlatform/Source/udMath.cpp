@@ -1,7 +1,6 @@
 #include "stdlib.h"
 #include "udPlatform.h"
 #include "udMath.h"
-#include "udRand.h"
 
 #define EXHAUSTIVE_TESTS 0
 #define TEST_ASSERTS 0
@@ -186,13 +185,13 @@ bool EqualApproxUnitTest()
     c[i] = ET(0.02) / ET(count);
   }
 
-  if (!udEqualApprox(a, a, 0.01))
+  if (!udEqualApprox(a, a, epsilon))
     return false;
 
-  if (!udEqualApprox(a, b, 0.01))
+  if (!udEqualApprox(a, b, epsilon))
     return false;
 
-  if (udEqualApprox(a, c, 0.01))
+  if (udEqualApprox(a, c, epsilon))
     return false;
 
   return true;
@@ -297,47 +296,45 @@ bool udMath_Test()
   udAbs(-1);
   udAbs(v);
 
-  udRandSetSeed(nullptr, 0x5555);
-
-  if (!EqualApproxUnitTest<udVector2<float>>())
+  if (!EqualApproxUnitTest<udVector2<float> >())
     return false;
-  if (!EqualApproxUnitTest<udVector2<double>>())
+  if (!EqualApproxUnitTest<udVector2<double> >())
     return false;
 
-  if (!EqualApproxUnitTest<udVector3<float>>())
+  if (!EqualApproxUnitTest<udVector3<float> >())
     return false;
-  if (!EqualApproxUnitTest<udVector3<double>>())
-    return false;
-
-  if (!EqualApproxUnitTest<udVector4<float>>())
-    return false;
-  if (!EqualApproxUnitTest<udVector4<double>>())
+  if (!EqualApproxUnitTest<udVector3<double> >())
     return false;
 
-  if (!EqualApproxUnitTest<udQuaternion<float>>())
+  if (!EqualApproxUnitTest<udVector4<float> >())
     return false;
-  if (!EqualApproxUnitTest<udQuaternion<double>>())
+  if (!EqualApproxUnitTest<udVector4<double> >())
+    return false;
+
+  if (!EqualApproxUnitTest<udQuaternion<float> >())
+    return false;
+  if (!EqualApproxUnitTest<udQuaternion<double> >())
     return false;
 
 
-  if (!IsUnitLengthUnitTest<udVector2<float>>())
+  if (!IsUnitLengthUnitTest<udVector2<float> >())
     return false;
-  if (!IsUnitLengthUnitTest<udVector2<double>>())
-    return false;
-
-  if (!IsUnitLengthUnitTest<udVector3<float>>())
-    return false;
-  if (!IsUnitLengthUnitTest<udVector3<double>>())
+  if (!IsUnitLengthUnitTest<udVector2<double> >())
     return false;
 
-  if (!IsUnitLengthUnitTest<udVector4<float>>())
+  if (!IsUnitLengthUnitTest<udVector3<float> >())
     return false;
-  if (!IsUnitLengthUnitTest<udVector4<double>>())
+  if (!IsUnitLengthUnitTest<udVector3<double> >())
     return false;
 
-  if (!IsUnitLengthUnitTest<udQuaternion<float>>())
+  if (!IsUnitLengthUnitTest<udVector4<float> >())
     return false;
-  if (!IsUnitLengthUnitTest<udQuaternion<double>>())
+  if (!IsUnitLengthUnitTest<udVector4<double> >())
+    return false;
+
+  if (!IsUnitLengthUnitTest<udQuaternion<float> >())
+    return false;
+  if (!IsUnitLengthUnitTest<udQuaternion<double> >())
     return false;
 
   if (TEST_ASSERTS)
