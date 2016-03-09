@@ -195,9 +195,14 @@ uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
 
 // *********************************************************************
 // Simple base64 decoder, output can be same memory as input
-// Pass zero for outputLength to count output bytes without actually writing
-// Returns actual number of bytes after decoding
-size_t udDecodeBase64(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength);
+// Pass nullptr for pOutput to count output bytes
+udResult udBase64Decode(char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten = nullptr);
+
+// *********************************************************************
+// Simple base64 encoder, unlike decode output CANNOT be the same memory as input
+// encodes binaryLength bytes from pBinary to strLength characters in pString
+// Pass nullptr for pString to count output bytes without actually writing
+udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten = nullptr);
 
 // *********************************************************************
 // Add a string to a dynamic table of unique strings.

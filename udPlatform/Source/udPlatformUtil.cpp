@@ -548,16 +548,27 @@ double udStrAtof64(const char *s, int *pCharCount)
   return result * negate;
 }
 
+static char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 // *********************************************************************
 // Author: Dave Pevreal, December 2014
-size_t udDecodeBase64(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength)
+udResult udBase64Decode(char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten /*= nullptr*/)
 {
-  static char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  udResult result;
   uint32_t accum = 0; // Accumulator for incoming data (read 6 bits at a time)
   int accumBits = 0;
   size_t outputIndex = 0;
-  for (size_t inputIndex = 0;inputIndex < length; )
+
+  if (!pOutput && pOutputLengthWritten)
+  {
+    outputIndex = length / 4 * 3;
+    UD_ERROR_SET(udR_Success);
+  }
+
+  UD_ERROR_NULL(pString, udR_InvalidParameter_);
+  UD_ERROR_NULL(pOutput, udR_InvalidParameter_);
+
+  for (size_t inputIndex = 0; inputIndex < length; )
   {
     char *c = strchr(b64, pString[inputIndex++]);
     if (c)
@@ -565,17 +576,77 @@ size_t udDecodeBase64(const char *pString, size_t length, uint8_t *pOutput, size
       accum |= uint32_t(c - b64) << (16 - accumBits - 6); // Store in accumulator, starting at high byte
       if ((accumBits += 6) >= 8)
       {
-        if (outputIndex < outputLength)
-          pOutput[outputIndex] = uint8_t(accum >> 8);
-        ++outputIndex;
+        UD_ERROR_IF(outputIndex >= outputLength, udR_BufferTooSmall);
+        pOutput[outputIndex++] = uint8_t(accum >> 8);
         accum <<= 8;
         accumBits -= 8;
       }
     }
   }
-  return outputIndex;
+  result = udR_Success;
+
+epilogue:
+  if (pOutputLengthWritten)
+    *pOutputLengthWritten = outputIndex;
+
+  return result;
 }
 
+// *********************************************************************
+// Author: Paul Fox, March 2016
+udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten /*= nullptr*/)
+{
+  udResult result;
+  uint32_t accum = 0; // Accumulator for data (read 8 bits at a time but only consume 6)
+  int accumBits = 0;
+  size_t outputIndex = 0;
+
+  if (!pString && pOutputLengthWritten)
+  {
+    outputIndex = (binaryLength + 2) / 3 * 4;;
+    UD_ERROR_SET(udR_Success);
+  }
+
+  UD_ERROR_NULL(pString, udR_InvalidParameter_);
+  UD_ERROR_NULL(pBinary, udR_InvalidParameter_);
+
+  for (size_t inputIndex = 0; inputIndex < binaryLength; ++inputIndex)
+  {
+    accum = (accum << 8) | pBinary[inputIndex];
+    accumBits += 8;
+    while (accumBits >= 6)
+    {
+      UD_ERROR_IF(outputIndex >= strLength, udR_BufferTooSmall);
+      pString[outputIndex] = b64[((accum >> (accumBits - 6)) & 0x3F)];
+      ++outputIndex;
+      accumBits -= 6;
+    }
+  }
+
+  if (accumBits == 2)
+  {
+    UD_ERROR_IF(outputIndex >= strLength + 3, udR_BufferTooSmall);
+    pString[outputIndex] = b64[(accum & 0x3) << 4];
+    pString[outputIndex+1] = '='; //Pad chars
+    pString[outputIndex+2] = '=';
+    outputIndex += 3;
+  }
+  else if (accumBits == 4)
+  {
+    UD_ERROR_IF(outputIndex + 2 >= strLength, udR_BufferTooSmall);
+    pString[outputIndex] = b64[(accum & 0xF) << 2];
+    pString[outputIndex+1] = '='; //Pad chars
+    outputIndex += 2;
+  }
+
+  result = udR_Success;
+
+epilogue:
+  if (pOutputLengthWritten)
+    *pOutputLengthWritten = outputIndex;
+
+  return result;
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
