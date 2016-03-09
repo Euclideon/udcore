@@ -26,6 +26,9 @@ typedef udResult udFile_SeekWriteHandlerFunc(udFile *pFile, const void *pBuffer,
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 typedef udResult udFile_BlockForPipelinedRequestHandlerFunc(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead);
 
+// Release the underlying file handle (optional) to be re-opened upon next use - used to have more open files than internal (o/s) limits would otherwise allow
+typedef udResult udFile_ReleaseHandlerFunc(udFile *pFile);
+
 // Close the file and free all resources allocated, including the udFile structure itself
 typedef udResult udFile_CloseHandlerFunc(udFile **ppFile);
 
@@ -33,9 +36,11 @@ typedef udResult udFile_CloseHandlerFunc(udFile **ppFile);
 struct udFile
 {
   const char *pFilenameCopy;              // Set by udFile, not handlers. A copy of the filename used to open the file
+  udFileOpenFlags flagsCopy;              // Set by udFile, not handlers. A copy of the flags used to open the file
   udFile_SeekReadHandlerFunc *fpRead;
   udFile_SeekWriteHandlerFunc *fpWrite;
   udFile_BlockForPipelinedRequestHandlerFunc *fpBlockPipedRequest;
+  udFile_ReleaseHandlerFunc *fpRelease;
   udFile_CloseHandlerFunc *fpClose;
   uint32_t msAccumulator;
   uint32_t requestsInFlight;

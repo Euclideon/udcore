@@ -34,9 +34,12 @@
 # define ftello ftell
 #endif
 
+#define FILE_DEBUG 0
+
 // Declarations of the fall-back standard handler that uses crt FILE as a back-end
 static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
 static udFile_SeekWriteHandlerFunc  udFileHandler_FILESeekWrite;
+static udFile_ReleaseHandlerFunc    udFileHandler_FILERelease;
 static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
 
 
@@ -44,9 +47,41 @@ static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
 struct udFile_FILE : public udFile
 {
   FILE *pCrtFile;
+  int64_t filePos;
   udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
 };
 
+
+// ----------------------------------------------------------------------------
+static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
+{
+  const char *pMode = "";
+  FILE *pFile = nullptr;
+
+  if ((flags & udFOF_Read) && (flags & udFOF_Write) && (flags & udFOF_Create))
+    pMode = "w+b";  // Read/write, any existing file destroyed
+  else if ((flags & udFOF_Read) && (flags & udFOF_Write))
+    pMode = "r+b"; // Read/write, but file must already exist
+  else if (flags & udFOF_Read)
+    pMode = "rb"; // Read, file must already exist
+  else if ((flags & udFOF_Write) || (flags & udFOF_Create))
+    pMode = "wb"; // Write, any existing file destroyed (Create flag treated as Write in this case)
+  else
+    return nullptr;
+
+#if UDPLATFORM_WINDOWS
+  pFile = _wfopen(udOSString(pFilename), udOSString(pMode));
+#else
+  pFile = fopen(pFilename, pMode);
+#endif
+
+#if FILE_DEBUG
+  if (!pFile)
+    udDebugPrintf("Error opening %s (%s)\n", pFilename, pMode);
+#endif
+
+  return pFile;
+}
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
@@ -56,65 +91,32 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   UDTRACE();
   udFile_FILE *pFile = nullptr;
   udResult result;
-  const char *pMode;
 
-  if (pFileLengthInBytes && (flags & udFOF_Read))
+  if (pFileLengthInBytes && (flags & udFOF_Read) && !(flags & udFOF_FastOpen))
   {
     result = udFileExists(pFilename, pFileLengthInBytes);
     if (result != udR_Success)
       *pFileLengthInBytes = 0;
   }
-  result = udR_MemoryAllocationFailure;
+
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
-  if (pFile == nullptr)
-    goto epilogue;
+  UD_ERROR_NULL(pFile, udR_MemoryAllocationFailure);
 
   pFile->fpRead = udFileHandler_FILESeekRead;
   pFile->fpWrite = udFileHandler_FILESeekWrite;
+  pFile->fpRelease = udFileHandler_FILERelease;
   pFile->fpClose = udFileHandler_FILEClose;
 
-  result = udR_File_OpenFailure;
-  pMode = "";
-
-  if ((flags & udFOF_Read) && (flags & udFOF_Write) && (flags & udFOF_Create))
+  if (!(flags & udFOF_FastOpen)) // With FastOpen flag, just don't open the file, let the first read do that
   {
-    pMode = "w+b";  // Read/write, any existing file destroyed
-  }
-  else if ((flags & udFOF_Read) && (flags & udFOF_Write))
-  {
-    pMode = "r+b"; // Read/write, but file must already exist
-  }
-  else if (flags & udFOF_Read)
-  {
-    pMode = "rb"; // Read, file must already exist
-  }
-  else if ((flags & udFOF_Write) || (flags & udFOF_Create))
-  {
-    pMode = "wb"; // Write, any existing file destroyed (Create flag treated as Write in this case)
-  }
-  else
-  {
-    result = udR_InvalidParameter_;
-    goto epilogue;
-  }
-
-#if UDPLATFORM_WINDOWS
-  pFile->pCrtFile = _wfopen(udOSString(pFilename), udOSString(pMode));
-#else
-  pFile->pCrtFile = fopen(pFilename, pMode);
-#endif
-  if (pFile->pCrtFile == nullptr)
-  {
-    result = udR_File_OpenFailure;
-    goto epilogue;
+    pFile->pCrtFile = OpenWithFlags(pFilename, flags);
+    UD_ERROR_NULL(pFile->pCrtFile, udR_File_OpenFailure);
   }
 
   if (flags & udFOF_Multithread)
   {
-    result = udR_InternalError;
     pFile->pMutex = udCreateMutex();
-    if (!pFile->pMutex)
-      goto epilogue;
+    UD_ERROR_NULL(pFile->pMutex, udR_InternalError);
   }
 
   *ppFile = pFile;
@@ -144,19 +146,33 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
+
+  if (pFILE->pCrtFile == nullptr)
+  {
+#if FILE_DEBUG
+    udDebugPrintf("Reopening handle for %s\n", pFile->pFilenameCopy);
+#endif
+    pFILE->pCrtFile = OpenWithFlags(pFile->pFilenameCopy, pFile->flagsCopy);
+    UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
+    if (seekWhence == udFSW_SeekCur)
+      fseeko(pFILE->pCrtFile, pFILE->filePos, SEEK_SET);
+  }
+
   if (seekOffset != 0 || seekWhence != udFSW_SeekCur)
+  {
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
+    pFILE->filePos = ftello(pFILE->pCrtFile);
+  }
 
   actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
   if (pActualRead)
     *pActualRead = actualRead;
   UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
 
+  pFILE->filePos = ftello(pFILE->pCrtFile);
+  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
   if (pFilePos)
-  {
-    *pFilePos = ftello(pFILE->pCrtFile);
-    UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
-  }
+    *pFilePos = pFILE->filePos;
 
   result = udR_Success;
 
@@ -181,6 +197,8 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
+  UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
+
   if (seekOffset != 0 || seekWhence != udFSW_SeekCur)
     fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
 
@@ -189,15 +207,48 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
     *pActualWritten = actualWritten;
   UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
 
+  pFILE->filePos = ftello(pFILE->pCrtFile);
   if (pFilePos)
-  {
-    *pFilePos = ftello(pFILE->pCrtFile);
     UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
-  }
 
   result = udR_Success;
 
 epilogue:
+  if (pFILE->pMutex)
+    udReleaseMutex(pFILE->pMutex);
+
+  return result;
+}
+
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, March 2016
+// Implementation of Release to release the underlying file handle
+static udResult udFileHandler_FILERelease(udFile *pFile)
+{
+  udResult result;
+  udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
+
+  // Early-exit that doesn't involve locking the mutex
+  if (!pFILE->pCrtFile)
+    return udR_NothingToDo;
+
+  if (pFILE->pMutex)
+    udLockMutex(pFILE->pMutex);
+
+  // Don't support release/reopen on files for create/writing
+  UD_ERROR_IF(!pFile->pFilenameCopy || (pFile->flagsCopy & (udFOF_Create|udFOF_Write)), udR_InvalidConfiguration);
+
+#if FILE_DEBUG
+  udDebugPrintf("Releasing handle for %s\n", pFile->pFilenameCopy);
+#endif
+  fclose(pFILE->pCrtFile);
+  pFILE->pCrtFile = nullptr;
+
+  result = udR_Success;
+
+epilogue:
+
   if (pFILE->pMutex)
     udReleaseMutex(pFILE->pMutex);
 
@@ -212,21 +263,13 @@ static udResult udFileHandler_FILEClose(udFile **ppFile)
 {
   UDTRACE();
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(*ppFile);
-  udResult result;
-
   *ppFile = nullptr;
 
-  result = udR_File_CloseFailure;
-  if (fclose(pFILE->pCrtFile) == 0)
-    result = udR_Success;
+  udResult result = (pFILE->pCrtFile && fclose(pFILE->pCrtFile) != 0) ? udR_File_CloseFailure : udR_Success;
 
   if (pFILE->pMutex)
     udDestroyMutex(&pFILE->pMutex);
-
   udFree(pFILE);
-  result = udR_Success;
-
-//epilogue:
 
   return result;
 }

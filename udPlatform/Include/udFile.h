@@ -19,7 +19,7 @@ enum udFileOpenFlags
   udFOF_Write = 2,
   udFOF_Create = 4,
   udFOF_Multithread = 8,
-  udFOF_FastOpen = 16   // No checks performed, file length not supported. Currently only functional for HTTP
+  udFOF_FastOpen = 16   // No checks performed, file length not supported. Currently functional for FILE (deferred open) and HTTP (stateless)
 };
 // Inline of operator to allow flags to be combined and retain type-safety
 inline udFileOpenFlags operator|(udFileOpenFlags a, udFileOpenFlags b) { return (udFileOpenFlags)(int(a) | int(b)); }
@@ -51,7 +51,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
 // Open a file. The filename contains a prefix such as http: to access registered file handlers (see udFileHandler.h)
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes = nullptr);
 
-// Get performance information
+// Get the filename associated with the file
 const char *udFile_GetFilename(udFile *pFile);
 
 // Get performance information
@@ -65,6 +65,9 @@ udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLengt
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead = nullptr);
+
+// Release the underlying file handle (optional) to be re-opened upon next use - used to have more open files than internal (o/s) limits would otherwise allow
+udResult udFile_Release(udFile *pFile);
 
 // Close the file (sets the udFile pointer to null)
 udResult udFile_Close(udFile **ppFile);

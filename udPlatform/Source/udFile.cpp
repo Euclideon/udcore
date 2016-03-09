@@ -125,6 +125,7 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
       if (result == udR_Success)
       {
         (*ppFile)->pFilenameCopy = udStrdup(pFilename);
+        (*ppFile)->flagsCopy = flags;
         goto epilogue;
       }
     }
@@ -264,6 +265,17 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
     result = udR_Success;
   }
 
+  return result;
+}
+
+udResult udFile_Release(udFile *pFile)
+{
+  udResult result;
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+
+  result = (pFile->fpRelease) ? pFile->fpRelease(pFile) : udR_Success;
+
+epilogue:
   return result;
 }
 

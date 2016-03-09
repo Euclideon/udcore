@@ -117,9 +117,9 @@ inline long udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetc
 inline long udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return __sync_lock_test_and_set(dest, exchange); }
 inline long udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 template <typename T>
-inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return __sync_lock_test_and_set(dest, (T*)exchange); }
+inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return __sync_lock_test_and_set((void * volatile*)dest, exchange); }
 template <typename T>
-inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap(dest, (T*)comparand, (T*)exchange); }
+inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap((void * volatile*)dest, comparand, exchange); }
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
 # if defined(__INTELLISENSE__)
