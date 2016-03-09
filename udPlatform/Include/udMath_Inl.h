@@ -355,14 +355,20 @@ udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, T
 {
 #if UDASSERT_ON
   const T epsilon = T(1.0 / 4096);
-  const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
 #endif
+  const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
+
   udQuaternion<T> q2 = _q2;
 
   UDASSERT(udIsUnitLength(q1, epsilon), "q1 is not normalized, magnitude %f\n", udMagQ(q1));
   UDASSERT(udIsUnitLength(q2, epsilon), "q2 is not normalized, magnitude %f\n", udMagQ(q2));
 
   T cosHalfTheta = udDotQ(q1, q2); // Dot product of 2 quaterions results in cos(theta/2)
+
+  if ((T(1) - udAbs(cosHalfTheta)) < thetaEpsilon)
+  {
+     return udNormalize(udLerp(q1, q2, t));
+  }
 
   if (cosHalfTheta < T(0)) // Rotation is greater than PI
   {

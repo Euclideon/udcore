@@ -44,6 +44,30 @@ bool udQuaternion_SlerpBasicUnitTest()
 template <typename T>
 bool udQuaternion_SlerpAxisAngleUnitTest(udQuaternion<T> q0, udQuaternion<T> q1, udVector3<T> v, int incrementCount, const T epsilon)
 {
+  const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
+  const T tIncrementCount = T(incrementCount);
+
+  T cosHalfTheta = udDotQ(q0, q1); // Dot product of 2 quaterions results in cos(theta/2)
+
+  // udSlerp will use a normalized lerp if the absolute of the dot of the two quaternions is within 1/100 of a degree
+  if ((T(1) - udAbs(cosHalfTheta)) < thetaEpsilon)
+  {
+    for (int i = 0; i < incrementCount; ++i)
+    {
+      T inc = T(i) / tIncrementCount;
+      udQuaternion<T> nl = udNormalize(udLerp(q0, q1, inc));
+      udQuaternion<T> q = udSlerp(q0, q1, inc);
+
+      udVector3<T> vnl = nl.apply(v);
+      udVector3<T> vq = q.apply(v);
+
+      if (!udEqualApprox(vnl, vq, epsilon))
+        return false;
+    }
+
+    return true;
+  }
+
   udMatrix4x4<T> m0 = udMatrix4x4<T>::rotationQuat(q0);
 
   if (!udEqualApprox(q0.apply(v), udMul(m0, v), epsilon))
@@ -63,9 +87,6 @@ bool udQuaternion_SlerpAxisAngleUnitTest(udQuaternion<T> q0, udQuaternion<T> q1,
       return false;
   }
 
-  const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
-
-  T cosHalfTheta = udDotQ(q0, q1);
   T halfTheta = udACos(cosHalfTheta);
 
   // If the angle between q1 and q2 is too close to PI to slerp just return true as this is an invalid test
@@ -90,7 +111,6 @@ bool udQuaternion_SlerpAxisAngleUnitTest(udQuaternion<T> q0, udQuaternion<T> q1,
 
   T theta = udACos(qr.w) * T(2.0);
 
-  const T tIncrementCount = T(incrementCount);
   for (int i = 0; i < incrementCount; ++i)
   {
     T inc = T(i) / tIncrementCount;
@@ -164,6 +184,24 @@ bool udQuaternion_SlerpDefinedInputsTest(int incrementCount)
     if (!udQuaternion_SlerpAxisAngleUnitTest<T>(q0, q1, v, incrementCount, epsilon))
       return false;
   }
+
+  // Test when quaternions are equal or approximately equal
+  {
+    T theta = tPI / T(-8.0);
+    const T thetaApprox = theta - T(UD_PI / (180.0 * 100.0) * 0.5); // 1/200 of a degree
+    udQuaternion<T> q0 = udQuaternion<T>::create(axis, theta);
+    udQuaternion<T> q1 = udQuaternion<T>::create(axis, thetaApprox);
+
+    if (!udQuaternion_SlerpAxisAngleUnitTest<T>(q0, q0, v, incrementCount, epsilon))
+      return false;
+
+    if (!udQuaternion_SlerpAxisAngleUnitTest<T>(q0, q1, v, incrementCount, epsilon))
+      return false;
+
+    if (!udQuaternion_SlerpAxisAngleUnitTest<T>(q0, -q1, v, incrementCount, epsilon))
+      return false;
+  }
+
 
   return true;
 }
