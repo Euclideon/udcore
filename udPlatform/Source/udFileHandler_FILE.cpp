@@ -41,7 +41,10 @@ static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
 static udFile_SeekWriteHandlerFunc  udFileHandler_FILESeekWrite;
 static udFile_ReleaseHandlerFunc    udFileHandler_FILERelease;
 static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
-
+volatile int32_t g_udFileHandler_FILEHandleCount;
+#if FILE_DEBUG
+#pragma optimize("", off)
+#endif
 
 // The udFile derivative for supporting standard runtime library FILE i/o
 struct udFile_FILE : public udFile
@@ -75,9 +78,13 @@ static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
   pFile = fopen(pFilename, pMode);
 #endif
 
+  if (pFile)
+    udInterlockedPreIncrement(&g_udFileHandler_FILEHandleCount);
 #if FILE_DEBUG
-  if (!pFile)
-    udDebugPrintf("Error opening %s (%s)\n", pFilename, pMode);
+  if (pFile)
+    udDebugPrintf("Opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount);
+  else
+    udDebugPrintf("Error opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount);
 #endif
 
   return pFile;
@@ -127,7 +134,10 @@ epilogue:
   if (pFile)
   {
     if (pFile->pCrtFile)
+    {
       fclose(pFile->pCrtFile);
+      udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
+    }
     udFree(pFile);
   }
   return result;
@@ -150,7 +160,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   if (pFILE->pCrtFile == nullptr)
   {
 #if FILE_DEBUG
-    udDebugPrintf("Reopening handle for %s\n", pFile->pFilenameCopy);
+    udDebugPrintf("Reopening handle for %s (handleCount=%d)\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount);
 #endif
     pFILE->pCrtFile = OpenWithFlags(pFile->pFilenameCopy, pFile->flagsCopy);
     UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
@@ -240,10 +250,11 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   UD_ERROR_IF(!pFile->pFilenameCopy || (pFile->flagsCopy & (udFOF_Create|udFOF_Write)), udR_InvalidConfiguration);
 
 #if FILE_DEBUG
-  udDebugPrintf("Releasing handle for %s\n", pFile->pFilenameCopy);
+  udDebugPrintf("Releasing handle for %s (handleCount=%d)\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount);
 #endif
   fclose(pFILE->pCrtFile);
   pFILE->pCrtFile = nullptr;
+  udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
 
   result = udR_Success;
 
@@ -262,10 +273,16 @@ epilogue:
 static udResult udFileHandler_FILEClose(udFile **ppFile)
 {
   UDTRACE();
+  udResult result = udR_Success;
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(*ppFile);
   *ppFile = nullptr;
 
-  udResult result = (pFILE->pCrtFile && fclose(pFILE->pCrtFile) != 0) ? udR_File_CloseFailure : udR_Success;
+  if (pFILE->pCrtFile)
+  {
+    result = (fclose(pFILE->pCrtFile) != 0) ? udR_File_CloseFailure : udR_Success;
+    pFILE->pCrtFile = nullptr;
+    udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
+  }
 
   if (pFILE->pMutex)
     udDestroyMutex(&pFILE->pMutex);
