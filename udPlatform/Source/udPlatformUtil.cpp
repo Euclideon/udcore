@@ -1127,7 +1127,7 @@ udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
   if (stat(pFilename, &st) == 0)
 #elif UDPLATFORM_WINDOWS
   struct _stat64 st = { 0 };
-  if (_stat64(pFilename, &st) == 0)
+  if (_wstat64(udOSString(pFilename), &st) == 0)
 #else
   struct stat64 st = { 0 };
   if (stat64(pFilename, &st) == 0)
