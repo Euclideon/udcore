@@ -365,16 +365,14 @@ udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, T
 
   T cosHalfTheta = udDotQ(q1, q2); // Dot product of 2 quaterions results in cos(theta/2)
 
-  if ((T(1) - udAbs(cosHalfTheta)) < thetaEpsilon)
-  {
-     return udNormalize(udLerp(q1, q2, t));
-  }
-
   if (cosHalfTheta < T(0)) // Rotation is greater than PI
   {
     q2 = -_q2;
     cosHalfTheta = -cosHalfTheta;
   }
+
+  if ((T(1) - cosHalfTheta) < thetaEpsilon)
+    return udNormalize(udLerp(q1, q2, t));
 
   T halfTheta = udACos(cosHalfTheta);
 

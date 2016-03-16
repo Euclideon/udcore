@@ -47,15 +47,20 @@ bool udQuaternion_SlerpAxisAngleUnitTest(udQuaternion<T> q0, udQuaternion<T> q1,
   const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
   const T tIncrementCount = T(incrementCount);
 
+  udQuaternion<T> nlerpq1 = q1;
+
   T cosHalfTheta = udDotQ(q0, q1); // Dot product of 2 quaterions results in cos(theta/2)
 
   // udSlerp will use a normalized lerp if the absolute of the dot of the two quaternions is within 1/100 of a degree
   if ((T(1) - udAbs(cosHalfTheta)) < thetaEpsilon)
   {
+    if (cosHalfTheta < T(0))
+      nlerpq1 = -q1;
+
     for (int i = 0; i < incrementCount; ++i)
     {
       T inc = T(i) / tIncrementCount;
-      udQuaternion<T> nl = udNormalize(udLerp(q0, q1, inc));
+      udQuaternion<T> nl = udNormalize(udLerp(q0, nlerpq1, inc));
       udQuaternion<T> q = udSlerp(q0, q1, inc);
 
       udVector3<T> vnl = nl.apply(v);
@@ -297,6 +302,22 @@ void udQuaternion_SlerpAlmostPITheta()
   udSlerp(q0, q1, T(0.5)); // This should not assert
 }
 
+// This test was added as it was a bug case in udCDKEditor.
+// When the quaternions are close together (falls back to nlerp) and also cross an axis the quat flips direction (but otherwise takes the 'shortest' path)
+template <typename T>
+bool udQuaternion_Slerp2DegOverZero()
+{
+  udQuaternion<T> q0 = udQuaternion<T>::create(UD_DEG2RAD(1), 0, 0);
+  udQuaternion<T> q1 = udQuaternion<T>::create(UD_DEG2RAD(359), 0, 0);
+
+  udVector3<T> testVector = udVector3<T>::create(0, 1, 0);
+
+  udVector3<T> vExpected = (udQuaternion<T>::create(0, 0, 0)).apply(testVector);
+  udVector3<T> vResult = udSlerp(q0, q1, T(0.5)).apply(testVector);
+
+  return udEqualApprox(vResult, vExpected);
+}
+
 bool udMath_Test()
 {
   udFloat4 x;
@@ -395,6 +416,9 @@ bool udMath_Test()
   if (!udQuaternion_SlerpBasicUnitTest<double>())
     return false;
   if (!udQuaternion_SlerpBasicUnitTest<float>())
+    return false;
+
+  if (!udQuaternion_Slerp2DegOverZero<float>())
     return false;
 
   int incrementCount = EXHAUSTIVE_TESTS ? 1024 : 256;
