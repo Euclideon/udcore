@@ -1,3 +1,6 @@
+-- clear global state
+filter {}
+configuration {}
 
 -- common stuff that we want to be common among all projects
 warnings "Extra"
@@ -26,21 +29,22 @@ filter { "kind:ConsoleApp or WindowedApp" }
 	targetdir "Output/bin/%{cfg.buildcfg}_%{cfg.platform}"
 
 -- configurations
-configuration { "Debug" }
+configuration { "Debug*" }
 	defines { "_DEBUG" }
 	optimize "Off"
 	flags { "Symbols" }
 
-configuration { "DebugOpt" }
+configuration { "DebugOpt*" }
 	defines { "_DEBUG" }
 	optimize "Debug"
 	flags { "Symbols" }
 
-configuration { "Release" }
+configuration { "Release*" }
 	defines { "NDEBUG" }
 	optimize "Full"
 	flags { "NoFramePointer", "NoBufferSecurityCheck" }
-configuration { "Release", "not Emscripten" }
+	
+configuration { "Release*", "not Emscripten" }
 	flags { "Symbols" }
 
 -- platform config

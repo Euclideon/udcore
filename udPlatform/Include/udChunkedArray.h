@@ -21,8 +21,8 @@ struct udChunkedArray
   udResult PushBack(const T &v);
   udResult PushBack(T **ppElement);              // NOTE: Does not zero memory, can fail if memory allocation fails
   T *PushBack();                                 // DEPRECATED: Please use PushBack(const T&) or PushBack(T **)
-                                                 
-  udResult PushFront(const T &v);                
+
+  udResult PushFront(const T &v);
   udResult PushFront(T **ppElement);             // NOTE: Does not zero memory, can fail if memory allocation fails
   T *PushFront();                                // DEPRECATED: Please use PushFront(const T&) or PushFront(T **)
 
@@ -444,7 +444,7 @@ inline bool udChunkedArray<T, chunkElementCount>::PopFront(T *pDest)
   if (length)
   {
     if (pDest)
-      *pDest = *GetElement(inset);
+      *pDest = *GetElement(0);
     ++inset;
     if (inset == chunkElementCount)
     {
@@ -540,8 +540,8 @@ inline udResult udChunkedArray<T, chunkElementCount>::Insert(size_t index, const
   if (result != udR_Success)
     return result;
 
-  // TODO: This should be changed to a per-chunk loop, 
-  // using memmove to move all but the last element, and a 
+  // TODO: This should be changed to a per-chunk loop,
+  // using memmove to move all but the last element, and a
   // memcpy from the previous chunk for the (now first)
   // element of each chunk
 
