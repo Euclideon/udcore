@@ -246,11 +246,14 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
+  // Another check after the mutex lock to catch the case where another thread released while this thread waited on the mutex
+  UD_ERROR_IF(!pFILE->pCrtFile, udR_NothingToDo);
+
   // Don't support release/reopen on files for create/writing
   UD_ERROR_IF(!pFile->pFilenameCopy || (pFile->flagsCopy & (udFOF_Create|udFOF_Write)), udR_InvalidConfiguration);
 
 #if FILE_DEBUG
-  udDebugPrintf("Releasing handle for %s (handleCount=%d)\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount);
+  udDebugPrintf("Releasing handle for %s (handleCount=%d) pCrtFile=%p\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount, pFILE->pCrtFile);
 #endif
   fclose(pFILE->pCrtFile);
   pFILE->pCrtFile = nullptr;
