@@ -257,17 +257,25 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 template <typename T>
 void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
-  void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
-
-  _udFreeInternal((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
-  pMemory = nullptr;
+  void *pActualPtr = (void*)pMemory;
+  if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  {
+    void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
+    _udFreeInternal((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
+  }
 }
 #define udFree(pMemory) _udFree(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 
-UDFORCE_INLINE void *__udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
+#if defined(_MSC_VER)
+UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { __stosd((unsigned long*)pDest, val, size); }
+#else
+UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { uint32_t *p = (uint32_t*)pDest; while (size--) *p++ = val; }
+#endif
+
+UDFORCE_INLINE void *udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
-#define udAllocStack(type, count, flags)   ((flags | udAF_None) & udAF_Zero) ? (type*)__udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
+#define udAllocStack(type, count, flags)   ((flags | udAF_None) & udAF_Zero) ? (type*)udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
 #define udFreeStack(pMemory)
 
 #if __MEMORY_DEBUG__
@@ -312,23 +320,17 @@ void udValidateHeap();
 #if defined(__GNUC__)
 # define UD_GCC_VERSION (GNUC__ * 10000 + __GNUC_MINOR__ * 100  + __GNUC_PATCHLEVEL__)
 # if UD_GCC_VERSION < 50101
-#   pragma GCC diagnostic ignored "-Wmissing-field-initializers" 
+#   pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 # endif // GCC_VERSION < 50101
 #endif
 
 
 #if defined(__clang__)
-#pragma clang diagnostic ignored "-Wmissing-field-initializers" 
-#endif   
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#endif
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
 #define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof((_array)[0]) )
-
-#ifdef __GNUC__
-#define memset32(dest,val,size) __stosd((unsigned int*)(dest),val,size)
-#else
-#define memset32(dest,val,size) __stosd((unsigned long*)(dest),val,size)
-#endif
 
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
