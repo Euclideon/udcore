@@ -418,6 +418,8 @@ udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t l
 {
   if (!pCtx)
     return udR_InvalidParameter_;
+  if (length && !pBytes)
+    return udR_InvalidParameter_;
 
   switch (pCtx->hash)
   {
@@ -442,20 +444,26 @@ udResult udCrypto_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t len
   if (length < pCtx->hashLengthInBytes)
     return udR_BufferTooSmall;
 
-  switch (pCtx->hash)
-  {
-    case udCH_SHA1:
-      sha1_final(&pCtx->sha1, pHash);
-      break;
-    case udCH_SHA256:
-      sha256_final(&pCtx->sha256, pHash);
-      break;
-    default:
-      return udR_InvalidParameter_;
-  }
-
   if (pActualHashLength)
     *pActualHashLength = pCtx->hashLengthInBytes;
+
+  if (pHash)
+  {
+    if (length < pCtx->hashLengthInBytes)
+      return udR_BufferTooSmall;
+
+    switch (pCtx->hash)
+    {
+      case udCH_SHA1:
+        sha1_final(&pCtx->sha1, pHash);
+        break;
+      case udCH_SHA256:
+        sha256_final(&pCtx->sha256, pHash);
+        break;
+      default:
+        return udR_InvalidParameter_;
+    }
+  }
 
   return udR_Success;
 

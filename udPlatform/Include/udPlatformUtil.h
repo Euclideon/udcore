@@ -97,7 +97,13 @@ int64_t udStrAtoi64(const char *s, int *pCharCount = nullptr, int radix = 10);
 float udStrAtof(const char *s, int *pCharCount = nullptr);
 double udStrAtof64(const char *s, int *pCharCount = nullptr);
 // Split a line into an array of tokens
-int udTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens);
+int udStrTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens);
+inline int udTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens) { return udStrTokenSplit(pLine,pDelimiters,ppTokens,maxTokens); }
+// Find the offset of the character FOLLOWING the matching brace character pointed to by pLine
+// (may point to null terminator if not found)
+size_t udStrMatchBrace(const char *pLine);
+// In-place remove all non-quoted white space (newlines, spaces, tabs), returns new length
+size_t udStrStripWhiteSpace(char *pLine);
 
 // *********************************************************************
 // String comparison functions that can be relied upon, NULL-safe
@@ -196,7 +202,7 @@ uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
 // *********************************************************************
 // Simple base64 decoder, output can be same memory as input
 // Pass nullptr for pOutput to count output bytes
-udResult udBase64Decode(char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten = nullptr);
+udResult udBase64Decode(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten = nullptr);
 
 // *********************************************************************
 // Simple base64 encoder, unlike decode output CANNOT be the same memory as input

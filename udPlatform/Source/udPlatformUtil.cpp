@@ -354,7 +354,7 @@ udOSString::~udOSString()
 
 // *********************************************************************
 // Author: Dave Pevreal, August 2014
-int udTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens)
+int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens)
 {
   if (pLine == nullptr)
     return 0;
@@ -423,6 +423,63 @@ int32_t udStrAtoi(const char *s, int *pCharCount, int radix)
   return result;
 }
 
+// *********************************************************************
+// Author: Dave Pevreal, April 2016
+size_t udStrMatchBrace(const char *pLine)
+{
+  size_t offset;
+  char matchChar;
+  char escapeChar = 0;
+
+  switch (*pLine)
+  {
+    case '{': matchChar = '}'; break;
+    case '[': matchChar = ']'; break;
+    case '\"': matchChar = '\"'; escapeChar = '\\'; break;
+    default: return udStrlen(pLine);
+  }
+  int depth = 1;
+  for (offset = 1; pLine[offset]; ++offset)
+  {
+    if (pLine[offset] == matchChar)
+    {
+      // Skip escaped matches
+      if (pLine[offset-1] == escapeChar)
+        continue;
+      if (--depth == 0)
+        return offset+1;
+    }
+    else if (pLine[offset] == *pLine)
+      ++depth;
+  }
+  return offset;
+}
+
+
+// *********************************************************************
+// Author: Dave Pevreal, April 2016
+size_t udStrStripWhiteSpace(char *pLine)
+{
+  size_t len, i;
+  char inQuote = 0; // Use a quote var so later we can handle single quotes if necessary
+  for (len = i = 0; pLine[i]; ++i)
+  {
+    if (pLine[i] == inQuote)
+    {
+      if (pLine[i-1] != '\\') // Handle escaped quotes in quotes
+        inQuote = 0;
+    }
+    else
+    {
+      if (pLine[i] == '\"')
+        inQuote = pLine[i];
+    }
+    if (inQuote || (pLine[i] != ' ' && pLine[i] != '\t' && pLine[i] != '\r' && pLine[i] != '\n'))
+      pLine[len++] = pLine[i];
+  }
+  pLine[len++] = pLine[i++];
+  return len;
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
@@ -556,7 +613,7 @@ static char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456
 
 // *********************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udBase64Decode(char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten /*= nullptr*/)
+udResult udBase64Decode(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten /*= nullptr*/)
 {
   udResult result;
   uint32_t accum = 0; // Accumulator for incoming data (read 6 bits at a time)
@@ -607,10 +664,11 @@ udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pStri
   uint32_t accum = 0; // Accumulator for data (read 8 bits at a time but only consume 6)
   int accumBits = 0;
   size_t outputIndex = 0;
+  size_t expectedOutputLength = (binaryLength + 2) / 3 * 4 + 1; // +1 for nul terminator
 
   if (!pString && pOutputLengthWritten)
   {
-    outputIndex = (binaryLength + 2) / 3 * 4;;
+    outputIndex = expectedOutputLength;
     UD_ERROR_SET(udR_Success);
   }
 
@@ -645,6 +703,9 @@ udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pStri
     pString[outputIndex+1] = '='; //Pad chars
     outputIndex += 2;
   }
+  pString[outputIndex++] = 0; // Null terminate if room in the string
+
+  UD_ERROR_IF(outputIndex != expectedOutputLength, udR_InternalError); // Okay, the horse may have bolted at this point.
 
   result = udR_Success;
 
@@ -1306,3 +1367,4 @@ int udSprintf(char *pDest, size_t destlength, const char *format, ...)
 
   return length;
 }
+

@@ -166,8 +166,8 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   if (recvCode == SOCKET_ERROR)
   {
     udFileHandler_HTTPCloseSocket(pFile);
-    udFileHandler_HTTPOpenSocket(pFile);
-    recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
+    if (udFileHandler_HTTPOpenSocket(pFile) == udR_Success)
+      recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
     if (recvCode == SOCKET_ERROR)
     {
       udDebugPrintf("recv returned SOCKET_ERROR\n");

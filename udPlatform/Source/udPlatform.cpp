@@ -84,6 +84,15 @@ udResult udJoinThread(udThreadHandle *pThreadHandle, int waitMs)
 
     return udR_Failure_;
   }
+#elif UDPLATFORM_NACL
+  int result = pthread_join((pthread_t)(*pThreadHandle), nullptr);
+  if (result)
+  {
+    if (result == EINVAL)
+	    return udR_InvalidParameter_;
+
+    return udR_Failure_;
+  }
 #else
   if (waitMs == UDTHREAD_WAIT_INFINITE)
   {
