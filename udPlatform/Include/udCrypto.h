@@ -35,7 +35,8 @@ udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx);
 
 enum udCryptoHashes
 {
-  udCH_SHA1
+  udCH_SHA1,
+  udCH_SHA256
 };
 
 struct udCryptoHashContext;

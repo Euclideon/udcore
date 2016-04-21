@@ -14,6 +14,17 @@ namespace udCrypto
   // Include public domain, license free source taken from https://github.com/B-Con/crypto-algorithms
 #include "crypto/aes.c"
 #include "crypto/sha1.c"
+#undef ROTLEFT
+
+#include "crypto/sha256.c"  // Include source directly and undef it's defines after
+#undef ROTLEFT
+#undef ROTRIGHT
+#undef CH
+#undef MAJ
+#undef EP0
+#undef EP1
+#undef SIG0
+#undef SIG1
 };
 
 struct udCryptoCipherContext
@@ -32,6 +43,7 @@ struct udCryptoHashContext
   union
   {
     udCrypto::SHA1_CTX sha1;
+    udCrypto::SHA256_CTX sha256;
   };
 };
 
@@ -43,14 +55,10 @@ udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
   udResult result;
   udCryptoCipherContext *pCtx = nullptr;
 
-  result = udR_InvalidParameter_;
-  if (ppCtx == nullptr || pKey == nullptr)
-    goto epilogue;
+  UD_ERROR_IF(ppCtx == nullptr || pKey == nullptr, udR_InvalidParameter_);
 
-  result = udR_MemoryAllocationFailure;
   pCtx = udAllocType(udCryptoCipherContext, 1, udAF_Zero);
-  if (pCtx == nullptr)
-    goto epilogue;
+  UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
 
   pCtx->cipher = cipher;
   pCtx->padMode = padMode;
@@ -89,9 +97,7 @@ udResult udCrypto_EncryptECB(udCryptoCipherContext *pCtx, const uint8_t *pPlainT
   udResult result;
   size_t paddedCliperTextLen;
 
-  result = udR_InvalidParameter_;
-  if (!pCtx || !pPlainText || !pCipherText)
-    goto epilogue;
+  UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
 
   paddedCliperTextLen = plainTextLen;
   switch (pCtx->padMode)
@@ -105,13 +111,10 @@ udResult udCrypto_EncryptECB(udCryptoCipherContext *pCtx, const uint8_t *pPlainT
       break;
     // TODO: Add a padding mode
     default:
-      result = udR_InvalidConfiguration;
-      goto epilogue;
+      UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
-  result = udR_BufferTooSmall;
-  if (paddedCliperTextLen < cipherTextLen)
-    goto epilogue;
+  UD_ERROR_IF(paddedCliperTextLen < cipherTextLen, udR_BufferTooSmall);
 
   switch (pCtx->cipher)
   {
@@ -137,9 +140,7 @@ udResult udCrypto_DecryptECB(udCryptoCipherContext *pCtx, const uint8_t *pCipher
   udResult result;
   size_t actualPlainTextLen;
 
-  result = udR_InvalidParameter_;
-  if (!pCtx || !pPlainText || !pCipherText)
-    goto epilogue;
+  UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
 
   actualPlainTextLen = cipherTextLen;
   switch (pCtx->padMode)
@@ -153,13 +154,10 @@ udResult udCrypto_DecryptECB(udCryptoCipherContext *pCtx, const uint8_t *pCipher
       break;
     // TODO: Add a padding mode
     default:
-      result = udR_InvalidConfiguration;
-      goto epilogue;
+      UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
-  result = udR_BufferTooSmall;
-  if (actualPlainTextLen < plainTextLen)
-    goto epilogue;
+  UD_ERROR_IF(actualPlainTextLen < plainTextLen, udR_BufferTooSmall);
 
   switch (pCtx->cipher)
   {
@@ -185,39 +183,27 @@ udResult udCrypto_EncryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, co
   udResult result;
   size_t paddedCliperTextLen;
 
-  result = udR_InvalidParameter_;
-  if (!pCtx || !pPlainText || !pCipherText)
-    goto epilogue;
+  UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
 
   paddedCliperTextLen = plainTextLen;
   switch (pCtx->padMode)
   {
     case udCPM_None:
-      if ((plainTextLen % pCtx->blockSize) != 0)
-      {
-        result = udR_BlockLimitExceeded; // TODO: Add better error code
-        goto epilogue;
-      }
+      UD_ERROR_IF((plainTextLen % pCtx->blockSize) != 0, udR_BlockLimitExceeded); // TODO: Add better error code
       break;
     // TODO: Add a padding mode
     default:
-      result = udR_InvalidConfiguration;
-      goto epilogue;
+      UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
-  result = udR_BufferTooSmall;
-  if (paddedCliperTextLen < cipherTextLen)
-    goto epilogue;
+  UD_ERROR_IF(paddedCliperTextLen < cipherTextLen, udR_BufferTooSmall);
 
   switch (pCtx->cipher)
   {
     case udCC_AES128:
     case udCC_AES256:
       if (!udCrypto::aes_encrypt_cbc(pPlainText, plainTextLen, pCipherText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
-      {
-        result = udR_Failure_;
-        goto epilogue;
-      }
+        UD_ERROR_SET(udR_Failure_);
       break;
   }
 
@@ -236,39 +222,27 @@ udResult udCrypto_DecryptCBC(udCryptoCipherContext *pCtx, const uint8_t *pIV, co
   udResult result;
   size_t actualPlainTextLen;
 
-  result = udR_InvalidParameter_;
-  if (!pCtx || !pPlainText || !pCipherText)
-    goto epilogue;
+  UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
 
   actualPlainTextLen = cipherTextLen;
   switch (pCtx->padMode)
   {
     case udCPM_None:
-      if ((cipherTextLen % pCtx->blockSize) != 0)
-      {
-        result = udR_BlockLimitExceeded; // TODO: Add better error code
-        goto epilogue;
-      }
+      UD_ERROR_IF((cipherTextLen % pCtx->blockSize) != 0, udR_BlockLimitExceeded); // TODO: Add better error code
       break;
     // TODO: Add a padding mode
     default:
-      result = udR_InvalidConfiguration;
-      goto epilogue;
+      UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
-  result = udR_BufferTooSmall;
-  if (actualPlainTextLen > plainTextLen)
-    goto epilogue;
+  UD_ERROR_IF(actualPlainTextLen > plainTextLen, udR_BufferTooSmall);
 
   switch (pCtx->cipher)
   {
     case udCC_AES128:
     case udCC_AES256:
       if (!udCrypto::aes_decrypt_cbc(pCipherText, cipherTextLen, pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
-      {
-        result = udR_Failure_;
-        goto epilogue;
-      }
+        UD_ERROR_SET(udR_Failure_);
       break;
   }
 
@@ -360,14 +334,10 @@ udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash)
   udResult result;
   udCryptoHashContext *pCtx = nullptr;
 
-  result = udR_InvalidParameter_;
-  if (ppCtx == nullptr)
-    goto epilogue;
+  UD_ERROR_NULL(ppCtx, udR_InvalidParameter_);
 
-  result = udR_MemoryAllocationFailure;
   pCtx = udAllocType(udCryptoHashContext, 1, udAF_Zero);
-  if (pCtx == nullptr)
-    goto epilogue;
+  UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
 
   pCtx->hash = hash;
   switch (hash)
@@ -375,6 +345,10 @@ udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash)
     case udCH_SHA1:
       sha1_init(&pCtx->sha1);
       pCtx->hashLengthInBytes = SHA1_BLOCK_SIZE;
+      break;
+    case udCH_SHA256:
+      sha256_init(&pCtx->sha256);
+      pCtx->hashLengthInBytes = SHA256_BLOCK_SIZE;
       break;
     default:
       result = udR_InvalidParameter_;
@@ -404,6 +378,9 @@ udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t l
     case udCH_SHA1:
       sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
       break;
+    case udCH_SHA256:
+      sha256_update(&pCtx->sha256, (const uint8_t*)pBytes, length);
+      break;
     default:
       return udR_InvalidParameter_;
   }
@@ -423,6 +400,9 @@ udResult udCrypto_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t len
   {
     case udCH_SHA1:
       sha1_final(&pCtx->sha1, pHash);
+      break;
+    case udCH_SHA256:
+      sha256_final(&pCtx->sha256, pHash);
       break;
     default:
       return udR_InvalidParameter_;
@@ -452,72 +432,71 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
   udResult result = udR_Failure_;
   udCryptoHashContext *pCtx = nullptr;
 
+  char text1[] = { "abc" };
+  char text2[] = { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" };
+  char text3[] = { "aaaaaaaaaa" };
+
   switch (hash)
   {
     case udCH_SHA1:
       {
-	      char text1[] = {"abc"};
-	      char text2[] = {"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"};
-	      char text3[] = {"aaaaaaaaaa"};
 	      uint8_t hash1[SHA1_BLOCK_SIZE] = {0xa9,0x99,0x3e,0x36,0x47,0x06,0x81,0x6a,0xba,0x3e,0x25,0x71,0x78,0x50,0xc2,0x6c,0x9c,0xd0,0xd8,0x9d};
 	      uint8_t hash2[SHA1_BLOCK_SIZE] = {0x84,0x98,0x3e,0x44,0x1c,0x3b,0xd2,0x6e,0xba,0xae,0x4a,0xa1,0xf9,0x51,0x29,0xe5,0xe5,0x46,0x70,0xf1};
 	      uint8_t hash3[SHA1_BLOCK_SIZE] = {0x34,0xaa,0x97,0x3c,0xd4,0xc4,0xda,0xa4,0xf6,0x1e,0xeb,0x2b,0xdb,0xad,0x27,0x31,0x65,0x34,0x01,0x6f};
 	      uint8_t buf[SHA1_BLOCK_SIZE];
 
-        result = udCrypto_CreateHash(&pCtx, hash);
-        if (result != udR_Success)
-          goto epilogue;
-	      result = udCrypto_Digest(pCtx, text1, strlen(text1));
-        if (result != udR_Success)
-          goto epilogue;
-	      result = udCrypto_Finalise(pCtx, buf, sizeof(buf));
-        if (result != udR_Success)
-          goto epilogue;
-        result = udCrypto_DestroyHash(&pCtx);
-        if (result != udR_Success)
-          goto epilogue;
-        result = udR_Failure_;
-	      if (memcmp(hash1, buf, SHA1_BLOCK_SIZE) != 0)
-          goto epilogue;
+        UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
+        UD_ERROR_CHECK(udCrypto_Digest(pCtx, text1, strlen(text1)));
+        UD_ERROR_CHECK(udCrypto_Finalise(pCtx, buf, sizeof(buf)));
+        UD_ERROR_IF(memcmp(hash1, buf, pCtx->hashLengthInBytes) != 0, udR_Failure_);
+        UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
 
-        result = udCrypto_CreateHash(&pCtx, hash);
-        if (result != udR_Success)
-          goto epilogue;
-	      result = udCrypto_Digest(pCtx, text2, strlen(text2));
-        if (result != udR_Success)
-          goto epilogue;
-	      result = udCrypto_Finalise(pCtx, buf, sizeof(buf));
-        if (result != udR_Success)
-          goto epilogue;
-        result = udCrypto_DestroyHash(&pCtx);
-        if (result != udR_Success)
-          goto epilogue;
-        result = udR_Failure_;
-	      if (memcmp(hash2, buf, SHA1_BLOCK_SIZE) != 0)
-          goto epilogue;
+        UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
+        UD_ERROR_CHECK(udCrypto_Digest(pCtx, text2, strlen(text2)));
+        UD_ERROR_CHECK(udCrypto_Finalise(pCtx, buf, sizeof(buf)));
+        UD_ERROR_IF(memcmp(hash2, buf, pCtx->hashLengthInBytes) != 0, udR_Failure_);
+        UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
 
-        result = udCrypto_CreateHash(&pCtx, hash);
-        if (result != udR_Success)
-          goto epilogue;
+        UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
 	      for (int i = 0; i < 100000; ++i)
-        {
-	        result = udCrypto_Digest(pCtx, text3, strlen(text3));
-          if (result != udR_Success)
-            goto epilogue;
-        }
-	      result = udCrypto_Finalise(pCtx, buf, sizeof(buf));
-        if (result != udR_Success)
-          goto epilogue;
-        result = udCrypto_DestroyHash(&pCtx);
-        if (result != udR_Success)
-          goto epilogue;
-        result = udR_Failure_;
-	      if (memcmp(hash3, buf, SHA1_BLOCK_SIZE) != 0)
-          goto epilogue;
-
+          UD_ERROR_CHECK(udCrypto_Digest(pCtx, text3, strlen(text3)));
+        UD_ERROR_CHECK(udCrypto_Finalise(pCtx, buf, sizeof(buf)));
+        UD_ERROR_IF(memcmp(hash3, buf, pCtx->hashLengthInBytes) != 0, udR_Failure_);
+        UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
         result = udR_Success;
-        break;
       }
+      break;
+    case udCH_SHA256:
+      {
+        uint8_t hash1[SHA256_BLOCK_SIZE] = { 0xba,0x78,0x16,0xbf,0x8f,0x01,0xcf,0xea,0x41,0x41,0x40,0xde,0x5d,0xae,0x22,0x23,
+                                             0xb0,0x03,0x61,0xa3,0x96,0x17,0x7a,0x9c,0xb4,0x10,0xff,0x61,0xf2,0x00,0x15,0xad };
+        uint8_t hash2[SHA256_BLOCK_SIZE] = { 0x24,0x8d,0x6a,0x61,0xd2,0x06,0x38,0xb8,0xe5,0xc0,0x26,0x93,0x0c,0x3e,0x60,0x39,
+                                             0xa3,0x3c,0xe4,0x59,0x64,0xff,0x21,0x67,0xf6,0xec,0xed,0xd4,0x19,0xdb,0x06,0xc1 };
+        uint8_t hash3[SHA256_BLOCK_SIZE] = { 0xcd,0xc7,0x6e,0x5c,0x99,0x14,0xfb,0x92,0x81,0xa1,0xc7,0xe2,0x84,0xd7,0x3e,0x67,
+                                             0xf1,0x80,0x9a,0x48,0xa4,0x97,0x20,0x0e,0x04,0x6d,0x39,0xcc,0xc7,0x11,0x2c,0xd0 };
+        uint8_t buf[SHA256_BLOCK_SIZE];
+
+        UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
+        UD_ERROR_CHECK(udCrypto_Digest(pCtx, text1, strlen(text1)));
+        UD_ERROR_CHECK(udCrypto_Finalise(pCtx, buf, sizeof(buf)));
+        UD_ERROR_IF(memcmp(hash1, buf, pCtx->hashLengthInBytes) != 0, udR_Failure_);
+        UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
+
+        UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
+        UD_ERROR_CHECK(udCrypto_Digest(pCtx, text2, strlen(text2)));
+        UD_ERROR_CHECK(udCrypto_Finalise(pCtx, buf, sizeof(buf)));
+        UD_ERROR_IF(memcmp(hash2, buf, pCtx->hashLengthInBytes) != 0, udR_Failure_);
+        UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
+
+        UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
+        for (int i = 0; i < 100000; ++i)
+          UD_ERROR_CHECK(udCrypto_Digest(pCtx, text3, strlen(text3)));
+        UD_ERROR_CHECK(udCrypto_Finalise(pCtx, buf, sizeof(buf)));
+        UD_ERROR_IF(memcmp(hash3, buf, pCtx->hashLengthInBytes) != 0, udR_Failure_);
+        UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
+        result = udR_Success;
+    }
+      break;
     default:
       result = udR_Failure_;
   }
