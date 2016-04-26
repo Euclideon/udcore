@@ -350,7 +350,7 @@ struct udQuaternion
   udQuaternion<T> operator *(T f) const                      { udQuaternion<T> r = { x*f, y*f, z*f, w*f }; return r; }
   T            operator [](size_t index) const               { return ((T*)this)[index]; }
 
-  udQuaternion<T>& operator *=(const udQuaternion<T> &q)     { *this = mul(*this, q); return *this; }
+  udQuaternion<T>& operator *=(const udQuaternion<T> &q)     { *this = udMul(*this, q); return *this; }
   udQuaternion<T>& operator *=(T f)                          { x*=f; y*=f; z*=f; w*=f; return *this; }
   udQuaternion<T>& operator +=(const udQuaternion<T> &q)     { x += q.x; y += q.y; z += q.z; w += q.w; return *this; }
   udQuaternion<T>& operator -=(const udQuaternion<T> &q)     { x -= q.x; y -= q.y; z -= q.z; w -= q.w; return *this; }

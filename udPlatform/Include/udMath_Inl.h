@@ -376,8 +376,6 @@ udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, T
 
   T halfTheta = udACos(cosHalfTheta);
 
-  UDASSERT(udAbs(2.0 * halfTheta - T(UD_PI)) >= thetaEpsilon, "The angle between q1 and q2 is too close to PI, theta %.6f", T(2.0) * halfTheta);
-
   T sinHalfTheta = udSqrt(T(1) - cosHalfTheta * cosHalfTheta);
   T ratioA = udSin(halfTheta * (T(1) - t)) / sinHalfTheta;
   T ratioB = udSin(halfTheta * t) / sinHalfTheta;
