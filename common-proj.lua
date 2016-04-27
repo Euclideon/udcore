@@ -29,61 +29,61 @@ filter { "kind:ConsoleApp or WindowedApp" }
 	targetdir "Output/bin/%{cfg.buildcfg}_%{cfg.platform}"
 
 -- configurations
-configuration { "Debug*" }
+filter { "configurations:Debug*" }
 	defines { "_DEBUG" }
 	optimize "Off"
 	flags { "Symbols" }
 
-configuration { "DebugOpt*" }
+filter { "configurations:DebugOpt*" }
 	defines { "_DEBUG" }
 	optimize "Debug"
 	flags { "Symbols" }
 
-configuration { "Release*" }
+filter { "configurations:Release*" }
 	defines { "NDEBUG" }
 	optimize "Full"
 	flags { "NoFramePointer", "NoBufferSecurityCheck" }
-	
-configuration { "Release*", "not Emscripten" }
+
+filter { "configurations:Release*", "system:not Emscripten" }
 	flags { "Symbols" }
 
 -- platform config
-configuration { "windows" }
+filter { "system:windows" }
 	defines { "WIN32", "_WINDOWS" }
 	links { "kernel32.lib", "user32.lib", "gdi32.lib", "winspool.lib", "comdlg32.lib", "advapi32.lib", "shell32.lib", "ole32.lib", "oleaut32.lib", "uuid.lib", "odbc32.lib", "odbccp32.lib" }
 
-configuration { "windows", "x86" }
+filter { "system:windows", "platforms:x86" }
 	vectorextensions "SSE2"
 
-configuration { "linux" }
+filter { "system:linux" }
 	links { "pthread" }
 	links { "rt" }
 
-configuration { "NaCl64" }
+filter { "configurations:NaCl64" }
 	defines { "__native_client__" }
 	targetsuffix "64"
 
-configuration { "NaCl32" }
+filter { "configurations:NaCl32" }
 	defines { "__native_client__" }
 	targetsuffix "32"
 
-configuration { "NaClARM" }
+filter { "configurations:NaClARM" }
 	defines { "__native_client__" }
 	targetsuffix "ARM"
 
-configuration { "PNaCl" }
+filter { "configurations:PNaCl" }
 	defines { "__native_client__" }
 
-configuration { "windows", "Release", "vs2012" }
+filter { "system:windows", "configurations:Release", "action:vs2012" }
 	buildoptions { "/d2Zi+" }
 
-configuration { "windows", "Release", "vs2013" }
+filter { "system:windows", "configurations:Release", "action:vs2013" }
 	buildoptions { "/Zo" }
 
-configuration { "windows", "Release" }
+filter { "system:windows", "configurations:Release" }
 	flags { "NoIncrementalLink" }
 
-configuration { "windows", "x64", "Debug" }
+filter { "system:windows", "platforms:x64", "configurations:Debug" }
 	flags { "NoIncrementalLink" }
 
-configuration {}
+filter {}
