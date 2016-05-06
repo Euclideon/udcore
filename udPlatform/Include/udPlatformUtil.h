@@ -337,6 +337,9 @@ udResult udReadDir(udFindDir *pFindDir);
 // Free resources associated with the directory
 udResult udCloseDir(udFindDir **ppFindDir);
 
+// Create a folder
+udResult udCreateDir(const char *pFolder);
+
 // Write a formatted string to the buffer
 int udSprintf(char *pDest, size_t destlength, const char *format, ...);
 

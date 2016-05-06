@@ -13,6 +13,8 @@
 #include <io.h>
 #include <mmsystem.h>
 #else
+#include <sys/types.h>
+#include <pwd.h>
 #include "dirent.h"
 #include <time.h>
 #include <sys/time.h>
@@ -1253,6 +1255,26 @@ udResult udCloseDir(udFindDir **ppFindDir)
 
   udFree(*ppFindDir);
   return udR_Success;
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, May 2016
+udResult udCreateDir(const char *pFolder)
+{
+  udResult ret = udR_Success;
+
+  // TODO: Handle creating intermediate directories that don't exist already?
+  // TODO: Have udFile_Open call this for the user when udFOF_Create is used?
+#if UDPLATFORM_WINDOWS
+  // Returns 0 on fail
+  if (CreateDirectoryW(udOSString(pFolder), NULL) == 0)
+#else
+  // Returns -1 on fail
+  if (mkdir(pFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+#endif
+    ret = udR_Failure_;
+
+  return ret;
 }
 
 // ****************************************************************************
