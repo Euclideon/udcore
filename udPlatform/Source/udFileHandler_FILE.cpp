@@ -50,7 +50,6 @@ volatile int32_t g_udFileHandler_FILEHandleCount;
 struct udFile_FILE : public udFile
 {
   FILE *pCrtFile;
-  int64_t filePos;
   udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
 };
 
@@ -93,21 +92,18 @@ static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of OpenHandler to access the crt FILE i/o functions
-udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
+udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
 {
   UDTRACE();
   udFile_FILE *pFile = nullptr;
   udResult result;
 
-  if (pFileLengthInBytes && (flags & udFOF_Read) && !(flags & udFOF_FastOpen))
-  {
-    result = udFileExists(pFilename, pFileLengthInBytes);
-    if (result != udR_Success)
-      *pFileLengthInBytes = 0;
-  }
-
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
   UD_ERROR_NULL(pFile, udR_MemoryAllocationFailure);
+
+  result = udFileExists(pFilename, &pFile->fileLength);
+  if (result != udR_Success)
+    pFile->fileLength = 0;
 
   pFile->fpRead = udFileHandler_FILESeekRead;
   pFile->fpWrite = udFileHandler_FILESeekWrite;
@@ -147,7 +143,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekReadHandler to access the crt FILE i/o functions
-static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest * /*pPipelinedRequest*/)
+static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   UDTRACE();
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
@@ -164,25 +160,13 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 #endif
     pFILE->pCrtFile = OpenWithFlags(pFile->pFilenameCopy, pFile->flagsCopy);
     UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
-    if (seekWhence == udFSW_SeekCur)
-      fseeko(pFILE->pCrtFile, pFILE->filePos, SEEK_SET);
   }
 
-  if (seekOffset != 0 || seekWhence != udFSW_SeekCur)
-  {
-    fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
-    pFILE->filePos = ftello(pFILE->pCrtFile);
-  }
-
+  fseeko(pFILE->pCrtFile, seekOffset, SEEK_SET);
   actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
   if (pActualRead)
     *pActualRead = actualRead;
   UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
-
-  pFILE->filePos = ftello(pFILE->pCrtFile);
-  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
-  if (pFilePos)
-    *pFilePos = pFILE->filePos;
 
   result = udR_Success;
 
@@ -197,7 +181,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekWriteHandler to access the crt FILE i/o functions
-static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos)
+static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualWritten)
 {
   UDTRACE();
   udResult result;
@@ -209,17 +193,11 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
 
   UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
 
-  if (seekOffset != 0 || seekWhence != udFSW_SeekCur)
-    fseeko(pFILE->pCrtFile, seekOffset, seekWhence);
-
+  fseeko(pFILE->pCrtFile, seekOffset, SEEK_SET);
   actualWritten = fwrite(pBuffer, 1, bufferLength, pFILE->pCrtFile);
   if (pActualWritten)
     *pActualWritten = actualWritten;
   UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
-
-  pFILE->filePos = ftello(pFILE->pCrtFile);
-  if (pFilePos)
-    UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
 
   result = udR_Success;
 

@@ -6,6 +6,8 @@
 
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
+#include "udCrypto.h"
+#include "udMath.h"
 
 #define MAX_HANDLERS 16
 #define CONTENT_LOAD_CHUNK_SIZE 65536 // When loading an entire file of unknown size, read in chunks of this many bytes
@@ -43,7 +45,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   if (length)
   {
     pMemory = (char*)udAlloc((size_t)length + 1); // Note always allocating 1 extra byte
-    result = udFile_SeekRead(pFile, pMemory, (size_t)length, 0, udFSW_SeekCur, &actualRead);
+    result = udFile_Read(pFile, pMemory, (size_t)length, 0, udFSW_SeekCur, &actualRead);
     if (result != udR_Success)
       goto epilogue;
     if (actualRead != (size_t)length)
@@ -68,7 +70,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
       pMemory = (char*)pNewMem;
 
       attemptRead = (size_t)length + 1 - alreadyRead; // Note attempt to read 1 extra byte so EOF is detected
-      result = udFile_SeekRead(pFile, pMemory + alreadyRead, attemptRead, 0, udFSW_SeekCur, &actualRead);
+      result = udFile_Read(pFile, pMemory + alreadyRead, attemptRead, 0, udFSW_SeekCur, &actualRead);
       if (result != udR_Success)
         goto epilogue;
     }
@@ -121,17 +123,53 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
     udFileHandler *pHandler = s_handlers + i;
     if (udStrBeginsWith(pFilename, pHandler->prefix))
     {
-      result = pHandler->fpOpen(ppFile, pFilename, flags, pFileLengthInBytes);
+      result = pHandler->fpOpen(ppFile, pFilename, flags);
       if (result == udR_Success)
       {
         (*ppFile)->pFilenameCopy = udStrdup(pFilename);
         (*ppFile)->flagsCopy = flags;
+        if (pFileLengthInBytes)
+          *pFileLengthInBytes = (*ppFile)->fileLength;
         goto epilogue;
       }
     }
   }
 
 epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, July 2016
+void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength)
+{
+  if (pFile)
+  {
+    pFile->seekBase = seekBase;
+    if (newLength)
+      pFile->fileLength = newLength;
+    pFile->filePos = seekBase;  // Move the current position to the base in case a udFSW_SeekCur read is issued
+  }
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, July 2016
+udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t *pNonce, int nonceLen)
+{
+  udResult result;
+
+  UD_ERROR_IF(!pFile || !pKey, udR_InvalidParameter_);
+  UD_ERROR_IF(pFile->flagsCopy & udFOF_Write, udR_InvalidConfiguration); // Temp until a need for writing arises
+
+  udCrypto_DestroyCipher(&pFile->pCipherCtx); // Just in case a key is already set
+  result = udCrypto_CreateCipher(&pFile->pCipherCtx, keylen >= 32 ? udCC_AES256 : udCC_AES128, udCPM_None, pKey, udCCM_CTR);
+  UD_ERROR_HANDLE();
+  result = udCrypto_SetNonce(pFile->pCipherCtx, pNonce, nonceLen);
+  UD_ERROR_HANDLE();
+
+epilogue:
+  if (result)
+    udCrypto_DestroyCipher(&pFile->pCipherCtx); // Destroy if there were any errors
   return result;
 }
 
@@ -175,26 +213,62 @@ static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest *pPipelinedRequest)
+udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest *pPipelinedRequest)
 {
   UDTRACE();
   udResult result;
   size_t actualRead;
+  int64_t offset;
+  void *pCipherText = nullptr;
 
-  result = udR_File_ReadFailure;
-  if (pFile == nullptr || pFile->fpRead == nullptr)
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile->fpRead, udR_InvalidConfiguration);
+
+  switch (seekWhence)
   {
-    result = udR_InvalidParameter_;
-    goto epilogue;
+    case udFSW_SeekSet: offset = seekOffset + pFile->seekBase; break;
+    case udFSW_SeekCur: offset = pFile->filePos + seekOffset; break;
+    case udFSW_SeekEnd: offset = pFile->fileLength + seekOffset + pFile->seekBase; break;
+    default:
+      UD_ERROR_SET(udR_InvalidParameter_);
   }
 
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
-  result = pFile->fpRead(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualRead, pFilePos, pFile->fpBlockPipedRequest ? pPipelinedRequest : nullptr);
+  if (pFile->pCipherCtx)
+  {
+    // Handle reading encrypted data
+    int inset = (int)offset & 15;
+    int padding = (16 - ((offset + bufferLength) & 15)) & 15;
+    size_t alignedActual;
+    if (inset || padding)
+      pCipherText = udAlloc(inset + bufferLength + padding);
+    else
+      pCipherText = pBuffer;
+    UD_ERROR_NULL(pCipherText, udR_MemoryAllocationFailure);
+    uint8_t iv[16];
+    result = udCrypto_CreateIVForCTRMode(pFile->pCipherCtx, iv, sizeof(iv), (offset - pFile->seekBase) / 16);
+    UD_ERROR_HANDLE();
+    result = pFile->fpRead(pFile, pCipherText, inset + bufferLength + padding, offset - inset, &alignedActual, nullptr); // Don't handle pipelined requests with encryption
+    UD_ERROR_HANDLE();
+    result = udCrypto_Decrypt(pFile->pCipherCtx, iv, sizeof(iv), pCipherText, alignedActual, pCipherText, alignedActual);
+    UD_ERROR_HANDLE();
+    actualRead = udMin(bufferLength, udMax((size_t)0, alignedActual - (size_t)inset));
+    if (pCipherText != pBuffer)
+      memcpy(pBuffer, udAddBytes(pCipherText, inset), actualRead);
+  }
+  else
+  {
+    result = pFile->fpRead(pFile, pBuffer, bufferLength, offset, &actualRead, pFile->fpBlockPipedRequest ? pPipelinedRequest : nullptr);
+  }
+  pFile->filePos = offset + actualRead;
 
   // Save off the actualRead in the request for the case where the handler doesn't support piped requests
-  if (pPipelinedRequest && !pFile->fpBlockPipedRequest)
+  if (pPipelinedRequest && (!pFile->fpBlockPipedRequest))
+  {
     pPipelinedRequest->reserved[0] = (uint64_t)actualRead;
+    pPipelinedRequest = nullptr;
+  }
 
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   if (!pPipelinedRequest || !pFile->fpBlockPipedRequest)
@@ -202,37 +276,53 @@ udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int6
 
   if (pActualRead)
     *pActualRead = actualRead;
+  if (pFilePos)
+    *pFilePos = pFile->filePos - pFile->seekBase;
 
   // If the caller isn't checking the actual read (ie it's null), and it's not the requested amount, return an error when full amount isn't actually read
   if (result == udR_Success && pActualRead == nullptr && actualRead != bufferLength)
     result = udR_File_ReadFailure;
 
 epilogue:
+  if (pCipherText != nullptr && pCipherText != pBuffer)
+    udFree(pCipherText);
   return result;
 }
 
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos)
+udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos)
 {
   UDTRACE();
   udResult result;
   size_t actualWritten = 0; // Assign to zero to avoid incorrect compiler warning;
+  int64_t offset;
 
-  result = udR_File_WriteFailure;
-  if (pFile == nullptr || pFile->fpRead == nullptr)
-    goto epilogue;
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile->fpRead, udR_InvalidConfiguration);
+
+  switch (seekWhence)
+  {
+  case udFSW_SeekSet: offset = seekOffset + pFile->seekBase; break;
+  case udFSW_SeekCur: offset = pFile->filePos + seekOffset; break;
+  case udFSW_SeekEnd: offset = pFile->fileLength + seekOffset; break;
+  default:
+    UD_ERROR_SET(udR_InvalidParameter_);
+  }
 
   ++pFile->requestsInFlight;
   pFile->msAccumulator -= udGetTimeMs();
-  result = pFile->fpWrite(pFile, pBuffer, bufferLength, seekOffset, seekWhence, &actualWritten, pFilePos);
+  result = pFile->fpWrite(pFile, pBuffer, bufferLength, offset, &actualWritten);
+  pFile->filePos = offset + actualWritten;
 
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   udUpdateFilePerformance(pFile, actualWritten);
 
   if (pActualWritten)
     *pActualWritten = actualWritten;
+  if (pFilePos)
+    *pFilePos = pFile->filePos - pFile->seekBase;
 
   // If the caller isn't checking the actual written (ie it's null), and it's not the requested amount, return an error when full amount isn't actually written
   if (result == udR_Success && pActualWritten == nullptr && actualWritten != bufferLength)
@@ -291,6 +381,8 @@ udResult udFile_Close(udFile **ppFile)
   if (*ppFile != nullptr && (*ppFile)->fpClose != nullptr)
   {
     udFree((*ppFile)->pFilenameCopy);
+    if ((*ppFile)->pCipherCtx)
+      udCrypto_DestroyCipher(&(*ppFile)->pCipherCtx);
     return (*ppFile)->fpClose(ppFile);
   }
   else

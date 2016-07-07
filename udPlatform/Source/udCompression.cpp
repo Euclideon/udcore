@@ -315,34 +315,21 @@ size_t udMiniZDecompressor_GetStructureSize()
 static mz_zip_archive *s_pZip;
 struct udFile_MiniZFile : public udFile
 {
-  size_t length;
-  size_t fPos;
+  int64_t length;
   uint8_t data[1];
 };
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2014
 // Implementation of SeekReadHandler to access a file in the registered zip
-static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest * /*pPipelinedRequest*/)
+static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   udFile_MiniZFile *pFile = static_cast<udFile_MiniZFile *>(a_pFile);
-  size_t newPos;
-  switch (seekWhence)
-  {
-    case udFSW_SeekSet: newPos = (size_t)seekOffset; break;
-    case udFSW_SeekCur: newPos = pFile->fPos + (size_t)seekOffset; break;
-    case udFSW_SeekEnd: newPos = pFile->length + (size_t)seekOffset; break;
-    default:
-      return udR_InvalidParameter_;
-  }
-  if (newPos >= pFile->length)
+  if (seekOffset >= pFile->length)
     return udR_File_ReadFailure;
-  size_t actualRead = (newPos + bufferLength) > pFile->length ? pFile->length - newPos : bufferLength;
-  memcpy(pBuffer, pFile->data + newPos, actualRead);
+  size_t actualRead = (seekOffset + (int64_t)bufferLength) > pFile->length ? (size_t)(pFile->length - seekOffset) : bufferLength;
+  memcpy(pBuffer, pFile->data + seekOffset, actualRead);
 
-  pFile->fPos = newPos + actualRead;
-  if (pFilePos)
-    *pFilePos = pFile->fPos;
   if (pActualRead)
     *pActualRead = actualRead;
 
@@ -364,7 +351,7 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2014
 // Implementation of OpenHandler to access a file in the registered zip
-static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
+static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
 {
   if (!s_pZip || (flags & udFOF_Write))
     return udR_File_OpenFailure;
@@ -385,12 +372,8 @@ static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, 
   }
 
   pFile->length = (size_t)stat.m_uncomp_size;
-  pFile->fPos = 0;
   pFile->fpRead = udFileHandler_MiniZSeekRead;
   pFile->fpClose = udFileHandler_MiniZClose;
-
-  if (pFileLengthInBytes)
-    *pFileLengthInBytes = stat.m_uncomp_size;
 
   *ppFile = pFile;
   return udR_Success;

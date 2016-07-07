@@ -15,13 +15,13 @@
 
 // The OpenHandler is responsible for allocating a derivative of udFile (generally a structure inherited from it) and writing
 // any state required for SeekRead/SeekWrite/Close to function. The fpWrite can be null if writing is not supported.
-typedef udResult udFile_OpenHandlerFunc(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes);
+typedef udResult udFile_OpenHandlerFunc(udFile **ppFile, const char *pFilename, udFileOpenFlags flags);
 
-// Perform a seek followed by read, though the default parameters are a SeekCur of 0 (no seek operation) so in that case it may be skipped
-typedef udResult udFile_SeekReadHandlerFunc(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest *pPipelinedRequest);
+// Perform a seek followed by read
+typedef udResult udFile_SeekReadHandlerFunc(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest);
 
-// Perform a seek followed by write, though the default parameters are a SeekCur of 0 (no seek operation) so in that case it may be skipped
-typedef udResult udFile_SeekWriteHandlerFunc(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos);
+// Perform a seek followed by write
+typedef udResult udFile_SeekWriteHandlerFunc(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualWritten);
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 typedef udResult udFile_BlockForPipelinedRequestHandlerFunc(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead);
@@ -42,6 +42,10 @@ struct udFile
   udFile_BlockForPipelinedRequestHandlerFunc *fpBlockPipedRequest;
   udFile_ReleaseHandlerFunc *fpRelease;
   udFile_CloseHandlerFunc *fpClose;
+  struct udCryptoCipherContext *pCipherCtx;
+  int64_t seekBase;
+  int64_t filePos;
+  int64_t fileLength;
   uint32_t msAccumulator;
   uint32_t requestsInFlight;
   uint64_t totalBytes;

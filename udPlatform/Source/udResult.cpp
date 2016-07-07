@@ -36,6 +36,9 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_CompressionError),
   RESULTINFO(udR_Unsupported),
   RESULTINFO(udR_Timeout),
+  RESULTINFO(udR_AlignmentRequirement),
+  RESULTINFO(udR_DecryptionKeyRequired),
+  RESULTINFO(udR_DecryptionKeyMismatch),
 
   RESULTINFO(udR_Writer_InitFailure),
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),

@@ -47,8 +47,6 @@ struct udFile_HTTP : public udFile
 {
   udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
   udURL url;
-  int64_t length;
-  int64_t currentOffset;
   bool wsInitialised;
   char recvBuffer[1024];
   struct sockaddr_in server;
@@ -213,7 +211,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   if (!pBuffer)
   {
     // Parsing response to the HEAD to get size of overall file
-    pFile->length = contentLength;
+    pFile->fileLength = contentLength;
   }
   else
   {
@@ -254,7 +252,7 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Implementation of OpenHandler via HTTP
 // Author: Dave Pevreal, March 2014
-udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
+udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
 {
   udResult result;
   udFile_HTTP *pFile = nullptr;
@@ -333,9 +331,6 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile->fpBlockPipedRequest = udFileHandler_HTTPBlockForPipelinedRequest;
   pFile->fpClose = udFileHandler_HTTPClose;
 
-  if (pFileLengthInBytes)
-    *pFileLengthInBytes = pFile->length;
-
   *ppFile = pFile;
   pFile = nullptr;
   result = udR_Success;
@@ -350,23 +345,16 @@ epilogue:
 // ----------------------------------------------------------------------------
 // Implementation of SeekReadHandler via HTTP
 // Author: Dave Pevreal, March 2014
-static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualRead, int64_t *pFilePos, udFilePipelinedRequest *pPipelinedRequest)
+static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest)
 {
   udResult result;
   udFile_HTTP *pFile = static_cast<udFile_HTTP *>(pBaseFile);
-  int64_t offset = pFile->currentOffset;
 
   if (pFile->pMutex)
     udLockMutex(pFile->pMutex);
 
-  switch (seekWhence)
-  {
-    case udFSW_SeekSet: offset = seekOffset; break;
-    case udFSW_SeekCur: offset = pFile->currentOffset + seekOffset; break;
-    case udFSW_SeekEnd: offset = pFile->length + seekOffset; break;
-  }
   //udDebugPrintf("\nSeekRead: %lld bytes at offset %lld\n", bufferLength, offset);
-  size_t actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPGetString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain(), offset, offset + bufferLength-1);
+  size_t actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPGetString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain(), seekOffset, seekOffset + bufferLength-1);
 
   result = udFileHandler_HTTPSendRequest(pFile, (int)actualHeaderLen);
   if (result != udR_Success)
@@ -385,10 +373,6 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
   {
     result = udFileHandler_HTTPRecvGET(pFile, pBuffer, bufferLength, pActualRead);
   }
-  pFile->currentOffset = offset + bufferLength;
-
-  if (pFilePos)
-    *pFilePos = pFile->currentOffset;
 
 epilogue:
 

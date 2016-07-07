@@ -51,6 +51,12 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
 // Open a file. The filename contains a prefix such as http: to access registered file handlers (see udFileHandler.h)
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes = nullptr);
 
+// Set a base value added to all udFSW_SeekSet positions (useful when a file is wrapped inside another file), optionally set new length
+void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength = 0);
+
+// Set the encryption key/nonce (currently only supported on files opened for read due to alignment complexities)
+udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t *pNonce, int nonceLen);
+
 // Get the filename associated with the file
 const char *udFile_GetFilename(udFile *pFile);
 
@@ -58,10 +64,18 @@ const char *udFile_GetFilename(udFile *pFile);
 udResult udFile_GetPerformance(udFile *pFile, udFilePerformance *pPerformance);
 
 // Seek and read some data
-udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);
+udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);
+inline udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr)
+{
+  return udFile_Read(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualRead, pFilePos, pPipelinedRequest);
+}
 
 // Seek and write some data
-udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr, int64_t *pFilePos = nullptr);
+udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr, int64_t *pFilePos = nullptr);
+inline udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr, int64_t *pFilePos = nullptr)
+{
+  return udFile_Write(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten, pFilePos);
+}
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead = nullptr);

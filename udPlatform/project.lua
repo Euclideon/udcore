@@ -1,4 +1,4 @@
-project "udPlatform"
+project ("udPlatform" .. (projectSuffix or ""))
 	kind "StaticLib"
 	language "C++"
 	flags { "StaticRuntime", "OmitDefaultLibrary" }

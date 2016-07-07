@@ -27,6 +27,9 @@ enum udResult
   udR_CompressionError,
   udR_Unsupported,
   udR_Timeout,
+  udR_AlignmentRequirement,
+  udR_DecryptionKeyRequired,
+  udR_DecryptionKeyMismatch,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,

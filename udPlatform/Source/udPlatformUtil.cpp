@@ -561,6 +561,9 @@ udResult udBase64Decode(char *pString, size_t length, uint8_t *pOutput, size_t o
   int accumBits = 0;
   size_t outputIndex = 0;
 
+  if (!length && pString)
+    length = udStrlen(pString);
+
   if (!pOutput && pOutputLengthWritten)
   {
     outputIndex = length / 4 * 3;
@@ -974,7 +977,7 @@ udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColo
   if (result != udR_Success)
     goto error;
 
-  result = udFile_SeekWrite(pFile, &header, sizeof(header));
+  result = udFile_Write(pFile, &header, sizeof(header));
   if (result != udR_Success)
     goto error;
 
@@ -983,7 +986,7 @@ udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColo
     for (int x = 0; x < width; ++x)
       memcpy(&pLine[x*3], &((uint8_t*)pColorData)[y * pitchInBytes + x * 4], 3);
 
-    result = udFile_SeekWrite(pFile, pLine, paddedLineSize);
+    result = udFile_Write(pFile, pLine, paddedLineSize);
     if (result != udR_Success)
       goto error;
   }
@@ -1010,7 +1013,7 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
   result = udFile_Open(&pFile, pFilename, udFOF_Read);
   if (result != udR_Success)
     goto epilogue;
-  result = udFile_SeekRead(pFile, &header, sizeof(header));
+  result = udFile_Read(pFile, &header, sizeof(header));
   if (result != udR_Success)
     goto epilogue;
 
@@ -1027,7 +1030,7 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
 
   for (int y = *pHeight - 1; y >= 0 ; --y)
   {
-    result = udFile_SeekRead(pFile, pLine, paddedLineSize);
+    result = udFile_Read(pFile, pLine, paddedLineSize);
     if (result != udR_Success)
       goto epilogue;
 
