@@ -222,7 +222,7 @@ char *udStrdup(const char *s, size_t additionalChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex)
+const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
   if (!s) s = s_udStrEmptyString;
   if (!pCharList) pCharList = s_udStrEmptyString;
@@ -239,6 +239,8 @@ const char *udStrchr(const char *s, const char *pCharList, size_t *pIndex)
         // Found, set index if required and return a pointer to the found character
         if (pIndex)
           *pIndex = index;
+        if (pCharListIndex)
+          *pCharListIndex = i;
         return s + index;
       }
     }
@@ -861,15 +863,17 @@ udResult udURL::SetURL(const char *pURLText)
   m_pScheme = s_udStrEmptyString;
   m_pDomain = s_udStrEmptyString;
   m_pPath = s_udStrEmptyString;
+  static const char specialChars[]   = { ' ',  '#',   '%',   '+',   '?',   }; // Made for extending later, not wanting to encode any more than we need to
+  static const char *pSpecialSubs[] = { "%20", "%23", "%25", "%2B", "%3F", };
 
   if (pURLText)
   {
     // Take a copy of the entire string
-    char *p = m_pURLText = udStrdup(pURLText, 1); // Add an extra char on the allocation to nul terminate the domain
+    char *p = m_pURLText = udStrdup(pURLText, udStrlen(pURLText) * 3 + 2); // Add an extra chars for nul terminate domain, and URL encoding switches for every character (worst case)
     if (!pURLText)
       return udR_MemoryAllocationFailure;
 
-    size_t i;
+    size_t i, charListIndex;
 
     // Isolate the scheme
     udStrchr(p, ":/", &i); // Find the colon that breaks the scheme, but don't search past a slash
@@ -911,6 +915,15 @@ udResult udURL::SetURL(const char *pURLText)
 
     // Finally, the path is the last component (for now, unless the class is extended to support splitting the query string too)
     m_pPath = p;
+
+    // Now, find any "special" URL characters in the path and encode them
+    while ((p = (char*)udStrchr(p, specialChars, nullptr, &charListIndex)) != nullptr)
+    {
+      size_t len = udStrlen(pSpecialSubs[charListIndex]);
+      memmove(p + len - 1, p, udStrlen(p) + 1);
+      memcpy(p, pSpecialSubs[charListIndex], len);
+      p += len;
+    }
   }
 
   return udR_Success; // TODO: Perhaps return an error if the url isn't formed properly
