@@ -250,8 +250,8 @@ struct udVector3
   typedef T ElementType;
   enum { ElementCount = 3 };
 
-  udVector3<T>& toVector2()               { return *(udVector2<T>*)this; }
-  const udVector3<T>& toVector2() const   { return *(udVector2<T>*)this; }
+  udVector2<T>& toVector2()               { return *(udVector2<T>*)this; }
+  const udVector2<T>& toVector2() const   { return *(udVector2<T>*)this; }
 
   udVector3<T> operator -() const                       { udVector3<T> r = { -x, -y, -z }; return r; }
   bool         operator ==(const udVector2<T> &v) const { return x == v.x && y == v.y && z == v.z; }
