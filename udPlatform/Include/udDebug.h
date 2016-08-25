@@ -143,4 +143,12 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 # define PRINT_ERROR_STRING(...)
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#define UDCHECKRESULT __attribute__ ((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define UDCHECKRESULT _Check_return_
+#else
+#define UDCHECKRESULT
+#endif
+
 #endif // UDDEBUG_H
