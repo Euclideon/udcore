@@ -9,10 +9,10 @@ project ("udPlatform" .. (projectSuffix or ""))
 	includedirs { "../3rdParty" }
 	includedirs { "Include" }
 
-	configuration { "windows" }
-		includedirs { "../3rdParty/sdl2/include" }
-
-	configuration {}
-
 	-- include common stuff
 	dofile "../common-proj.lua"
+	
+	filter { "configurations:Release", "system:Windows" }
+		symbols "Off"
+		
+	filter {}

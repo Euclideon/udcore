@@ -32,12 +32,12 @@ filter { "kind:ConsoleApp or WindowedApp" }
 filter { "configurations:Debug*" }
 	defines { "_DEBUG" }
 	optimize "Off"
-	flags { "Symbols" }
+	symbols "On"
 
 filter { "configurations:DebugOpt*" }
 	defines { "_DEBUG" }
 	optimize "Debug"
-	flags { "Symbols" }
+	symbols "On"
 
 filter { "configurations:Release*" }
 	defines { "NDEBUG" }
@@ -45,7 +45,7 @@ filter { "configurations:Release*" }
 	flags { "NoFramePointer", "NoBufferSecurityCheck" }
 
 filter { "configurations:Release*", "system:not Emscripten" }
-	flags { "Symbols" }
+	symbols "On"
 
 -- platform config
 filter { "system:windows" }
