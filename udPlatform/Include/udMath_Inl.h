@@ -545,9 +545,9 @@ udVector3<T> udMatrix4x4<T>::extractYPR() const
   // use tan(y) = sin(y) / cos(y)
   // -> y = atan(sin(y) / cos(y))
   // -> y = atan2(sin(y) , cos(y))
-  T y = atan2(Sy, Cy);
-  T p = atan2(Sp, Cp);
-  T r = atan2(Sr, Cr);
+  T y = udATan2(Sy, Cy);
+  T p = udATan2(Sp, Cp);
+  T r = udATan2(Sr, Cr);
   return udVector3<T>::create(y < T(0) ? y + T(UD_2PI) : y, p < T(0) ? p + T(UD_2PI) : p, r < T(0) ? r + T(UD_2PI) : r);
 }
 
