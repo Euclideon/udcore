@@ -54,7 +54,7 @@ enum udResult
   udR_File_SocketError,
 
   udR_UDI_MaxOctreeCountExceeded,
-
+  udR_UDI_MaxGridTreeDepthExceeded,
   udR_EventNotHandled,
 
   udR_Count,

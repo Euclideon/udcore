@@ -63,6 +63,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_File_SocketError),
 
   RESULTINFO(udR_UDI_MaxOctreeCountExceeded),
+  RESULTINFO(udR_UDI_MaxGridTreeDepthExceeded),
   RESULTINFO(udR_EventNotHandled)
 };
 
