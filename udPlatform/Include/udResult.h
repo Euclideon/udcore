@@ -30,6 +30,7 @@ enum udResult
   udR_AlignmentRequirement,
   udR_DecryptionKeyRequired,
   udR_DecryptionKeyMismatch,
+  udR_Expired,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,

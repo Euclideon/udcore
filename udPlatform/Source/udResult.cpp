@@ -39,6 +39,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_AlignmentRequirement),
   RESULTINFO(udR_DecryptionKeyRequired),
   RESULTINFO(udR_DecryptionKeyMismatch),
+  RESULTINFO(udR_Expired),
 
   RESULTINFO(udR_Writer_InitFailure),
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),
