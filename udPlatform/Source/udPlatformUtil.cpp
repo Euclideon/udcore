@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "udPlatformUtil.h"
 #include "udFile.h"
+#include "udMath.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,42 @@ static const uint64_t nsec_per_msec = 1000000;   // 1 million nanoseconds in one
 #endif
 
 static char s_udStrEmptyString[] = "";
+
+// *********************************************************************
+// Author: Dave Pevreal, October 2016
+void udUpdateCamera(double camera[16], double yawRadians, double pitchRadians, double tx, double ty, double tz)
+{
+  udDouble4x4 rotation = udDouble4x4::create(camera);
+  udDouble3 pos = rotation.axis.t.toVector3();
+  rotation.axis.t = udDouble4::identity();
+
+  rotation = udDouble4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
+  rotation = rotation * udDouble4x4::rotationX(pitchRadians); // Pitch on local axis
+  pos += rotation.axis.x.toVector3() * tx;
+  pos += rotation.axis.y.toVector3() * ty;
+  pos += rotation.axis.z.toVector3() * tz;
+  rotation.axis.t = udDouble4::create(pos, 1.0);
+
+  memcpy(camera, rotation.a, sizeof(rotation));
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, October 2016
+void udUpdateCamera(float camera[16], float yawRadians, float pitchRadians, float tx, float ty, float tz)
+{
+  udFloat4x4 rotation = udFloat4x4::create(camera);
+  udFloat3 pos = rotation.axis.t.toVector3();
+  rotation.axis.t = udFloat4::identity();
+
+  rotation = udFloat4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
+  rotation = rotation * udFloat4x4::rotationX(pitchRadians); // Pitch on local axis
+  pos += rotation.axis.x.toVector3() * tx;
+  pos += rotation.axis.y.toVector3() * ty;
+  pos += rotation.axis.z.toVector3() * tz;
+  rotation.axis.t = udFloat4::create(pos, 1.0);
+
+  memcpy(camera, rotation.a, sizeof(rotation));
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014

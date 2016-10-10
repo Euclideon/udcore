@@ -51,6 +51,13 @@ inline udResult udWriteToPointer(T *pSrc, P *&pDest, int *pBytesRemaining = null
 }
 
 // *********************************************************************
+// Camera helpers
+// *********************************************************************
+// Update in-place a camera matrix given yaw, pitch and translation parameters
+void udUpdateCamera(double camera[16], double yawRadians, double pitchRadians, double tx, double ty, double tz);
+void udUpdateCamera(float camera[16], float yawRadians, float pitchRadians, float tx, float ty, float tz);
+
+// *********************************************************************
 // Time and timing
 // *********************************************************************
 uint32_t udGetTimeMs(); // Get a millisecond-resolution timer that is thread-independent - timeGetTime() on windows
