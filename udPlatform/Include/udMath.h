@@ -254,8 +254,8 @@ struct udVector3
   const udVector2<T>& toVector2() const   { return *(udVector2<T>*)this; }
 
   udVector3<T> operator -() const                       { udVector3<T> r = { -x, -y, -z }; return r; }
-  bool         operator ==(const udVector2<T> &v) const { return x == v.x && y == v.y && z == v.z; }
-  bool         operator !=(const udVector2<T> &v) const { return !(*this == v); }
+  bool         operator ==(const udVector3<T> &v) const { return x == v.x && y == v.y && z == v.z; }
+  bool         operator !=(const udVector3<T> &v) const { return !(*this == v); }
 
   udVector3<T> operator +(const udVector3<T> &v) const  { udVector3<T> r = { x+v.x, y+v.y, z+v.z }; return r; }
   udVector3<T> operator -(const udVector3<T> &v) const  { udVector3<T> r = { x-v.x, y-v.y, z-v.z }; return r; }
@@ -263,7 +263,6 @@ struct udVector3
   udVector3<T> operator *(T f) const                    { udVector3<T> r = { x*f,   y*f,   z*f }; return r; }
   udVector3<T> operator /(const udVector3<T> &v) const  { udVector3<T> r = { x/v.x, y/v.y, z/v.z }; return r; }
   udVector3<T> operator /(T f) const                    { udVector3<T> r = { x/f,   y/f,   z/f }; return r; }
-  bool         operator ==(const udVector3<T> &v) const { return x==v.x && y==v.y && z==v.z; }
   T            operator [](size_t index) const          { return ((T*)this)[index]; }
 
   udVector3<T>& operator +=(const udVector3<T> &v)      { x+=v.x; y+=v.y; z+=v.z; return *this; }
@@ -300,8 +299,8 @@ struct udVector4
   const udVector2<T>& toVector2() const   { return *(udVector2<T>*)this; }
 
   udVector4<T> operator -() const                      { udVector4<T> r = { -x, -y, -z, -w }; return r; }
-  bool         operator ==(const udVector2<T> &v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
-  bool         operator !=(const udVector2<T> &v) const { return !(*this == v); }
+  bool         operator ==(const udVector4<T> &v) const { return x == v.x && y == v.y && z == v.z && w == v.w; }
+  bool         operator !=(const udVector4<T> &v) const { return !(*this == v); }
 
   udVector4<T> operator +(const udVector4<T> &v) const { udVector4<T> r = { x+v.x, y+v.y, z+v.z, w+v.w }; return r; }
   udVector4<T> operator -(const udVector4<T> &v) const { udVector4<T> r = { x-v.x, y-v.y, z-v.z, w-v.w }; return r; }
@@ -397,7 +396,7 @@ struct udMatrix4x4
     } axis;
     struct
     {
-      T // remember, we store columns (axiis) sequentially! (so appears transposed here)
+      T // remember, we store columns (axis) sequentially! (so appears transposed here)
         _00, _10, _20, _30,
         _01, _11, _21, _31,
         _02, _12, _22, _32,
