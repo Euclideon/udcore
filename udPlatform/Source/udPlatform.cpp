@@ -207,6 +207,10 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 
       ts.tv_sec += waitMs / 1000;
       ts.tv_nsec += long(waitMs % 1000) * 1000000L;
+
+      ts.tv_sec += (ts.tv_nsec / 1000000000L);
+      ts.tv_nsec %= 1000000000L;
+
       return sem_timedwait((sem_t*)pSemaphore, &ts);
     }
 #elif UDPLATFORM_NACL
