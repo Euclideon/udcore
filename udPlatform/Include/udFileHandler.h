@@ -44,6 +44,7 @@ struct udFile
   udFile_ReleaseHandlerFunc *fpRelease;
   udFile_CloseHandlerFunc *fpClose;
   struct udCryptoCipherContext *pCipherCtx;
+  int64_t counterOffset;  // For CTR mode, an offset added to calculated counter, used mainly by split files or to add perceived security
   int64_t seekBase;
   int64_t filePos;
   int64_t fileLength;

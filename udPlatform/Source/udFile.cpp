@@ -154,7 +154,7 @@ void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength)
 
 // ****************************************************************************
 // Author: Dave Pevreal, July 2016
-udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t *pNonce, int nonceLen)
+udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t *pNonce, int nonceLen, int64_t counterOffset)
 {
   udResult result;
 
@@ -166,6 +166,7 @@ udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t 
   UD_ERROR_HANDLE();
   result = udCrypto_SetNonce(pFile->pCipherCtx, pNonce, nonceLen);
   UD_ERROR_HANDLE();
+  pFile->counterOffset = counterOffset;
 
 epilogue:
   if (result)
@@ -247,7 +248,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
       pCipherText = pBuffer;
     UD_ERROR_NULL(pCipherText, udR_MemoryAllocationFailure);
     uint8_t iv[16];
-    result = udCrypto_CreateIVForCTRMode(pFile->pCipherCtx, iv, sizeof(iv), (offset - pFile->seekBase) / 16);
+    result = udCrypto_CreateIVForCTRMode(pFile->pCipherCtx, iv, sizeof(iv), (offset - pFile->seekBase) / 16 + pFile->counterOffset);
     UD_ERROR_HANDLE();
     result = pFile->fpRead(pFile, pCipherText, inset + bufferLength + padding, offset - inset, &alignedActual, nullptr); // Don't handle pipelined requests with encryption
     UD_ERROR_HANDLE();
