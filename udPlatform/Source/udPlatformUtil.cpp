@@ -882,7 +882,7 @@ int udGetHardwareThreadCount()
     }
     return hardwareThreadCount;
   }
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
   return sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 

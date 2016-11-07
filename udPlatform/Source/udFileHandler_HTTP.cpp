@@ -301,7 +301,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
 #endif
 
   result = udR_File_OpenFailure;
-  udDebugPrintf("Resolving %s to ip address...", pFile->url.GetDomain());
+  //udDebugPrintf("Resolving %s to ip address...", pFile->url.GetDomain());
   hp = gethostbyname(pFile->url.GetDomain());
   if (!hp)
   {
@@ -318,7 +318,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   if (actualHeaderLen < 0)
     goto epilogue;
   result = udR_File_SocketError;
-  udDebugPrintf("Sending:\n%s", pFile->recvBuffer);
+  //udDebugPrintf("Sending:\n%s", pFile->recvBuffer);
   result = udFileHandler_HTTPSendRequest(pFile, (int)actualHeaderLen);
   if (result != udR_Success)
     goto epilogue;

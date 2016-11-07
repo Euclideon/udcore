@@ -775,7 +775,7 @@ udMatrix4x4<T> udMatrix4x4<T>::ortho(T left, T right, T bottom, T top, T znear, 
 }
 
 template <typename T>
-udMatrix4x4<T> udMatrix4x4<T>::orthoForScreeen(T width, T height, T znear, T zfar)
+udMatrix4x4<T> udMatrix4x4<T>::orthoForScreen(T width, T height, T znear, T zfar)
 {
   udMatrix4x4<T> r = {{{ T(2) / width, T(0),           T(0),                            T(0),
                          T(0),         -T(2) / height, T(0),                            T(0),

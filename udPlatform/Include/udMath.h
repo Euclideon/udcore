@@ -451,7 +451,7 @@ struct udMatrix4x4
 
   static udMatrix4x4<T> perspective(T fovY, T aspectRatio, T znear, T zfar);
   static udMatrix4x4<T> ortho(T left, T right, T bottom, T top, T znear = T(0), T zfar = T(1));
-  static udMatrix4x4<T> orthoForScreeen(T width, T height, T znear = T(0), T zfar = T(1));
+  static udMatrix4x4<T> orthoForScreen(T width, T height, T znear = T(0), T zfar = T(1));
 
   static udMatrix4x4<T> lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up = udVector3<T>::create(T(0), T(0), T(1)));
 };
