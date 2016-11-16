@@ -586,13 +586,18 @@ udVector3<T> udQuaternion<T>::apply(const udVector3<T> &v) const
 template <typename T>
 udVector3<T> udQuaternion<T>::eulerAngles() const
 {
-  udVector3<T> r = {
-    udATan2(T(2) * (x * y + w * z), w * w + x * x - y * y - z * z), // Yaw
-    udATan2(T(2) * (y * z + w * x), w * w - x * x - y * y + z * z), //Pitch
-    udASin(T(-2) * (x * z - w * y)),  //Roll
-  };
+  // Quaternion to Rotation Matrix
+  //      1 - 2*y2 - 2*z2   2*x*y - 2*z*w 	  2*x*z + 2*y*w
+  //      2*x*y + 2*z*w 	  1 - 2*x2 - 2*z2 	2*y*z - 2*x*w
+  //      2*x*z - 2*y*w 	  2*y*z + 2*x*w 	  1 - 2*x2 - 2*y2
 
-  return r;
+  udVector4<T> mx = udVector4<T>::create(T(1.0f) - T(2.0f) * (y * y + z * z), T(2.0f) * (x * y + z * w), T(2.0f) * (x * z - y * w), T(0.0f));
+  udVector4<T> my = udVector4<T>::create(T(2.0f) * (x * y - z * w), T(1.0f) - T(2.0f) * (x * x + z * z), T(2.0f) * (y * z + x * w), T(0.0f));
+  udVector4<T> mz = udVector4<T>::create(T(2.0f) * (x * z + y * w), T(2.0f) * (y * z - x * w), T(1.0f) - T(2.0f) * (x * x + y * y), T(0.0f));
+  udVector4<T> mw = udVector4<T>::create(T(0.0f), T(0.0f), T(0.0f), T(0.0f));
+
+  udMatrix4x4<T> rotationMatrix = udMatrix4x4<T>::create(mx, my, mz, mw);
+  return rotationMatrix.extractYPR();
 }
 
 // udMatrix4x4 initialisers
