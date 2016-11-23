@@ -10,6 +10,7 @@
 //
 #include "udPlatform.h"
 #include "udFile.h"
+#include "udThread.h"
 
 // Some function prototypes required if implementing a custom file handler
 

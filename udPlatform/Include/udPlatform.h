@@ -161,39 +161,6 @@ protected:
 };
 
 
-// Minimalist MOST BASIC cross-platform thread support
-struct udSemaphore;
-struct udMutex;
-typedef uint64_t udThreadHandle;
-enum udThreadPriority { udTP_Lowest, udTP_Low, udTP_Normal, udTP_High, udTP_Highest };
-#define UDTHREAD_WAIT_INFINITE -1
-
-typedef uint32_t (udThreadStart)(void *data);
-udThreadHandle udCreateThread(udThreadStart *threadStarter, void *threadData); // Returns thread handle
-void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority);
-void udDestroyThread(udThreadHandle *pThreadHandle);
-udResult udJoinThread(udThreadHandle *pThreadHandle, int waitMs = UDTHREAD_WAIT_INFINITE);
-
-udSemaphore *udCreateSemaphore(int maxValue, int initialValue);
-void udDestroySemaphore(udSemaphore **ppSemaphore);
-void udIncrementSemaphore(udSemaphore *pSemaphore, int count = 1);
-int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs = UDTHREAD_WAIT_INFINITE); // Returns zero on success
-
-udMutex *udCreateMutex();
-void udDestroyMutex(udMutex **ppMutex);
-void udLockMutex(udMutex *pMutex);
-void udReleaseMutex(udMutex *pMutex);
-
-// A convenience class to lock and unlock based on scope of the variable
-class udScopeLock
-{
-public:
-  udScopeLock(udMutex *mutex) { m_mutex = mutex; udLockMutex(m_mutex); }
-  ~udScopeLock() { udReleaseMutex(m_mutex); }
-protected:
-  udMutex *m_mutex;
-};
-
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
 #define __MEMORY_DEBUG__  0
