@@ -218,6 +218,13 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
 }
 
 // ----------------------------------------------------------------------------
+// Author: Samuel Surtees, January 2017
+size_t udMiniZCompressor_DeflateBounds(udMiniZCompressor *pCompressor, size_t sourceLength)
+{
+  return (size_t)udComp_deflateBound(pCompressor->pStream, (mz_ulong)sourceLength);
+}
+
+// ----------------------------------------------------------------------------
 // Author: David Ely, September 2014
 static void *MiniZCompressor_Alloc(void *pOpaque, size_t IF_UDASSERT(items), size_t IF_UDASSERT(size))
 {

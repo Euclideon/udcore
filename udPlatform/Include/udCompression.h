@@ -7,6 +7,7 @@ struct udMiniZCompressor;
 udResult udMiniZCompressor_Create(udMiniZCompressor **ppCompressor);
 udResult udMiniZCompressor_Destroy(udMiniZCompressor **ppCompressor);
 udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, size_t destLength, const void *pSource, size_t sourceLength, size_t *pCompressedSize);
+size_t udMiniZCompressor_DeflateBounds(udMiniZCompressor *pCompressor, size_t sourceLength);
 
 udResult udMiniZCompressor_InitStream(udMiniZCompressor *pCompressor, void *pDestBuffer, size_t size);
 udResult udMiniZCompressor_DeflateStream(udMiniZCompressor *pCompressor, void *pStream, size_t size, size_t *pCompressedSize);
