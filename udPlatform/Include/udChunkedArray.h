@@ -331,7 +331,7 @@ inline udResult udChunkedArray<T, chunkElementCount>::PushBack(const T &v)
 }
 
 // --------------------------------------------------------------------------
-// Author: Khan Maxfield, February 2016
+// Author: David Ely, March 2016
 template <typename T, size_t chunkElementCount>
 inline udResult udChunkedArray<T, chunkElementCount>::PushFront(T **ppElement)
 {
@@ -366,8 +366,9 @@ inline udResult udChunkedArray<T, chunkElementCount>::PushFront(T **ppElement)
       // See if we have an unused chunk at the end of the array
       if (((chunkCount * chunkElementCount) - length) > chunkElementCount)
       {
-        ppChunks[0] = ppChunks[chunkCount - 1];
-        ppChunks[chunkCount - 1] = nullptr;
+        //Note that these operations are not chunkCount-1 as the array has been moved above and chunked-1 is actually @chunkcount now
+        ppChunks[0] = ppChunks[chunkCount];
+        ppChunks[chunkCount] = nullptr;
       }
       else
       {
