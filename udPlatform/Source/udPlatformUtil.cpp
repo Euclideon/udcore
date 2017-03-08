@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
 #include <sys/stat.h>
@@ -424,7 +423,8 @@ int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], i
 // Author: Dave Pevreal, March 2014
 int32_t udStrAtoi(const char *s, int *pCharCount, int radix)
 {
-  if (!s) s = s_udStrEmptyString;
+  if (!s || radix < 2 || radix > 36)
+    return 0;
   int32_t result = 0;
   int charCount = 0;
   bool negate = false;
@@ -443,9 +443,9 @@ int32_t udStrAtoi(const char *s, int *pCharCount, int radix)
     int nextValue = radix; // A sentinal to force end of processing
     if (s[charCount] >= '0' && s[charCount] <= '9')
       nextValue = s[charCount] - '0';
-    else if (s[charCount] >= 'a' && s[charCount] <= 'f')
+    else if (s[charCount] >= 'a' && s[charCount] < ('a' + radix - 10))
       nextValue = 10 + (s[charCount] - 'a');
-    else if (s[charCount] >= 'A' && s[charCount] <= 'F')
+    else if (s[charCount] >= 'A' && s[charCount] < ('A' + radix - 10))
       nextValue = 10 + (s[charCount] - 'A');
 
     if (nextValue >= radix)
@@ -458,6 +458,90 @@ int32_t udStrAtoi(const char *s, int *pCharCount, int radix)
   if (pCharCount)
     *pCharCount = charCount;
   return result;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2017
+int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix, int minChars)
+{
+  int upperCase = (radix < 0) ? 36 : 0;
+  radix = udAbs(radix);
+  if (radix < 2 || radix > 36)
+    return 0;
+  static const char *pLetters = "0123456789abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  char buf[65]; // Accomodate the largest string which would be 64 binary characters (largest decimal is 20 characters: 18446744073709551615)
+  int i = 0;
+  while (value || (i < minChars))
+  {
+    buf[i++] = pLetters[value % radix + upperCase];
+    value = value / radix;
+  }
+  int j;
+  for (j = 0; j < strLen-1 && j < i; ++j)
+  {
+    pStr[j] = buf[i-j-1];
+  }
+  pStr[j] = 0; // nul terminate
+  return j;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2017
+int udStrItoa(char *pStr, int strLen, int32_t value, int radix, int minChars)
+{
+  if (!pStr || strLen < 2)
+    return 0;
+  int minus = 0;
+  if (radix != 2 && value < 0) // We don't do + sign for binary
+  {
+    minus = 1;
+    *pStr = '-';
+    value = -value;
+  }
+  return udStrUtoa(pStr + minus, strLen - minus, (uint64_t)value, radix, minChars) + minus;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2017
+int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
+{
+  if (!pStr || strLen < 2)
+    return 0;
+  int minus = 0;
+  if (radix != 2 && value < 0) // We don't do + sign for binary
+  {
+    minus = 1;
+    *pStr = '-';
+    value = -value;
+  }
+  return udStrUtoa(pStr + minus, strLen - minus, (uint64_t)value, radix, minChars) + minus;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2017
+int udStrFtoa(char *pStr, int strLen, double value, int precision)
+{
+  // This looks strange because VS2010 doesn't include trunc or round functions
+  double whole = (value < 0.0) ? ceil(value) : floor(value);
+  double frac = udAbs(value - whole);
+
+  int charCount = udStrItoa64(pStr, strLen, (int64_t)whole);
+  if (charCount < (strLen-1) && precision > 0)
+  {
+    pStr[charCount++] = '.';
+    while (precision)
+    {
+      int localPrecision = udMin(precision, 16); // Asciify in small batches to avoid overflowing the whole component of the double
+      frac = frac * pow(10.0, localPrecision);
+      if (precision == localPrecision)
+        frac += 0.5; // Apply rounding on the last batch
+      charCount += udStrItoa64(pStr + charCount, strLen - charCount, (int64_t)frac, 10, localPrecision);
+      frac = frac - floor(frac); // no need for proper trunc as frac is always positive
+      precision -= localPrecision;
+    }
+  }
+
+  return charCount;
 }
 
 // *********************************************************************
@@ -1393,15 +1477,179 @@ udResult udCreateDir(const char *pFolder)
 
 // ****************************************************************************
 // Author: Paul Fox, September 2015
-int udSprintf(char *pDest, size_t destlength, const char *format, ...)
+int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...)
 {
   va_list args;
-  va_start(args, format);
-  int length = vsnprintf(pDest, destlength, format, args);
+  va_start(args, pFormat);
+  int length = udSprintfVA(pDest, destlength, pFormat, args);
   va_end(args);
 
-  pDest[destlength - 1] = '\0';
-
   return length;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2017
+int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list args)
+{
+  int errorCode = 0; // -1 == unknown specifier, -2 == unexpected width/precision specifier
+  size_t length = 0;
+  if (!pDest || !pFormat)
+    return 0;
+  // Keep processing until we're out of format string or destination string
+  while (*pFormat && !errorCode)
+  {
+    if (*pFormat == '%')
+    {
+      char padChar = ' ';
+      bool hashSpec = false; // # prefixes hex numbers with 0x or forces point for decimals
+      bool longSpec = false;
+      bool leftJustify = false;
+      bool forcePlus = false;
+      size_t widthSpec = 0;
+      int precision = 1;
+      bool precisionSpec = false; // Need a flag to know precision was specified, as floats have a different default value (6)
+      ++pFormat;
+
+      while (*pFormat)
+      {
+        const char *pInjectStr = nullptr;
+        size_t injectLen = 0;
+        int charCount = 0;
+        char numericBuffer[70]; // enough characters for any known number (64) plus 0x or decimal etc
+
+        charCount = 1; // As a default unless a number is processed
+        // Process formatted string
+        switch (*pFormat)
+        {
+          case '0': padChar = '0'; break;
+          case 'l': longSpec = true; break;
+          case '+': forcePlus = true; break;
+          case '-': leftJustify = true; break;
+          case '#': hashSpec = true; break;
+          case '%': pInjectStr = pFormat; injectLen = 1; break;
+          case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            {
+              int value = udStrAtoi(pFormat, &charCount);
+              if (!widthSpec)
+                widthSpec = (size_t)value;
+              else
+                errorCode = -2;
+            }
+            break;
+          case '.':
+            {
+              ++pFormat;
+              int value = udStrAtoi(pFormat, &charCount);
+              precision = (size_t)value;
+              precisionSpec = true;
+            }
+            break;
+          case 'c':
+            {
+              numericBuffer[0] = (char)va_arg(args, int); // Chars are passed as integers
+              pInjectStr = numericBuffer;
+              injectLen = 1;
+            }
+            break;
+          case 's':
+            {
+              pInjectStr = va_arg(args, char*);
+              injectLen = udStrlen(pInjectStr);
+            }
+            break;
+          case 'd':
+          case 'i':
+            if (longSpec)
+              udStrItoa64(numericBuffer, sizeof(numericBuffer), va_arg(args, int64_t), 10, precision);
+            else
+              udStrItoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), 10, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'u':
+            if (longSpec)
+              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint64_t), 10, precision);
+            else
+              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), 10, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'x':
+          case 'X':
+            udStrcpy(numericBuffer, sizeof(numericBuffer), isupper(*pFormat) ? "0X" : "0x");
+            if (longSpec)
+              udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
+            else
+              udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
+            pInjectStr = numericBuffer + ((hashSpec) ? 0 : 2);
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'b':
+            if (longSpec)
+              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint64_t), 2, precision);
+            else
+              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), 2, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'p':
+          case 'P':
+            if (sizeof(pInjectStr) == 8)
+              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
+            else
+              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'f':
+            udStrFtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, double), precisionSpec ? precision : 6);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+
+          default:
+            errorCode = -1;
+        }
+        pFormat += charCount;
+
+        if (pInjectStr)
+        {
+          size_t padLen = (widthSpec > injectLen) ? widthSpec - injectLen : 0;
+          if (padLen && !leftJustify)
+          {
+            for (int i = 0; i < padLen && (length + i) < destLength; ++i)
+              pDest[length + i] = padChar;
+            length += padLen;
+          }
+          if (injectLen)
+          {
+            for (int i = 0; i < injectLen && (length + i) < destLength; ++i)
+              pDest[length + i] = pInjectStr[i];
+            length += injectLen;
+          }
+          if (padLen && leftJustify)
+          {
+            for (int i = 0; i < padLen && (length + i) < destLength; ++i)
+              pDest[length + i] = ' '; // Always use spaces for post-padding
+            length += padLen;
+          }
+          break;
+        }
+      }
+    }
+    else
+    {
+      if (length < destLength)
+        pDest[length] = *pFormat;
+      ++length;
+      ++pFormat;
+    }
+  }
+  if (length < destLength)
+    pDest[length] = '\0';
+  else if (destLength > 0)
+    pDest[destLength - 1] = '\0';
+
+  return errorCode ? errorCode : (int)length;
 }
 

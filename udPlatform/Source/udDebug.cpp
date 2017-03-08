@@ -29,11 +29,7 @@ void udDebugPrintf(const char *format, ...)
   }
 
   va_start(args, format);
-#if UDPLATFORM_NACL
-  vsprintf(buffer + prefix, format, args);
-#else
-  vsnprintf(buffer + prefix, sizeof(buffer)-prefix, format, args);
-#endif
+  udSprintfVA(buffer + prefix, sizeof(buffer)-prefix, format, args);
   if (gpudDebugPrintfOutputCallback)
   {
     gpudDebugPrintfOutputCallback(buffer);
@@ -99,11 +95,7 @@ void udTrace::Message(const char *pFormat, ...)
   char buffer[300];
 
   va_start(args, pFormat);
-#if UDPLATFORM_NACL
-  vsprintf(buffer, pFormat, args);
-#else
-  vsnprintf(buffer, sizeof(buffer), pFormat, args);
-#endif
+  udSprintfVA(buffer, sizeof(buffer), pFormat, args);
   if (head && !head->entryPrinted)
   {
     const char *pParent0 = "";

@@ -3,6 +3,7 @@
 
 #include "udPlatform.h"
 #include <stdio.h>
+#include <stdarg.h>
 
 // *********************************************************************
 // Some simple utility template functions
@@ -103,9 +104,14 @@ int64_t udStrAtoi64(const char *s, int *pCharCount = nullptr, int radix = 10);
 // udStrAtof behaves much like atol, but much faster and optionally gives the number of characters parsed
 float udStrAtof(const char *s, int *pCharCount = nullptr);
 double udStrAtof64(const char *s, int *pCharCount = nullptr);
+// udStr*toa convert numbers to ascii, returning the number of characters required
+int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix = 10, int minChars = 1);
+int udStrItoa(char *pStr, int strLen, int32_t value, int radix = 10, int minChars = 1);
+int udStrItoa64(char *pStr, int strLen, int64_t value, int radix = 10, int minChars = 1);
+int udStrFtoa(char *pStr, int strLen, double value, int precision);
+
 // Split a line into an array of tokens
 int udStrTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens);
-inline int udTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens) { return udStrTokenSplit(pLine,pDelimiters,ppTokens,maxTokens); }
 // Find the offset of the character FOLLOWING the matching brace character pointed to by pLine
 // (may point to null terminator if not found)
 size_t udStrMatchBrace(const char *pLine);
@@ -355,5 +361,6 @@ udResult udCreateDir(const char *pFolder);
 
 // Write a formatted string to the buffer
 int udSprintf(char *pDest, size_t destlength, const char *format, ...);
+int udSprintfVA(char *pDest, size_t destlength, const char *format, va_list args);
 
 #endif // UDPLATFORM_UTIL_H
