@@ -1617,19 +1617,19 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
           size_t padLen = (widthSpec > injectLen) ? widthSpec - injectLen : 0;
           if (padLen && !leftJustify)
           {
-            for (int i = 0; i < padLen && (length + i) < destLength; ++i)
+            for (size_t i = 0; i < padLen && (length + i) < destLength; ++i)
               pDest[length + i] = padChar;
             length += padLen;
           }
           if (injectLen)
           {
-            for (int i = 0; i < injectLen && (length + i) < destLength; ++i)
+            for (size_t i = 0; i < injectLen && (length + i) < destLength; ++i)
               pDest[length + i] = pInjectStr[i];
             length += injectLen;
           }
           if (padLen && leftJustify)
           {
-            for (int i = 0; i < padLen && (length + i) < destLength; ++i)
+            for (size_t i = 0; i < padLen && (length + i) < destLength; ++i)
               pDest[length + i] = ' '; // Always use spaces for post-padding
             length += padLen;
           }
