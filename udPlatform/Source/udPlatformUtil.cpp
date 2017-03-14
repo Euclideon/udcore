@@ -407,6 +407,7 @@ int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], i
     }
     else
     {
+      pLine += delimiterIndex;                          // Move pLine to end of the line
       break;
     }
   }
