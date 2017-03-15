@@ -204,6 +204,8 @@ enum udAllocationFlags
 // Inline of operator to allow flags to be combined and retain type-safety
 inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
 
+void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
+#define udMemDup(pMemory, size, additionalBytes, flags) _udMemDup(pMemory, size, additionalBytes, flags IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 void *_udAlloc(size_t size, udAllocationFlags flags = udAF_None IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
 #define udAlloc(size) _udAlloc(size, udAF_None IF_MEMORY_DEBUG(__FILE__, __LINE__))

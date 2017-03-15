@@ -225,6 +225,19 @@ void udMemoryDebugLogMemoryStats()
 #endif // __MEMORY_DEBUG__
 
 
+// ----------------------------------------------------------------------------
+// Author: Bryce Kiefer, March 2017
+void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags IF_MEMORY_DEBUG(const char * pFile, int line))
+{
+  void *pDuplicated = _udAlloc(size + additionalBytes, udAF_None IF_MEMORY_DEBUG(pFile, line));
+  memcpy(pDuplicated, pMemory, size);
+
+  if (flags & udAF_Zero)
+    memset((char*)pMemory + size, 0, additionalBytes);
+
+  return pDuplicated;
+}
+
 #define UD_DEFAULT_ALIGNMENT (8)
 // ----------------------------------------------------------------------------
 // Author: David Ely
