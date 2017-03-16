@@ -424,38 +424,71 @@ int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], i
 // Author: Dave Pevreal, March 2014
 int32_t udStrAtoi(const char *s, int *pCharCount, int radix)
 {
-  if (!s || radix < 2 || radix > 36)
-    return 0;
-  int32_t result = 0;
+  return (int32_t)udStrAtoi64(s, pCharCount, radix);
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2014
+uint32_t udStrAtou(const char *s, int *pCharCount, int radix)
+{
+  return (uint32_t)udStrAtou64(s, pCharCount, radix);
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2014
+int64_t udStrAtoi64(const char *s, int *pCharCount, int radix)
+{
+  int64_t result = 0;
   int charCount = 0;
+  int digitCount = 0;
   bool negate = false;
 
-  while (s[charCount] == ' ' || s[charCount] == '\t')
-    ++charCount;
-  if (s[charCount] == '+')
-    ++charCount;
-  if (s[charCount] == '-')
+  if (s && radix >= 2 && radix <= 36)
   {
-    negate = true;
-    ++charCount;
+    while (s[charCount] == ' ' || s[charCount] == '\t')
+      ++charCount;
+    if (s[charCount] == '+')
+      ++charCount;
+    if (s[charCount] == '-')
+    {
+      negate = true;
+      ++charCount;
+    }
+    result = (int64_t)udStrAtou64(s + charCount, &digitCount, radix);
+    if (negate)
+      result = -result;
   }
-  for (; s[charCount]; ++charCount)
+  if (pCharCount)
+    *pCharCount = charCount + digitCount;
+  return result;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, March 2014
+uint64_t udStrAtou64(const char *s, int *pCharCount, int radix)
+{
+  uint64_t result = 0;
+  int charCount = 0;
+  if (s && radix >= 2 && radix <= 36)
   {
-    int nextValue = radix; // A sentinal to force end of processing
-    if (s[charCount] >= '0' && s[charCount] <= '9')
-      nextValue = s[charCount] - '0';
-    else if (s[charCount] >= 'a' && s[charCount] < ('a' + radix - 10))
-      nextValue = 10 + (s[charCount] - 'a');
-    else if (s[charCount] >= 'A' && s[charCount] < ('A' + radix - 10))
-      nextValue = 10 + (s[charCount] - 'A');
+    while (s[charCount] == ' ' || s[charCount] == '\t')
+      ++charCount;
+    for (; s[charCount]; ++charCount)
+    {
+      int nextValue = radix; // A sentinal to force end of processing
+      if (s[charCount] >= '0' && s[charCount] <= '9')
+        nextValue = s[charCount] - '0';
+      else if (s[charCount] >= 'a' && s[charCount] < ('a' + radix - 10))
+        nextValue = 10 + (s[charCount] - 'a');
+      else if (s[charCount] >= 'A' && s[charCount] < ('A' + radix - 10))
+        nextValue = 10 + (s[charCount] - 'A');
 
-    if (nextValue >= radix)
-      break;
+      if (nextValue >= radix)
+        break;
 
-    result = result * radix + nextValue;
-  };
-  if (negate)
-    result = -result;
+      result = result * radix + nextValue;
+    }
+  }
   if (pCharCount)
     *pCharCount = charCount;
   return result;
@@ -477,20 +510,23 @@ int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix, int minChars)
     buf[i++] = pLetters[value % radix + upperCase];
     value = value / radix;
   }
-  int j;
-  for (j = 0; j < strLen-1 && j < i; ++j)
+  if (pStr)
   {
-    pStr[j] = buf[i-j-1];
+    int j;
+    for (j = 0; j < strLen-1 && j < i; ++j)
+    {
+      pStr[j] = buf[i-j-1];
+    }
+    pStr[j] = 0; // nul terminate
   }
-  pStr[j] = 0; // nul terminate
-  return j;
+  return i; // Return number of characters required, not necessarily number of characters written
 }
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2017
 int udStrItoa(char *pStr, int strLen, int32_t value, int radix, int minChars)
 {
-  if (!pStr || strLen < 2)
+  if (!pStr || strLen < 2 || (radix < 2 || radix > 36))
     return 0;
   int minus = 0;
   if (radix != 2 && value < 0) // We don't do + sign for binary
@@ -506,7 +542,7 @@ int udStrItoa(char *pStr, int strLen, int32_t value, int radix, int minChars)
 // Author: Dave Pevreal, March 2017
 int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
 {
-  if (!pStr || strLen < 2)
+  if (!pStr || strLen < 2 || (radix < 2 || radix > 36))
     return 0;
   int minus = 0;
   if (radix != 2 && value < 0) // We don't do + sign for binary
@@ -602,47 +638,6 @@ size_t udStrStripWhiteSpace(char *pLine)
   pLine[len++] = pLine[i++];
   return len;
 }
-
-// *********************************************************************
-// Author: Dave Pevreal, March 2014
-int64_t udStrAtoi64(const char *s, int *pCharCount, int radix)
-{
-  if (!s) s = s_udStrEmptyString;
-  int64_t result = 0;
-  int charCount = 0;
-  bool negate = false;
-
-  while (s[charCount] == ' ' || s[charCount] == '\t')
-    ++charCount;
-  if (s[charCount] == '+')
-    ++charCount;
-  if (s[charCount] == '-')
-  {
-    negate = true;
-    ++charCount;
-  }
-  for (; s[charCount]; ++charCount)
-  {
-    int nextValue = radix; // A sentinal to force end of processing
-    if (s[charCount] >= '0' && s[charCount] <= '9')
-      nextValue = s[charCount] - '0';
-    else if (s[charCount] >= 'a' && s[charCount] <= 'f')
-      nextValue = 10 + (s[charCount] - 'a');
-    else if (s[charCount] >= 'A' && s[charCount] <= 'F')
-      nextValue = 10 + (s[charCount] - 'A');
-
-    if (nextValue >= radix)
-      break;
-
-    result = result * radix + nextValue;
-  };
-  if (negate)
-    result = -result;
-  if (pCharCount)
-    *pCharCount = charCount;
-  return result;
-}
-
 
 // *********************************************************************
 // Author: Dave Pevreal, August 2014
@@ -891,16 +886,20 @@ int udGetHardwareThreadCount()
 }
 
 // *********************************************************************
-bool udFilename::SetFromFullPath(const char *fullPath)
+bool udFilename::SetFromFullPath(const char *pFormat, ...)
 {
   *m_path = 0;
   m_filenameIndex = 0;
   m_extensionIndex = 0;
-  if (fullPath)
+  if (pFormat)
   {
-    if (!udStrcpy(m_path, sizeof(m_path), fullPath))
-      return false;
+    va_list args;
+    va_start(args, pFormat);
+    int len = udSprintfVA(m_path, sizeof(m_path), pFormat, args);
+    va_end(args);
     CalculateIndices();
+    if (len > (int)sizeof(m_path))
+      return false;
   }
   return true;
 }

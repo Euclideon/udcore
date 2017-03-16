@@ -98,9 +98,12 @@ const char *udStrrchr(const char *s, const char *pCharList, size_t *pIndex = nul
 // of the find, which will be the length if not found (ie when null is returned)
 const char *udStrstr(const char *s, size_t sLen, const char *pSubString, size_t *pIndex = nullptr);
 // udStrAtoi behaves much like atoi, optionally giving the number of characters parsed
-// and the radix can be supplied to parse hex(16) or binary(2) numbers
+// and the radix of 2 - 36 can be supplied to parse numbers such as hex(16) or binary(2)
+// No overflow testing is performed at this time
 int32_t udStrAtoi(const char *s, int *pCharCount = nullptr, int radix = 10);
+uint32_t udStrAtou(const char *s, int *pCharCount = nullptr, int radix = 10);
 int64_t udStrAtoi64(const char *s, int *pCharCount = nullptr, int radix = 10);
+uint64_t udStrAtou64(const char *s, int *pCharCount = nullptr, int radix = 10);
 // udStrAtof behaves much like atol, but much faster and optionally gives the number of characters parsed
 float udStrAtof(const char *s, int *pCharCount = nullptr);
 double udStrAtof64(const char *s, int *pCharCount = nullptr);
@@ -262,7 +265,7 @@ public:
   //    SetFilenameNoExt  - Set the filename without extension, retaining the existing folder and extension
   //    SetExtension      - Set the extension, retaining the folder and filename
   //
-  bool SetFromFullPath(const char *fullPath);
+  bool SetFromFullPath(const char *pFormat, ...);
   bool SetFolder(const char *folder);
   bool SetFilenameNoExt(const char *filenameOnlyComponent);
   bool SetFilenameWithExt(const char *filenameWithExtension);
