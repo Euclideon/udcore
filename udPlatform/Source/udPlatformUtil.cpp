@@ -1528,9 +1528,9 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
           case '-': leftJustify = true; break;
           case '#': hashSpec = true; break;
           case '%': pInjectStr = pFormat; injectLen = 1; break;
-          case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+          case '*': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
             {
-              int value = udStrAtoi(pFormat, &charCount);
+              int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
               if (!widthSpec)
                 widthSpec = (size_t)value;
               else
@@ -1540,7 +1540,7 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
           case '.':
             {
               ++pFormat;
-              int value = udStrAtoi(pFormat, &charCount);
+              int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
               precision = (size_t)value;
               precisionSpec = true;
             }
