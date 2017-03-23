@@ -114,7 +114,7 @@ int udStrItoa64(char *pStr, int strLen, int64_t value, int radix = 10, int minCh
 int udStrFtoa(char *pStr, int strLen, double value, int precision);
 
 // Split a line into an array of tokens
-int udStrTokenSplit(char *pLine, const char *pDelimiters, char **ppTokens, int maxTokens);
+int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens);
 // Find the offset of the character FOLLOWING the matching brace character pointed to by pLine
 // (may point to null terminator if not found)
 size_t udStrMatchBrace(const char *pLine);

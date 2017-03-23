@@ -559,10 +559,14 @@ int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
 int udStrFtoa(char *pStr, int strLen, double value, int precision)
 {
   // This looks strange because VS2010 doesn't include trunc or round functions
-  double whole = (value < 0.0) ? ceil(value) : floor(value);
-  double frac = udAbs(value - whole);
+  bool negative = *((int64_t*)&value) < 0; // Only reliable way I've found to detect -0.0
+  double whole = negative ? -ceil(value) : floor(value);
+  double frac = negative ? -(value + whole) : value - whole;
 
-  int charCount = udStrItoa64(pStr, strLen, (int64_t)whole);
+  int charCount = 0;
+  if (charCount < (strLen - 1) && negative)
+    pStr[charCount++] = '-';
+  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole);
   if (charCount < (strLen-1) && precision > 0)
   {
     pStr[charCount++] = '.';
