@@ -556,17 +556,19 @@ int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2017
-int udStrFtoa(char *pStr, int strLen, double value, int precision)
+int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars)
 {
-  // This looks strange because VS2010 doesn't include trunc or round functions
   bool negative = *((int64_t*)&value) < 0; // Only reliable way I've found to detect -0.0
+  // Apply the rounding before splitting whole and fraction so that the whole rounds if necessary
+  value += pow(10.0, -precision) * (negative ? -0.5 : 0.5);
+  // modf does this however it doesn't split the sign out whereas this removes the sign efficiently
   double whole = negative ? -ceil(value) : floor(value);
   double frac = negative ? -(value + whole) : value - whole;
 
   int charCount = 0;
   if (charCount < (strLen - 1) && negative)
     pStr[charCount++] = '-';
-  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole);
+  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole, 10, udMax(1, minChars - charCount - (precision ? precision + 1 : 0)));
   if (charCount < (strLen-1) && precision > 0)
   {
     pStr[charCount++] = '.';
@@ -574,8 +576,6 @@ int udStrFtoa(char *pStr, int strLen, double value, int precision)
     {
       int localPrecision = udMin(precision, 16); // Asciify in small batches to avoid overflowing the whole component of the double
       frac = frac * pow(10.0, localPrecision);
-      if (precision == localPrecision)
-        frac += 0.5; // Apply rounding on the last batch
       charCount += udStrItoa64(pStr + charCount, strLen - charCount, (int64_t)frac, 10, localPrecision);
       frac = frac - floor(frac); // no need for proper trunc as frac is always positive
       precision -= localPrecision;
@@ -1495,6 +1495,9 @@ int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...)
 // Author: Dave Pevreal, March 2017
 int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list args)
 {
+#if 1
+  return vsnprintf(pDest, destLength, pFormat, args);
+#else
   int errorCode = 0; // -1 == unknown specifier, -2 == unexpected width/precision specifier
   size_t length = 0;
   if (!pDest || !pFormat)
@@ -1509,7 +1512,8 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
       bool longSpec = false;
       bool leftJustify = false;
       bool forcePlus = false;
-      size_t widthSpec = 0;
+      bool widthSpec = false;
+      size_t width = 0;
       int precision = 1;
       bool precisionSpec = false; // Need a flag to know precision was specified, as floats have a different default value (6)
       ++pFormat;
@@ -1535,9 +1539,10 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
             {
               int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
               if (!widthSpec)
-                widthSpec = (size_t)value;
+                width = (size_t)value;
               else
                 errorCode = -2;
+              widthSpec = true;
             }
             break;
           case '.':
@@ -1606,7 +1611,7 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
             injectLen = udStrlen(pInjectStr);
             break;
           case 'f':
-            udStrFtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, double), precisionSpec ? precision : 6);
+            udStrFtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : udMax((int)width, 1));
             pInjectStr = numericBuffer;
             injectLen = udStrlen(pInjectStr);
             break;
@@ -1618,8 +1623,8 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
 
         if (pInjectStr)
         {
-          size_t padLen = (widthSpec > injectLen) ? widthSpec - injectLen : 0;
-          if (padLen && !leftJustify)
+          size_t padLen = (width > injectLen) ? width - injectLen : 0;
+          if (padLen && !leftJustify && padChar == ' ')
           {
             for (size_t i = 0; i < padLen && (length + i) < destLength; ++i)
               pDest[length + i] = padChar;
@@ -1655,5 +1660,6 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
     pDest[destLength - 1] = '\0';
 
   return errorCode ? errorCode : (int)length;
+#endif
 }
 

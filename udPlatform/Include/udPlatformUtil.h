@@ -111,7 +111,7 @@ double udStrAtof64(const char *s, int *pCharCount = nullptr);
 int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix = 10, int minChars = 1);
 int udStrItoa(char *pStr, int strLen, int32_t value, int radix = 10, int minChars = 1);
 int udStrItoa64(char *pStr, int strLen, int64_t value, int radix = 10, int minChars = 1);
-int udStrFtoa(char *pStr, int strLen, double value, int precision);
+int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars = 1);
 
 // Split a line into an array of tokens
 int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens);
