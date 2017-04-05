@@ -33,12 +33,15 @@ void udUpdateCamera(double camera[16], double yawRadians, double pitchRadians, d
   udDouble3 pos = rotation.axis.t.toVector3();
   rotation.axis.t = udDouble4::identity();
 
-  rotation = udDouble4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
-  rotation = rotation * udDouble4x4::rotationX(pitchRadians); // Pitch on local axis
-  pos += rotation.axis.x.toVector3() * tx;
-  pos += rotation.axis.y.toVector3() * ty;
-  pos += rotation.axis.z.toVector3() * tz;
-  rotation.axis.t = udDouble4::create(pos, 1.0);
+  if (yawRadians != 0.0)
+    rotation = udDouble4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
+  if (pitchRadians != 0.0)
+    rotation = rotation * udDouble4x4::rotationX(pitchRadians); // Pitch on local axis
+  udDouble3 trans = udDouble3::zero();
+  trans += rotation.axis.x.toVector3() * tx;
+  trans += rotation.axis.y.toVector3() * ty;
+  trans += rotation.axis.z.toVector3() * tz;
+  rotation.axis.t = udDouble4::create(pos + trans, 1.0);
 
   memcpy(camera, rotation.a, sizeof(rotation));
 }
