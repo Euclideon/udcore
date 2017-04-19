@@ -181,12 +181,12 @@ template <typename T> udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, T f);
 template <typename T> udMatrix4x4<T> udMul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2);
 template <typename T> udQuaternion<T> udMul(const udQuaternion<T> &q1, const udQuaternion<T> &q2);
 
-template <typename T> T udLerp(T a, T b, T t);
-template <typename T> udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, T t);
-template <typename T> udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, T t);
-template <typename T> udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, T t);
-template <typename T> udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
-template <typename T> udMatrix4x4<T> udLerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, T t);
+template <typename T> T udLerp(T a, T b, double t);
+template <typename T> udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, double t);
+template <typename T> udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, double t);
+template <typename T> udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, double t);
+template <typename T> udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, double t);
+template <typename T> udMatrix4x4<T> udLerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, double t);
 
 template <typename T> udMatrix4x4<T> udTranspose(const udMatrix4x4<T> &m);
 
@@ -196,7 +196,7 @@ template <typename T> udQuaternion<T> udInverse(const udQuaternion<T> &q);
 template <typename T> udMatrix4x4<T>  udInverse(const udMatrix4x4<T> &m);
 
 template <typename T> udQuaternion<T> udConjugate(const udQuaternion<T> &q);
-template <typename T> udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t);
+template <typename T> udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, double t);
 
 template <typename V> bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilon = UD_EPSILON);
 

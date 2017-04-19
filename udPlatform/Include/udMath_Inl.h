@@ -315,99 +315,99 @@ udQuaternion<T> udMul(const udQuaternion<T> &q1, const udQuaternion<T> &q2)
 }
 
 template <typename T>
-T udLerp(T a, T b, T t)
+T udLerp(T a, T b, double t)
 {
-  return a + (b-a)*t;
+  return T(a + (b-a)*t);
 }
 
 template <typename T>
-T udBiLerp(T a, T b, T c, T d, float t1, float t2)
+T udBiLerp(T a, T b, T c, T d, double t1, double t2)
 {
   return udLerp(udLerp(a, b, t1), udLerp(c, d, t1),t2);
 }
 
 template <typename T>
-udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, T t)
+udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, double t)
 {
   udVector2<T> r;
-  T invT = T(1)-t;
-  r.x = v1.x*invT + v2.x*t;
-  r.y = v1.y*invT + v2.y*t;
+  double invT = 1.0 - t;
+  r.x = T(v1.x*invT + v2.x*t);
+  r.y = T(v1.y*invT + v2.y*t);
   return r;
 }
 template <typename T>
-udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, T t)
+udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, double t)
 {
   udVector3<T> r;
-  T invT = T(1)-t;
-  r.x = v1.x*invT + v2.x*t;
-  r.y = v1.y*invT + v2.y*t;
-  r.z = v1.z*invT + v2.z*t;
+  double invT = 1.0 - t;
+  r.x = T(v1.x*invT + v2.x*t);
+  r.y = T(v1.y*invT + v2.y*t);
+  r.z = T(v1.z*invT + v2.z*t);
   return r;
 }
 template <typename T>
-udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, T t)
+udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, double t)
 {
   udVector4<T> r;
-  T invT = T(1)-t;
-  r.x = v1.x*invT + v2.x*t;
-  r.y = v1.y*invT + v2.y*t;
-  r.z = v1.z*invT + v2.z*t;
-  r.w = v1.w*invT + v2.w*t;
+  double invT = 1.0 - t;
+  r.x = T(v1.x*invT + v2.x*t);
+  r.y = T(v1.y*invT + v2.y*t);
+  r.z = T(v1.z*invT + v2.z*t);
+  r.w = T(v1.w*invT + v2.w*t);
   return r;
 }
 template <typename T>
-udMatrix4x4<T> udLerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, T t)
+udMatrix4x4<T> udLerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, double t)
 {
-  return (T(1)-t)*m1 + t*m2;
+  return (1.0-t)*m1 + t*m2;
 }
 template <typename T>
-udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, T t)
+udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, double t)
 {
   udQuaternion<T> r;
-  T invT = T(1)-t;
-  r.x = q1.x*invT + q2.x*t;
-  r.y = q1.y*invT + q2.y*t;
-  r.z = q1.z*invT + q2.z*t;
-  r.w = q1.w*invT + q2.w*t;
+  double invT = 1.0 - t;
+  r.x = T(q1.x*invT + q2.x*t);
+  r.y = T(q1.y*invT + q2.y*t);
+  r.z = T(q1.z*invT + q2.z*t);
+  r.w = T(q1.w*invT + q2.w*t);
   return r;
 }
 
 template <typename T>
-udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, T t)
+udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, double t)
 {
 #if UDASSERT_ON
-  const T epsilon = T(1.0 / 4096);
+  const double epsilon = 1.0 / 4096;
 #endif
-  const T thetaEpsilon = T(UD_PI / (180.0 * 100.0)); // 1/100 of a degree
+  const double thetaEpsilon = UD_PI / (180.0 * 100.0); // 1/100 of a degree
 
   udQuaternion<T> q2 = _q2;
 
   UDASSERT(udIsUnitLength(q1, epsilon), "q1 is not normalized, magnitude %f\n", udMagQ(q1));
   UDASSERT(udIsUnitLength(q2, epsilon), "q2 is not normalized, magnitude %f\n", udMagQ(q2));
 
-  T cosHalfTheta = udDotQ(q1, q2); // Dot product of 2 quaterions results in cos(theta/2)
+  double cosHalfTheta = udDotQ(q1, q2); // Dot product of 2 quaterions results in cos(theta/2)
 
-  if (cosHalfTheta < T(0)) // Rotation is greater than PI
+  if (cosHalfTheta < 0.0) // Rotation is greater than PI
   {
     q2 = -_q2;
     cosHalfTheta = -cosHalfTheta;
   }
 
-  if ((T(1) - cosHalfTheta) < thetaEpsilon)
+  if ((1.0 - cosHalfTheta) < thetaEpsilon)
     return udNormalize(udLerp(q1, q2, t));
 
-  T halfTheta = udACos(cosHalfTheta);
+  double halfTheta = udACos(cosHalfTheta);
 
-  T sinHalfTheta = udSqrt(T(1) - cosHalfTheta * cosHalfTheta);
-  T ratioA = udSin(halfTheta * (T(1) - t)) / sinHalfTheta;
-  T ratioB = udSin(halfTheta * t) / sinHalfTheta;
+  double sinHalfTheta = udSqrt(1.0 - cosHalfTheta * cosHalfTheta);
+  double ratioA = udSin(halfTheta * (1.0 - t)) / sinHalfTheta;
+  double ratioB = udSin(halfTheta * t) / sinHalfTheta;
 
   udQuaternion<T> r;
-  r.w = (q1.w * ratioA + q2.w * ratioB);
-  r.x = (q1.x * ratioA + q2.x * ratioB);
-  r.y = (q1.y * ratioA + q2.y * ratioB);
-  r.z = (q1.z * ratioA + q2.z * ratioB);
+  r.w = T(q1.w * ratioA + q2.w * ratioB);
+  r.x = T(q1.x * ratioA + q2.x * ratioB);
+  r.y = T(q1.y * ratioA + q2.y * ratioB);
+  r.z = T(q1.z * ratioA + q2.z * ratioB);
 
   return r;
 }
