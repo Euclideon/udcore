@@ -198,13 +198,13 @@ inline T udNormaliseRotation(T rad, T absRange)
 }
 
 // many kinds of mul...
-template <typename T>
-udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, T f)
+template <typename T, typename U>
+udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, U f)
 {
-  udMatrix4x4<T> r = {{{ m.a[0]*f, m.a[1]*f, m.a[2]*f, m.a[3]*f,
-                         m.a[4]*f, m.a[5]*f, m.a[6]*f, m.a[7]*f,
-                         m.a[8]*f, m.a[9]*f, m.a[10]*f,m.a[11]*f,
-                         m.a[12]*f,m.a[13]*f,m.a[14]*f,m.a[15]*f }}};
+  udMatrix4x4<T> r = {{{ T(m.a[0] * f), T(m.a[1] * f), T(m.a[2] * f), T(m.a[3] * f),
+                         T(m.a[4] * f), T(m.a[5] * f), T(m.a[6] * f), T(m.a[7] * f),
+                         T(m.a[8] * f), T(m.a[9] * f), T(m.a[10] * f),T(m.a[11] * f),
+                         T(m.a[12] * f),T(m.a[13] * f),T(m.a[14] * f),T(m.a[15] * f) }}};
   return r;
 }
 template <typename T>
