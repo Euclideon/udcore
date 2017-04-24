@@ -126,7 +126,10 @@ size_t udStrStripWhiteSpace(char *pLine);
 // *********************************************************************
 int udStrcmp(const char *s1, const char *s2);
 int udStrcmpi(const char *s1, const char *s2);
+int udStrncmp(const char *s1, const char *s2, size_t maxChars);
+int udStrncmpi(const char *s1, const char *s2, size_t maxChars);
 bool udStrBeginsWith(const char *s, const char *prefix);
+bool udStrBeginsWithi(const char *s, const char *prefix);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
 
 #if UDPLATFORM_WINDOWS

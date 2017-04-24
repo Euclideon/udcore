@@ -216,6 +216,38 @@ int udStrcmpi(const char *s1, const char *s2)
 }
 
 // *********************************************************************
+// Author: Samuel Surtees, April 2017
+int udStrncmp(const char *s1, const char *s2, size_t maxChars)
+{
+  if (!s1) s1 = s_udStrEmptyString;
+  if (!s2) s2 = s_udStrEmptyString;
+
+  int result;
+  do
+  {
+    result = *s1 - *s2;
+  } while (!result && *s1++ && *s2++ && --maxChars);
+
+  return result;
+}
+
+// *********************************************************************
+// Author: Samuel Surtees, April 2017
+int udStrncmpi(const char *s1, const char *s2, size_t maxChars)
+{
+  if (!s1) s1 = s_udStrEmptyString;
+  if (!s2) s2 = s_udStrEmptyString;
+
+  int result;
+  do
+  {
+    result = tolower(*s1) - tolower(*s2);
+  } while (!result && *s1++ && *s2++ && --maxChars);
+
+  return result;
+}
+
+// *********************************************************************
 // Author: Dave Pevreal, March 2014
 size_t udStrlen(const char *str)
 {
@@ -238,6 +270,21 @@ bool udStrBeginsWith(const char *s, const char *prefix)
   while (*prefix)
   {
     if (*s++ != *prefix++)
+      return false;
+  }
+  return true;
+}
+
+// *********************************************************************
+// Author: Samuel Surtees, April 2017
+bool udStrBeginsWithi(const char *s, const char *prefix)
+{
+  if (!s) s = s_udStrEmptyString;
+  if (!prefix) prefix = s_udStrEmptyString;
+
+  while (*prefix)
+  {
+    if (tolower(*s++) != tolower(*prefix++))
       return false;
   }
   return true;
