@@ -116,8 +116,10 @@ int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars 
 // Split a line into an array of tokens
 int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens);
 // Find the offset of the character FOLLOWING the matching brace character pointed to by pLine
-// (may point to null terminator if not found)
+// (may point to null terminator if not found). Brace characters: ({[<"' matched with )}]>"'
 size_t udStrMatchBrace(const char *pLine);
+// Helper to skip white space (space,8,10,13), optionally incrementing a line number appropriately
+const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 // In-place remove all non-quoted white space (newlines, spaces, tabs), returns new length
 size_t udStrStripWhiteSpace(char *pLine);
 
@@ -131,6 +133,7 @@ int udStrncmpi(const char *s1, const char *s2, size_t maxChars);
 bool udStrBeginsWith(const char *s, const char *prefix);
 bool udStrBeginsWithi(const char *s, const char *prefix);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
+inline bool udStrEquali(const char *s1, const char *s2) { return udStrcmpi(s1, s2) == 0; }
 
 #if UDPLATFORM_WINDOWS
 // *********************************************************************
@@ -366,7 +369,9 @@ udResult udCloseDir(udFindDir **ppFindDir);
 udResult udCreateDir(const char *pFolder);
 
 // Write a formatted string to the buffer
-int udSprintf(char *pDest, size_t destlength, const char *format, ...);
-int udSprintfVA(char *pDest, size_t destlength, const char *format, va_list args);
+int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
+int udSprintfVA(char *pDest, size_t destlength, const char *pFormat, va_list args);
+// Create an allocated string to fit the output
+udResult udSprintf(const char **ppDest, const char *pFormat, ...);
 
 #endif // UDPLATFORM_UTIL_H

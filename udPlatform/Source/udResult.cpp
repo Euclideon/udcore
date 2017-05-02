@@ -41,6 +41,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_DecryptionKeyMismatch),
   RESULTINFO(udR_SignatureMismatch),
   RESULTINFO(udR_Expired),
+  RESULTINFO(udR_ParseError),
 
   RESULTINFO(udR_Writer_InitFailure),
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),

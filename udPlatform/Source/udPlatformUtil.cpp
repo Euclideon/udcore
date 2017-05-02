@@ -647,7 +647,10 @@ size_t udStrMatchBrace(const char *pLine)
   {
     case '{': matchChar = '}'; break;
     case '[': matchChar = ']'; break;
+    case '(': matchChar = ')'; break;
+    case '<': matchChar = '>'; break;
     case '\"': matchChar = '\"'; escapeChar = '\\'; break;
+    case '\'': matchChar = '\''; escapeChar = '\\'; break;
     default: return udStrlen(pLine);
   }
   int depth = 1;
@@ -665,6 +668,26 @@ size_t udStrMatchBrace(const char *pLine)
       ++depth;
   }
   return offset;
+}
+
+
+// *********************************************************************
+// Author: Dave Pevreal, April 2017
+const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount, int *pLineNumber)
+{
+  int charCount = 0;
+  if (pLine)
+  {
+    while (pLine[charCount] == ' ' || pLine[charCount] == '\t' || pLine[charCount] == '\r' || pLine[charCount] == '\n')
+    {
+      if (pLineNumber && pLine[charCount] == '\n')
+        ++*pLineNumber;
+      ++charCount;
+    }
+  }
+  if (pCharCount)
+    *pCharCount = charCount;
+  return pLine + charCount;
 }
 
 
@@ -1711,5 +1734,29 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
 
   return errorCode ? errorCode : (int)length;
 #endif
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, April 2017
+udResult udSprintf(const char **ppDest, const char *pFormat, ...)
+{
+  size_t length;
+  char *pStr = nullptr;
+
+  va_list ap;
+  va_start(ap, pFormat);
+  length = udSprintfVA(nullptr, 0, pFormat, ap);
+  va_end(ap);
+
+  pStr = udAllocType(char, length + 1, udAF_None);
+  if (!pStr)
+    return udR_MemoryAllocationFailure;
+
+  va_start(ap, pFormat);
+  udSprintfVA(pStr, length + 1, pFormat, ap);
+  va_end(ap);
+  *ppDest = pStr;
+
+  return udR_Success;
 }
 
