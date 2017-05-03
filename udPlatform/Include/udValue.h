@@ -17,6 +17,7 @@ enum udValueType
   udVT_String,
   udVT_List,    // A udChunkedArray of values
   udVT_Object,  // JSON object
+  udVT_Element, // XML Element (which inherits from Object to provide attributes)
 
   udVT_Count
 };
@@ -24,6 +25,7 @@ enum udValueType
 class udValue;
 typedef udChunkedArray<udValue, 32> udValueList;
 struct udValueObject;
+struct udValueElement;
 
 class udValue
 {
@@ -50,18 +52,23 @@ public:
 
   udResult SetString(const char *pStr);
   udResult SetList(); // A dynamic list of udValues, whose types can change per element
-  udResult SetObject();
   udResult SetArray(udValueType arrayType, size_t length); // Only plain types are allowed, no strings/lists/kvstores
+  udResult SetObject();
+  udResult SetElement();
 
   // Accessors
   inline bool IsVoid() const;
   inline bool IsNumeric() const;
   inline bool IsIntegral() const;
   inline bool IsString() const;
-  inline bool IsObject() const;
   inline bool IsList() const;
+  inline bool IsObject() const;
+  inline bool IsElement() const;
   inline bool HasMemory() const;
+  inline size_t ListLength() const;
   inline size_t ArrayLength() const;
+  bool IsEqualTo(const udValue &other);
+
 
   // Array access
   inline bool *GetArrayBool(size_t *pLength = nullptr);
@@ -79,9 +86,10 @@ public:
   int64_t AsInt64(int64_t defaultValue = 0) const;
   float AsFloat(float defaultValue = 0) const;
   double AsDouble(double defaultValue = 0) const;
-  inline char *AsString(char *pDefaultValue = nullptr) const;
-  inline udValueObject *AsObject() const;
+  char *AsString(char *pDefaultValue = nullptr) const;
   inline udValueList *AsList() const;
+  inline udValueObject *AsObject() const;
+  inline udValueElement *AsElement() const;
 
   // Convert a list of elements to an array of a specified type, can fail if an element can't be converted
   udResult ConvertListToArray(udValueType toType);
@@ -89,10 +97,7 @@ public:
   // Get a pointer to a key's value, this pointer is valid as long as the key remains, ppValue may be null if just testing existence
   // Allowed operators are . and [] to dereference (eg "instances[%d].%s", (int)instanceIndex, (char*)pInstanceKeyName)
   udResult Get(udValue **ppValue, const char *pKeyExpression, ...);
-  const udValue &Get(const char *pKeyExpression, ...);
-
-  // Get the length of the list for the given key expression, zero in case of any error (generally used to iterate)
-  size_t GetListLength(const char *pKeyExpression, ...);
+  const udValue &Get(const char *pKeyExpression, ...) const;
 
   // Set a new key/value pair to the store, overwriting a existing key, using = operator in the expression
   // Allowed operators are . and [] to dereference and = to assign value (eg "obj.value = %d", 5)
@@ -104,14 +109,16 @@ public:
   // Parse a string an assign the type/value, supporting string, integer and float/double
   udResult Parse(const char *pString, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 
-  // Export JSON to a string
-  udResult ExportJSON(const char **ppText) const;
+  // Export to a JSON/XML string depending on content
+  udResult Export(const char **ppText) const;
 
 protected:
   typedef udChunkedArray<const char*, 32> LineList;
+  enum ExportValueOptions { EVO_None = 0, EVO_XML = 1, EVO_Comma = 2 };
 
   udResult ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber);
-  udResult ExportValue(const char *pKey, LineList *pLines, int indent, bool comma) const;
+  udResult ParseXML(const char *pJSON, int *pCharCount, int *pLineNumber);
+  udResult ExportValue(const char *pKey, LineList *pLines, int indent, ExportValueOptions options) const;
 
   union
   {
@@ -124,6 +131,7 @@ protected:
     double dVal;
     udValueList *pList;
     udValueObject *pObject;
+    udValueElement *pElement;
     void *pArray;
   } u;
   udValueType type;
@@ -139,6 +147,12 @@ struct udValueObject
     udValue value;
   };
   udChunkedArray<KVPair, 32> attributes;
+};
+
+struct udValueElement : public udValueObject
+{
+  const char *pName;
+  udValueList children;
 };
 
 #include "udValue_Inl.h"

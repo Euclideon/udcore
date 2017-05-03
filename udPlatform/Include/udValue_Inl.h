@@ -23,9 +23,11 @@ inline bool udValue::IsVoid()        const { return (type == udVT_Void); }
 inline bool udValue::IsNumeric()     const { return (type >= udVT_Uint8 && type <= udVT_Double); }
 inline bool udValue::IsIntegral()    const { return (type >= udVT_Uint8 && type <= udVT_Int64); }
 inline bool udValue::IsString()      const { return (type == udVT_String); }
-inline bool udValue::IsObject()      const { return (type == udVT_Object); }
 inline bool udValue::IsList()        const { return (type == udVT_List); }
+inline bool udValue::IsObject()      const { return (type == udVT_Object); }
+inline bool udValue::IsElement()     const { return (type == udVT_Element); }
 inline bool udValue::HasMemory()     const { return (type >= udVT_String && type < udVT_Count); }
+inline size_t udValue::ListLength()  const { udValueList *pList = AsList(); return pList ? pList->length : 0; }
 inline size_t udValue::ArrayLength() const { return (size_t)arrayLength; }
 
 // Array access
@@ -37,8 +39,8 @@ inline float *udValue::GetArrayFloat(size_t *pLength)   { if (type == udVT_Float
 inline double *udValue::GetArrayDouble(size_t *pLength) { if (type == udVT_Double)  { if (arrayLength) { *pLength = arrayLength; return (double *)u.pArray;   } else { *pLength = 1; return &u.dVal;   } } else return nullptr; }
 inline char **udValue::GetArrayString(size_t *pLength)  { if (type == udVT_String)  { if (arrayLength) { *pLength = arrayLength; return (char **)u.pArray;    } else { *pLength = 1; return &u.pStr;   } } else return nullptr; }
 
-inline char *udValue::AsString(char *pDefaultValue) const { return (type == udVT_String)  ? u.pStr : pDefaultValue; }
-inline udValueObject *udValue::AsObject() const           { return (type == udVT_Object) ? u.pObject : nullptr; }
-inline udValueList *udValue::AsList() const               { return (type == udVT_List) ? u.pList : nullptr; }
+inline udValueList *udValue::AsList() const               { return (type == udVT_List) ? u.pList : (type == udVT_Element) ? &u.pElement->children : nullptr; }
+inline udValueObject *udValue::AsObject() const           { return (type == udVT_Object) ? u.pObject : AsElement(); }
+inline udValueElement *udValue::AsElement() const         { return (type == udVT_Element) ? u.pElement : nullptr; }
 
 #endif // UDVALUE_INL_H
