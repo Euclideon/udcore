@@ -67,17 +67,24 @@ public:
   inline bool HasMemory() const;
   inline size_t ListLength() const;
   inline size_t ArrayLength() const;
-  bool IsEqualTo(const udValue &other);
+  bool IsEqualTo(const udValue &other) const;
 
 
   // Array access
   inline bool *GetArrayBool(size_t *pLength = nullptr);
+  inline const bool *GetArrayBool(size_t *pLength = nullptr) const;
   inline uint8_t *GetArrayUint8(size_t *pLength = nullptr);
+  inline const uint8_t *GetArrayUint8(size_t *pLength = nullptr) const;
   inline int32_t *GetArrayInt32(size_t *pLength = nullptr);
+  inline const int32_t *GetArrayInt32(size_t *pLength = nullptr) const;
   inline int64_t *GetArrayInt64(size_t *pLength = nullptr);
+  inline const int64_t *GetArrayInt64(size_t *pLength = nullptr) const;
   inline float *GetArrayFloat(size_t *pLength = nullptr);
+  inline const float *GetArrayFloat(size_t *pLength = nullptr) const;
   inline double *GetArrayDouble(size_t *pLength = nullptr);
+  inline const double *GetArrayDouble(size_t *pLength = nullptr) const;
   inline char **GetArrayString(size_t *pLength = nullptr);
+  inline char *const *GetArrayString(size_t *pLength = nullptr) const;
 
   // Get the value as a specific type, unless object is udVT_Void in which case defaultValue is returned
   bool AsBool(bool defaultValue = false) const;
@@ -100,25 +107,25 @@ public:
   const udValue &Get(const char *pKeyExpression, ...) const;
 
   // Set a new key/value pair to the store, overwriting a existing key, using = operator in the expression
-  // Allowed operators are . and [] to dereference and = to assign value (eg "obj.value = %d", 5)
+  // Allowed operators are . and [] to dereference and for version without pValue, = to assign value (eg "obj.value = %d", 5)
+  // Set with null for pValue or nothing following the = will remove the key
+  udResult Set(udValue *pValue, const char *pKeyExpression, ...);
   udResult Set(const char *pKeyExpression, ...);
 
-  // Set a new key/value pair to the store, overwriting a existing key, using the passed value (which is cleared on return)
-  udResult Set(udValue &value, const char *pKeyExpression, ...);
-
-  // Parse a string an assign the type/value, supporting string, integer and float/double
+  // Parse a string an assign the type/value, supporting string, integer and float/double, JSON or XML
   udResult Parse(const char *pString, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 
+  enum ExportOption { EO_None, EO_StripWhiteSpace = 1 };
   // Export to a JSON/XML string depending on content
-  udResult Export(const char **ppText) const;
+  udResult Export(const char **ppText, ExportOption option = EO_None) const;
 
 protected:
   typedef udChunkedArray<const char*, 32> LineList;
-  enum ExportValueOptions { EVO_None = 0, EVO_XML = 1, EVO_Comma = 2 };
+  enum ExportValueOptions { EVO_None = 0, EVO_StripWhiteSpace=1, EVO_XML = 2 };
 
   udResult ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber);
   udResult ParseXML(const char *pJSON, int *pCharCount, int *pLineNumber);
-  udResult ExportValue(const char *pKey, LineList *pLines, int indent, ExportValueOptions options) const;
+  udResult ExportValue(const char *pKey, LineList *pLines, int indent, ExportValueOptions options, bool comma) const;
 
   union
   {

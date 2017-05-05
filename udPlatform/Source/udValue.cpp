@@ -50,7 +50,7 @@ public:
     char *pTemp = pRemainingExpression;
     if (pTemp)
     {
-      pRemainingExpression = const_cast<char*>(udStrchr(pTemp, ".[="));
+      pRemainingExpression = const_cast<char*>(udStrchr(pTemp, ".["));
       if (pRemainingExpression)
       {
         nextOp = *pRemainingExpression;
@@ -65,7 +65,6 @@ public:
     pKey = udStrSkipWhiteSpace(pTemp); // udStrSkipWhiteSpace handles nulls gracefully
   }
 };
-
 
 
 // ****************************************************************************
@@ -193,7 +192,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-bool udValue::IsEqualTo(const udValue &other)
+bool udValue::IsEqualTo(const udValue &other) const
 {
   if (arrayLength != other.arrayLength)
     return false;
@@ -394,6 +393,40 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
+static size_t FindMatch(const udValueList *pList, const udValueObject *pSearchObj, int resultNumber, size_t i = 0)
+{
+  int attributesMatched = 0;
+  for (; i < pList->length; ++i) // For each element in the list
+  {
+    attributesMatched = 0;
+    const udValueObject *pCurrent = const_cast<udValue*>(pList->GetElement(i))->AsObject();
+    if (!pCurrent)
+      continue;
+    size_t j;
+    for (j = 0; (attributesMatched < pSearchObj->attributes.length) && (j < pCurrent->attributes.length); ++j) // For each attribute in each element
+    {
+      size_t k;
+      for (k = 0; k < pSearchObj->attributes.length; ++k) // For each attribute in the search expression
+      {
+        if (udStrEqual(pSearchObj->attributes[k].pKey, pCurrent->attributes[j].pKey)
+          && pSearchObj->attributes[k].value.IsEqualTo(pCurrent->attributes[j].value))
+        {
+          ++attributesMatched;
+          break;
+        }
+      }
+    }
+    if ((attributesMatched == pSearchObj->attributes.length) && resultNumber-- == 0)
+    {
+      // All attributes in the search object were matched, we have our element
+      break;
+    }
+  }
+  return i;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, April 2017
 static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char *pKeyExpression, va_list ap)
 {
   udResult result;
@@ -402,7 +435,7 @@ static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char
 
   UD_ERROR_NULL(pRoot, udR_InvalidParameter_);
   UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter_);
-  if (udStrchr(pKeyExpression, "%.[="))
+  if (udStrchr(pKeyExpression, "%.["))
   {
     va_list apTemp;
     va_copy(apTemp, ap);
@@ -423,92 +456,58 @@ static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char
     switch (exp.op)
     {
       case '[':
-      {
-        int charCount;
-        const udValueList *pList;
-        if (pRoot->IsList())
-          pList = pRoot->AsList();
-        else if (pRoot->IsElement())
-          pList = &pRoot->AsElement()->children;
-        else
-          UD_ERROR_SET(udR_ObjectTypeMismatch);
+        {
+          int charCount;
+          const udValueList *pList = pRoot->AsList();
+          UD_ERROR_NULL(pList, udR_ObjectTypeMismatch);
 
-        if (exp.pKey[0] == '{')
-        {
-          // A JSON expression within square brackets is a search for one or more key/value pair matches
-          udValue searchExp;
-          int resultNumber = 0;
-          result = searchExp.Parse(exp.pKey, &charCount);
-          UD_ERROR_HANDLE();
-          if (exp.pKey[charCount] == ',')
+          if (exp.pKey[0] == '{')
           {
-            int tempCharCount;
-            resultNumber = udStrAtoi(exp.pKey + charCount + 1, &tempCharCount);
-            charCount += tempCharCount + 1;
+            // A JSON expression within square brackets is a search for one or more key/value pair matches
+            udValue searchExp;
+            int resultNumber = 0;
+            result = searchExp.Parse(exp.pKey, &charCount);
+            UD_ERROR_HANDLE();
+            if (exp.pKey[charCount] == ',')
+            {
+              int tempCharCount;
+              resultNumber = udStrAtoi(exp.pKey + charCount + 1, &tempCharCount);
+              charCount += tempCharCount + 1;
+            }
+            UD_ERROR_IF(charCount == 0 || exp.pKey[charCount] != ']', udR_ParseError);
+            UD_ERROR_IF(!searchExp.IsObject(), udR_ParseError);
+            size_t i = FindMatch(pList, searchExp.AsObject(), resultNumber);
+            pRoot = (i < pList->length) ? pList->GetElement(i) : nullptr;
           }
-          UD_ERROR_IF(charCount == 0 || exp.pKey[charCount] != ']', udR_ParseError);
-          udValueObject *pSearchObj = searchExp.AsObject();
-          UD_ERROR_NULL(pSearchObj, udR_ParseError);
-          int attributesMatched = 0;
-          size_t i;
-          for (i = 0; i < pList->length; ++i) // For each element in the list
+          else
           {
-            attributesMatched = 0;
-            const udValueObject *pCurrent = const_cast<udValue*>(pList->GetElement(i))->AsObject();
-            if (!pCurrent)
-              continue;
-            size_t j;
-            for (j = 0; (attributesMatched < pSearchObj->attributes.length) && (j < pCurrent->attributes.length); ++j) // For each attribute in each element
-            {
-              size_t k;
-              for (k = 0; k < pSearchObj->attributes.length; ++k) // For each attribute in the search expression
-              {
-                if (udStrEqual(pSearchObj->attributes[k].pKey, pCurrent->attributes[j].pKey)
-                  && pSearchObj->attributes[k].value.IsEqualTo(pCurrent->attributes[j].value))
-                {
-                  ++attributesMatched;
-                  break;
-                }
-              }
-            }
-            if ((attributesMatched == pSearchObj->attributes.length) && resultNumber-- == 0)
-            {
-              // All attributes in the search object were matched, we have our element
-              pRoot = pList->GetElement(i);
-              break;
-            }
+            int index = udStrAtoi(exp.pKey, &charCount);
+            UD_ERROR_IF(charCount == 0 || exp.pKey[charCount] != ']', udR_ParseError);
+            pRoot = pList->GetElement(index < 0 ? pList->length + index : index);
           }
-          UD_ERROR_IF(i == pList->length, udR_ObjectNotFound);
-        }
-        else
-        {
-          int index = udStrAtoi(exp.pKey, &charCount);
-          UD_ERROR_IF(charCount == 0 || exp.pKey[charCount] != ']', udR_ParseError);
-          pRoot = pList->GetElement(index < 0 ? pList->length + index : index);
           UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
         }
-      }
-      break;
+        break;
       case '.':
         // Fall through to default case
       default: // op == 0 here
-      {
-        udValueObject *pObject = pRoot->AsObject();
-        // Check that the type is a KVStore allowing a dot dereference to be valid
-        UD_ERROR_NULL(pObject, udR_ObjectTypeMismatch);
-        size_t i;
-        for (i = 0; i < pObject->attributes.length; ++i)
         {
-          const udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
-          if (udStrEqual(pItem->pKey, exp.pKey))
+          udValueObject *pObject = pRoot->AsObject();
+          // Check that the type is a KVStore allowing a dot dereference to be valid
+          UD_ERROR_NULL(pObject, udR_ObjectTypeMismatch);
+          size_t i;
+          for (i = 0; i < pObject->attributes.length; ++i)
           {
-            pRoot = &pItem->value;
-            break;
+            const udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
+            if (udStrEqual(pItem->pKey, exp.pKey))
+            {
+              pRoot = &pItem->value;
+              break;
+            }
           }
+          UD_ERROR_IF(i == pObject->attributes.length, udR_ObjectNotFound);
         }
-        UD_ERROR_IF(i == pObject->attributes.length, udR_ObjectNotFound);
-      }
-      break;
+        break;
     }
   }
 
@@ -551,6 +550,7 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
   udResult result;
   char *pDup = nullptr; // Allocated string for sprintf'd expression
   udJSONExpression exp;
+  udValue setToValueFromOperator;
 
   UD_ERROR_NULL(pRoot, udR_InvalidParameter_);
   UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter_);
@@ -569,6 +569,19 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
     pDup = udAllocType(char, expressionLength + 1, udAF_None);
     UD_ERROR_NULL(pDup, udR_MemoryAllocationFailure);
     udSprintfVA(pDup, expressionLength + 1, pKeyExpression, ap);
+    // Parse the assignment result here before initialising exp
+    char *pEquals = const_cast<char*>(udStrrchr(pDup, "="));
+    if (pEquals)
+    {
+      UD_ERROR_IF(pSetToValue != nullptr, udR_InvalidConfiguration);
+      *pEquals++ = 0;
+      if (*pEquals)
+      {
+        result = setToValueFromOperator.Parse(pEquals);
+        UD_ERROR_HANDLE();
+        pSetToValue = &setToValueFromOperator;
+      }
+    }
     exp.Init(pDup);
   }
   else
@@ -580,85 +593,98 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
   {
     switch (exp.op)
     {
-    case '=':
-      UD_ERROR_IF(pSetToValue, udR_ParseError); // = operator is mutually exclusive with pSetToValue
-      result = pRoot->Parse(exp.pKey); // pKey becomes a misnoma here, the other side of the key expression is the value
-      UD_ERROR_HANDLE();
-      break;
-    case '[':
-    {
-      int charCount;
-      int index = udStrAtoi(exp.pKey, &charCount);
-      UD_ERROR_IF(exp.pKey[charCount] != ']', udR_ParseError);
-      if (!pRoot->IsList())
+      case '[':
       {
-        result = pRoot->SetList();
-        UD_ERROR_HANDLE();
-      }
-      udValueList *pList = pRoot->AsList();
-      if (charCount == 0)
-      {
-        // An empty array access (ie mykey[]) indicates wanting to add to the list
-        result = pList->PushBack(&pRoot);
-        pRoot->Clear();
-      }
-      else
-      {
-        if (index < 0)
+        int charCount;
+        int index = udStrAtoi(exp.pKey, &charCount);
+        UD_ERROR_IF(exp.pKey[charCount] != ']', udR_ParseError);
+        if (!pRoot->IsList())
         {
-          // Negative indices refer to end-relative existing keys (eg -1 is last element)
-          pRoot = pList->GetElement(pList->length + index);
-          UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
+          result = pRoot->SetList();
+          UD_ERROR_HANDLE();
+        }
+        udValueList *pList = pRoot->AsList();
+        if (charCount == 0)
+        {
+          // An empty array access (ie mykey[]) indicates wanting to add to the list
+          result = pList->PushBack(&pRoot);
+          pRoot->Clear();
         }
         else
         {
-          // Positive indices can create void elements leading up to that index
-          while (pList->length <= (size_t)index)
+          // Negative indices refer to end-relative existing keys (eg -1 is last element)
+          if (index < 0)
+            index = (int)(pList->length + index);
+          UD_ERROR_IF(index < 0, udR_ObjectNotFound);
+          if (pSetToValue)
           {
-            result = pList->PushBack(udValue::s_void);
-            UD_ERROR_HANDLE();
+            // If a specific index is being assigned and there's less elements, pad with voids
+            while (pList->length <= (size_t)index)
+            {
+              result = pList->PushBack(udValue::s_void);
+              UD_ERROR_HANDLE();
+            }
           }
-          pRoot = pList->GetElement(index);
-          UD_ERROR_NULL(pRoot, udR_InternalError); // This should never happen
+          if (!pSetToValue && !exp.pRemainingExpression)
+          {
+            // Reached the end of the expression, so this item needs to be removed
+            pList->RemoveAt(index);
+            pRoot = nullptr;
+          }
+          else
+          {
+            pRoot = pList->GetElement(index);
+            UD_ERROR_NULL(pRoot, udR_InternalError); // This should never happen
+          }
         }
       }
-    }
-    break;
-    case '.':
-      if (pRoot->IsVoid())
-      {
-        // A void key can be converted into an object automatically
-        result = pRoot->SetObject();
-        UD_ERROR_HANDLE();
-      }
-      // Check that the type is an object allowing a dot dereference to be valid
-      UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
-      // Fall through to default case
-    default: // op == 0 here
-    {
-      udValueObject::KVPair *pItem;
-      udValueObject *pObject = pRoot->AsObject();
-      size_t i;
-      for (i = 0; i < pObject->attributes.length; ++i)
-      {
-        pItem = const_cast<udValueObject::KVPair *>(pObject->attributes.GetElement(i));
-        if (udStrEqual(pItem->pKey, exp.pKey))
+      break;
+      case '.':
+        if (pRoot->IsVoid() && pSetToValue)
         {
+          // A void key can be converted into an object automatically
+          result = pRoot->SetObject();
+          UD_ERROR_HANDLE();
+        }
+        // Check that the type is an object allowing a dot dereference to be valid
+        UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
+        // Fall through to default case
+      default: // op == 0 here
+      {
+        udValueObject::KVPair *pItem;
+        udValueObject *pObject = pRoot->AsObject();
+        UD_ERROR_NULL(pObject, udR_ObjectNotFound);
+        size_t i;
+        for (i = 0; i < pObject->attributes.length; ++i)
+        {
+          pItem = const_cast<udValueObject::KVPair *>(pObject->attributes.GetElement(i));
+          if (udStrEqual(pItem->pKey, exp.pKey))
+          {
+            if (!pSetToValue && !exp.pRemainingExpression)
+            {
+              // Reached the end of the expression, so this item needs to be removed
+              pObject->attributes.RemoveAt(i);
+              pRoot = nullptr;
+            }
+            else
+            {
+              pRoot = &pItem->value;
+            }
+            break;
+          }
+        }
+        if (pSetToValue && i == pObject->attributes.length)
+        {
+          UD_ERROR_IF(!pSetToValue, udR_ObjectNotFound);
+          result = pObject->attributes.PushBack(&pItem);
+          UD_ERROR_HANDLE();
+          pItem->pKey = udStrdup(exp.pKey);
+          UD_ERROR_NULL(pItem->pKey, udR_MemoryAllocationFailure);
           pRoot = &pItem->value;
-          break;
+          pItem->value.Clear(); // Init to void, will be assigned as required
         }
       }
-      if (i == pObject->attributes.length)
-      {
-        result = pObject->attributes.PushBack(&pItem);
-        UD_ERROR_HANDLE();
-        pItem->pKey = udStrdup(exp.pKey);
-        UD_ERROR_NULL(pItem->pKey, udR_MemoryAllocationFailure);
-        pRoot = &pItem->value;
-        pItem->value.Clear(); // Init to void, will be assigned as required
-      }
-    }
-    break;
+      break;
     }
   }
   if (pSetToValue)
@@ -687,11 +713,11 @@ udResult udValue::Set(const char *pKeyExpression, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Set(udValue &value, const char *pKeyExpression, ...)
+udResult udValue::Set(udValue *pValue, const char *pKeyExpression, ...)
 {
   va_list ap;
   va_start(ap, pKeyExpression);
-  udResult result = udJSON_SetVA(this, &value, pKeyExpression, ap);
+  udResult result = udJSON_SetVA(this, pValue, pKeyExpression, ap);
   va_end(ap);
   return result;
 }
@@ -815,143 +841,180 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
-udResult udValue::ExportValue(const char *pKey, udValue::LineList *pLines, int indent, ExportValueOptions options) const
+udResult udValue::ExportValue(const char *pKey, udValue::LineList *pLines, int indent, ExportValueOptions options, bool comma) const
 {
   udResult result = udR_Success;
   const char *pStr = nullptr;
   static char pEmpty[] = "";
-  const char *pComma = (options & EVO_Comma) ? "," : pEmpty;
+  const char *pComma = (comma) ? "," : pEmpty;
   const char *pKeyText = nullptr;
   if (pKey && (options & EVO_XML))
     result = udSprintf(&pKeyText, "%s=", pKey);
   else if (pKey)
-    result = udSprintf(&pKeyText, "\"%s\": ", pKey);
+    result = udSprintf(&pKeyText, "\"%s\":%s", pKey, (options & EVO_StripWhiteSpace) ? "" : " ");
   else
     pKeyText = pEmpty;
+  if (options & EVO_StripWhiteSpace)
+    indent = 0;
 
-  switch (type)
+  if (arrayLength)
   {
-    case udVT_Void:    result = udSprintf(&pStr, "%*s%snull%s", indent, "", pKeyText, pComma); break;
-    case udVT_Bool:    result = udSprintf(&pStr, "%*s%s%s%s", indent, "", pKeyText, u.bVal ? "true" : "false", pComma); break;
-    case udVT_Uint8:   result = udSprintf(&pStr, "%*s%s%d%s", indent, "", pKeyText, u.u8Val, pComma); break;
-    case udVT_Int32:   result = udSprintf(&pStr, "%*s%s%d%s", indent, "", pKeyText, u.i32Val, pComma); break;
-    case udVT_Int64:   result = udSprintf(&pStr, "%*s%s%lld%s", indent, "", pKeyText, u.i64Val, pComma); break;
-    case udVT_Float:   result = udSprintf(&pStr, "%*s%s%f%s", indent, "", pKeyText, u.fVal, pComma); break;
-    case udVT_Double:  result = udSprintf(&pStr, "%*s%s%lf%s", indent, "", pKeyText, u.dVal, pComma); break;
-    case udVT_String:  result = udSprintf(&pStr, "%*s%s\"%s\"%s", indent, "", pKeyText, u.pStr, pComma); break;
-    case udVT_List:
+    if (!(options & EVO_XML))
     {
-      if (!(options & EVO_XML))
+      result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+      UD_ERROR_HANDLE();
+      result = pLines->PushBack(pStr);
+      UD_ERROR_HANDLE();
+      pStr = nullptr;
+    }
+    for (size_t i = 0; i < arrayLength; ++i)
+    {
+      udValue temp;
+      switch (type)
       {
-        result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+        case udVT_Bool:    temp.Set(GetArrayBool()[i]); break;
+        case udVT_Uint8:   temp.Set(GetArrayUint8()[i]); break;
+        case udVT_Int32:   temp.Set(GetArrayInt32()[i]); break;
+        case udVT_Int64:   temp.Set(GetArrayInt64()[i]); break;
+        case udVT_Float:   temp.Set(GetArrayFloat()[i]); break;
+        case udVT_Double:  temp.Set(GetArrayDouble()[i]); break;
+        case udVT_String:  temp.Set(GetArrayString()[i]); break;
+        default: UD_ERROR_SET(udR_ObjectTypeMismatch);
+      }
+      result = temp.ExportValue(nullptr, pLines, indent + 2, options, i < (arrayLength - 1));
+      UD_ERROR_HANDLE();
+    }
+    if (!(options & EVO_XML))
+    {
+      result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
+    }
+  }
+  else
+  {
+    switch (type)
+    {
+      case udVT_Void:    result = udSprintf(&pStr, "%*s%snull%s", indent, "", pKeyText, pComma); break;
+      case udVT_Bool:    result = udSprintf(&pStr, "%*s%s%s%s", indent, "", pKeyText, u.bVal ? "true" : "false", pComma); break;
+      case udVT_Uint8:   result = udSprintf(&pStr, "%*s%s%d%s", indent, "", pKeyText, u.u8Val, pComma); break;
+      case udVT_Int32:   result = udSprintf(&pStr, "%*s%s%d%s", indent, "", pKeyText, u.i32Val, pComma); break;
+      case udVT_Int64:   result = udSprintf(&pStr, "%*s%s%lld%s", indent, "", pKeyText, u.i64Val, pComma); break;
+      case udVT_Float:   result = udSprintf(&pStr, "%*s%s%f%s", indent, "", pKeyText, u.fVal, pComma); break;
+      case udVT_Double:  result = udSprintf(&pStr, "%*s%s%lf%s", indent, "", pKeyText, u.dVal, pComma); break;
+      case udVT_String:  result = udSprintf(&pStr, "%*s%s\"%s\"%s", indent, "", pKeyText, u.pStr, pComma); break;
+      case udVT_List:
+      {
+        if (!(options & EVO_XML))
+        {
+          result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+          UD_ERROR_HANDLE();
+          result = pLines->PushBack(pStr);
+          UD_ERROR_HANDLE();
+          pStr = nullptr;
+        }
+        udValueList *pList = AsList();
+        for (size_t i = 0; i < pList->length; ++i)
+        {
+          result = pList->GetElement(i)->ExportValue(nullptr, pLines, indent + 2, options, i < (pList->length - 1));
+          UD_ERROR_HANDLE();
+        }
+        if (!(options & EVO_XML))
+        {
+          result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
+        }
+      }
+      break;
+
+      case udVT_Object:
+      {
+        result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
         UD_ERROR_HANDLE();
         result = pLines->PushBack(pStr);
         UD_ERROR_HANDLE();
         pStr = nullptr;
-      }
-      udValueList *pList = AsList();
-      for (size_t i = 0; i < pList->length; ++i)
-      {
-        result = pList->GetElement(i)->ExportValue(nullptr, pLines, indent + 2, (ExportValueOptions)(options | (i < (pList->length - 1) ? EVO_Comma : EVO_None)));
-        UD_ERROR_HANDLE();
-      }
-      if (!(options & EVO_XML))
-      {
-        result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
-      }
-    }
-    break;
-
-    case udVT_Object:
-    {
-      result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
-      UD_ERROR_HANDLE();
-      result = pLines->PushBack(pStr);
-      UD_ERROR_HANDLE();
-      pStr = nullptr;
-      udValueObject *pObject = AsObject();
-      for (size_t i = 0; i < pObject->attributes.length; ++i)
-      {
-        udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
-        result = pItem->value.ExportValue(pItem->pKey, pLines, indent + 2, i < (pObject->attributes.length - 1) ? EVO_Comma : EVO_None);
-        UD_ERROR_HANDLE();
-      }
-      result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
-    }
-    break;
-
-    case udVT_Element:
-    {
-      bool tagClosed = false;
-      udValueElement *pElement = AsElement();
-      const char *pTempStr;
-      result = udSprintf(&pStr, "%*s%s<%s%s", indent, "", pKeyText, pElement->pName, pElement->attributes.length ? "" : ">");
-      UD_ERROR_HANDLE();
-      // Export all the attributes to a separate list to be combined to a single line
-      LineList attributeLines;
-      attributeLines.Init();
-      for (size_t i = 0; i < pElement->attributes.length; ++i)
-      {
-        const udValueObject::KVPair &attribute = pElement->attributes[i];
-        UD_ERROR_IF(attribute.value.type < udVT_Bool || attribute.value.type > udVT_String, udR_ObjectTypeMismatch);
-        result = attribute.value.ExportValue(attribute.pKey, &attributeLines, 0, EVO_XML);
-        UD_ERROR_HANDLE();
-        const char *pAttrText;
-        if (attributeLines.PopBack(&pAttrText))
+        udValueObject *pObject = AsObject();
+        for (size_t i = 0; i < pObject->attributes.length; ++i)
         {
-          // Combine the element onto the tag line, appending a closing or self-closing tag as required
-          const char *pClose = "";
-          if (i == (pElement->attributes.length - 1))
-          {
-            if (pElement->children.length)
-            {
-              pClose = ">";
-            }
-            else
-            {
-              pClose = "/>";
-              tagClosed = true;
-            }
-          }
+          udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
+          result = pItem->value.ExportValue(pItem->pKey, pLines, indent + 2, options, i < (pObject->attributes.length - 1));
+          UD_ERROR_HANDLE();
+        }
+        result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
+      }
+      break;
 
-          result = udSprintf(&pTempStr, "%s %s%s", pStr, pAttrText,  pClose);
-          udFree(pAttrText);
+      case udVT_Element:
+      {
+        bool tagClosed = false;
+        udValueElement *pElement = AsElement();
+        const char *pTempStr;
+        result = udSprintf(&pStr, "%*s%s<%s%s", indent, "", pKeyText, pElement->pName, pElement->attributes.length ? "" : ">");
+        UD_ERROR_HANDLE();
+        // Export all the attributes to a separate list to be combined to a single line
+        LineList attributeLines;
+        attributeLines.Init();
+        for (size_t i = 0; i < pElement->attributes.length; ++i)
+        {
+          const udValueObject::KVPair &attribute = pElement->attributes[i];
+          UD_ERROR_IF(attribute.value.type < udVT_Bool || attribute.value.type > udVT_String, udR_ObjectTypeMismatch);
+          result = attribute.value.ExportValue(attribute.pKey, &attributeLines, 0, EVO_XML, false);
+          UD_ERROR_HANDLE();
+          const char *pAttrText;
+          if (attributeLines.PopBack(&pAttrText))
+          {
+            // Combine the element onto the tag line, appending a closing or self-closing tag as required
+            const char *pClose = "";
+            if (i == (pElement->attributes.length - 1))
+            {
+              if (pElement->children.length)
+              {
+                pClose = ">";
+              }
+              else
+              {
+                pClose = "/>";
+                tagClosed = true;
+              }
+            }
+
+            result = udSprintf(&pTempStr, "%s %s%s", pStr, pAttrText,  pClose);
+            udFree(pAttrText);
+            UD_ERROR_HANDLE();
+            udFree(pStr);
+            pStr = pTempStr;
+          }
+        }
+        // If a single string value, combine to one line
+        if (pElement->children.length == 1 && pElement->children[0].type == udVT_String)
+        {
+          // Combine the value and closing tag
+          result = udSprintf(&pTempStr, "%s%s</%s>", pStr, pElement->children[0].AsString(), pElement->pName);
           UD_ERROR_HANDLE();
           udFree(pStr);
           pStr = pTempStr;
+          tagClosed = true;
         }
-      }
-      // If a single string value, combine to one line
-      if (pElement->children.length == 1 && pElement->children[0].type == udVT_String)
-      {
-        // Combine the value and closing tag
-        result = udSprintf(&pTempStr, "%s%s</%s>", pStr, pElement->children[0].AsString(), pElement->pName);
+
+        attributeLines.Deinit();
+        result = pLines->PushBack(pStr);
         UD_ERROR_HANDLE();
-        udFree(pStr);
-        pStr = pTempStr;
-        tagClosed = true;
-      }
+        pStr = nullptr;
 
-      attributeLines.Deinit();
-      result = pLines->PushBack(pStr);
-      UD_ERROR_HANDLE();
-      pStr = nullptr;
-
-      if (!tagClosed)
-      {
-        for (size_t i = 0; i < pElement->children.length; ++i)
-          pElement->children[i].ExportValue(nullptr, pLines, indent + 2, EVO_XML);
-        if (pElement->attributes.length == 0 || pElement->children.length > 0)
+        if (!tagClosed)
         {
-          result = udSprintf(&pStr, "%*s%s</%s>", indent, "", pKeyText, pElement->pName);
-          UD_ERROR_HANDLE();
+          for (size_t i = 0; i < pElement->children.length; ++i)
+            pElement->children[i].ExportValue(nullptr, pLines, indent + 2, EVO_XML, false);
+          if (pElement->attributes.length == 0 || pElement->children.length > 0)
+          {
+            result = udSprintf(&pStr, "%*s%s</%s>", indent, "", pKeyText, pElement->pName);
+            UD_ERROR_HANDLE();
+          }
         }
       }
-    }
-    break;
+      break;
 
-    default:
-      UD_ERROR_SET(udR_InternalError);
+      default:
+        UD_ERROR_SET(udR_InternalError);
+    }
   }
   UD_ERROR_HANDLE();
   if (pStr)
@@ -969,7 +1032,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Export(const char **ppText) const
+udResult udValue::Export(const char **ppText, udValue::ExportOption option) const
 {
   udResult result;
   udValue::LineList lines;
@@ -979,12 +1042,12 @@ udResult udValue::Export(const char **ppText) const
   lines.Init();
   UD_ERROR_NULL(ppText, udR_InvalidParameter_);
 
-  result = ExportValue(nullptr, &lines, 0, EVO_None);
+  result = ExportValue(nullptr, &lines, 0, (ExportValueOptions)option, false);
   UD_ERROR_HANDLE();
 
   totalChars = 0;
   for (size_t i = 0; i < lines.length; ++i)
-    totalChars += udStrlen(lines[i]) + 2;
+    totalChars += udStrlen(lines[i]) + ((option & EO_StripWhiteSpace) ? 0 : 2);
   pText = udAllocType(char, totalChars + 1, udAF_Zero);
   totalChars = 0;
   for (size_t i = 0; i < lines.length; ++i)
@@ -992,8 +1055,11 @@ udResult udValue::Export(const char **ppText) const
     size_t len = udStrlen(lines[i]);
     memcpy(pText + totalChars, lines[i], len);
     totalChars += len;
-    memcpy(pText + totalChars, "\r\n", 2);
-    totalChars += 2;
+    if (!(option & EO_StripWhiteSpace))
+    {
+      memcpy(pText + totalChars, "\r\n", 2);
+      totalChars += 2;
+    }
   }
   *ppText = pText;
   pText = nullptr;
@@ -1039,7 +1105,7 @@ udResult udValue::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber
       pItem->pKey = k.AsString();
       k.Clear(); // Clear k without freeing the memory, as it belongs to pItem now
 
-                 // Check and move past the colon following the key
+      // Check and move past the colon following the key
       UD_ERROR_IF(*pJSON != ':', udR_ParseError);
       pJSON = udStrSkipWhiteSpace(pJSON + 1, nullptr, pLineNumber);
 
@@ -1198,4 +1264,3 @@ epilogue:
     *pCharCount = int(pXML - pStartPointer);
   return result;
 }
-

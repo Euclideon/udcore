@@ -23,21 +23,28 @@ inline bool udValue::IsVoid()        const { return (type == udVT_Void); }
 inline bool udValue::IsNumeric()     const { return (type >= udVT_Uint8 && type <= udVT_Double); }
 inline bool udValue::IsIntegral()    const { return (type >= udVT_Uint8 && type <= udVT_Int64); }
 inline bool udValue::IsString()      const { return (type == udVT_String); }
-inline bool udValue::IsList()        const { return (type == udVT_List); }
-inline bool udValue::IsObject()      const { return (type == udVT_Object); }
+inline bool udValue::IsList()        const { return (type == udVT_List) || (type == udVT_Element); }
+inline bool udValue::IsObject()      const { return (type == udVT_Object) || (type == udVT_Element); }
 inline bool udValue::IsElement()     const { return (type == udVT_Element); }
 inline bool udValue::HasMemory()     const { return (type >= udVT_String && type < udVT_Count); }
 inline size_t udValue::ListLength()  const { udValueList *pList = AsList(); return pList ? pList->length : 0; }
 inline size_t udValue::ArrayLength() const { return (size_t)arrayLength; }
 
 // Array access
-inline bool *udValue::GetArrayBool(size_t *pLength)     { if (type == udVT_Bool)    { if (arrayLength) { *pLength = arrayLength; return (bool    *)u.pArray;  } else { *pLength = 1; return &u.bVal;   } } else return nullptr; }
-inline uint8_t *udValue::GetArrayUint8(size_t *pLength) { if (type == udVT_Uint8)   { if (arrayLength) { *pLength = arrayLength; return (uint8_t  *)u.pArray; } else { *pLength = 1; return &u.u8Val;  } } else return nullptr; }
-inline int32_t *udValue::GetArrayInt32(size_t *pLength) { if (type == udVT_Int32)   { if (arrayLength) { *pLength = arrayLength; return (int32_t *)u.pArray;  } else { *pLength = 1; return &u.i32Val; } } else return nullptr; }
-inline int64_t *udValue::GetArrayInt64(size_t *pLength) { if (type == udVT_Int64)   { if (arrayLength) { *pLength = arrayLength; return (int64_t *)u.pArray;  } else { *pLength = 1; return &u.i64Val; } } else return nullptr; }
-inline float *udValue::GetArrayFloat(size_t *pLength)   { if (type == udVT_Float)   { if (arrayLength) { *pLength = arrayLength; return (float *)u.pArray;    } else { *pLength = 1; return &u.fVal;   } } else return nullptr; }
-inline double *udValue::GetArrayDouble(size_t *pLength) { if (type == udVT_Double)  { if (arrayLength) { *pLength = arrayLength; return (double *)u.pArray;   } else { *pLength = 1; return &u.dVal;   } } else return nullptr; }
-inline char **udValue::GetArrayString(size_t *pLength)  { if (type == udVT_String)  { if (arrayLength) { *pLength = arrayLength; return (char **)u.pArray;    } else { *pLength = 1; return &u.pStr;   } } else return nullptr; }
+inline       bool *udValue::GetArrayBool(size_t *pLength)           { if (type == udVT_Bool)   { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      bool    *)u.pArray;  } else { if (pLength) *pLength = 1; return &u.bVal;   } } else return nullptr; }
+inline const bool *udValue::GetArrayBool(size_t *pLength) const     { if (type == udVT_Bool)   { if (arrayLength) { if (pLength) *pLength = arrayLength; return (const bool    *)u.pArray;  } else { if (pLength) *pLength = 1; return &u.bVal;   } } else return nullptr; }
+inline       uint8_t *udValue::GetArrayUint8(size_t *pLength)       { if (type == udVT_Uint8)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      uint8_t  *)u.pArray; } else { if (pLength) *pLength = 1; return &u.u8Val;  } } else return nullptr; }
+inline const uint8_t *udValue::GetArrayUint8(size_t *pLength) const { if (type == udVT_Uint8)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (const uint8_t  *)u.pArray; } else { if (pLength) *pLength = 1; return &u.u8Val;  } } else return nullptr; }
+inline       int32_t *udValue::GetArrayInt32(size_t *pLength)       { if (type == udVT_Int32)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      int32_t *)u.pArray;  } else { if (pLength) *pLength = 1; return &u.i32Val; } } else return nullptr; }
+inline const int32_t *udValue::GetArrayInt32(size_t *pLength) const { if (type == udVT_Int32)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (const int32_t *)u.pArray;  } else { if (pLength) *pLength = 1; return &u.i32Val; } } else return nullptr; }
+inline       int64_t *udValue::GetArrayInt64(size_t *pLength)       { if (type == udVT_Int64)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      int64_t *)u.pArray;  } else { if (pLength) *pLength = 1; return &u.i64Val; } } else return nullptr; }
+inline const int64_t *udValue::GetArrayInt64(size_t *pLength) const { if (type == udVT_Int64)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (const int64_t *)u.pArray;  } else { if (pLength) *pLength = 1; return &u.i64Val; } } else return nullptr; }
+inline       float *udValue::GetArrayFloat(size_t *pLength)         { if (type == udVT_Float)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      float *)u.pArray;    } else { if (pLength) *pLength = 1; return &u.fVal;   } } else return nullptr; }
+inline const float *udValue::GetArrayFloat(size_t *pLength) const   { if (type == udVT_Float)  { if (arrayLength) { if (pLength) *pLength = arrayLength; return (const float *)u.pArray;    } else { if (pLength) *pLength = 1; return &u.fVal;   } } else return nullptr; }
+inline       double *udValue::GetArrayDouble(size_t *pLength)       { if (type == udVT_Double) { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      double *)u.pArray;   } else { if (pLength) *pLength = 1; return &u.dVal;   } } else return nullptr; }
+inline const double *udValue::GetArrayDouble(size_t *pLength) const { if (type == udVT_Double) { if (arrayLength) { if (pLength) *pLength = arrayLength; return (const double *)u.pArray;   } else { if (pLength) *pLength = 1; return &u.dVal;   } } else return nullptr; }
+inline       char **udValue::GetArrayString(size_t *pLength)        { if (type == udVT_String) { if (arrayLength) { if (pLength) *pLength = arrayLength; return (      char **)u.pArray;    } else { if (pLength) *pLength = 1; return &u.pStr;   } } else return nullptr; }
+inline char *const *udValue::GetArrayString(size_t *pLength) const  { if (type == udVT_String) { if (arrayLength) { if (pLength) *pLength = arrayLength; return (char *const *)u.pArray;    } else { if (pLength) *pLength = 1; return &u.pStr;   } } else return nullptr; }
 
 inline udValueList *udValue::AsList() const               { return (type == udVT_List) ? u.pList : (type == udVT_Element) ? &u.pElement->children : nullptr; }
 inline udValueObject *udValue::AsObject() const           { return (type == udVT_Object) ? u.pObject : AsElement(); }
