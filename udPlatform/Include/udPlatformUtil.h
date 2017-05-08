@@ -231,6 +231,7 @@ udResult udBase64Decode(const char *pString, size_t length, uint8_t *pOutput, si
 // encodes binaryLength bytes from pBinary to strLength characters in pString
 // Pass nullptr for pString to count output bytes without actually writing
 udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten = nullptr);
+udResult udBase64Encode(const char **ppDestStr, const uint8_t *pBinary, size_t binaryLength);
 
 // *********************************************************************
 // Add a string to a dynamic table of unique strings.

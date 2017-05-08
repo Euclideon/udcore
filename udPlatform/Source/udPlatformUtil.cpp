@@ -911,6 +911,28 @@ epilogue:
 }
 
 // *********************************************************************
+// Author: Dave Pevreal, May 2017
+udResult udBase64Encode(const char **ppDestStr, const uint8_t *pBinary, size_t binaryLength)
+{
+  udResult result;
+  size_t expectedOutputLength = (binaryLength + 2) / 3 * 4 + 1; // +1 for nul terminator
+  char *pStr = nullptr;
+
+  UD_ERROR_NULL(ppDestStr, udR_InvalidParameter_);
+  pStr = udAllocType(char, expectedOutputLength, udAF_None);
+  UD_ERROR_NULL(pStr, udR_MemoryAllocationFailure);
+  result = udBase64Encode(pBinary, binaryLength, pStr, expectedOutputLength);
+  UD_ERROR_HANDLE();
+  *ppDestStr = pStr;
+  pStr = nullptr;
+  result = udR_Success;
+
+epilogue:
+  udFree(pStr);
+  return result;
+}
+
+// *********************************************************************
 // Author: Dave Pevreal, March 2014
 int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString)
 {
