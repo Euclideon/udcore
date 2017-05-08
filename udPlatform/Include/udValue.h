@@ -119,6 +119,11 @@ public:
   // Export to a JSON/XML string depending on content
   udResult Export(const char **ppText, ExportOption option = EO_None) const;
 
+  // Create a HMAC of the white-space-stripped text (giving a private-key digital signature)
+  // This function is a simple helper provided here only to encourage standardisation of how signatures are created/used
+  // Remember to remove the existing "signature" attribute before calculating the signature
+  udResult CalculateHMAC(uint8_t hmac[32], size_t hmacLen, const uint8_t *pKey, size_t keyLen) const;
+
 protected:
   typedef udChunkedArray<const char*, 32> LineList;
   enum ExportValueOptions { EVO_None = 0, EVO_StripWhiteSpace=1, EVO_XML = 2 };

@@ -1,5 +1,6 @@
 #include "udValue.h"
 #include "udPlatform.h"
+#include "udCrypto.h"
 
 const udValue udValue::s_void;
 const size_t udValue::s_udValueTypeSize[udVT_Count] =
@@ -570,7 +571,7 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
     UD_ERROR_NULL(pDup, udR_MemoryAllocationFailure);
     udSprintfVA(pDup, expressionLength + 1, pKeyExpression, ap);
     // Parse the assignment result here before initialising exp
-    char *pEquals = const_cast<char*>(udStrrchr(pDup, "="));
+    char *pEquals = const_cast<char*>(udStrchr(pDup, "="));
     if (pEquals)
     {
       UD_ERROR_IF(pSetToValue != nullptr, udR_InvalidConfiguration);
@@ -628,7 +629,8 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
           if (!pSetToValue && !exp.pRemainingExpression)
           {
             // Reached the end of the expression, so this item needs to be removed
-            pList->RemoveAt(index);
+            if (index < pList->length)
+              pList->RemoveAt(index);
             pRoot = nullptr;
           }
           else
@@ -1066,9 +1068,24 @@ udResult udValue::Export(const char **ppText, udValue::ExportOption option) cons
 
 epilogue:
   for (size_t i = 0; i < lines.length; ++i)
-  {
     udFree(lines[i]);
-  }
+  lines.Deinit();
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udResult udValue::CalculateHMAC(uint8_t hmac[32], size_t hmacLen, const uint8_t *pKey, size_t keyLen) const
+{
+  udResult result;
+  const char *pExport = nullptr;
+
+  result = Export(&pExport, EO_StripWhiteSpace);
+  UD_ERROR_HANDLE();
+  result = udCrypto_HMAC(udCH_SHA256, pKey, keyLen, (const uint8_t*)pExport, udStrlen(pExport), hmac, hmacLen);
+
+epilogue:
+  udFree(pExport);
   return result;
 }
 
