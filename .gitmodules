@@ -1,6 +1,3 @@
 [submodule "legacy"]
 	path = legacy
 	url = ../../rnd/legacy.git
-[submodule "bin/premake/modules/qt"]
-	path = bin/premake/modules/qt
-	url = ../../programmers/premake-qt.git
