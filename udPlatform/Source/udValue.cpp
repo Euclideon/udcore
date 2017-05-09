@@ -89,11 +89,38 @@ void udValue::Destroy()
       pItem->value.Destroy();
     }
     u.pObject->attributes.Deinit();
+    udFree(u.pObject);
+  }
+  else if (type == udVT_Element)
+  {
+    for (size_t i = 0; i < u.pElement->attributes.length; ++i)
+    {
+      udValueObject::KVPair *pItem = u.pElement->attributes.GetElement(i);
+      if (pItem)
+      {
+        udFree(pItem->pKey);
+        pItem->value.Destroy();
+      }
+    }
+    u.pElement->attributes.Deinit();
+    for (size_t i = 0; i < u.pElement->children.length; ++i)
+    {
+      udValue *pChild = u.pElement->children.GetElement(i);
+      if (pChild)
+        pChild->Destroy();
+    }
+    u.pElement->children.Deinit();
+    udFree(u.pElement->pName);
+    udFree(u.pElement);
   }
   else if (type == udVT_List)
   {
     for (size_t i = 0; i < u.pList->length; ++i)
-      u.pList->GetElement(i)->Destroy();
+    {
+      udValue *pChild = u.pList->GetElement(i);
+      if (pChild)
+        pChild->Destroy();
+    }
     u.pList->Deinit();
     udFree(u.pList);
   }
@@ -665,6 +692,8 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
             if (!pSetToValue && !exp.pRemainingExpression)
             {
               // Reached the end of the expression, so this item needs to be removed
+              udFree(pItem->pKey);
+              pItem->value.Destroy();
               pObject->attributes.RemoveAt(i);
               pRoot = nullptr;
             }
@@ -1029,6 +1058,8 @@ udResult udValue::ExportValue(const char *pKey, udValue::LineList *pLines, int i
 
 epilogue:
   udFree(pStr);
+  if (pKeyText != pEmpty)
+    udFree(pKeyText);
   return result;
 }
 

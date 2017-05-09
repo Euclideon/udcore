@@ -1,4 +1,5 @@
 #include "udPlatform.h"
+#include "udThread.h"
 #include <stdlib.h>
 #include <string.h>
 #if __MEMORY_DEBUG__
