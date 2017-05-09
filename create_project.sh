@@ -24,13 +24,13 @@ fi
 # perform action
 if [[ $ACTION == "1" ]] ; then
 	echo "Creating GNU Makefile..."
-	bin/premake/premake5 gmake
+	bin/premake-bin/premake5 gmake
 elif [[ $ACTION == "2" ]] ; then
 	echo "Creating MonoDevelop project..."
-	bin/premake/premake5 monodevelop
+	bin/premake-bin/premake5 monodevelop
 elif [[ $ACTION == "3" ]] ; then
 	echo "Creating CodeLite project..."
-	bin/premake/premake5 codelite
+	bin/premake-bin/premake5 codelite
 else
 	echo "Invalid input: "$REPLY
 fi
