@@ -85,9 +85,9 @@ size_t udStrlen(const char *str);
 // *********************************************************************
 // String maniplulation functions, NULL-safe
 // *********************************************************************
-// udStrdup behaves much like strdup, optionally allocating additional characters
+// udStrdup behaves much like strdup, optionally allocating additional characters and replicating NULL
 char *udStrdup(const char *s, size_t additionalChars = 0);
-// udStrndup behaves much like strndup, optionally allocating additional characters
+// udStrndup behaves much like strndup, optionally allocating additional characters and replicating NULL
 char *udStrndup(const char *s, size_t maxChars, size_t additionalChars = 0);
 // udStrchr behaves much like strchr, optionally also providing the index
 // of the find, which will be the length if not found (ie when null is returned)

@@ -303,6 +303,7 @@ bool udStrBeginsWithi(const char *s, const char *prefix)
 // Author: Dave Pevreal, March 2014
 char *udStrdup(const char *s, size_t additionalChars)
 {
+  if (!s && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
   if (!s) s = s_udStrEmptyString;
 
   size_t len = udStrlen(s) + 1;
@@ -318,6 +319,7 @@ char *udStrdup(const char *s, size_t additionalChars)
 // Author: Dave Pevreal, May 2017
 char *udStrndup(const char *s, size_t maxChars, size_t additionalChars)
 {
+  if (!s && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
   if (!s) s = s_udStrEmptyString;
   // Find minimum of maxChars and udStrlen(s) without using udStrlen which can be slow
   size_t len = 0;

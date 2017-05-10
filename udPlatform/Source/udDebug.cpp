@@ -13,7 +13,7 @@ void udDebugPrintf(const char *format, ...)
   char bufferStackMem[80];
   int prefix = 0;
   char *pBuffer = bufferStackMem;
-  size_t bufferLen = sizeof(bufferStackMem);
+  int bufferLen = (int)sizeof(bufferStackMem);
   int required = 0;
 
   static bool multiThreads = false;
