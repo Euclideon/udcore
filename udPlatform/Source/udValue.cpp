@@ -72,11 +72,7 @@ public:
 // Author: Dave Pevreal, April 2017
 void udValue::Destroy()
 {
-  if (arrayLength)
-  {
-    udFree(u.pArray);
-  }
-  else if (type == udVT_String)
+  if (type == udVT_String)
   {
     udFree(u.pStr);
   }
@@ -126,7 +122,6 @@ void udValue::Destroy()
   }
 
   type = udVT_Void;
-  arrayLength = 0;
   u.i64Val = 0;
 }
 
@@ -158,7 +153,6 @@ udResult udValue::SetList()
   UD_ERROR_HANDLE();
 
   type = udVT_List;
-  arrayLength = 0;
   u.pList = pTempList;
   pTempList = nullptr;
   result = udR_Success;
@@ -182,7 +176,6 @@ udResult udValue::SetObject()
   UD_ERROR_HANDLE();
 
   type = udVT_Object;
-  arrayLength = 0;
   u.pObject = pTempObject;
   pTempObject = nullptr;
   result = udR_Success;
@@ -208,7 +201,6 @@ udResult udValue::SetElement()
   UD_ERROR_HANDLE();
 
   type = udVT_Element;
-  arrayLength = 0;
   u.pElement = pTempElement;
   pTempElement = nullptr;
   result = udR_Success;
@@ -220,12 +212,96 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
+udResult udValue::Set(const udDouble3 &v)
+{
+  udResult result;
+  Destroy();
+  result = SetList();
+  UD_ERROR_HANDLE();
+  for (size_t i = 0; i < v.ElementCount; ++i)
+    u.pList->PushBack(udValue(v[i]));
+
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udResult udValue::Set(const udDouble4 &v)
+{
+  udResult result;
+  Destroy();
+  result = SetList();
+  UD_ERROR_HANDLE();
+  for (size_t i = 0; i < v.ElementCount; ++i)
+    u.pList->PushBack(udValue(v[i]));
+
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udResult udValue::Set(const udQuaternion<double> &v)
+{
+  udResult result;
+  Destroy();
+  result = SetList();
+  UD_ERROR_HANDLE();
+  for (size_t i = 0; i < v.ElementCount; ++i)
+    u.pList->PushBack(udValue(v[i]));
+
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udResult udValue::Set(const udDouble4x4 &v, bool shrink)
+{
+  udResult result = udR_Success;
+  size_t elements = 16;
+  if (type != udVT_List || u.pList->length != 0)
+  {
+    Destroy();
+    result = SetList();
+    UD_ERROR_HANDLE();
+  }
+  if (shrink)
+  {
+    if ((v.axis.x.w == 0.0) && (v.axis.y.w == 0.0) && (v.axis.z.w == 0.0) && (v.axis.t.w == 1.0))
+    {
+      elements = 12;
+      if ((v.axis.t.x == 0.0) && (v.axis.t.y == 0.0) && (v.axis.t.z == 0.0))
+        elements = 9;
+    }
+  }
+  switch (elements)
+  {
+    case 9:
+    case 12:
+      for (size_t i = 0; i < elements; ++i)
+      {
+        result = u.pList->PushBack(udValue(v.a[(i / 3) * 4 + (i % 3)]));
+        UD_ERROR_HANDLE();
+      }
+      break;
+    default:
+      for (size_t i = 0; i < elements; ++i)
+      {
+        result = u.pList->PushBack(udValue(v.a[i]));
+        UD_ERROR_HANDLE();
+      }
+      break;
+  }
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
 bool udValue::IsEqualTo(const udValue &other) const
 {
-  if (arrayLength != other.arrayLength)
-    return false;
-  if (arrayLength)
-    return (type == other.type && !memcmp(u.pArray, other.u.pArray, arrayLength * s_udValueTypeSize[type]));
   // Simple case of actual complete binary equality
   if (type == other.type && u.i64Val == other.u.i64Val)
     return true;
@@ -239,33 +315,12 @@ bool udValue::IsEqualTo(const udValue &other) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::SetArray(udValueType arrayType, size_t length)
-{
-  udResult result;
-  Destroy();
-  UD_ERROR_IF(arrayType >= udVT_String, udR_ObjectTypeMismatch);
-  u.pArray = udAllocFlags(s_udValueTypeSize[type] * length, udAF_Zero);
-  UD_ERROR_NULL(u.pArray, udR_MemoryAllocationFailure);
-
-  type = arrayType;
-  arrayLength = (int32_t)length;
-  result = udR_Success;
-
-epilogue:
-  return result;
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, April 2017
 bool udValue::AsBool(bool defaultValue) const
 {
   switch (type)
   {
     case udVT_Bool:    return u.bVal;
-    case udVT_Uint8:   return u.u8Val != 0;
-    case udVT_Int32:   return u.i32Val != 0;
     case udVT_Int64:   return u.i64Val != 0;
-    case udVT_Float:   return u.fVal != 0.f;
     case udVT_Double:  return u.dVal != 0.0;
     case udVT_String:  return udStrEquali(u.pStr, "true");
     case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsBool(defaultValue) : defaultValue;
@@ -276,37 +331,15 @@ bool udValue::AsBool(bool defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-uint8_t udValue::AsUint8(uint8_t defaultValue) const
+int udValue::AsInt(int32_t defaultValue) const
 {
   switch (type)
   {
-    case udVT_Bool:    return (uint8_t)u.bVal;
-    case udVT_Uint8:   return          u.u8Val;
-    case udVT_Int32:   return (uint8_t)u.i32Val;
-    case udVT_Int64:   return (uint8_t)u.i64Val;
-    case udVT_Float:   return (uint8_t)u.fVal;
-    case udVT_Double:  return (uint8_t)u.dVal;
-    case udVT_String:  return (uint8_t)udStrAtoi(u.pStr);
-    case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsUint8(defaultValue) : defaultValue;
-    default:
-      return defaultValue;
-  }
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, April 2017
-int32_t udValue::AsInt32(int32_t defaultValue) const
-{
-  switch (type)
-  {
-    case udVT_Bool:    return (int32_t)u.bVal;
-    case udVT_Uint8:   return (int32_t)u.u8Val;
-    case udVT_Int32:   return          u.i32Val;
-    case udVT_Int64:   return (int32_t)u.i64Val;
-    case udVT_Float:   return (int32_t)u.fVal;
-    case udVT_Double:  return (int32_t)u.dVal;
-    case udVT_String:  return          udStrAtoi(u.pStr);
-    case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsInt32(defaultValue) : defaultValue;
+    case udVT_Bool:    return (int)u.bVal;
+    case udVT_Int64:   return (int)u.i64Val;
+    case udVT_Double:  return (int)u.dVal;
+    case udVT_String:  return      udStrAtoi(u.pStr);
+    case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsInt(defaultValue) : defaultValue;
     default:
       return defaultValue;
   }
@@ -319,32 +352,10 @@ int64_t udValue::AsInt64(int64_t defaultValue) const
   switch (type)
   {
     case udVT_Bool:    return (int64_t)u.bVal;
-    case udVT_Uint8:   return (int64_t)u.u8Val;
-    case udVT_Int32:   return (int64_t)u.i32Val;
     case udVT_Int64:   return          u.i64Val;
-    case udVT_Float:   return (int64_t)u.fVal;
     case udVT_Double:  return (int64_t)u.dVal;
     case udVT_String:  return          udStrAtoi64(u.pStr);
     case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsInt64(defaultValue) : defaultValue;
-    default:
-      return defaultValue;
-  }
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, April 2017
-float udValue::AsFloat(float defaultValue) const
-{
-  switch (type)
-  {
-    case udVT_Bool:    return (float)u.bVal;
-    case udVT_Uint8:   return (float)u.u8Val;
-    case udVT_Int32:   return (float)u.i32Val;
-    case udVT_Int64:   return (float)u.i64Val;
-    case udVT_Float:   return        u.fVal;
-    case udVT_Double:  return (float)u.dVal;
-    case udVT_String:  return        udStrAtof(u.pStr);
-    case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsFloat(defaultValue) : defaultValue;
     default:
       return defaultValue;
   }
@@ -357,10 +368,7 @@ double udValue::AsDouble(double defaultValue) const
   switch (type)
   {
     case udVT_Bool:    return (double)u.bVal;
-    case udVT_Uint8:   return (double)u.u8Val;
-    case udVT_Int32:   return (double)u.i32Val;
     case udVT_Int64:   return (double)u.i64Val;
-    case udVT_Float:   return (double)u.fVal;
     case udVT_Double:  return         u.dVal;
     case udVT_String:  return         udStrAtof64(u.pStr);
     case udVT_Element: return (u.pElement->children.length == 1) ? u.pElement->children[0].AsDouble(defaultValue) : defaultValue;
@@ -371,7 +379,7 @@ double udValue::AsDouble(double defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-char *udValue::AsString(char *pDefaultValue) const
+const char *udValue::AsString(char *pDefaultValue) const
 {
   switch (type)
   {
@@ -383,47 +391,70 @@ char *udValue::AsString(char *pDefaultValue) const
 }
 
 // ****************************************************************************
-// Author: Dave Pevreal, April 2017
-udResult udValue::ConvertListToArray(udValueType toType)
+// Author: Dave Pevreal, May 2017
+udDouble3 udValue::AsDouble3() const
 {
-  udResult result;
-  void *pTempArray = nullptr;
-  size_t len;
-  UD_ERROR_IF(type != udVT_List, udR_ObjectTypeMismatch);
-  UD_ERROR_IF(u.pList->length == 0, udR_NothingToDo);
-
-  len = u.pList->length;
-  pTempArray = udAlloc(len * s_udValueTypeSize[toType]);
-  UD_ERROR_NULL(pTempArray, udR_MemoryAllocationFailure);
-  switch (toType)
+  udDouble3 ret;
+  if (type == udVT_List && u.pList->length >= ret.ElementCount)
   {
-    case udVT_Bool:   for (size_t i = 0; i < len; ++i) ((bool*)   pTempArray)[i] = u.pList->GetElement(i)->AsBool();   break;
-    case udVT_Uint8:  for (size_t i = 0; i < len; ++i) ((uint8_t*)pTempArray)[i] = u.pList->GetElement(i)->AsUint8();  break;
-    case udVT_Int32:  for (size_t i = 0; i < len; ++i) ((int32_t*)pTempArray)[i] = u.pList->GetElement(i)->AsInt32();  break;
-    case udVT_Int64:  for (size_t i = 0; i < len; ++i) ((int64_t*)pTempArray)[i] = u.pList->GetElement(i)->AsInt64();  break;
-    case udVT_Float:  for (size_t i = 0; i < len; ++i) ((float*)  pTempArray)[i] = u.pList->GetElement(i)->AsFloat();  break;
-    case udVT_Double: for (size_t i = 0; i < len; ++i) ((double*) pTempArray)[i] = u.pList->GetElement(i)->AsDouble(); break;
-    default:
-      UD_ERROR_SET(udR_InvalidParameter_);
+    for (size_t i = 0; i < ret.ElementCount; ++i)
+      ret[i] = u.pList->GetElement(i)->AsDouble();
   }
+  return ret.zero();
+}
 
-  Destroy(); // Destroy current list
-  type = toType;
-  arrayLength = (int32_t)len;
-  u.pArray = pTempArray;
-  pTempArray = nullptr;
-  result = udR_Success;
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udDouble4 udValue::AsDouble4() const
+{
+  udDouble4 ret;
+  if (type == udVT_List && u.pList->length >= ret.ElementCount)
+  {
+    for (size_t i = 0; i < ret.ElementCount; ++i)
+      ret[i] = u.pList->GetElement(i)->AsDouble();
+  }
+  return ret.zero();
+}
 
-epilogue:
-  udFree(pTempArray);
-  return result;
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udQuaternion<double> udValue::AsQuaternion() const
+{
+  udQuaternion<double> ret = udQuaternion<double>::identity();
+  if (type == udVT_List && u.pList->length >= ret.ElementCount)
+  {
+    for (size_t i = 0; i < ret.ElementCount; ++i)
+      ret[i] = u.pList->GetElement(i)->AsDouble();
+  }
+  return ret.zero();
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2017
+udDouble4x4 udValue::AsDouble4x4() const
+{
+  udDouble4x4 ret = udDouble4x4::identity();
+  switch (ListLength())
+  {
+    case 9:
+    case 12:
+      for (size_t i = 0; i < u.pList->length; ++i)
+        ret.a[(i / 3) * 4 + (i % 3)] = u.pList->GetElement(i)->AsDouble();
+      return ret;
+    case 16:
+      for (size_t i = 0; i < u.pList->length; ++i)
+        ret.a[i] = u.pList->GetElement(i)->AsDouble();
+      return ret;
+    default:
+      return ret.identity();
+  }
 }
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
 static size_t FindMatch(const udValueList *pList, const udValueObject *pSearchObj, int resultNumber, size_t i = 0)
 {
-  int attributesMatched = 0;
+  size_t attributesMatched = 0;
   for (; i < pList->length; ++i) // For each element in the list
   {
     attributesMatched = 0;
@@ -646,6 +677,8 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
           UD_ERROR_IF(index < 0, udR_ObjectNotFound);
           if (pSetToValue)
           {
+            // For the moment, error if assign out of bounds
+            UD_ERROR_IF((size_t)index > pList->length, udR_CountExceeded);
             // If a specific index is being assigned and there's less elements, pad with voids
             while (pList->length <= (size_t)index)
             {
@@ -828,16 +861,6 @@ udResult udValue::Parse(const char *pString, int *pCharCount, int *pLineNumber)
         u.dVal = udStrAtof64(pString, &charCount);
         type = udVT_Double;
       }
-      else if (i == (i & 0xff))
-      {
-        u.u8Val = uint8_t(i);
-        type = udVT_Uint8;
-      }
-      else if (i == int32_t(i))
-      {
-        u.i32Val = int32_t(i);
-        type = udVT_Int32;
-      }
       else
       {
         u.i64Val = i;
@@ -888,164 +911,126 @@ udResult udValue::ExportValue(const char *pKey, udValue::LineList *pLines, int i
   if (options & EVO_StripWhiteSpace)
     indent = 0;
 
-  if (arrayLength)
+  switch (type)
   {
-    if (!(options & EVO_XML))
+    case udVT_Void:    result = udSprintf(&pStr, "%*s%snull%s", indent, "", pKeyText, pComma); break;
+    case udVT_Bool:    result = udSprintf(&pStr, "%*s%s%s%s", indent, "", pKeyText, u.bVal ? "true" : "false", pComma); break;
+    case udVT_Int64:   result = udSprintf(&pStr, "%*s%s%lld%s", indent, "", pKeyText, u.i64Val, pComma); break;
+    case udVT_Double:  result = udSprintf(&pStr, "%*s%s%lf%s", indent, "", pKeyText, u.dVal, pComma); break;
+    case udVT_String:  result = udSprintf(&pStr, "%*s%s\"%s\"%s", indent, "", pKeyText, u.pStr, pComma); break;
+    case udVT_List:
     {
-      result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+      if (!(options & EVO_XML))
+      {
+        result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+        UD_ERROR_HANDLE();
+        result = pLines->PushBack(pStr);
+        UD_ERROR_HANDLE();
+        pStr = nullptr;
+      }
+      udValueList *pList = AsList();
+      for (size_t i = 0; i < pList->length; ++i)
+      {
+        result = pList->GetElement(i)->ExportValue(nullptr, pLines, indent + 2, options, i < (pList->length - 1));
+        UD_ERROR_HANDLE();
+      }
+      if (!(options & EVO_XML))
+      {
+        result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
+      }
+    }
+    break;
+
+    case udVT_Object:
+    {
+      result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
       UD_ERROR_HANDLE();
       result = pLines->PushBack(pStr);
       UD_ERROR_HANDLE();
       pStr = nullptr;
-    }
-    for (size_t i = 0; i < arrayLength; ++i)
-    {
-      udValue temp;
-      switch (type)
+      udValueObject *pObject = AsObject();
+      for (size_t i = 0; i < pObject->attributes.length; ++i)
       {
-        case udVT_Bool:    temp.Set(GetArrayBool()[i]); break;
-        case udVT_Uint8:   temp.Set(GetArrayUint8()[i]); break;
-        case udVT_Int32:   temp.Set(GetArrayInt32()[i]); break;
-        case udVT_Int64:   temp.Set(GetArrayInt64()[i]); break;
-        case udVT_Float:   temp.Set(GetArrayFloat()[i]); break;
-        case udVT_Double:  temp.Set(GetArrayDouble()[i]); break;
-        case udVT_String:  temp.Set(GetArrayString()[i]); break;
-        default: UD_ERROR_SET(udR_ObjectTypeMismatch);
+        udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
+        result = pItem->value.ExportValue(pItem->pKey, pLines, indent + 2, options, i < (pObject->attributes.length - 1));
+        UD_ERROR_HANDLE();
       }
-      result = temp.ExportValue(nullptr, pLines, indent + 2, options, i < (arrayLength - 1));
+      result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
+    }
+    break;
+
+    case udVT_Element:
+    {
+      bool tagClosed = false;
+      udValueElement *pElement = AsElement();
+      const char *pTempStr;
+      result = udSprintf(&pStr, "%*s%s<%s%s", indent, "", pKeyText, pElement->pName, pElement->attributes.length ? "" : ">");
       UD_ERROR_HANDLE();
-    }
-    if (!(options & EVO_XML))
-    {
-      result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
-    }
-  }
-  else
-  {
-    switch (type)
-    {
-      case udVT_Void:    result = udSprintf(&pStr, "%*s%snull%s", indent, "", pKeyText, pComma); break;
-      case udVT_Bool:    result = udSprintf(&pStr, "%*s%s%s%s", indent, "", pKeyText, u.bVal ? "true" : "false", pComma); break;
-      case udVT_Uint8:   result = udSprintf(&pStr, "%*s%s%d%s", indent, "", pKeyText, u.u8Val, pComma); break;
-      case udVT_Int32:   result = udSprintf(&pStr, "%*s%s%d%s", indent, "", pKeyText, u.i32Val, pComma); break;
-      case udVT_Int64:   result = udSprintf(&pStr, "%*s%s%lld%s", indent, "", pKeyText, u.i64Val, pComma); break;
-      case udVT_Float:   result = udSprintf(&pStr, "%*s%s%f%s", indent, "", pKeyText, u.fVal, pComma); break;
-      case udVT_Double:  result = udSprintf(&pStr, "%*s%s%lf%s", indent, "", pKeyText, u.dVal, pComma); break;
-      case udVT_String:  result = udSprintf(&pStr, "%*s%s\"%s\"%s", indent, "", pKeyText, u.pStr, pComma); break;
-      case udVT_List:
+      // Export all the attributes to a separate list to be combined to a single line
+      LineList attributeLines;
+      attributeLines.Init();
+      for (size_t i = 0; i < pElement->attributes.length; ++i)
       {
-        if (!(options & EVO_XML))
-        {
-          result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
-          UD_ERROR_HANDLE();
-          result = pLines->PushBack(pStr);
-          UD_ERROR_HANDLE();
-          pStr = nullptr;
-        }
-        udValueList *pList = AsList();
-        for (size_t i = 0; i < pList->length; ++i)
-        {
-          result = pList->GetElement(i)->ExportValue(nullptr, pLines, indent + 2, options, i < (pList->length - 1));
-          UD_ERROR_HANDLE();
-        }
-        if (!(options & EVO_XML))
-        {
-          result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
-        }
-      }
-      break;
-
-      case udVT_Object:
-      {
-        result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
+        const udValueObject::KVPair &attribute = pElement->attributes[i];
+        UD_ERROR_IF(attribute.value.type < udVT_Bool || attribute.value.type > udVT_String, udR_ObjectTypeMismatch);
+        result = attribute.value.ExportValue(attribute.pKey, &attributeLines, 0, EVO_XML, false);
         UD_ERROR_HANDLE();
-        result = pLines->PushBack(pStr);
-        UD_ERROR_HANDLE();
-        pStr = nullptr;
-        udValueObject *pObject = AsObject();
-        for (size_t i = 0; i < pObject->attributes.length; ++i)
+        const char *pAttrText;
+        if (attributeLines.PopBack(&pAttrText))
         {
-          udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
-          result = pItem->value.ExportValue(pItem->pKey, pLines, indent + 2, options, i < (pObject->attributes.length - 1));
-          UD_ERROR_HANDLE();
-        }
-        result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
-      }
-      break;
-
-      case udVT_Element:
-      {
-        bool tagClosed = false;
-        udValueElement *pElement = AsElement();
-        const char *pTempStr;
-        result = udSprintf(&pStr, "%*s%s<%s%s", indent, "", pKeyText, pElement->pName, pElement->attributes.length ? "" : ">");
-        UD_ERROR_HANDLE();
-        // Export all the attributes to a separate list to be combined to a single line
-        LineList attributeLines;
-        attributeLines.Init();
-        for (size_t i = 0; i < pElement->attributes.length; ++i)
-        {
-          const udValueObject::KVPair &attribute = pElement->attributes[i];
-          UD_ERROR_IF(attribute.value.type < udVT_Bool || attribute.value.type > udVT_String, udR_ObjectTypeMismatch);
-          result = attribute.value.ExportValue(attribute.pKey, &attributeLines, 0, EVO_XML, false);
-          UD_ERROR_HANDLE();
-          const char *pAttrText;
-          if (attributeLines.PopBack(&pAttrText))
+          // Combine the element onto the tag line, appending a closing or self-closing tag as required
+          const char *pClose = "";
+          if (i == (pElement->attributes.length - 1))
           {
-            // Combine the element onto the tag line, appending a closing or self-closing tag as required
-            const char *pClose = "";
-            if (i == (pElement->attributes.length - 1))
+            if (pElement->children.length)
             {
-              if (pElement->children.length)
-              {
-                pClose = ">";
-              }
-              else
-              {
-                pClose = "/>";
-                tagClosed = true;
-              }
+              pClose = ">";
             }
-
-            result = udSprintf(&pTempStr, "%s %s%s", pStr, pAttrText,  pClose);
-            udFree(pAttrText);
-            UD_ERROR_HANDLE();
-            udFree(pStr);
-            pStr = pTempStr;
+            else
+            {
+              pClose = "/>";
+              tagClosed = true;
+            }
           }
-        }
-        // If a single string value, combine to one line
-        if (pElement->children.length == 1 && pElement->children[0].type == udVT_String)
-        {
-          // Combine the value and closing tag
-          result = udSprintf(&pTempStr, "%s%s</%s>", pStr, pElement->children[0].AsString(), pElement->pName);
+
+          result = udSprintf(&pTempStr, "%s %s%s", pStr, pAttrText,  pClose);
+          udFree(pAttrText);
           UD_ERROR_HANDLE();
           udFree(pStr);
           pStr = pTempStr;
-          tagClosed = true;
-        }
-
-        attributeLines.Deinit();
-        result = pLines->PushBack(pStr);
-        UD_ERROR_HANDLE();
-        pStr = nullptr;
-
-        if (!tagClosed)
-        {
-          for (size_t i = 0; i < pElement->children.length; ++i)
-            pElement->children[i].ExportValue(nullptr, pLines, indent + 2, EVO_XML, false);
-          if (pElement->attributes.length == 0 || pElement->children.length > 0)
-          {
-            result = udSprintf(&pStr, "%*s%s</%s>", indent, "", pKeyText, pElement->pName);
-            UD_ERROR_HANDLE();
-          }
         }
       }
-      break;
+      // If a single string value, combine to one line
+      if (pElement->children.length == 1 && pElement->children[0].type == udVT_String)
+      {
+        // Combine the value and closing tag
+        result = udSprintf(&pTempStr, "%s%s</%s>", pStr, pElement->children[0].AsString(), pElement->pName);
+        UD_ERROR_HANDLE();
+        udFree(pStr);
+        pStr = pTempStr;
+        tagClosed = true;
+      }
 
-      default:
-        UD_ERROR_SET(udR_InternalError);
+      attributeLines.Deinit();
+      result = pLines->PushBack(pStr);
+      UD_ERROR_HANDLE();
+      pStr = nullptr;
+
+      if (!tagClosed)
+      {
+        for (size_t i = 0; i < pElement->children.length; ++i)
+          pElement->children[i].ExportValue(nullptr, pLines, indent + 2, EVO_XML, false);
+        if (pElement->attributes.length == 0 || pElement->children.length > 0)
+        {
+          result = udSprintf(&pStr, "%*s%s</%s>", indent, "", pKeyText, pElement->pName);
+          UD_ERROR_HANDLE();
+        }
+      }
     }
+    break;
+
+    default:
+      UD_ERROR_SET(udR_InternalError);
   }
   UD_ERROR_HANDLE();
   if (pStr)
