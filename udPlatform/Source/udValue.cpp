@@ -791,8 +791,11 @@ udResult udValue::Set(udValue *pValue, const char *pKeyExpression, ...)
 udResult udValue::Parse(const char *pString, int *pCharCount, int *pLineNumber)
 {
   udResult result;
+  int tempLineNumber;
   int totalCharCount = 0;
   UD_ERROR_NULL(pString, udR_InvalidParameter_);
+  if (!pLineNumber)
+    pLineNumber = &tempLineNumber;
   if (pLineNumber)
     *pLineNumber = 1;
 
@@ -878,6 +881,12 @@ udResult udValue::Parse(const char *pString, int *pCharCount, int *pLineNumber)
       charCount = 5;
       u.bVal = false;
       type = udVT_Bool;
+    }
+    else if (udStrBeginsWithi(pString, "null"))
+    {
+      charCount = 4;
+      u.i64Val = 0;
+      type = udVT_Void;
     }
     else
     {
@@ -1112,6 +1121,9 @@ udResult udValue::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber
   udResult result = udR_Success;
   const char *pStartPointer = pJSON; // Just used to calculate and assign pCharCount
   int charCount;
+  int tempLineNumber = 1;
+  if (!pLineNumber)
+    pLineNumber = &tempLineNumber;
 
   pJSON = udStrSkipWhiteSpace(pJSON, nullptr, pLineNumber);
   if (*pJSON == '{')
@@ -1204,6 +1216,9 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
   size_t len;
   udValueElement *pElement = nullptr;
   bool selfClosingTag;
+  int tempLineNumber = 1;
+  if (!pLineNumber)
+    pLineNumber = &tempLineNumber;
 
   pXML = udStrSkipWhiteSpace(pXML, nullptr, pLineNumber);
   // Just skip the xml version tag, this is ignored and not retained
