@@ -926,117 +926,124 @@ udResult udValue::ExportValue(const char *pKey, udValue::LineList *pLines, int i
     case udVT_Bool:    result = udSprintf(&pStr, "%*s%s%s%s", indent, "", pKeyText, u.bVal ? "true" : "false", pComma); break;
     case udVT_Int64:   result = udSprintf(&pStr, "%*s%s%lld%s", indent, "", pKeyText, u.i64Val, pComma); break;
     case udVT_Double:  result = udSprintf(&pStr, "%*s%s%lf%s", indent, "", pKeyText, u.dVal, pComma); break;
-    case udVT_String:  result = udSprintf(&pStr, "%*s%s\"%s\"%s", indent, "", pKeyText, u.pStr, pComma); break;
-    case udVT_List:
-    {
-      if (!(options & EVO_XML))
+    case udVT_String:
       {
-        result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+        const char *pEscaped = udStrEscape(u.pStr, "\"\\", false); // Escape quotes and slashes
+        result = udSprintf(&pStr, "%*s%s\"%s\"%s", indent, "", pKeyText, pEscaped, pComma);
+        udFree(pEscaped);
+      }
+      break;
+
+    case udVT_List:
+      {
+        if (!(options & EVO_XML))
+        {
+          result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+          UD_ERROR_HANDLE();
+          result = pLines->PushBack(pStr);
+          UD_ERROR_HANDLE();
+          pStr = nullptr;
+        }
+        udValueList *pList = AsList();
+        for (size_t i = 0; i < pList->length; ++i)
+        {
+          result = pList->GetElement(i)->ExportValue(nullptr, pLines, indent + 2, options, i < (pList->length - 1));
+          UD_ERROR_HANDLE();
+        }
+        if (!(options & EVO_XML))
+        {
+          result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
+        }
+      }
+      break;
+
+    case udVT_Object:
+      {
+        result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
         UD_ERROR_HANDLE();
         result = pLines->PushBack(pStr);
         UD_ERROR_HANDLE();
         pStr = nullptr;
+        udValueObject *pObject = AsObject();
+        for (size_t i = 0; i < pObject->attributes.length; ++i)
+        {
+          udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
+          result = pItem->value.ExportValue(pItem->pKey, pLines, indent + 2, options, i < (pObject->attributes.length - 1));
+          UD_ERROR_HANDLE();
+        }
+        result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
       }
-      udValueList *pList = AsList();
-      for (size_t i = 0; i < pList->length; ++i)
-      {
-        result = pList->GetElement(i)->ExportValue(nullptr, pLines, indent + 2, options, i < (pList->length - 1));
-        UD_ERROR_HANDLE();
-      }
-      if (!(options & EVO_XML))
-      {
-        result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
-      }
-    }
-    break;
-
-    case udVT_Object:
-    {
-      result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
-      UD_ERROR_HANDLE();
-      result = pLines->PushBack(pStr);
-      UD_ERROR_HANDLE();
-      pStr = nullptr;
-      udValueObject *pObject = AsObject();
-      for (size_t i = 0; i < pObject->attributes.length; ++i)
-      {
-        udValueObject::KVPair *pItem = pObject->attributes.GetElement(i);
-        result = pItem->value.ExportValue(pItem->pKey, pLines, indent + 2, options, i < (pObject->attributes.length - 1));
-        UD_ERROR_HANDLE();
-      }
-      result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
-    }
-    break;
+      break;
 
     case udVT_Element:
-    {
-      bool tagClosed = false;
-      udValueElement *pElement = AsElement();
-      const char *pTempStr;
-      result = udSprintf(&pStr, "%*s%s<%s%s", indent, "", pKeyText, pElement->pName, pElement->attributes.length ? "" : ">");
-      UD_ERROR_HANDLE();
-      // Export all the attributes to a separate list to be combined to a single line
-      LineList attributeLines;
-      attributeLines.Init();
-      for (size_t i = 0; i < pElement->attributes.length; ++i)
       {
-        const udValueObject::KVPair &attribute = pElement->attributes[i];
-        UD_ERROR_IF(attribute.value.type < udVT_Bool || attribute.value.type > udVT_String, udR_ObjectTypeMismatch);
-        result = attribute.value.ExportValue(attribute.pKey, &attributeLines, 0, EVO_XML, false);
+        bool tagClosed = false;
+        udValueElement *pElement = AsElement();
+        const char *pTempStr;
+        result = udSprintf(&pStr, "%*s%s<%s%s", indent, "", pKeyText, pElement->pName, pElement->attributes.length ? "" : ">");
         UD_ERROR_HANDLE();
-        const char *pAttrText;
-        if (attributeLines.PopBack(&pAttrText))
+        // Export all the attributes to a separate list to be combined to a single line
+        LineList attributeLines;
+        attributeLines.Init();
+        for (size_t i = 0; i < pElement->attributes.length; ++i)
         {
-          // Combine the element onto the tag line, appending a closing or self-closing tag as required
-          const char *pClose = "";
-          if (i == (pElement->attributes.length - 1))
+          const udValueObject::KVPair &attribute = pElement->attributes[i];
+          UD_ERROR_IF(attribute.value.type < udVT_Bool || attribute.value.type > udVT_String, udR_ObjectTypeMismatch);
+          result = attribute.value.ExportValue(attribute.pKey, &attributeLines, 0, EVO_XML, false);
+          UD_ERROR_HANDLE();
+          const char *pAttrText;
+          if (attributeLines.PopBack(&pAttrText))
           {
-            if (pElement->children.length)
+            // Combine the element onto the tag line, appending a closing or self-closing tag as required
+            const char *pClose = "";
+            if (i == (pElement->attributes.length - 1))
             {
-              pClose = ">";
+              if (pElement->children.length)
+              {
+                pClose = ">";
+              }
+              else
+              {
+                pClose = "/>";
+                tagClosed = true;
+              }
             }
-            else
-            {
-              pClose = "/>";
-              tagClosed = true;
-            }
-          }
 
-          result = udSprintf(&pTempStr, "%s %s%s", pStr, pAttrText,  pClose);
-          udFree(pAttrText);
+            result = udSprintf(&pTempStr, "%s %s%s", pStr, pAttrText,  pClose);
+            udFree(pAttrText);
+            UD_ERROR_HANDLE();
+            udFree(pStr);
+            pStr = pTempStr;
+          }
+        }
+        // If a single string value, combine to one line
+        if (pElement->children.length == 1 && pElement->children[0].type == udVT_String)
+        {
+          // Combine the value and closing tag
+          result = udSprintf(&pTempStr, "%s%s</%s>", pStr, pElement->children[0].AsString(), pElement->pName);
           UD_ERROR_HANDLE();
           udFree(pStr);
           pStr = pTempStr;
+          tagClosed = true;
         }
-      }
-      // If a single string value, combine to one line
-      if (pElement->children.length == 1 && pElement->children[0].type == udVT_String)
-      {
-        // Combine the value and closing tag
-        result = udSprintf(&pTempStr, "%s%s</%s>", pStr, pElement->children[0].AsString(), pElement->pName);
+
+        attributeLines.Deinit();
+        result = pLines->PushBack(pStr);
         UD_ERROR_HANDLE();
-        udFree(pStr);
-        pStr = pTempStr;
-        tagClosed = true;
-      }
+        pStr = nullptr;
 
-      attributeLines.Deinit();
-      result = pLines->PushBack(pStr);
-      UD_ERROR_HANDLE();
-      pStr = nullptr;
-
-      if (!tagClosed)
-      {
-        for (size_t i = 0; i < pElement->children.length; ++i)
-          pElement->children[i].ExportValue(nullptr, pLines, indent + 2, EVO_XML, false);
-        if (pElement->attributes.length == 0 || pElement->children.length > 0)
+        if (!tagClosed)
         {
-          result = udSprintf(&pStr, "%*s%s</%s>", indent, "", pKeyText, pElement->pName);
-          UD_ERROR_HANDLE();
+          for (size_t i = 0; i < pElement->children.length; ++i)
+            pElement->children[i].ExportValue(nullptr, pLines, indent + 2, EVO_XML, false);
+          if (pElement->attributes.length == 0 || pElement->children.length > 0)
+          {
+            result = udSprintf(&pStr, "%*s%s</%s>", indent, "", pKeyText, pElement->pName);
+            UD_ERROR_HANDLE();
+          }
         }
       }
-    }
-    break;
+      break;
 
     default:
       UD_ERROR_SET(udR_InternalError);

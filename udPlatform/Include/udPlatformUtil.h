@@ -124,6 +124,8 @@ size_t udStrMatchBrace(const char *pLine);
 const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 // In-place remove all non-quoted white space (newlines, spaces, tabs), returns new length
 size_t udStrStripWhiteSpace(char *pLine);
+// Return new string with \ char before any chars in pCharList, optionally freeing pStr
+const char *udStrEscape(const char *pStr, const char *pCharList, bool freeOriginal);
 
 // *********************************************************************
 // String comparison functions that can be relied upon, NULL-safe

@@ -740,6 +740,46 @@ size_t udStrStripWhiteSpace(char *pLine)
 
 // *********************************************************************
 // Author: Dave Pevreal, August 2014
+const char *udStrEscape(const char *pStr, const char *pCharList, bool freeOriginal)
+{
+  int escCharCount = 0;
+  char *pEscStr = nullptr;
+  size_t allocLen;
+  for (const char *p = udStrchr(pStr, pCharList); p; p = udStrchr(p + 1, pCharList))
+    ++escCharCount;
+  if (!escCharCount && freeOriginal)
+    return pStr;
+  allocLen = udStrlen(pStr) + 1 + escCharCount;
+  pEscStr = udAllocType(char, allocLen, udAF_None);
+  if (pEscStr)
+  {
+    const char *s = pStr;
+    size_t escLen = 0;
+    while (*s)
+    {
+      size_t index;
+      udStrchr(s, pCharList, &index);
+      UDASSERT(escLen + index < allocLen, "AllocLen calculation wrong (1)");
+      memcpy(pEscStr + escLen, s, index);
+      escLen += index;
+      if (s[index])
+      {
+        UDASSERT(escLen + 2 < allocLen, "AllocLen calculation wrong (2)");
+        pEscStr[escLen++] = '\\';
+        pEscStr[escLen++] = s[index++];
+      }
+      s += index;
+    }
+    UDASSERT(escLen + 1 == allocLen, "AllocLen calculation wrong (3)");
+    pEscStr[escLen++] = 0;
+  }
+  if (freeOriginal)
+    udFree(pStr);
+  return pEscStr;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, August 2014
 float udStrAtof(const char *s, int *pCharCount)
 {
   if (!s) s = s_udStrEmptyString;
