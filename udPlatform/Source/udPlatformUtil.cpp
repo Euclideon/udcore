@@ -154,9 +154,11 @@ size_t udStrncpy(char *dest, size_t destLen, const char *src, size_t maxChars)
     return 0;
   if (src == NULL) // Special case, handle a NULL source as an empty string
     src = s_udStrEmptyString;
-  size_t srcChars = strlen(src);
-  if (srcChars > maxChars)
-    srcChars = maxChars;
+  // Find number of characters in string but stop at maxChars (faster than using strlen)
+  size_t srcChars = 0;
+  while (srcChars < maxChars && src[srcChars])
+    ++srcChars;
+
   if ((srcChars + 1) > destLen)
   {
     *dest = 0;
@@ -311,13 +313,15 @@ char *udStrdup(const char *s, size_t additionalChars)
 char *udStrndup(const char *s, size_t maxChars, size_t additionalChars)
 {
   if (!s) s = s_udStrEmptyString;
-
-  size_t len = udMin(maxChars, udStrlen(s)) + 1;
-  char *pDup = udAllocType(char, len + additionalChars, udAF_None);
+  // Find minimum of maxChars and udStrlen(s) without using udStrlen which can be slow
+  size_t len = 0;
+  while (len < maxChars && s[len])
+    ++len;
+  char *pDup = udAllocType(char, len + 1 + additionalChars, udAF_None);
   if (pDup)
   {
-    memcpy(pDup, s, len - 1);
-    pDup[len - 1] = 0;
+    memcpy(pDup, s, len);
+    pDup[len] = 0;
   }
 
   return pDup;
