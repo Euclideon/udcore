@@ -1,9 +1,5 @@
-#include "stdlib.h"
-#include "udPlatform.h"
 #include "udMath.h"
-
-#define EXHAUSTIVE_TESTS 0
-#define TEST_ASSERTS 0
+#include "gtest/gtest.h"
 
 // This test slerps 2 quaterions rotating about the -Y axis (backwards) q0 theta PI/4 and q1 theta 3PI/4
 template <typename T>
@@ -252,11 +248,11 @@ bool IsUnitLengthUnitTest()
     return false;
 
   T v = T::zero();
-  v.x = 0.999;
+  v.x = (ET)(0.999);
   if (!udIsUnitLength(v, epsilon))
     return false;
 
-  v.x = 1.011;
+  v.x = (ET)(1.011);
   if (udIsUnitLength(v, epsilon))
     return false;
 
@@ -307,8 +303,8 @@ void udQuaternion_SlerpAlmostPITheta()
 template <typename T>
 bool udQuaternion_Slerp2DegOverZero()
 {
-  udQuaternion<T> q0 = udQuaternion<T>::create(UD_DEG2RAD(1), 0, 0);
-  udQuaternion<T> q1 = udQuaternion<T>::create(UD_DEG2RAD(359), 0, 0);
+  udQuaternion<T> q0 = udQuaternion<T>::create((T)UD_DEG2RAD(1), 0, 0);
+  udQuaternion<T> q1 = udQuaternion<T>::create((T)UD_DEG2RAD(359), 0, 0);
 
   udVector3<T> testVector = udVector3<T>::create(0, 1, 0);
 
@@ -318,7 +314,7 @@ bool udQuaternion_Slerp2DegOverZero()
   return udEqualApprox(vResult, vExpected);
 }
 
-bool udMath_Test()
+TEST(MathTests, MathCPPSuite)
 {
   udFloat4 x;
   udFloat4x4 m;
@@ -330,7 +326,7 @@ bool udMath_Test()
   udPow(f, (float)UD_PI);
 
   v = 2.f*v;
-  v = v*v+v;
+  v = v*v + v;
 
   m = udFloat4x4::create(x, x, x, x);
 
@@ -350,88 +346,40 @@ bool udMath_Test()
   udMul(m, v4);
   udMul(m, m);
 
-  udAbs(-1.f);
-  udAbs(-1.0);
-  udAbs(-1);
-  udAbs(v);
+  EXPECT_EQ(1.f, udAbs(-1.f));
+  EXPECT_EQ(1.0, udAbs(-1.0));
+  EXPECT_EQ(1, udAbs(-1));
+  EXPECT_EQ(udFloat3::create(udAbs(v.x), udAbs(v.y), udAbs(v.z)), udAbs(v));
+}
 
-  if (!EqualApproxUnitTest<udVector2<float> >())
-    return false;
-  if (!EqualApproxUnitTest<udVector2<double> >())
-    return false;
+TEST(MathTests, UnitLengthCanaries)
+{
+  EXPECT_TRUE(EqualApproxUnitTest<udVector2<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector2<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector3<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector3<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector4<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector4<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<double>>());
 
-  if (!EqualApproxUnitTest<udVector3<float> >())
-    return false;
-  if (!EqualApproxUnitTest<udVector3<double> >())
-    return false;
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<double>>());
+}
 
-  if (!EqualApproxUnitTest<udVector4<float> >())
-    return false;
-  if (!EqualApproxUnitTest<udVector4<double> >())
-    return false;
+TEST(MathTests, QuaternionCanaries)
+{
+  EXPECT_TRUE(udQuaternion_SlerpBasicUnitTest<double>());
+  EXPECT_TRUE(udQuaternion_SlerpBasicUnitTest<float>());
+  EXPECT_TRUE(udQuaternion_Slerp2DegOverZero<float>());
 
-  if (!EqualApproxUnitTest<udQuaternion<float> >())
-    return false;
-  if (!EqualApproxUnitTest<udQuaternion<double> >())
-    return false;
-
-
-  if (!IsUnitLengthUnitTest<udVector2<float> >())
-    return false;
-  if (!IsUnitLengthUnitTest<udVector2<double> >())
-    return false;
-
-  if (!IsUnitLengthUnitTest<udVector3<float> >())
-    return false;
-  if (!IsUnitLengthUnitTest<udVector3<double> >())
-    return false;
-
-  if (!IsUnitLengthUnitTest<udVector4<float> >())
-    return false;
-  if (!IsUnitLengthUnitTest<udVector4<double> >())
-    return false;
-
-  if (!IsUnitLengthUnitTest<udQuaternion<float> >())
-    return false;
-  if (!IsUnitLengthUnitTest<udQuaternion<double> >())
-    return false;
-
-  if (TEST_ASSERTS)
-  {
-    // These should assert
-    udQuaternion_SlerpAssertUnitLengthQ0<double>();
-    udQuaternion_SlerpAssertUnitLengthQ0<float>();
-
-    udQuaternion_SlerpAssertUnitLengthQ1<double>();
-    udQuaternion_SlerpAssertUnitLengthQ1<float>();
-
-    udQuaternion_SlerpAssertPITheta<double>();
-    udQuaternion_SlerpAssertPITheta<float>();
-
-    // These shouldn't assert
-    udQuaternion_SlerpAlmostPITheta<double>();
-    udQuaternion_SlerpAlmostPITheta<float>();
-  }
-
-  if (!udQuaternion_SlerpBasicUnitTest<double>())
-    return false;
-  if (!udQuaternion_SlerpBasicUnitTest<float>())
-    return false;
-
-  if (!udQuaternion_Slerp2DegOverZero<float>())
-    return false;
-
-  int incrementCount = EXHAUSTIVE_TESTS ? 1024 : 256;
-
-  if (!udQuaternion_SlerpDefinedInputsTest<double>(incrementCount))
-    return false;
-  if (!udQuaternion_SlerpDefinedInputsTest<float>(incrementCount))
-    return false;
-
-  if (!udQuaternion_SlerpRandomInputsTest<double>(1024, incrementCount))
-    return false;
-  if (!udQuaternion_SlerpRandomInputsTest<float>(1024, incrementCount))
-    return false;
-
-  return true;
+  int incrementCount = 256;
+  EXPECT_TRUE(udQuaternion_SlerpDefinedInputsTest<double>(incrementCount));
+  EXPECT_TRUE(udQuaternion_SlerpDefinedInputsTest<float>(incrementCount));
 }

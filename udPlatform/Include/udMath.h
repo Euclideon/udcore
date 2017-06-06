@@ -495,10 +495,6 @@ typedef udMatrix4x4<double> udDouble4x4;
 typedef udQuaternion<float>  udFloatQuat;
 typedef udQuaternion<double>  udDoubleQuat;
 
-
-// unit tests
-bool udMath_Test();
-
 #include "udMath_Inl.h"
 
 #endif // __cplusplus
