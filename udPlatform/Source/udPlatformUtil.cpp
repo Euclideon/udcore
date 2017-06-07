@@ -678,16 +678,19 @@ size_t udStrMatchBrace(const char *pLine)
   int depth = 1;
   for (offset = 1; pLine[offset]; ++offset)
   {
-    if (pLine[offset] == matchChar)
+    if (pLine[offset] == escapeChar && (pLine[offset+1] == matchChar || pLine[offset + 1] == escapeChar))
     {
-      // Skip escaped matches
-      if (pLine[offset-1] == escapeChar)
-        continue;
+      ++offset; // Skip escaped characters (only consider match or escape characters)
+    }
+    else if (pLine[offset] == matchChar)
+    {
       if (--depth == 0)
         return offset+1;
     }
     else if (pLine[offset] == *pLine)
+    {
       ++depth;
+    }
   }
   return offset;
 }

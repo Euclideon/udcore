@@ -6,33 +6,93 @@
 #include "udChunkedArray.h"
 #include "udMath.h"
 
-enum udValueType
-{
-  udVT_Void = 0,      // Guaranteed to be zero, thus a non-zero type indicates value exists
-  udVT_Bool,
-  udVT_Uint8,
-  udVT_Int32,
-  udVT_Int64,
-  udVT_Float,
-  udVT_Double,
-  udVT_String,
-  udVT_List,    // A udChunkedArray of values
-  udVT_Object,  // JSON object
-  udVT_Element, // XML Element (which inherits from Object to provide attributes)
+/*
+ * Expression syntax:
+ *
+ * Example JSON:
+ * {
+ *   "Settings": {
+ *     "ProjectsPath": "C:/Temp/",
+ *     "ImportAtFullScale": true,
+ *     "TerrainIndex": 2,
+ *     "Inside": { "Count": 5 },
+ *     "TestArray": [ 0, 1, 2 ]
+ *   }
+ * }
+ *
+ * Equivalent XML:
+ * <Settings ProjectsPath="C:/Temp/" ImportAtFullScale="true" TerrainIndex="2">
+ *   <Inside Count="5"/>
+ *   <TestArray>0</TestArray>
+ *   <TestArray>1</TestArray>
+ *   <TestArray>2</TestArray>
+ * </Settings>
+ *
+ * Syntax to create:
+ *
+ * udValue v;
+ * v.Set("Settings.ProjectsPath = '%s'", "C:/Temp/");
+ * v.Set("Settings.ImportAtFullScale = %s", "true");
+ * v.Set("Settings.TerrainIndex = %d", 2);
+ * v.Set("Settings.Inside.Count = %d", 5);
+ * v.Set("Settings.TestArray[] = 0"); // Append to array
+ * v.Set("Settings.TestArray[] = 1"); // Append to array
+ * v.Set("Settings.TestArray[2] = 2"); // Out-of-bounds assignment allowed when forming an append operation
+ *
+ * Syntax for retrieving:
+ * v.Parse(json_or_xml_text_string);
+ * printf("Projects path is %s\n", v.Get("Settings.ProjectsPath").AsString());
+ * printf("Importing at %s scale is %s\n", v.Get("Settings.ImportAtFullScale").AsBool() ? "full" : "smaller");
+ * printf("Terrain index is %d\n", v.Get("Settings.TerrainIndex").AsInt());
+ * printf("Inside count is %d\n", v.Get("Settings.Inside.Count").AsInt());
+ *
+ * printf("There are %d items in the array\n", v.Get("Settings.TestArray").ArrayLength());
+ *
+ * Syntax to explore:
+ * for (size_t i = 0; i < v.Get("Settings").MemberCount(); ++i)
+ * {
+ *   const char *pValueStr = nullptr;
+ *   v.Get("Settings.%d", i).ToString(&pValueStr);
+ *   udDebugPrintf("%s = %s\n", v.Get("Settings").GetMemberName(i), pValueStr ? pValueStr : "<object or array>");
+ *   udFree(pValueStr);
+ * }
+ *
+ * Export:
+ * const char *pExportString = nullptr;
+ * v.Export(&pExportString, udVEO_JSON | udVEO_StripWhiteSpace); // or udVEO_XML
+ * .. write string or whatever ..
+ * udFree(pExportString);
+ * v.Destroy(); // To destroy object before waiting to go out of scope
+ */
 
-  udVT_Count
-};
+enum udValueExportOption { udVEO_JSON = 0, udVEO_XML = 1, udVEO_StripWhiteSpace = 2 };
+static inline udValueExportOption operator|(udValueExportOption a, udValueExportOption b) { return (udValueExportOption)(int(a) | int(b)); }
 
 class udValue;
-typedef udChunkedArray<udValue, 32> udValueList;
-struct udValueObject;
-struct udValueElement;
+struct udValueKVPair;
+typedef udChunkedArray<udValue, 32> udValueArray;
+typedef udChunkedArray<udValueKVPair, 32> udValueObject;
 
 class udValue
 {
 public:
+  enum Type
+  {
+    T_Void = 0,  // Guaranteed to be zero, thus a non-zero type indicates value exists
+    T_Bool,
+    T_Uint8,
+    T_Int32,
+    T_Int64,
+    T_Float,
+    T_Double,
+    T_String,
+    T_Array,     // A udChunkedArray of values
+    T_Object,    // An list of key/value pairs (equiv of JSON object, or XML element attributes)
+    T_Count
+  };
+
   static const udValue s_void;
-  static const size_t s_udValueTypeSize[udVT_Count];
+  static const size_t s_udValueTypeSize[T_Count];
   inline udValue();
   inline udValue(int64_t v);
   inline udValue(double v);
@@ -47,26 +107,29 @@ public:
 
   // Set to a more complex type requiring memory allocation
   udResult SetString(const char *pStr);
-  udResult SetList(); // A dynamic list of udValues, whose types can change per element
+  udResult SetArray(); // A dynamic array of udValues, whose types can change per element
   udResult SetObject();
-  udResult SetElement();
 
-  // Some convenience helpers to create an list of doubles
+  // Some convenience helpers to create an array of doubles
   udResult Set(const udDouble3 &v);
   udResult Set(const udDouble4 &v);
   udResult Set(const udQuaternion<double> &v);
   udResult Set(const udDouble4x4 &v, bool shrink = false); // If shrink true, 3x3's and 3x4's are detected and stored minimally
 
   // Accessors
+  inline Type GetType() const;
   inline bool IsVoid() const;
   inline bool IsNumeric() const;
   inline bool IsIntegral() const;
   inline bool IsString() const;
-  inline bool IsList() const;
+  inline bool IsArray() const;
   inline bool IsObject() const;
-  inline bool IsElement() const;
   inline bool HasMemory() const;
-  inline size_t ListLength() const;
+  inline size_t ArrayLength() const;  // Get the length of the array (always 1 for an object)
+  inline size_t MemberCount() const;  // Get the number of members for an object (zero for all other types)
+  inline const char *GetMemberName(size_t index) const;  // Get the name of a member (null if out of range or not an object)
+  inline const udValue *GetMember(size_t index) const;  // Get the member value (null if out of range or not an object)
+  const udValue *FindMember(const char *pMemberName) const; // Get a member of an object
   bool IsEqualTo(const udValue &other) const;
 
   // Get the value as a specific type, unless object is udVT_Void in which case defaultValue is returned
@@ -74,17 +137,19 @@ public:
   int AsInt(int defaultValue = 0) const;
   int64_t AsInt64(int64_t defaultValue = 0) const;
   double AsDouble(double defaultValue = 0) const;
-  const char *AsString(char *pDefaultValue = nullptr) const;
+  const char *AsString(const char *pDefaultValue = nullptr) const; // Returns "true"/"false" for bools, pDefaultValue for any other non-string
 
-  // Some convenience accessors that expect the udValue to be a list of numbers, returning zero/identity on failure
+  // Some convenience accessors that expect the udValue to be a array of numbers, returning zero/identity on failure
   udDouble3 AsDouble3() const;
   udDouble4 AsDouble4() const;
   udQuaternion<double> AsQuaternion() const;
   udDouble4x4 AsDouble4x4() const;
 
-  inline udValueList *AsList() const;
+  inline udValueArray *AsArray() const;
   inline udValueObject *AsObject() const;
-  inline udValueElement *AsElement() const;
+
+  // Create (allocate) a string representing the value, caller is responsible for freeing
+  inline udResult ToString(const char **ppStr, bool escapeBackslashes = false) const;
 
   // Get a pointer to a key's value, this pointer is valid as long as the key remains, ppValue may be null if just testing existence
   // Allowed operators are . and [] to dereference (eg "instances[%d].%s", (int)instanceIndex, (char*)pInstanceKeyName)
@@ -100,9 +165,8 @@ public:
   // Parse a string an assign the type/value, supporting string, integer and float/double, JSON or XML
   udResult Parse(const char *pString, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 
-  enum ExportOption { EO_None, EO_StripWhiteSpace = 1 };
   // Export to a JSON/XML string depending on content
-  udResult Export(const char **ppText, ExportOption option = EO_None) const;
+  udResult Export(const char **ppText, udValueExportOption option = udVEO_JSON) const;
 
   // Create a HMAC of the white-space-stripped text (giving a private-key digital signature)
   // This function is a simple helper provided here only to encourage standardisation of how signatures are created/used
@@ -111,11 +175,12 @@ public:
 
 protected:
   typedef udChunkedArray<const char*, 32> LineList;
-  enum ExportValueOptions { EVO_None = 0, EVO_StripWhiteSpace=1, EVO_XML = 2 };
 
   udResult ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber);
   udResult ParseXML(const char *pJSON, int *pCharCount, int *pLineNumber);
-  udResult ExportValue(const char *pKey, LineList *pLines, int indent, ExportValueOptions options, bool comma) const;
+  udResult ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, bool escape) const;
+  udResult ExportJSON(const char *pKey, LineList *pLines, int indent, bool strip, bool comma) const;
+  udResult ExportXML(const char *pKey, LineList *pLines, int indent, bool strip) const;
 
   union
   {
@@ -123,28 +188,21 @@ protected:
     bool bVal;
     int64_t i64Val;
     double dVal;
-    udValueList *pList;
+    udValueArray *pArray;
     udValueObject *pObject;
-    udValueElement *pElement;
   } u;
-  udValueType type;
+  Type type;
 };
 
-struct udValueObject
-{
-  struct KVPair
-  {
-    const char *pKey;
-    udValue value;
-  };
-  udChunkedArray<KVPair, 32> attributes;
-};
 
-struct udValueElement : public udValueObject
+struct udValueKVPair
 {
-  const char *pName;
-  udValueList children;
+  const char *pKey;
+  udValue value;
 };
 
 #include "udValue_Inl.h"
+
+udResult udValue_Test();
+
 #endif // UDVALUE_H
