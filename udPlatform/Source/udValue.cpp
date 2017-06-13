@@ -19,6 +19,10 @@ const size_t udValue::s_udValueTypeSize[T_Count] =
   sizeof(udValueObject*), // T_Object,
 };
 
+// The XML escape character set. Note: apos MUST come first, it is ignored when writing strings that use double quotes
+static const char *s_pXMLEscStrings[] = { "&apos;", "&amp;" , "&quot;", "&lt;", "&gt;"};
+static const char *s_xmlEscChars = "\'&\"<>";
+
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
 // Very small expression parsing helper
@@ -292,7 +296,7 @@ bool udValue::AsBool(bool defaultValue) const
   {
     case T_Bool:    return u.bVal;
     case T_Int64:   return u.i64Val != 0;
-    case T_Double:  return u.dVal != 0.0;
+    case T_Double:  return u.dVal >= 1.0;
     case T_String:  return udStrEquali(u.pStr, "true") || udStrAtof(u.pStr) >= 1.0;
     default:
       return defaultValue;
@@ -324,6 +328,21 @@ int64_t udValue::AsInt64(int64_t defaultValue) const
     case T_Int64:   return          u.i64Val;
     case T_Double:  return (int64_t)u.dVal;
     case T_String:  return          udStrAtoi64(u.pStr);
+    default:
+      return defaultValue;
+  }
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, April 2017
+float udValue::AsFloat(float defaultValue) const
+{
+  switch (type)
+  {
+    case T_Bool:    return (float)u.bVal;
+    case T_Int64:   return (float)u.i64Val;
+    case T_Double:  return (float)u.dVal;
+    case T_String:  return        udStrAtof(u.pStr);
     default:
       return defaultValue;
   }
@@ -636,6 +655,7 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
   {
     exp.InitKeyOnly(pKeyExpression);
   }
+  UD_ERROR_NULL(pSetToValue, udR_NothingToDo);
 
   for (; exp.pKey; exp.Next())
   {
@@ -807,7 +827,7 @@ udResult udValue::Parse(const char *pString, int *pCharCount, int *pLineNumber)
   }
   else if (*pString == '\"' || *pString == '\'') // Allow single quotes
   {
-    size_t endPos = udStrMatchBrace(pString);
+    size_t endPos = udStrMatchBrace(pString, '\\');
     // Force a parse error if the string isn't quoted properly
     UD_ERROR_IF(pString[endPos - 1] != pString[0], udR_ParseError);
     char *pStr = udAllocType(char, endPos, udAF_None);
@@ -898,33 +918,69 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-udResult udValue::ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, bool escape) const
+udResult udValue::ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, int escape) const
 {
   udResult result;
+  char *pEscaped = nullptr;
+
   switch (type)
   {
-    case T_Void:    result = udSprintf(ppStr, "%*s%s%snull%s", indent, "", pPre, pPost); break;
+    case T_Void:    result = udSprintf(ppStr, "%*s%snull%s",     indent, "", pPre, pPost); break;
     case T_Bool:    result = udSprintf(ppStr, "%*s%s%s%s%s%s",   indent, "", pPre, pQuote, u.bVal ? "true" : "false", pQuote, pPost); break;
     case T_Int64:   result = udSprintf(ppStr, "%*s%s%s%lld%s%s", indent, "", pPre, pQuote, u.i64Val, pQuote, pPost); break;
     case T_Double:  result = udSprintf(ppStr, "%*s%s%s%lf%s%s",  indent, "", pPre, pQuote, u.dVal, pQuote, pPost); break;
     case T_String:
-      if (escape)
+      if (escape == 1) // JSON level escape (just backslashes)
       {
-        const char *pEscaped = udStrEscape(u.pStr, "\"\\", false); // Escape quotes and slashes
+        pEscaped = const_cast<char*>(udStrEscape(u.pStr, "\"\\", false)); // Escape quotes and slashes
         UD_ERROR_NULL(pEscaped, udR_MemoryAllocationFailure);
-        result = udSprintf(ppStr, "%*s%s%s%s%s%s", indent, "", pPre, pQuote, pEscaped, pQuote, pPost);
-        udFree(pEscaped);
       }
-      else
+      else if (escape == 2) // XML escapes
       {
-        result = udSprintf(ppStr, "%*s%s%s%s%s%s", indent, "", pPre, pQuote, u.pStr, pQuote, pPost);
+        size_t newSize = udStrlen(u.pStr) + 1;
+        size_t strCharIndex = 0; // Index in the string of the special character
+        size_t escCharIndex = 0; // Index in the escaped character list string
+        const char *p = u.pStr;
+        do
+        {
+          // NOTE: xmlEscChars are +1 in places to ignore the &apos; (single quote)
+          udStrchr(u.pStr, s_xmlEscChars+1, &strCharIndex, &escCharIndex);
+          if (p[strCharIndex])
+          {
+            newSize += udStrlen(s_pXMLEscStrings[1+escCharIndex]) - 1;
+            ++strCharIndex; // Skip the actual character we just escaped
+          }
+          p += strCharIndex;
+        } while (*p);
+
+        pEscaped = udAllocType(char, newSize, udAF_None);
+        UD_ERROR_NULL(pEscaped, udR_MemoryAllocationFailure);
+        newSize = 0;
+        p = u.pStr;
+        do
+        {
+          udStrchr(p, s_xmlEscChars+1, &strCharIndex, &escCharIndex);
+          memcpy(pEscaped + newSize, p, strCharIndex);
+          newSize += strCharIndex;
+          if (p[strCharIndex])
+          {
+            size_t l = udStrlen(s_pXMLEscStrings[1+escCharIndex]);
+            memcpy(pEscaped + newSize, s_pXMLEscStrings[1+escCharIndex], l);
+            newSize += l;
+            ++strCharIndex; // Skip the actual character we just escaped
+          }
+          p += strCharIndex;
+        } while (*p);
+        pEscaped[newSize] = 0; // Terminate
       }
+      result = udSprintf(ppStr, "%*s%s%s%s%s%s", indent, "", pPre, pQuote, pEscaped ? pEscaped : u.pStr, pQuote, pPost);
       break;
     default:
       result = udR_InvalidConfiguration;
   }
 
 epilogue:
+  udFree(pEscaped);
   return result;
 }
 
@@ -953,24 +1009,27 @@ udResult udValue::ExportJSON(const char *pKey, udValue::LineList *pLines, int in
     case T_Int64:
     case T_Double:
     case T_String:
-      result = ToString(&pStr, indent, pKeyText, pComma, (type == T_String) ? "\"" : "", true);
+      result = ToString(&pStr, indent, pKeyText, pComma, (type == T_String) ? "\"" : "", 1);
       break;
 
     case T_Array:
       {
-        result = udSprintf(&pStr, "%*s%s[", indent, "", pKeyText);
+        udValueArray *pArray = AsArray();
+        result = udSprintf(&pStr, "%*s%s%s", indent, "", pKeyText, pArray->length ? "[" : comma ? "[]," : "[]");
         UD_ERROR_HANDLE();
         result = pLines->PushBack(pStr);
         UD_ERROR_HANDLE();
         pStr = nullptr;
 
-        udValueArray *pArray = AsArray();
-        for (size_t i = 0; i < pArray->length; ++i)
+        if (pArray->length)
         {
-          result = pArray->GetElement(i)->ExportJSON(nullptr, pLines, indent + 2, strip, i < (pArray->length - 1));
-          UD_ERROR_HANDLE();
+          for (size_t i = 0; i < pArray->length; ++i)
+          {
+            result = pArray->GetElement(i)->ExportJSON(nullptr, pLines, indent + 2, strip, i < (pArray->length - 1));
+            UD_ERROR_HANDLE();
+          }
+          result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
         }
-        result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
       }
       break;
 
@@ -1025,23 +1084,30 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
     indent = 0;
 
   if (pKey)
-    result = udSprintf(&pKeyText, "%s%s", pKey, (type == T_Object) ? "" : "=");
+    result = udSprintf(&pKeyText, "%s%s", pKey, (type == T_Object || type == T_Void) ? "" : "=");
   else
     pKeyText = pEmpty;
 
   switch (type)
   {
     case T_Void:
+      result = udSprintf(&pStr, "%*s<%s/>", indent, "", pKeyText);
+      break;
     case T_Bool:
     case T_Int64:
     case T_Double:
     case T_String:
-      result = ToString(&pStr, indent, pKeyText, "", "\"", false);
+      result = ToString(&pStr, indent, pKeyText, "", "\"", 2);
       break;
 
     case T_Array:
       {
         udValueArray *pArray = AsArray();
+        if (pArray->length == 0)
+        {
+          // Export empty arrays as an empty tag
+          result = udSprintf(&pStr, "%*s<%s></%s>", indent, "", pKey, pKey); break;
+        }
         for (size_t i = 0; i < pArray->length; ++i)
         {
           const udValue *pValue = pArray->GetElement(i);
@@ -1080,10 +1146,10 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         for (size_t i = 0; i < pObject->length; ++i)
         {
           const udValueKVPair *pAttribute = pObject->GetElement(i);
-          if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array)
+          if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void)
             ++subObjectCount;
           else if (!pContentString && udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
-            pAttribute->value.ToString(&pContentString, 0, "", "", "", false);
+            pAttribute->value.ToString(&pContentString, 0, "", "", "", 2);
           else
             ++attributeCount;
         }
@@ -1097,7 +1163,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         for (size_t i = 0; i < pObject->length && attributeCount; ++i)
         {
           const udValueKVPair *pAttribute = pObject->GetElement(i);
-          if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array) // Children exported after the attributes
+          if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void) // Children exported after the attributes
             continue;
           else if (udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
             continue;
@@ -1138,7 +1204,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
           for (size_t i = 0; i < pObject->length; ++i)
           {
             const udValueKVPair *pAttribute = pObject->GetElement(i);
-            if (pAttribute->value.type != T_Object && pAttribute->value.type != T_Array) // Attributes already exported
+            if (pAttribute->value.type != T_Object && pAttribute->value.type != T_Array && pAttribute->value.type != T_Void) // Attributes already exported
               continue;
             result = pAttribute->value.ExportXML(pAttribute->pKey, pLines, indent + 2, strip);
             UD_ERROR_HANDLE();
@@ -1347,6 +1413,49 @@ epilogue:
 }
 
 // ----------------------------------------------------------------------------
+// Author: Dave Pevreal, June 2017
+static udResult ParseXMLString(const char **ppStr, const char *pXML, int *pCharCount)
+{
+  udResult result;
+  int charCount = 0;
+  char *pStr = nullptr;
+
+  if (*pXML == '\'' || *pXML == '\"')
+  {
+    charCount = (int)udStrMatchBrace(pXML);
+    UD_ERROR_IF(charCount < 2, udR_ParseError);
+    pStr = udAllocType(char, charCount - 2 + 1, udAF_None);
+    UD_ERROR_NULL(pStr, udR_MemoryAllocationFailure);
+    int di = 0;
+    for (int si = 1; pXML[si] != *pXML;)
+    {
+      bool escaped = false;
+      for (int e = 0; pXML[si] == '&' && !escaped && e < UDARRAYSIZE(s_pXMLEscStrings); ++e)
+      {
+        if (udStrBeginsWith(pXML+si, s_pXMLEscStrings[e]))
+        {
+          pStr[di++] = s_xmlEscChars[e];
+          si += (int)udStrlen(s_pXMLEscStrings[e]);
+          escaped = true;
+        }
+      }
+      if (!escaped)
+        pStr[di++] = pXML[si++];
+    }
+    pStr[di] = 0; // Terminate
+  }
+  *ppStr = pStr;
+  pStr = nullptr;
+  result = udR_Success;
+
+epilogue:
+  if (pCharCount)
+    *pCharCount = charCount;
+  udFree(pStr);
+  return result;
+}
+
+// ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2017
 udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
 {
@@ -1386,6 +1495,7 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
   udStrchr(pXML, " />\r\n", &len);
   UD_ERROR_IF(len < 1, udR_ParseError); // Not going to entertain unnamed elements
   pElementName = udStrndup(pXML, len);
+  pXML = udStrSkipWhiteSpace(pXML + len, nullptr, pLineNumber);
   // So here we have the name of the element, but it might already exist or not
   pElement = const_cast<udValue*>(FindMember(pElementName));
   if (!pElement)
@@ -1420,7 +1530,6 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
   }
   UD_ERROR_IF(!pElement->IsObject(), udR_InternalError); // Just to be sure
 
-  pXML = udStrSkipWhiteSpace(pXML + len, nullptr, pLineNumber);
   selfClosingTag = false;
   while (*pXML != '>')
   {
@@ -1433,8 +1542,10 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
       UD_ERROR_NULL(pAttr, udR_MemoryAllocationFailure);
       pAttr->pKey = udStrndup(pXML, len);
       pXML = udStrSkipWhiteSpace(pXML + len + 1, nullptr, pLineNumber);
-      result = pAttr->value.Parse(pXML, &charCount);
+      pAttr->value.Clear();
+      result = ParseXMLString(&pAttr->value.u.pStr, pXML, &charCount);
       UD_ERROR_HANDLE();
+      pAttr->value.type = T_String;
       pXML = udStrSkipWhiteSpace(pXML + charCount, nullptr, pLineNumber);
     }
     else if (*pXML == '/')
@@ -1497,6 +1608,16 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
       *pElement = tempValue;
       tempValue.Clear(); // Clear not destroy as memory now owned by *pElement
     }
+    else if (pElement->MemberCount() == 0)
+    {
+      // Empty arrays are exported as empty tags, so here we apply the reverse to retain the information
+      pElement->SetArray();
+    }
+  }
+  else if (pElement->MemberCount() == 0)
+  {
+    // null members are exported as empty self-closed tags, so here we apply the reverse to retain the information
+    pElement->SetVoid();
   }
 
 epilogue:
@@ -1510,23 +1631,37 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-static udResult udValue_TestContent(const udValue &v)
+static udResult udValue_TestContent(udValue &v)
 {
   udResult result = udR_Success;
-  UD_ERROR_IF(udStrEqual(v.Get("Settings.ProjectsPath").AsString(""), "C:\\Temp\\") != true, udR_Failure_);
-  UD_ERROR_IF(udStrEqual(v.Get("Settings.0").AsString(""), "C:\\Temp\\") != true, udR_Failure_);
+  udValue *pTemp = nullptr;
+  UD_ERROR_IF(udStrEqual(v.Get("Settings.ProjectsPath").AsString(""), "C:\\Temp&\\") != true, udR_Failure_);
+  UD_ERROR_IF(udStrEqual(v.Get("Settings.0").AsString(""), "C:\\Temp&\\") != true, udR_Failure_);
 
   UD_ERROR_IF(v.Get("Settings.ImportAtFullScale").AsBool() != true, udR_Failure_);
   UD_ERROR_IF(v.Get("Settings.1").AsBool() != true, udR_Failure_);
 
   UD_ERROR_IF(v.Get("Settings.TerrainIndex").AsInt() != 2, udR_Failure_);
   UD_ERROR_IF(v.Get("Settings.Inside.Count").AsInt() != 5, udR_Failure_);
+  g_udBreakOnError = false; // Prevent break-on-error because we're knowingly creating error case
+  UD_ERROR_IF(!v.Get("Settings.EmptyArray").IsArray(), udR_Failure_);
+  g_udBreakOnError = true;
+  UD_ERROR_IF(v.Get("Settings.EmptyArray").ArrayLength() != 0, udR_Failure_);
+  // Get the null key a special way to make sure it's there and null
+  result = v.Get(&pTemp, "Settings.Nothing");
+  UD_ERROR_HANDLE();
+  UD_ERROR_IF(!pTemp->IsVoid(), udR_Failure_);
+  // And the opposite test getting a key we know doesn't exist
+  g_udBreakOnError = false; // Prevent break-on-error because we're knowingly creating error case
+  UD_ERROR_IF(v.Get(&pTemp, "Settings.DoesntExist") != udR_ObjectNotFound, udR_Failure_);
+  g_udBreakOnError = true;
+  UD_ERROR_IF(!udStrEqual(v.Get("Settings.SpecialChars").AsString(), "<>&\\/?[]{}\'\"%"), udR_Failure_);
+
   // Test accessing objects as implicit arrays
   UD_ERROR_IF(v.Get("Settings[0].Inside[0].Count").AsInt() != 5, udR_Failure_);
   UD_ERROR_IF(v.Get("Settings.Outside.Count").AsInt() != 2, udR_Failure_);
   for (int i = 0; i < v.Get("Settings.TestArray").ArrayLength(); ++i)
     UD_ERROR_IF(v.Get("Settings.TestArray[%d]", i).AsInt() != i, udR_Failure_);
-
 
 epilogue:
   return result;
@@ -1536,42 +1671,43 @@ epilogue:
 // Author: Dave Pevreal, May 2017
 udResult udValue_Test()
 {
-  static const char *pJSONTest = "{\"Settings\":{\"ProjectsPath\":\"C:\\\\Temp\\\\\",\"ImportAtFullScale\":true,\"TerrainIndex\":2,\"Inside\":{\"Count\":5},\"Outside\":{\"Count\":2,\"content\":\"windy\"},\"TestArray\":[0,1,2]}}";
-  static const char *pXMLTest = "<Settings ProjectsPath=\"C:\\\\Temp\\\\\" ImportAtFullScale=\"true\" TerrainIndex=\"2\"><Inside Count=\"5\"/><Outside Count=\"2\">windy</Outside><TestArray>0</TestArray><TestArray>1</TestArray><TestArray>2</TestArray></Settings>";
+  static const char *pJSONTest = "{\"Settings\":{\"ProjectsPath\":\"C:\\\\Temp&\\\\\",\"ImportAtFullScale\":true,\"TerrainIndex\":2,\"Inside\":{\"Count\":5},\"Outside\":{\"Count\":2,\"content\":\"windy\"},\"EmptyArray\":[],\"Nothing\":null,\"SpecialChars\":\"<>&\\\\/?[]{}'\\\"%\",\"TestArray\":[0,1,2]}}";
+  static const char *pXMLTest = "<Settings ProjectsPath=\"C:\\Temp&amp;\\\" ImportAtFullScale=\"true\" TerrainIndex=\"2\" SpecialChars=\"&lt;&gt;&amp;\\/?[]{}'&quot;%\"><Inside Count=\"5\"/><Outside Count=\"2\">windy</Outside><EmptyArray></EmptyArray><Nothing/><TestArray>0</TestArray><TestArray>1</TestArray><TestArray>2</TestArray></Settings>";
 
   udResult result;
   udValue v;
   const char *pText = nullptr;
 
   // Assign attributes, these are present in both JSON and XML
-  UD_ERROR_CHECK(v.Set("Settings.ProjectsPath = '%s'", "C:\\\\Temp\\\\")); // Note strings need to be escaped
+  UD_ERROR_CHECK(v.Set("Settings.ProjectsPath = '%s'", "C:\\\\Temp&\\\\")); // Note strings need to be escaped
   UD_ERROR_CHECK(v.Set("Settings.ImportAtFullScale = true")); // Note the true/false is NOT quoted, making it a boolean internally
   UD_ERROR_CHECK(v.Set("Settings.TerrainIndex = %d", 2));
   UD_ERROR_CHECK(v.Set("Settings.Inside.Count = %d", 5));
   UD_ERROR_CHECK(v.Set("Settings.Outside.Count = %d", 2));
   UD_ERROR_CHECK(v.Set("Settings.Outside.content = 'windy'")); // This is a special member that will export as content text to the XML element
+  g_udBreakOnError = false;
+  UD_ERROR_IF(v.Set("Settings.Something") == udR_Success, udR_Failure_);
+  g_udBreakOnError = true;
+  UD_ERROR_CHECK(v.Set("Settings.EmptyArray = []"));
+  UD_ERROR_CHECK(v.Set("Settings.Nothing = null"));
+  // Of note here is that the input string is currently JSON escaped, so there's some additional backslashes
+  UD_ERROR_CHECK(v.Set("Settings.SpecialChars = '%s'", "<>&\\/?[]{}\\\'\\\"%"));
   UD_ERROR_CHECK(v.Set("Settings.TestArray[] = 0")); // Append
   UD_ERROR_CHECK(v.Set("Settings.TestArray[] = 1")); // Append
   UD_ERROR_CHECK(v.Set("Settings.TestArray[2] = 2")); // Only allowed to create directly when adding last on the array
-
   UD_ERROR_CHECK(udValue_TestContent(v));
 
-  for (size_t i = 0; i < v.Get("Settings").MemberCount(); ++i)
-  {
-    const char *pValueStr = nullptr;
-    v.Get("Settings.%d", i).ToString(&pValueStr);
-    udDebugPrintf("%s = %s\n", v.Get("Settings").GetMemberName(i), pValueStr ? pValueStr : "<object or array>");
-    udFree(pValueStr);
-  }
-
-  v.Export(&pText, udVEO_XML); udDebugPrintf("%s\n", pText); udFree(pText);
-  v.Export(&pText, udVEO_XML | udVEO_StripWhiteSpace);
+  //v.Export(&pText, udVEO_XML); udDebugPrintf("%s\n", pText); udFree(pText);
+  result = v.Export(&pText, udVEO_XML | udVEO_StripWhiteSpace);
+  UD_ERROR_HANDLE();
+  //udDebugPrintf("%s\n", pText);
   UD_ERROR_IF(!udStrEqual(pText, pXMLTest), udR_Failure_);
   udFree(pText);
 
-  v.Export(&pText, udVEO_JSON); udDebugPrintf("%s\n", pText); udFree(pText);
-  v.Export(&pText, udVEO_JSON | udVEO_StripWhiteSpace);
-  udDebugPrintf("%s\n", pText);
+  //v.Export(&pText, udVEO_JSON); udDebugPrintf("%s\n", pText); udFree(pText);
+  result = v.Export(&pText, udVEO_JSON | udVEO_StripWhiteSpace);
+  UD_ERROR_HANDLE();
+  //udDebugPrintf("%s\n", pText);
   UD_ERROR_IF(!udStrEqual(pText, pJSONTest), udR_Failure_);
   udFree(pText);
 
@@ -1582,7 +1718,6 @@ udResult udValue_Test()
   udFree(pText);
 
   UD_ERROR_CHECK(v.Parse(pXMLTest));
-  v.Export(&pText, udVEO_XML); udDebugPrintf("%s\n", pText); udFree(pText);
   UD_ERROR_CHECK(udValue_TestContent(v));
   v.Export(&pText, udVEO_XML | udVEO_StripWhiteSpace);
   UD_ERROR_IF(!udStrEqual(pText, pXMLTest), udR_Failure_);

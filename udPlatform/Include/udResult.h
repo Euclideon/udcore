@@ -72,12 +72,13 @@ const char *udResultAsString(udResult result);
 // Some helper macros that assume an exit path label "epilogue" and a local variable "result"
 
 #define UD_ERROR_BREAK_ON_ERROR 0  // Set to 1 to have the debugger break on error
+extern bool g_udBreakOnError;      // Set to true normally, unset and reset around sections of code (eg tests) that aren't unexpected
 
-#define UD_ERROR_IF(x, code)      do { if (x) { result = code; if (UD_ERROR_BREAK_ON_ERROR && result) { __debugbreak(); } goto epilogue; }                } while(0)
-#define UD_ERROR_NULL(ptr, code)  do { if (ptr == nullptr) { result = code; if (UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } goto epilogue; }             } while(0)
-#define UD_ERROR_CHECK(funcCall)  do { result = funcCall; if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } goto epilogue; }  } while(0)
-#define UD_ERROR_HANDLE()         do { if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } goto epilogue; }                     } while(0)
-#define UD_ERROR_SET(code)        do { result = code; if (UD_ERROR_BREAK_ON_ERROR && result) __debugbreak(); goto epilogue;                               } while(0)
+#define UD_ERROR_IF(x, code)      do { if (x) { result = code; if (UD_ERROR_BREAK_ON_ERROR && g_udBreakOnError && result) { __debugbreak(); } goto epilogue; }                } while(0)
+#define UD_ERROR_NULL(ptr, code)  do { if (ptr == nullptr) { result = code; if (UD_ERROR_BREAK_ON_ERROR && g_udBreakOnError) { __debugbreak(); } goto epilogue; }             } while(0)
+#define UD_ERROR_CHECK(funcCall)  do { result = funcCall; if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR && g_udBreakOnError) { __debugbreak(); } goto epilogue; }  } while(0)
+#define UD_ERROR_HANDLE()         do { if (result != udR_Success) { if (UD_ERROR_BREAK_ON_ERROR && g_udBreakOnError) { __debugbreak(); } goto epilogue; }                     } while(0)
+#define UD_ERROR_SET(code)        do { result = code; if (UD_ERROR_BREAK_ON_ERROR && g_udBreakOnError && result) __debugbreak(); goto epilogue;                               } while(0)
 
 
 #endif // UDRESULT_H

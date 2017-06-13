@@ -659,11 +659,10 @@ int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, April 2016
-size_t udStrMatchBrace(const char *pLine)
+size_t udStrMatchBrace(const char *pLine, char escapeChar)
 {
   size_t offset;
   char matchChar;
-  char escapeChar = 0;
 
   switch (*pLine)
   {
@@ -671,8 +670,8 @@ size_t udStrMatchBrace(const char *pLine)
     case '[': matchChar = ']'; break;
     case '(': matchChar = ')'; break;
     case '<': matchChar = '>'; break;
-    case '\"': matchChar = '\"'; escapeChar = '\\'; break;
-    case '\'': matchChar = '\''; escapeChar = '\\'; break;
+    case '\"': matchChar = '\"'; break;
+    case '\'': matchChar = '\''; break;
     default: return udStrlen(pLine);
   }
   int depth = 1;

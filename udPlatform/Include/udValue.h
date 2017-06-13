@@ -136,6 +136,7 @@ public:
   bool AsBool(bool defaultValue = false) const;
   int AsInt(int defaultValue = 0) const;
   int64_t AsInt64(int64_t defaultValue = 0) const;
+  float AsFloat(float defaultValue = 0) const;
   double AsDouble(double defaultValue = 0) const;
   const char *AsString(const char *pDefaultValue = nullptr) const; // Returns "true"/"false" for bools, pDefaultValue for any other non-string
 
@@ -150,6 +151,10 @@ public:
 
   // Create (allocate) a string representing the value, caller is responsible for freeing
   inline udResult ToString(const char **ppStr, bool escapeBackslashes = false) const;
+
+  // For values of type string, *ppStr is assigned the string before the value is Cleared.
+  // The caller now has ownership of the memory and is responsible for calling udFree.
+  inline udResult ExtractAndVoid(const char **ppStr);
 
   // Get a pointer to a key's value, this pointer is valid as long as the key remains, ppValue may be null if just testing existence
   // Allowed operators are . and [] to dereference (eg "instances[%d].%s", (int)instanceIndex, (char*)pInstanceKeyName)
@@ -178,13 +183,13 @@ protected:
 
   udResult ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber);
   udResult ParseXML(const char *pJSON, int *pCharCount, int *pLineNumber);
-  udResult ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, bool escape) const;
+  udResult ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, int escape) const;
   udResult ExportJSON(const char *pKey, LineList *pLines, int indent, bool strip, bool comma) const;
   udResult ExportXML(const char *pKey, LineList *pLines, int indent, bool strip) const;
 
   union
   {
-    char *pStr;
+    const char *pStr;
     bool bVal;
     int64_t i64Val;
     double dVal;

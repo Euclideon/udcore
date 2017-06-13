@@ -119,7 +119,7 @@ int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars 
 int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens);
 // Find the offset of the character FOLLOWING the matching brace character pointed to by pLine
 // (may point to null terminator if not found). Brace characters: ({[<"' matched with )}]>"'
-size_t udStrMatchBrace(const char *pLine);
+size_t udStrMatchBrace(const char *pLine, char escapeChar = 0);
 // Helper to skip white space (space,8,10,13), optionally incrementing a line number appropriately
 const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 // In-place remove all non-quoted white space (newlines, spaces, tabs), returns new length

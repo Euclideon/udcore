@@ -10,8 +10,11 @@ void (*gpudDebugPrintfOutputCallback)(const char *pString) = nullptr;
 void udDebugPrintf(const char *format, ...)
 {
   va_list args;
-  char buffer[300];
+  char bufferStackMem[80];
   int prefix = 0;
+  char *pBuffer = bufferStackMem;
+  size_t bufferLen = sizeof(bufferStackMem);
+  int required = 0;
 
   static bool multiThreads = false;
   static int lastThread = -1;
@@ -24,24 +27,37 @@ void udDebugPrintf(const char *format, ...)
 
   if (multiThreads)
   {
-    udSprintf(buffer, sizeof(buffer), "%02d>", udTrace::GetThreadId());
-    prefix = (int)strlen(buffer);
+    udSprintf(pBuffer, bufferLen, "%02d>", udTrace::GetThreadId());
+    prefix = (int)strlen(pBuffer);
   }
 
   va_start(args, format);
-  udSprintfVA(buffer + prefix, sizeof(buffer)-prefix, format, args);
+  required = udSprintfVA(pBuffer + prefix, bufferLen-prefix, format, args);
+  if (required > (bufferLen - prefix))
+  {
+    // The string is bigger than the temp on-stack buffer, so allocate a bigger one
+    pBuffer[prefix] = 0;
+    bufferLen = required + prefix + 1;
+    pBuffer = udStrdup(pBuffer, required - prefix);
+    if (!pBuffer)
+      return;
+    udSprintfVA(pBuffer + prefix, bufferLen - prefix, format, args);
+  }
+
   if (gpudDebugPrintfOutputCallback)
   {
-    gpudDebugPrintfOutputCallback(buffer);
+    gpudDebugPrintfOutputCallback(pBuffer);
   }
   else
   {
 #ifdef _WIN32
-    OutputDebugStringA(buffer);
+    OutputDebugStringA(pBuffer);
 #else
-    fprintf(stderr, "%s", buffer);
+    fprintf(stderr, "%s", pBuffer);
 #endif
   }
+  if (pBuffer != bufferStackMem)
+    udFree(pBuffer);
 }
 
 UDTHREADLOCAL udTrace *udTrace::head = NULL;

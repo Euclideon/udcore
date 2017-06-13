@@ -4,6 +4,8 @@
 #define RESULTINFO(x) { #x+4, x }
 #define RESULTINFO_CUSTOM(x,str) { str, x }
 
+bool g_udBreakOnError;
+
 struct udResultInfo
 {
   const char *pString;

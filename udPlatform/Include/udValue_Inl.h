@@ -29,5 +29,5 @@ inline const udValue *udValue::GetMember(size_t index) const { return (type == T
 inline udValueArray *udValue::AsArray()     const { return (type == T_Array)   ? u.pArray  : nullptr; }
 inline udValueObject *udValue::AsObject()   const { return (type == T_Object)  ? u.pObject : nullptr; }
 inline udResult udValue::ToString(const char **ppStr, bool escapeBackslashes) const { return ToString(ppStr, 0, "", "", "", escapeBackslashes); }
-
+inline udResult udValue::ExtractAndVoid(const char **ppStr) { if (!ppStr) return udR_InvalidParameter_; if (type == T_String) { *ppStr = u.pStr; Clear(); return udR_Success; } return udR_ObjectTypeMismatch; }
 #endif // UDVALUE_INL_H
