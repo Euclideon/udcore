@@ -9,14 +9,15 @@ inline udValue::~udValue()          { Destroy(); }
 
 // Set the value
 inline void udValue::SetVoid()      { Destroy(); }
+inline void udValue::Set(bool v)    { Destroy(); type = T_Bool;   u.bVal   = v; }
 inline void udValue::Set(int64_t v) { Destroy(); type = T_Int64;  u.i64Val = v; }
 inline void udValue::Set(double v)  { Destroy(); type = T_Double; u.dVal   = v; }
 
 // Accessors
 inline udValue::Type udValue::GetType() const { return type; }
 inline bool udValue::IsVoid()           const { return (type == T_Void); }
-inline bool udValue::IsNumeric()        const { return (type >= T_Uint8 && type <= T_Double); }
-inline bool udValue::IsIntegral()       const { return (type >= T_Uint8 && type <= T_Int64); }
+inline bool udValue::IsNumeric()        const { return (type >= T_Int64 && type <= T_Double); }
+inline bool udValue::IsIntegral()       const { return (type >= T_Int64 && type <= T_Int64); }
 inline bool udValue::IsString()         const { return (type == T_String); }
 inline bool udValue::IsArray()          const { return (type == T_Array); }
 inline bool udValue::IsObject()         const { return (type == T_Object); }

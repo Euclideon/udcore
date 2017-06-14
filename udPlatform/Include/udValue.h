@@ -80,10 +80,7 @@ public:
   {
     T_Void = 0,  // Guaranteed to be zero, thus a non-zero type indicates value exists
     T_Bool,
-    T_Uint8,
-    T_Int32,
     T_Int64,
-    T_Float,
     T_Double,
     T_String,
     T_Array,     // A udChunkedArray of values
@@ -102,6 +99,7 @@ public:
 
   // Set the value
   inline void SetVoid();
+  inline void Set(bool v);
   inline void Set(int64_t v);
   inline void Set(double v);
 

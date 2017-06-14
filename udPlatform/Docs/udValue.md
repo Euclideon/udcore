@@ -1,0 +1,294 @@
+# udValue
+
+udValue itself simply defines a poly-type variable, with one of the types being an Object, which is a list of key/value pairs, allowing a tree of values to be defined.
+The internal representation is that of JSON, however it imports XML and represents most XML files without information loss. The tree of values can be exported as
+JSON or XML, and generally all combinations of export, import, export, import result in the same data.
+
+## Basic usage
+
+To load an existing JSON or XML file:
+
+```cpp
+  const char *pText = nullptr;
+  udFile_Load("TestData.txt", &pText);
+  udValue v;
+  v.Parse(pText);
+  udFree(pText);
+```
+
+To create a udValue tree from scratch:
+
+```cpp
+  udValue v;
+  v.Set("Settings.ProjectsPath = '%s'", "C:/Temp/"); <-- Note the use of single quotes, this is mainly for convenience to avoid having to escape double-quote characters
+  v.Set("Settings.ImportAtFullScale = true"); <-- NOTE: true without quotes is boolean if it were in quotes it would be a string (but still work)
+  v.Set("Settings.TerrainIndex = %d", 2);
+  v.Set("Settings.Inside.Count = %d", 5);
+  v.Set("Settings.TestArray[] = 0");
+  v.Set("Settings.TestArray[] = 1");
+  v.Set("Settings.TestArray[] = 2");
+```
+
+To export:
+```cpp
+  const char *pText = nullptr;
+  v.Export(pText, udVEO_JSON | udVEO_StripWhiteSpace); // StripWhiteSpace is optional
+  // .. write text to a file or whatever
+  udFree(pText);
+
+  // Alternatively, to write XML
+  v.Export(pText, udVEO_XML);
+```
+
+To retrieve a value:
+
+```cpp
+  printf("The projects path is %s\n", v.Get("Settings.ProjectsPath").AsString());
+  if (v.Get("Settings.ImportAtFullScale").AsBool())
+    printf("Importing at full scale\n");
+```
+
+Note that Get and Set internally use udSprintf. So v.Get("%s.%s", "hello", "world") is identical to v.Get("hello.world"),
+however being able to construct Get/Set expressions with variable argument printf syntax is extremely convenient.
+
+For example (note this is inefficient for brief demonstration):
+
+```cpp
+for (size_t i = 0; i < v.Get("Settings.TestArray").ArrayLength(); ++i)
+  printf("TestArray[%d] = %d\n", v.Get("Settings.TestArray[%d]", i).AsInt());
+```
+
+Keys are created when they are assigned to, so the following is valid:
+
+```cpp
+udValue v;
+v.Set("array[0].person.name = 'bob'");
+v.Set("array[0].person.age = 21");
+```
+
+## Types
+
+Internally a udValue will be stored as one of the following types:
+
+  * T_Void (a JSON null maps to this)
+  * T_Bool
+  * T_Int64
+  * T_Double
+  * T_String (const char *)
+  * T_Array (udChunkedArray of udValues)
+  * T_Object (udChunkdArray of key/value pairs)
+
+### T_Void
+
+The void type is the default type of a constructed udValue. When exported to JSON it will be "null", or to XML it will be a self-closed tag with no attributes.
+
+Get/Set syntax:
+
+```cpp
+v.Set("key = null");
+v.Get("key").IsVoid() == true
+```
+
+Relevant methods:
+
+  * udValue::IsVoid() - Test is type is T_Void
+  * udValue::SetVoid() - Destroy the udValue and set to void type
+  * udValue::Destroy() - Free any memory associated with type (eg a string) and set type back to void
+  * udValue::Clear() - Initialise the type to void assuming the class is currently uninitialised
+  * udValue::ToString() - Will yield "null"
+
+### T_Bool
+
+When exported to JSON it will be either true or false (unquoted), unquoted. For XML it will be quoted in an attribute of the tag.
+
+Get/Set syntax:
+
+```cpp
+v.Set("key = false");
+v.Set("key = true");
+v.Get("key").AsBool() == true
+```
+
+Relevant methods:
+
+  * udValue::Set(bool v)
+  * udValue::AsBool() - Numeric types will return true if >= 1.0, string types will return true if equal to the string
+                        "true" (ignoring case) or the string is entirely a number >= 1.0 (eg "1.5")
+  * udValue::ToString() - Will yield "true" or "false"
+
+### T_Int64
+
+A signed numeric 64-bit value. There is currently no support for an unsigned 64-bit number.
+
+Get/Set syntax:
+
+```cpp
+v.Set("key = -999");
+v.Get("key").AsInt64() == -999
+```
+
+Relevant methods:
+
+  * udValue::Set(int64_t v)
+  * udValue::AsInt() - Downcast to the int type for convenience
+  * udValue::AsInt64() - Returns the value
+  * udValue::ToString() - Will yield the equivalent of udStrItoa64
+
+### T_Double
+
+A 64-bit double precision floating point value.
+
+Get/Set syntax:
+
+```cpp
+v.Set("key = %f", 3.14159);
+v.Get("key").AsDouble() == 3.14159
+```
+
+Relevant methods:
+
+  * udValue::Set(double v)
+  * udValue::AsFloat() - Downcast to the float type for convenience
+  * udValue::AsDouble() - Returns the value
+  * udValue::ToString() - Will yield the equivalent of udStrFtoa
+
+### T_String
+
+A standard C string. There is no legal API to have this string be NULL. Attempting to set the string to NULL will
+result in an error code return and the udValue being of type T_Void. When setting the string a duplicate of the passed
+string is taken, and the destructor / Destroy method of udValue will handle freeing the memory. Taking references to
+the string inside a udValue is fine so long as the caller understands it will be freed when the udValue changes.
+
+Get/Set syntax:
+
+```cpp
+v.Set("key = '3.14159'");
+v.Get("key").AsString() == "3.14159"
+v.Get("key").AsBool() == true
+v.Get("key").AsInt() == 3
+v.Get("key").AsFloat() == 3.14159
+```
+
+Relevant methods:
+
+  * udValue::SetString(const char *pStr) - A copy of pStr is taken, if pStr is NULL this will fail and set to T_Void
+  * udValue::AsBool() - Returns true if the string is "true" (ignores case) or is a numeric value >= 1.0
+  * udValue::AsInt() - Returns the result of udStrAtoi
+  * udValue::AsInt64() - Returns the result of udStrAtoi64
+  * udValue::AsFloat() - Returns the result of udStrAtof
+  * udValue::AsDouble() - Returns the result of udStrAtoi64
+  * udValue::ToString() - Will yield the string, optionally providing escape character support
+  * udValue::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
+
+### T_Array
+
+An array of typed values, analoguous to a JSON array. In XML, a series of tags with the same name are parsed as an array.
+
+Currently out-of-bounds assignments are not permitted with the exception being the next element that would be appended. 
+This limitation can be lifted easily if use-case requires.
+
+Get/Set syntax:
+
+```cpp
+v.Set("key = []"); // Assign the key to be an empty array
+v.Set("key[] = 'first');
+v.Set("key[] = 'second');    // [ ] is used to append the element to the array
+v.Get("key").IsArray() == true
+v.Get("key").ArrayLength() == 2
+v.Get("key[0]").AsString() == "first"
+v.Get("key[1]").AsString() == "first"
+```
+
+Relevant methods:
+
+  * udValue::SetArray() - Force the udValue object to be a zero-length array
+  * udValue::AsArray() - Returns the udValueArray pointer, or NULL if not an array
+  * udValue::ArrayLength() - Returns the length of the array, zero if not an array
+  * udValue::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
+
+To iterate an array:
+
+```cpp
+// A simple but inefficient way:
+
+for (size_t i = 0; i < v.Get("key").ArrayLength(); ++i)
+  printf("key[%d] = %s\n", i, v.Get("key[%d]", i).AtString());
+
+// A more efficient way that accesses the underlying udChunkedArray methods directly:
+
+const udValueArray *pArray = v.Get("key").AsArray();
+for (size_t i = 0; pArray && i < pArray->length; ++i)
+  printf("key[%d] = %s\n", i, pArray->GetElement()->AtString());
+```
+
+### T_Object
+
+The typical JSON object. Due to the way XML arrays are parsed, a single object can also be treated as an array of length 1.
+The object is a udChunkedArray of udValueKVPair structures, which are just a key string, and a udValue. Note that in the
+Get/Set syntax members can be referenced by index as well as by name.
+
+Get/Set syntax:
+
+```cpp
+v.Set("person.name = 'first');
+v.Set("person.age = 21);
+v.Set("person.dob.day = 25);
+v.Set("person.dob.month = 12);
+v.Set("person.dob.year = 1980);
+v.Get("person.name").AsString() == "first"
+v.Get("person.dob.year").AsInt() == 1980
+v.Get("person").MemberCount() == 3
+// Members can be referenced by index within the structure too
+v.Get("person.0").AsString() == "first" // First member is index 0
+v.Get("person.2.year").AsInt() == 1980  // Third member is index 2 (which is an object so year member is dereferenced)
+// A member can be another object, so it can be returned on its own
+v.Get("person.dob").IsObject() == true
+v.Get("person.dob").Get("day").AsInt() == 25
+// Finally, because in XML arrays of objects are just repeated tags, all objects are able to be treated as an array of length 1
+v.Get("person[0].dob[0].month").AsInt() == 12;
+```
+
+Relevant methods:
+
+  * udValue::SetObject() - Force the udValue object to be an empty object
+  * udValue::AsObject() - Returns the udValueArray pointer, or NULL if not an array
+  * udValue::MemberCount() - Returns the number of members in the object
+  * udValue::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
+
+To iterate the members of an object:
+
+```cpp
+// A simple but not totally efficient way (recommended when performance is not critical)
+
+for (size_t i = 0; i < person.MemberCount(); ++i)
+{
+  const char *pStr = nullptr;
+  person.Get("person.%d", i).ToString(&pStr)
+  printf("person.%s = %s\n", v.Get("person").GetMemberName(i), pStr);
+  udFree(pStr); // ToString allocates a string that we must free
+}
+
+// A slightly more efficient way that accesses the underlying udChunkedArray methods directly:
+
+const udValueObject *pPerson = v.Get("person").AsObject();
+for (size_t i = 0; pPerson && i < pPerson->length; ++i)
+{
+  udValueKVPair *pElement = pPerson->GetElement(i);
+  const char *pStr = nullptr;
+  pElement->value.ToString(&pStr)
+  printf("person.%s = %s\n", pElement->pKey, pStr);
+  udFree(pStr); // ToString allocates a string that we must free
+}
+
+```
+
+## Helpers
+
+* AsDouble3() will return a udDouble3 for an array of 3 (or more) double values.
+* AsDouble4() will return a udDouble4 for an array of 4 (or more) double values.
+* AsQuaternion() will return a udQuaternion<double> for an array of 4 (or more) double values.
+* AsDouble4x4() will return a udDouble4x4 for an array of 9, 12, or 16 doubles. Any other number returns identity.
+  9 doubles will populate the inner 3x3, 12 doubles form a 3x4 and 16 forms the full 4x4.
+* CalculateHMAC is used to digitally sign the tree
+* ExtractAndVoid allows you to take ownership of a string from a udValue object, setting it to void
+

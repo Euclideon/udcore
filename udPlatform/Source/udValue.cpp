@@ -9,10 +9,7 @@ const size_t udValue::s_udValueTypeSize[T_Count] =
 {
   0, // T_Void = 0,      // Guaranteed to be zero, thus a non-zero type indicates value exists
   1, // T_Bool,
-  1, // T_Uint8,
-  4, // T_Int32,
   8, // T_Int64,
-  4, // T_Float,
   8, // T_Double,
   sizeof(char*), // T_String,
   sizeof(udValueArray*), // T_Array,
