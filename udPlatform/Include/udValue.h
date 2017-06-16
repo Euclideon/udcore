@@ -148,6 +148,7 @@ public:
   inline udValueObject *AsObject() const;
 
   // Create (allocate) a string representing the value, caller is responsible for freeing
+  // TODO: Add enum to allow caller to specify JSON or XML escaping
   inline udResult ToString(const char **ppStr, bool escapeBackslashes = false) const;
 
   // For values of type string, *ppStr is assigned the string before the value is Cleared.
@@ -205,7 +206,5 @@ struct udValueKVPair
 };
 
 #include "udValue_Inl.h"
-
-udResult udValue_Test();
 
 #endif // UDVALUE_H
