@@ -36,12 +36,14 @@
 # include <limits.h>
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   0
+# define UDPLATFORM_OSX     0
 # define UDPLATFORM_NACL    1
 # define USE_GLES
 #elif defined(_MSC_VER) || defined(__MINGW32__)
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
 # define UDPLATFORM_LINUX   0
+# define UDPLATFORM_OSX     0
 # define UDPLATFORM_NACL    0
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
 # include <stddef.h>
@@ -49,10 +51,20 @@
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   1
+# define UDPLATFORM_OSX     0
+# define UDPLATFORM_NACL    0
+#elif defined(__APPLE__)
+# include <stddef.h>
+# include <limits.h>
+# include <memory.h>
+# define UDPLATFORM_WINDOWS 0
+# define UDPLATFORM_LINUX   0
+# define UDPLATFORM_OSX     1
 # define UDPLATFORM_NACL    0
 #else
 # define UDPLATFORM_WINDOWS 0
 # define UDPLATFORM_LINUX   0
+# define UDPLATFORM_OSX     0
 # define UDPLATFORM_NACL    0
 # error "Unknown platform"
 #endif
@@ -107,7 +119,7 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 # define udYield() SwitchToThread()
 # define UDTHREADLOCAL __declspec(thread)
 
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
 #include <unistd.h>
 #include <sched.h>
 inline long udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }

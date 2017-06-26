@@ -354,23 +354,23 @@ TEST(MathTests, MathCPPSuite)
 
 TEST(MathTests, UnitLengthCanaries)
 {
-  EXPECT_TRUE(EqualApproxUnitTest<udVector2<float>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector2<double>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector3<float>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector3<double>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector4<float>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector4<double>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<float>>());
-  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector2<float> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector2<double> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector3<float> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector3<double> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector4<float> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector4<double> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<float> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<double> >());
 
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<float>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<double>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<float>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<double>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<float>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<double>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<float>>());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<float> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<double> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<float> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<double> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<float> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<double> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<float> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<double> >());
 }
 
 TEST(MathTests, QuaternionCanaries)
