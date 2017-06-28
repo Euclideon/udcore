@@ -754,13 +754,13 @@ udMatrix4x4<T> udMatrix4x4<T>::scaleNonUniform(T x, T y, T z, const udVector3<T>
 }
 
 template <typename T>
-udMatrix4x4<T> udMatrix4x4<T>::perspective(T fovY, T aspectRatio, T znear, T zfar)
+udMatrix4x4<T> udMatrix4x4<T>::perspective(T fovY, T aspectRatio, T zNear, T zFar)
 {
   T fov = udTan(fovY / T(2));
   udMatrix4x4<T> r = {{{ T(1)/(aspectRatio*fov), T(0),         T(0),                                T(0),
-                         T(0),                   T(0),         (zfar + znear) / (zfar - znear),     T(1),
+                         T(0),                   T(0),         zFar / (zFar - zNear),               T(1),
                          T(0),                   T(1)/fov,     T(0),                                T(0),
-                         T(0),                   T(0),         -(T(2)*zfar*znear) / (zfar - znear), T(0) }}};
+                         T(0),                   T(0),         -(zFar * zNear) / (zFar - zNear),    T(0) }}};
   return r;
 }
 

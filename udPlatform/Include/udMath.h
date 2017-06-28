@@ -343,7 +343,7 @@ struct udVector4
   static udVector4<T> create(const udVector4<U> &_v) { udVector4<T> r = { T(_v.x), T(_v.y), T(_v.z), T(_v.w) }; return r; }
 };
 template <typename T, typename U>
-udVector4<T> operator *(T f, const udVector4<T> &v) { return v * f; }
+udVector4<T> operator *(U f, const udVector4<T> &v) { return v * f; }
 
 template <typename T>
 struct udQuaternion
@@ -358,12 +358,12 @@ struct udQuaternion
   udQuaternion<T> operator +(const udQuaternion<T> &q) const { udQuaternion<T> r = { x + q.x, y + q.y, z + q.z, w + q.w }; return r; }
   udQuaternion<T> operator -(const udQuaternion<T> &q) const { udQuaternion<T> r = { x - q.x, y - q.y, z - q.z, w - q.w }; return r; }
   udQuaternion<T> operator *(const udQuaternion<T> &q) const { return udMul(*this, q); }
-  template <typename U> 
+  template <typename U>
   udQuaternion<T> operator *(U f) const                      { udQuaternion<T> r = { T(x*f), T(y*f), T(z*f), T(w*f) }; return r; }
   T            operator [](size_t index) const               { return ((T*)this)[index]; }
 
   udQuaternion<T>& operator *=(const udQuaternion<T> &q)     { *this = udMul(*this, q); return *this; }
-  template <typename U> 
+  template <typename U>
   udQuaternion<T>& operator *=(U f)                          { x=T(x*f); y=T(y*f); z=T(z*f); w=T(w*f); return *this; }
   udQuaternion<T>& operator +=(const udQuaternion<T> &q)     { x += q.x; y += q.y; z += q.z; w += q.w; return *this; }
   udQuaternion<T>& operator -=(const udQuaternion<T> &q)     { x -= q.x; y -= q.y; z -= q.z; w -= q.w; return *this; }
