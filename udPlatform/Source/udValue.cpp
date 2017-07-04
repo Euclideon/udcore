@@ -257,7 +257,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, June 2017
-const udValue *udValue::FindMember(const char *pMemberName) const
+const udValue *udValue::FindMember(const char *pMemberName, size_t *pIndex) const
 {
   size_t i;
   udValueObject *pObject = AsObject();
@@ -265,7 +265,11 @@ const udValue *udValue::FindMember(const char *pMemberName) const
   {
     const udValueKVPair *pItem = pObject->GetElement(i);
     if (udStrEqual(pItem->pKey, pMemberName))
+    {
+      if (pIndex)
+        *pIndex = i;
       return &pItem->value;
+    }
   }
   return nullptr;
 }
@@ -468,6 +472,161 @@ static size_t FindMatch(const udValueArray *pArray, const udValueObject *pSearch
 }
 
 // ----------------------------------------------------------------------------
+// Author: Dave Pevreal, July 2017
+static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue **ppValue, size_t *pIndex, const char *pKey, int *pCharCount, bool createIfNotExist)
+{
+  // Common code for all array operator access within expressions
+  // This function handles object[0], object["memberName"], object[{memberIndex}], array[index]
+  udResult result = udR_Success;
+  int charCount = 0;
+
+  // First parse the search expression, and the resultNumber. Both are optional.
+  udValue searchExp;
+  bool resultNumberParsed = false;
+  int resultNumber = 0;
+  searchExp.Parse(pKey, &charCount);
+  if (pKey[charCount] == ',')
+  {
+    int tempCharCount;
+    resultNumber = udStrAtoi(pKey + charCount + 1, &tempCharCount);
+    resultNumberParsed = true;
+    charCount += tempCharCount + 1;
+    UD_ERROR_IF(resultNumber < 0, udR_ParseError);
+  }
+  UD_ERROR_IF(pKey[charCount] != ']', udR_ParseError);
+
+  if (searchExp.IsObject())
+  {
+    // Search expression is a JSON object, so we search arrays looking for the key/value pair supplied
+    const udValueArray *pArray = pRoot->AsArray();
+    UD_ERROR_NULL(pArray, udR_ObjectTypeMismatch);
+    size_t i = FindMatch(pArray, searchExp.AsObject(), resultNumber);
+    if (i < pArray->length)
+    {
+      if (ppValue)
+        *ppValue = pArray->GetElement(i);
+      if (pIndex)
+        *pIndex = i;
+    }
+    else
+    {
+      *ppValue = nullptr;
+      UD_ERROR_SET(udR_ObjectNotFound);
+    }
+  }
+  else if (searchExp.IsString())
+  {
+    // Search expression is a string, currently this is only support for finding a member of an object
+    UD_ERROR_IF(resultNumberParsed, udR_ParseError);
+    if (pRoot->IsVoid() && createIfNotExist)
+    {
+      result = const_cast<udValue*>(pRoot)->SetObject();
+      UD_ERROR_HANDLE();
+    }
+    if (pRoot->IsObject())
+    {
+      const udValue *pV = pRoot->FindMember(searchExp.AsString(), pIndex);
+      if (!pV && createIfNotExist)
+      {
+        udValueKVPair *pKVP = pRoot->AsObject()->PushBack();
+        UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
+        pKVP->pKey = searchExp.AsString();
+        searchExp.Clear(); // We're taking the string memory
+        pKVP->value.Clear();
+        pV = &pKVP->value;
+      }
+      if (ppValue)
+        *ppValue = pV;
+      UD_ERROR_NULL(pV, udR_ObjectNotFound);
+    }
+    else
+    {
+      UD_ERROR_SET(udR_ObjectTypeMismatch); // Don't currently support ["string"] on arrays
+    }
+  }
+  else if (searchExp.IsVoid())
+  {
+    // Search expression is void, this means either appending to an array, or indexing a member numerically
+    if (resultNumberParsed)
+    {
+      // [,n] which indicates member index
+      UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
+      UD_ERROR_IF(resultNumber >= pRoot->AsObject()->length, udR_ObjectNotFound);
+      const udValue *pV = &pRoot->AsObject()->GetElement(resultNumber)->value;
+      if (ppValue)
+        *ppValue = pV;
+      if (pIndex)
+        *pIndex = resultNumber;
+    }
+    else
+    {
+      // [], which means append to the array
+      if (pRoot->IsVoid() && createIfNotExist) // If the entry is void, we can safely make it an array now
+      {
+        result = const_cast<udValue*>(pRoot)->SetArray();
+        UD_ERROR_HANDLE();
+      }
+      UD_ERROR_IF(!pRoot->IsArray() || !createIfNotExist, udR_ParseError);
+      udValue *pV = pRoot->AsArray()->PushBack();
+      UD_ERROR_NULL(pV, udR_MemoryAllocationFailure);
+      pV->Clear();
+      if (ppValue)
+        *ppValue = pV;
+      if (pIndex)
+        *pIndex = pRoot->AsArray()->length - 1;
+    }
+  }
+  else if (searchExp.IsNumeric())
+  {
+    // Search expression is numeric, which is typically an array index, but we also support [0] on an object which returns itself
+    UD_ERROR_IF(resultNumberParsed, udR_ParseError);
+    int searchIndex  = searchExp.AsInt();
+    if (pRoot->IsObject())
+    {
+      UD_ERROR_IF(searchIndex != 0, udR_ParseError); // We accept objects being accessed as object[0] for xml parsing reasons
+      if (ppValue)
+        *ppValue = pRoot;
+      if (pIndex)
+        *pIndex = 0;
+    }
+    else if (pRoot->IsArray())
+    {
+      if (searchIndex < 0)
+        searchIndex += (int)pRoot->AsArray()->length;
+      // TODO: Simplify this if/when udChunkedArray does range checking
+      udValue *pV = (size_t(searchIndex) < pRoot->AsArray()->length) ? pRoot->AsArray()->GetElement(searchIndex) : nullptr;
+      if (!pV && createIfNotExist)
+      {
+        while (pRoot->AsArray()->length <= searchIndex)
+        {
+          pV = pRoot->AsArray()->PushBack();
+          UD_ERROR_NULL(pV, udR_MemoryAllocationFailure);
+          pV->Clear();
+        }
+      }
+      if (ppValue)
+        *ppValue = pV;
+      if (pIndex)
+        *pIndex = searchIndex;
+      UD_ERROR_NULL(pV, udR_CountExceeded);
+    }
+    else
+    {
+      UD_ERROR_SET(udR_ParseError);
+    }
+  }
+  else
+  {
+    UD_ERROR_SET(udR_ParseError);
+  }
+
+epilogue:
+  if (pCharCount)
+    *pCharCount = charCount;
+  return result;
+}
+
+// ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
 static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char *pKeyExpression, va_list ap)
 {
@@ -500,76 +659,17 @@ static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char
       case '[':
         {
           int charCount;
-
-          if (exp.pKey[0] == '{' || (exp.pKey[0] == '\"' || exp.pKey[0] == '\''))
-          {
-            // A JSON expression within square brackets is a search for one or more key/value pair matches
-            udValue searchExp;
-            int resultNumber = 0;
-            result = searchExp.Parse(exp.pKey, &charCount);
-            UD_ERROR_HANDLE();
-            if (exp.pKey[charCount] == ',')
-            {
-              int tempCharCount;
-              resultNumber = udStrAtoi(exp.pKey + charCount + 1, &tempCharCount);
-              charCount += tempCharCount + 1;
-            }
-            UD_ERROR_IF(charCount == 0 || exp.pKey[charCount] != ']', udR_ParseError);
-            if (searchExp.IsObject())
-            {
-              const udValueArray *pArray = pRoot->AsArray();
-              UD_ERROR_NULL(pArray, udR_ObjectTypeMismatch);
-              size_t i = FindMatch(pArray, searchExp.AsObject(), resultNumber);
-              pRoot = (i < pArray->length) ? pArray->GetElement(i) : nullptr;
-            }
-            else if (searchExp.IsString())
-            {
-              pRoot = pRoot->FindMember(searchExp.AsString());
-              UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
-            }
-            else
-            {
-              UD_ERROR_SET(udR_ParseError);
-            }
-          }
-          else
-          {
-            int index = udStrAtoi(exp.pKey, &charCount);
-            UD_ERROR_IF(charCount == 0 || exp.pKey[charCount] != ']', udR_ParseError);
-            // We allow (ignore) [0] dereference of non-arrays because of XML syntax
-            // where 1 tag is an object, but more duplicates convert into an array
-            // So to allow access syntax to work without knowing how many elements there
-            // are, a single item will still work by simply ignoring the [0]
-            if (index != 0 || pRoot->IsArray())
-            {
-              const udValueArray *pArray = pRoot->AsArray();
-              UD_ERROR_NULL(pArray, udR_ObjectTypeMismatch);
-              pRoot = pArray->GetElement(index < 0 ? pArray->length + index : index);
-            }
-          }
-          UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
+          size_t index;
+          result = udValue_ProcessArrayOperator(pRoot, &pRoot, &index, exp.pKey, &charCount, false);
+          UD_ERROR_HANDLE();
         }
         break;
       case 0:
         // Fall-thru to normal member-of code if root isn't XML
       case '.':
         {
-          int charCount;
-          int memberIndex = udStrAtoi(exp.pKey, &charCount);
-          if (charCount && charCount == (int)udStrlen(exp.pKey))
-          {
-            // If the 'member' is completely numeric, treat it as a member index
-            // This next check implicity checks that it's an object because MemberCount() returns zero otherwise
-            UD_ERROR_IF(memberIndex < 0 || memberIndex >= (int)pRoot->MemberCount(), udR_ObjectNotFound);
-            const udValueKVPair *pItem = pRoot->AsObject()->GetElement(memberIndex);
-            UD_ERROR_NULL(pItem, udR_ObjectNotFound);
-            pRoot = &pItem->value;
-          }
-          else
-          {
-            pRoot = pRoot->FindMember(exp.pKey);
-            UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
-          }
+          pRoot = pRoot->FindMember(exp.pKey);
+          UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
         }
         break;
     }
@@ -652,62 +752,41 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
   {
     exp.InitKeyOnly(pKeyExpression);
   }
-  UD_ERROR_NULL(pSetToValue, udR_NothingToDo);
 
-  for (; exp.pKey; exp.Next())
+  for (; pRoot && exp.pKey; exp.Next())
   {
     switch (exp.op)
     {
       case '[':
-      {
-        int charCount;
-        int index = udStrAtoi(exp.pKey, &charCount);
-        UD_ERROR_IF(exp.pKey[charCount] != ']', udR_ParseError);
-        if (!pRoot->IsArray())
         {
-          result = pRoot->SetArray();
-          UD_ERROR_HANDLE();
-        }
-        udValueArray *pArray = pRoot->AsArray();
-        if (charCount == 0)
-        {
-          // An empty array access (ie mykey[]) indicates wanting to add to the array
-          result = pArray->PushBack(&pRoot);
-          pRoot->Clear();
-        }
-        else
-        {
-          // Negative indices refer to end-relative existing keys (eg -1 is last element)
-          if (index < 0)
-            index = (int)(pArray->length + index);
-          UD_ERROR_IF(index < 0, udR_ObjectNotFound);
-          if (pSetToValue)
-          {
-            // For the moment, error if assign out of bounds beyond the next item on the list
-            // This catches a lot of errors where %d is used but not in arg list
-            UD_ERROR_IF((size_t)index > pArray->length, udR_CountExceeded);
-            // If a specific index is being assigned and there's less elements, pad with voids
-            while (pArray->length <= (size_t)index)
-            {
-              result = pArray->PushBack(udValue::s_void);
-              UD_ERROR_HANDLE();
-            }
-          }
+          int charCount;
+          udValue *pV = nullptr;
+          size_t index;
+          result = udValue_ProcessArrayOperator(pRoot, const_cast<const udValue**>(&pV), &index, exp.pKey, &charCount, pSetToValue != nullptr);
           if (!pSetToValue && !exp.pRemainingExpression)
           {
-            // Reached the end of the expression, so this item needs to be removed
-            if ((size_t)index < pArray->length)
-              pArray->RemoveAt((size_t)index);
-            pRoot = nullptr;
+            UD_ERROR_NULL(pV, udR_ObjectNotFound);
+            // End of the expression with no set, means remove the item
+            if (pRoot->IsObject())
+            {
+              udValueKVPair *pItem = pRoot->AsObject()->GetElement(index);
+              udFree(pItem->pKey);
+              pItem->value.Destroy();
+              pRoot->AsObject()->RemoveAt(index);
+            }
+            else if (pRoot->IsArray())
+            {
+              pV->Destroy();
+              pRoot->AsArray()->RemoveAt(index);
+            }
           }
           else
           {
-            pRoot = pArray->GetElement(index);
-            UD_ERROR_NULL(pRoot, udR_InternalError); // This should never happen
+            pRoot = pV;
+            UD_ERROR_NULL(pRoot, udR_ParseError);
           }
         }
-      }
-      break;
+        break;
       case '.':
         if (pRoot->IsVoid() && pSetToValue)
         {
@@ -719,45 +798,38 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
         UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
         // Fall through to default case
       default: // op == 0 here
-      {
-        udValueKVPair *pItem;
-        udValueObject *pObject = pRoot->AsObject();
-        UD_ERROR_NULL(pObject, udR_ObjectNotFound);
-        size_t i;
-        for (i = 0; i < pObject->length; ++i)
         {
-          pItem = const_cast<udValueKVPair *>(pObject->GetElement(i));
-          if (udStrEqual(pItem->pKey, exp.pKey))
+          udValueObject *pObject = pRoot->AsObject();
+          UD_ERROR_NULL(pObject, udR_ObjectNotFound);
+          const udValue *pV = nullptr;
+          size_t index;
+          pV = pRoot->FindMember(exp.pKey, &index);
+          if (!pV && pSetToValue)
           {
-            if (!pSetToValue && !exp.pRemainingExpression)
-            {
-              // Reached the end of the expression, so this item needs to be removed
-              udFree(pItem->pKey);
-              pItem->value.Destroy();
-              pObject->RemoveAt(i);
-              pRoot = nullptr;
-            }
-            else
-            {
-              pRoot = &pItem->value;
-            }
-            break;
+            // A key doesn't exist, and we've got a value to set so create it here
+            udValueKVPair *pKVP = pObject->PushBack();
+            UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
+            pKVP->value.Clear();
+            pKVP->pKey = udStrdup(exp.pKey);
+            UD_ERROR_NULL(pKVP->pKey, udR_MemoryAllocationFailure);
+            pV = &pKVP->value;
           }
+          if (!pSetToValue && !exp.pRemainingExpression)
+          {
+            UD_ERROR_NULL(pV, udR_ObjectNotFound);
+            // Found the member, and it needs to be removed
+            udValueKVPair *pKVP = pObject->GetElement(index);
+            udFree(pKVP->pKey);
+            pKVP->value.Destroy();
+            pObject->RemoveAt(index);
+            pV = nullptr;
+          }
+          pRoot = const_cast<udValue *>(pV);
         }
-        if (pSetToValue && i == pObject->length)
-        {
-          UD_ERROR_IF(!pSetToValue, udR_ObjectNotFound);
-          result = pObject->PushBack(&pItem);
-          UD_ERROR_HANDLE();
-          pItem->pKey = udStrdup(exp.pKey);
-          UD_ERROR_NULL(pItem->pKey, udR_MemoryAllocationFailure);
-          pRoot = &pItem->value;
-          pItem->value.Clear(); // Init to void, will be assigned as required
-        }
+        break;
       }
-      break;
-    }
   }
+  UD_ERROR_IF(!pRoot && exp.pRemainingExpression, udR_ParseError);
   if (pSetToValue)
   {
     UD_ERROR_NULL(pRoot, udR_InternalError);

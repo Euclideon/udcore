@@ -127,7 +127,7 @@ public:
   inline size_t MemberCount() const;  // Get the number of members for an object (zero for all other types)
   inline const char *GetMemberName(size_t index) const;  // Get the name of a member (null if out of range or not an object)
   inline const udValue *GetMember(size_t index) const;  // Get the member value (null if out of range or not an object)
-  const udValue *FindMember(const char *pMemberName) const; // Get a member of an object
+  const udValue *FindMember(const char *pMemberName, size_t *pIndex = nullptr) const; // Get a member of an object
   bool IsEqualTo(const udValue &other) const;
 
   // Get the value as a specific type, unless object is udVT_Void in which case defaultValue is returned

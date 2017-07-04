@@ -13,10 +13,10 @@ static void udValue_TestContent(udValue &v)
 {
   udValue *pTemp = nullptr;
   EXPECT_EQ(true, udStrEqual(v.Get("Settings.ProjectsPath").AsString(""), "C:\\Temp&\\"));
-  EXPECT_EQ(true, udStrEqual(v.Get("Settings.0").AsString(""), "C:\\Temp&\\"));
+  EXPECT_EQ(true, udStrEqual(v.Get("Settings[,0]").AsString(""), "C:\\Temp&\\"));
 
   EXPECT_EQ(true, v.Get("Settings.ImportAtFullScale").AsBool());
-  EXPECT_EQ(true, v.Get("Settings.1").AsBool());
+  EXPECT_EQ(true, v.Get("Settings[,1]").AsBool());
 
   EXPECT_EQ(2, v.Get("Settings.TerrainIndex").AsInt());
   EXPECT_EQ(5, v.Get("Settings.Inside.Count").AsInt());
@@ -37,12 +37,16 @@ static void udValue_TestContent(udValue &v)
   {
     EXPECT_EQ(i, v.Get("Settings.TestArray[%d]", i).AsInt());
   }
+  EXPECT_EQ(2, v.Get("Settings.TestArray[-1]").AsInt());
+  EXPECT_EQ(1, v.Get("Settings.TestArray[-2]").AsInt());
+  EXPECT_EQ(0, v.Get("Settings.TestArray[-3]").AsInt());
+  EXPECT_EQ(true, v.Get("Settings.TestArray[-4]").IsVoid());
 }
 
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-TEST(udValueTests, Creation)
+TEST(udValueTests, CreationSimple)
 {
   udValue v;
 
@@ -63,6 +67,32 @@ TEST(udValueTests, Creation)
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 0")); // Append
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 1")); // Append
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[2] = 2")); // Only allowed to create directly when adding last on the array
+  udValue_TestContent(v);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, June 2017
+TEST(udValueTests, CreationSpecial)
+{
+  udValue v;
+
+  // Assign attributes, these are present in both JSON and XML
+  EXPECT_EQ(udR_Success, v.Set("Settings['ProjectsPath'] = '%s'", "C:\\\\Temp&\\\\")); // Note strings need to be escaped
+  EXPECT_EQ(udR_Success, v.Set("Settings['ImportAtFullScale'] = true")); // Note the true/false is NOT quoted, making it a boolean internally
+  EXPECT_EQ(udR_Success, v.Set("Settings['TerrainIndex'] = %d", 2));
+  EXPECT_EQ(udR_Success, v.Set("Settings['Inside']['Count'] = %d", 5));
+  EXPECT_EQ(udR_Success, v.Set("Settings['Outside']['Count'] = %d", 2));
+  EXPECT_EQ(udR_Success, v.Set("Settings['Outside']['content'] = 'windy'")); // This is a special member that will export as content text to the XML element
+  g_udBreakOnError = false;
+  EXPECT_NE(udR_Success, v.Set("Settings['Something']"));
+  g_udBreakOnError = true;
+  EXPECT_EQ(udR_Success, v.Set("Settings['EmptyArray'] = []"));
+  EXPECT_EQ(udR_Success, v.Set("Settings['Nothing'] = null"));
+  // Of note here is that the input string is currently JSON escaped, so there's some additional backslashes
+  EXPECT_EQ(udR_Success, v.Set("Settings['SpecialChars'] = '%s'", "<>&\\/?[]{}\\\'\\\"%"));
+  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 0")); // Append
+  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 1")); // Append
+  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][2] = 2")); // Only allowed to create directly when adding last on the array
   udValue_TestContent(v);
 }
 

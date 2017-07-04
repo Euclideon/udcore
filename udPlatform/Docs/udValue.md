@@ -16,6 +16,32 @@ To load an existing JSON or XML file:
   udFree(pText);
 ```
 
+Expression syntax for Get/Set:
+
+* The Get and Set functions take a variable argument list to form a udSprintf'd string prior to parsing, 
+  this is purely for convenience. Any legal printf formatting can be used, it is totally irrelevant to
+  the Get and Set functions as they only deal with the resulting string.
+* The . operator references the member of an object
+```cpp
+  v.Get("Settings.ProjectsPath").AsString();
+```
+* The [] operator indexes arrays, or references members of an object in special ways
+```cpp
+  v.Get("Settings.TestArray[2]").AsInt(); // Simple index of an array accessing the 3rd element
+  v.Get("Settings.TestArray[-2]").AsInt(); // Reference the second last element of the array
+  v.Set("Settings.TestArray[] = 5"); // Append the value 5 to an array
+  v.Get("Settings['TerrainIndex']).AsInt(); // Reference the member name in quotes, useful if it has special characters
+  v.Get("Settings[,2]).AsInt(); // Index the members, the 3rd member is TerrainIndex, so this is equivalent to the above line
+```
+* The = operator is only valid on Set calls, with the type of the data inferred.
+  Importantly, valid JSON is allowed on the right also, allowing simple objects to be created very conveniently.
+```cpp
+  v.Set("Settings.ProjectsPath = '%s'", "C:/Temp/"); // A string type
+  v.Set("Settings.ImportAtFullScale = true"); // A boolean type (note the absence of quotes)
+  v.Set("Settings.TestArray[] = 2"); // Append a numeric type to an array
+  v.Set("Settings.TestArray[] = { 'member': 100, 'something': 200 }"); // Append an object to an array
+```
+
 To create a udValue tree from scratch:
 
 ```cpp
@@ -99,7 +125,7 @@ Relevant methods:
 
 ### T_Bool
 
-When exported to JSON it will be either true or false (unquoted), unquoted. For XML it will be quoted in an attribute of the tag.
+When exported to JSON it will be either true or false, unquoted. For XML it will be quoted in an attribute of the tag.
 
 Get/Set syntax:
 
@@ -239,8 +265,8 @@ v.Get("person.name").AsString() == "first"
 v.Get("person.dob.year").AsInt() == 1980
 v.Get("person").MemberCount() == 3
 // Members can be referenced by index within the structure too
-v.Get("person.0").AsString() == "first" // First member is index 0
-v.Get("person.2.year").AsInt() == 1980  // Third member is index 2 (which is an object so year member is dereferenced)
+v.Get("person[,0]").AsString() == "first" // First member is index 0
+v.Get("person[,2].year").AsInt() == 1980  // Third member is index 2 (which is an object so year member is dereferenced)
 // A member can be another object, so it can be returned on its own
 v.Get("person.dob").IsObject() == true
 v.Get("person.dob").Get("day").AsInt() == 25
