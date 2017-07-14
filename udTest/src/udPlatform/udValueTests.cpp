@@ -128,3 +128,25 @@ TEST(udValueTests, ParseXML)
   // We don't test that exporting back to JSON worked, because it
   // won't. This is because everything in XML is a string, the types are lost
 }
+
+// ----------------------------------------------------------------------------
+// Author: Paul Fox, July 2017
+TEST(udValueTests, ValueShouldNotTurnIntoObjectIfAlreadyArray)
+{
+  udValue output;
+
+  //Output each application to the udValue.
+  for (uint32_t i = 0; i < 3; ++i)
+  {
+    EXPECT_EQ(udR_Success, output.Set("[] = { 'name': 'Room %d', 'address': '127.0.0.1', 'macAddress': '::1', 'status': 'Bad', 'applications': [] }", i));
+    EXPECT_STREQ("::1", output.Get("[-1].macAddress").AsString());
+    EXPECT_EQ(udR_Success, output.Set("[%d].applications[] = { 'name': '%s' }", i, "Hello"));
+  }
+
+  EXPECT_EQ(3, output.ArrayLength());
+
+  //Export the udValue as a JSON string and clean up.
+  const char *outputTestStr;
+  EXPECT_EQ(udR_Success, output.Export(&outputTestStr));
+  udFree(outputTestStr);
+}

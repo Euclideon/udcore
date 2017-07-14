@@ -718,11 +718,6 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
 
   UD_ERROR_NULL(pRoot, udR_InvalidParameter_);
   UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter_);
-  if (!pRoot->IsObject())
-  {
-    result = pRoot->SetObject();
-    UD_ERROR_HANDLE();
-  }
 
   if (udStrchr(pKeyExpression, "%.[="))
   {
@@ -788,6 +783,9 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
         }
         break;
       case '.':
+        // Fall through to default case
+      default: // op == 0 here
+      {
         if (pRoot->IsVoid() && pSetToValue)
         {
           // A void key can be converted into an object automatically
@@ -796,38 +794,34 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
         }
         // Check that the type is an object allowing a dot dereference to be valid
         UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
-        // Fall through to default case
-      default: // op == 0 here
+        udValueObject *pObject = pRoot->AsObject();
+        const udValue *pV = nullptr;
+        size_t index;
+        pV = pRoot->FindMember(exp.pKey, &index);
+        if (!pV && pSetToValue)
         {
-          udValueObject *pObject = pRoot->AsObject();
-          UD_ERROR_NULL(pObject, udR_ObjectNotFound);
-          const udValue *pV = nullptr;
-          size_t index;
-          pV = pRoot->FindMember(exp.pKey, &index);
-          if (!pV && pSetToValue)
-          {
-            // A key doesn't exist, and we've got a value to set so create it here
-            udValueKVPair *pKVP = pObject->PushBack();
-            UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
-            pKVP->value.Clear();
-            pKVP->pKey = udStrdup(exp.pKey);
-            UD_ERROR_NULL(pKVP->pKey, udR_MemoryAllocationFailure);
-            pV = &pKVP->value;
-          }
-          if (!pSetToValue && !exp.pRemainingExpression)
-          {
-            UD_ERROR_NULL(pV, udR_ObjectNotFound);
-            // Found the member, and it needs to be removed
-            udValueKVPair *pKVP = pObject->GetElement(index);
-            udFree(pKVP->pKey);
-            pKVP->value.Destroy();
-            pObject->RemoveAt(index);
-            pV = nullptr;
-          }
-          pRoot = const_cast<udValue *>(pV);
+          // A key doesn't exist, and we've got a value to set so create it here
+          udValueKVPair *pKVP = pObject->PushBack();
+          UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
+          pKVP->value.Clear();
+          pKVP->pKey = udStrdup(exp.pKey);
+          UD_ERROR_NULL(pKVP->pKey, udR_MemoryAllocationFailure);
+          pV = &pKVP->value;
         }
+        if (!pSetToValue && !exp.pRemainingExpression)
+        {
+          UD_ERROR_NULL(pV, udR_ObjectNotFound);
+          // Found the member, and it needs to be removed
+          udValueKVPair *pKVP = pObject->GetElement(index);
+          udFree(pKVP->pKey);
+          pKVP->value.Destroy();
+          pObject->RemoveAt(index);
+          pV = nullptr;
+        }
+        pRoot = const_cast<udValue *>(pV);
         break;
       }
+    }
   }
   UD_ERROR_IF(!pRoot && exp.pRemainingExpression, udR_ParseError);
   if (pSetToValue)
