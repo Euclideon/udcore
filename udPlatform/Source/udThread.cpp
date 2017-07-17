@@ -1,6 +1,6 @@
 #include "udThread.h"
 
-#if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
 #include <sched.h>
 #include <pthread.h>
 #include <errno.h>
@@ -14,7 +14,7 @@ struct udThread
   // First element of structure is GUARANTEED to be the operating system thread handle
 # if UDPLATFORM_WINDOWS
   HANDLE handle;
-# elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+# elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   pthread_t t;
 # else
 #   error Unknown platform
@@ -56,7 +56,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
   pThread->pThreadData = pThreadData;
 #if UDPLATFORM_WINDOWS
   pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   typedef void *(*PTHREAD_START_ROUTINE)(void *);
   pthread_create(&pThread->t, NULL, (PTHREAD_START_ROUTINE)udThread_Bootstrap, pThread);
 #else
@@ -93,7 +93,7 @@ void udThread_SetPriority(udThread *pThread, udThreadPriority priority)
     int highest = sched_get_priority_max(policy);
     int pthreadPrio = (priority * (highest - lowest) / udTP_Highest) + lowest;
     pthread_setschedprio(pThread->t, pthreadPrio);
-#elif UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     udUnused(priority);
 #else
 #   error Unknown platform
@@ -135,7 +135,7 @@ udResult udThread_Join(udThread *pThread, int waitMs)
 
     return udR_Failure_;
   }
-#elif UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   udUnused(waitMs);
   int result = pthread_join(pThread->t, nullptr);
   if (result)
@@ -187,7 +187,7 @@ udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
 #if UDPLATFORM_WINDOWS
   HANDLE handle = CreateSemaphore(NULL, initialValue, maxValue, NULL);
   return (udSemaphore *)handle;
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   sem_t *sem = (sem_t *)udAlloc(sizeof(sem_t));
   (void)maxValue;
   if (sem)
@@ -211,7 +211,7 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
     HANDLE semHandle = (HANDLE)(*ppSemaphore);
     *ppSemaphore = NULL;
     CloseHandle(semHandle);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     sem_t *sem = (sem_t*)(*ppSemaphore);
     sem_destroy(sem);
     udFree(sem);
@@ -229,7 +229,7 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
   {
 #if UDPLATFORM_WINDOWS
     ReleaseSemaphore((HANDLE)pSemaphore, count, nullptr);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     while (count-- > 0)
       sem_post((sem_t*)pSemaphore);
 #else
@@ -264,7 +264,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 
       return sem_timedwait((sem_t*)pSemaphore, &ts);
     }
-#elif UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     return sem_wait((sem_t*)pSemaphore);  // TODO: Need to find out timedwait equiv for NACL
 #else
 #   error Unknown platform
@@ -279,7 +279,7 @@ udMutex *udCreateMutex()
 #if UDPLATFORM_WINDOWS
   HANDLE handle = CreateMutex(NULL, FALSE, NULL);
   return (udMutex *)handle;
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   pthread_mutex_t *mutex = (pthread_mutex_t *)udAlloc(sizeof(pthread_mutex_t));
   if (mutex)
     pthread_mutex_init(mutex, NULL);
@@ -298,7 +298,7 @@ void udDestroyMutex(udMutex **ppMutex)
     HANDLE mutexHandle = (HANDLE)(*ppMutex);
     *ppMutex = NULL;
     CloseHandle(mutexHandle);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     pthread_mutex_t *mutex = (pthread_mutex_t *)(*ppMutex);
     pthread_mutex_destroy(mutex);
     udFree(mutex);
@@ -316,7 +316,7 @@ void udLockMutex(udMutex *pMutex)
   {
 #if UDPLATFORM_WINDOWS
     WaitForSingleObject((HANDLE)pMutex, INFINITE);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     pthread_mutex_lock((pthread_mutex_t *)pMutex);
 #else
 #   error Unknown platform
@@ -331,7 +331,7 @@ void udReleaseMutex(udMutex *pMutex)
   {
 #if UDPLATFORM_WINDOWS
     ReleaseMutex((HANDLE)pMutex);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
     pthread_mutex_unlock((pthread_mutex_t *)pMutex);
 #else
 #error Unknown platform

@@ -1041,7 +1041,7 @@ int udGetHardwareThreadCount()
     }
     return hardwareThreadCount;
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   return sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 
@@ -1469,7 +1469,7 @@ struct udFindDirData : public udFindDir
     pFilename = utf8Filename;
     isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   DIR *pDir;
   struct dirent *pDirent;
 
@@ -1489,7 +1489,7 @@ struct udFindDirData : public udFindDir
 // Author: Dave Pevreal, August 2014
 udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
 {
-#if UD_32BIT
+#if UD_32BIT || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   struct stat st = { 0 };
   if (stat(pFilename, &st) == 0)
 #elif UDPLATFORM_WINDOWS
@@ -1544,7 +1544,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     }
     pFindData->SetMembers();
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   pFindData->pDir = opendir(pFolder);
   if (!pFindData->pDir)
   {
@@ -1591,7 +1591,7 @@ udResult udReadDir(udFindDir *pFindDir)
     return udR_ObjectNotFound;
   }
   pFindData->SetMembers();
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   pFindData->pDirent = readdir(pFindData->pDir);
   if (!pFindData->pDirent)
@@ -1618,7 +1618,7 @@ udResult udCloseDir(udFindDir **ppFindDir)
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->hFind != INVALID_HANDLE_VALUE)
     FindClose(pFindData->hFind);
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->pDir)
     closedir(pFindData->pDir);

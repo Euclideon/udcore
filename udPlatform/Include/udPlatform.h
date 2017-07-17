@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(_WIN64) || defined(__amd64__)
+#if defined(_WIN64) || defined(__amd64__) || defined (__arm64__)
   //64-bit code
 # define UD_64BIT (1)
 # define UD_32BIT (0)
@@ -34,39 +34,54 @@
 #if defined(__native_client__)
 # include <string.h>
 # include <limits.h>
-# define UDPLATFORM_WINDOWS 0
-# define UDPLATFORM_LINUX   0
-# define UDPLATFORM_OSX     0
-# define UDPLATFORM_NACL    1
+# define UDPLATFORM_NACL 1
 # define USE_GLES
 #elif defined(_MSC_VER) || defined(__MINGW32__)
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
-# define UDPLATFORM_LINUX   0
-# define UDPLATFORM_OSX     0
-# define UDPLATFORM_NACL    0
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
 # include <stddef.h>
 # include <limits.h>
 # include <memory.h>
-# define UDPLATFORM_WINDOWS 0
-# define UDPLATFORM_LINUX   1
-# define UDPLATFORM_OSX     0
-# define UDPLATFORM_NACL    0
+# define UDPLATFORM_LINUX 1
 #elif defined(__APPLE__)
 # include <stddef.h>
 # include <limits.h>
 # include <memory.h>
-# define UDPLATFORM_WINDOWS 0
-# define UDPLATFORM_LINUX   0
-# define UDPLATFORM_OSX     1
-# define UDPLATFORM_NACL    0
+# include "TargetConditionals.h"
+# if TARGET_OS_IPHONE && TARGET_IPHONE_SIMULATOR
+#  define UDPLATFORM_IOS_SIMULATOR 1
+# elif TARGET_OS_IPHONE
+#  define UDPLATFORM_IOS 1
+# else
+#  define UDPLATFORM_OSX 1
+# endif
 #else
-# define UDPLATFORM_WINDOWS 0
-# define UDPLATFORM_LINUX   0
-# define UDPLATFORM_OSX     0
-# define UDPLATFORM_NACL    0
 # error "Unknown platform"
+#endif
+
+#ifndef UDPLATFORM_WINDOWS
+# define UDPLATFORM_WINDOWS 0
+#endif
+
+#ifndef UDPLATFORM_LINUX
+# define UDPLATFORM_LINUX 0
+#endif
+
+#ifndef UDPLATFORM_OSX
+# define UDPLATFORM_OSX 0
+#endif
+
+#ifndef UDPLATFORM_IOS_SIMULATOR
+# define UDPLATFORM_IOS_SIMULATOR 0
+#endif
+
+#ifndef UDPLATFORM_IOS
+# define UDPLATFORM_IOS 0
+#endif
+
+#ifndef UDPLATFORM_NACL
+# define UDPLATFORM_NACL 0
 #endif
 
 #if defined(_DEBUG)
@@ -119,7 +134,7 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 # define udYield() SwitchToThread()
 # define UDTHREADLOCAL __declspec(thread)
 
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
 #include <unistd.h>
 #include <sched.h>
 inline long udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
