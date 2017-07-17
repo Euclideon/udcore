@@ -45,7 +45,7 @@ void udMemoryDebugTrackingInit()
   {
     return;
   }
-#if UDPLATFORM_LINUX || UDPLATFORM_NACL
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
   {
     pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
     if (mutex)
@@ -81,7 +81,7 @@ void udMemoryDebugTrackingDeinit()
 
   udReleaseMutex(pMemoryTrackingMutex);
 
-#if UDPLATFORM_LINUX || UDPLATFORM_NACL
+#if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
   pthread_mutex_t *mutex = (pthread_mutex_t *)pMemoryTrackingMutex;
   pthread_mutex_destroy(mutex);
   free(pMemoryTrackingMutex);

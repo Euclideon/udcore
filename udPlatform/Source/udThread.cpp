@@ -94,6 +94,7 @@ void udThread_SetPriority(udThread *pThread, udThreadPriority priority)
     int pthreadPrio = (priority * (highest - lowest) / udTP_Highest) + lowest;
     pthread_setschedprio(pThread->t, pthreadPrio);
 #elif UDPLATFORM_NACL || UDPLATFORM_OSX
+    udUnused(priority);
 #else
 #   error Unknown platform
 #endif
@@ -135,6 +136,7 @@ udResult udThread_Join(udThread *pThread, int waitMs)
     return udR_Failure_;
   }
 #elif UDPLATFORM_NACL || UDPLATFORM_OSX
+  udUnused(waitMs);
   int result = pthread_join(pThread->t, nullptr);
   if (result)
   {

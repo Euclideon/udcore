@@ -1041,7 +1041,7 @@ int udGetHardwareThreadCount()
     }
     return hardwareThreadCount;
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX
   return sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 
@@ -1469,7 +1469,7 @@ struct udFindDirData : public udFindDir
     pFilename = utf8Filename;
     isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
   }
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
   DIR *pDir;
   struct dirent *pDirent;
 
@@ -1478,6 +1478,10 @@ struct udFindDirData : public udFindDir
     pFilename = pDirent->d_name;
     isDirectory = !!(pDirent->d_type & DT_DIR);
   }
+#elif UDPLATFORM_NACL
+  //Do nothing
+#else
+#error "Unsupported platform"
 #endif
 };
 
@@ -1540,7 +1544,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     }
     pFindData->SetMembers();
   }
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
   pFindData->pDir = opendir(pFolder);
   if (!pFindData->pDir)
   {
@@ -1558,6 +1562,8 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
   // TODO: See if this implementation is required
   result = udR_ObjectNotFound;
   goto epilogue;
+#else
+  #error "Unsupported Platform"
 #endif
 
   result = udR_Success;
@@ -1585,7 +1591,7 @@ udResult udReadDir(udFindDir *pFindDir)
     return udR_ObjectNotFound;
   }
   pFindData->SetMembers();
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   pFindData->pDirent = readdir(pFindData->pDir);
   if (!pFindData->pDirent)
@@ -1593,6 +1599,10 @@ udResult udReadDir(udFindDir *pFindDir)
     return udR_ObjectNotFound;
   }
   pFindData->SetMembers();
+#elif UDPLATFORM_NACL
+  // Do nothing
+#else
+  #error "Unsupported Platform"
 #endif
   return udR_Success;
 }
@@ -1608,10 +1618,14 @@ udResult udCloseDir(udFindDir **ppFindDir)
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->hFind != INVALID_HANDLE_VALUE)
     FindClose(pFindData->hFind);
-#elif UDPLATFORM_LINUX
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->pDir)
     closedir(pFindData->pDir);
+#elif UDPLATFORM_NACL
+  // Do nothing
+#else
+  #error "Unsupported Platform"
 #endif
 
   udFree(*ppFindDir);
