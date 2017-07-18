@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(_WIN64) || defined(__amd64__) || defined (__arm64__)
+#if defined(_WIN64) || defined(__amd64__) || defined (__arm64__) || defined (__aarch64__)
   //64-bit code
 # define UD_64BIT (1)
 # define UD_32BIT (0)
@@ -39,6 +39,11 @@
 #elif defined(_MSC_VER) || defined(__MINGW32__)
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
+#elif defined(__ANDROID__)
+# include <stddef.h>
+# include <limits.h>
+# include <memory.h>
+# define UDPLATFORM_ANDROID 1
 #elif defined(__linux__) // TODO: Work out best tag to detect linux here
 # include <stddef.h>
 # include <limits.h>
@@ -62,6 +67,10 @@
 
 #ifndef UDPLATFORM_WINDOWS
 # define UDPLATFORM_WINDOWS 0
+#endif
+
+#ifndef UDPLATFORM_ANDROID
+# define UDPLATFORM_ANDROID 0
 #endif
 
 #ifndef UDPLATFORM_LINUX
@@ -134,7 +143,7 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 # define udYield() SwitchToThread()
 # define UDTHREADLOCAL __declspec(thread)
 
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
 #include <unistd.h>
 #include <sched.h>
 inline long udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }

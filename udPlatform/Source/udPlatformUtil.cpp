@@ -1469,7 +1469,7 @@ struct udFindDirData : public udFindDir
     pFilename = utf8Filename;
     isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
   DIR *pDir;
   struct dirent *pDirent;
 
@@ -1544,7 +1544,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     }
     pFindData->SetMembers();
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
   pFindData->pDir = opendir(pFolder);
   if (!pFindData->pDir)
   {
@@ -1591,7 +1591,7 @@ udResult udReadDir(udFindDir *pFindDir)
     return udR_ObjectNotFound;
   }
   pFindData->SetMembers();
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   pFindData->pDirent = readdir(pFindData->pDir);
   if (!pFindData->pDirent)
@@ -1618,7 +1618,7 @@ udResult udCloseDir(udFindDir **ppFindDir)
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->hFind != INVALID_HANDLE_VALUE)
     FindClose(pFindData->hFind);
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->pDir)
     closedir(pFindData->pDir);

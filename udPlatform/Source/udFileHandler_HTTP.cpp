@@ -15,7 +15,7 @@
 #if UDPLATFORM_WINDOWS
 # include <winsock2.h>
 #define snprintf _snprintf
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
