@@ -20,4 +20,8 @@ project ("udPlatform" .. (projectSuffix or ""))
 		targetdir "../Lib/%{cfg.system}_%{cfg.shortname}"
 		symbolspath "$(TargetDir)/$(ProjectName).pdb"
 
+	-- for nacl, make the output name and location identical to that of udbin
+	filter { "system:nacl" }
+		targetdir "../Lib/windows_%{cfg.shortname}"
+
 	filter {}
