@@ -45,8 +45,8 @@ udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx);
 
 enum udCryptoHashes
 {
-  udCH_SHA1,
-  udCH_SHA256
+  udCH_SHA1,  // 20 bytes
+  udCH_SHA256 // 32 bytes
 };
 
 struct udCryptoHashContext;
@@ -68,7 +68,11 @@ udResult udCrypto_Hash(udCryptoHashes hash, const void *pMessage, size_t message
                        size_t *pActualHashLength = nullptr, const void *pMessage2 = nullptr, size_t message2Length = 0);
 
 // **** Key derivation functions ****
+// Generate a key (max 40 bytes) from a plain-text password (compatible with CryptDeriveKey KDF)
 udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen);
+
+// Generate a random key (max 32 bytes) using system entropy
+udResult udCrypto_RandomKey(uint8_t *pKey, int keyLen);
 
 // **** HMAC functions ****
 udResult udCrypto_HMAC(udCryptoHashes hash, const uint8_t *pKey, size_t keyLen, const uint8_t *pMessage, size_t messageLength,

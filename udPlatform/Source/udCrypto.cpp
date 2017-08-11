@@ -7,6 +7,12 @@
 
 #if UDPLATFORM_WINDOWS
 #pragma warning(disable: 4267 4244)
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
+#include <sys/time.h>
 #endif
 
 namespace udCrypto
@@ -454,6 +460,67 @@ udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
 
 epilogue:
   udCrypto_DestroyHash(&pCtx);
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, August 2017
+udResult udCrypto_RandomKey(uint8_t *pKey, int keyLen)
+{
+  udResult result;
+  uint8_t hash[32];
+  struct Entropy
+  {
+#if UDPLATFORM_WINDOWS
+    DWORD processId, threadId, tickCount, computerNameLen, userNameLen;
+    SYSTEMTIME sysTime;
+    MEMORYSTATUS memStatus;
+    POINT cursorPos;
+    wchar_t computerName[128];
+    wchar_t userName[128];
+    LARGE_INTEGER perfCounter, frequency;
+    DWORD diskInfo[4];
+    SYSTEM_INFO sysInfo;
+#else
+    struct timespec ts1;
+    int randFileHandle;
+    uint8_t randomData[32];
+#endif
+    uint64_t uninitialisedData; // deliberately uninitialised
+  } entropy;
+
+  UD_ERROR_IF(!pKey || keyLen <= 0 || keyLen > 32, udR_InvalidParameter_);
+
+#if UDPLATFORM_WINDOWS
+  // For windows we gather some entropy so we don't need to depend on the Crypto libraries/DLLs and specific Windows versions
+  entropy.processId = GetCurrentProcessId();
+  entropy.threadId = GetCurrentThreadId();
+  entropy.tickCount = GetTickCount();
+  GetLocalTime(&entropy.sysTime);
+  GlobalMemoryStatus(&entropy.memStatus);
+  GetCursorPos(&entropy.cursorPos);
+  entropy.computerNameLen = UDARRAYSIZE(entropy.computerName);
+  GetComputerName(entropy.computerName, &entropy.computerNameLen);
+  entropy.userNameLen = UDARRAYSIZE(entropy.userName);
+  GetUserName(entropy.userName, &entropy.userNameLen);
+  QueryPerformanceCounter(&entropy.perfCounter);
+  QueryPerformanceFrequency(&entropy.frequency);
+  GetDiskFreeSpace(L"c:\\", &entropy.diskInfo[0], &entropy.diskInfo[1], &entropy.diskInfo[2], &entropy.diskInfo[3]);
+  GetSystemInfo(&entropy.sysInfo);
+#else
+  clock_gettime(CLOCK_MONOTONIC, &entropy.ts1);
+  entropy.randFileHandle = open("/dev/random", O_RDONLY);
+  read(entropy.randFileHandle, entropy.randomData, sizeof(entropy.randomData));
+  close(entropy.randFileHandle);
+#endif
+
+  result = udCrypto_Hash(udCH_SHA256, &entropy, sizeof(entropy), hash, sizeof(hash));
+  UD_ERROR_HANDLE();
+
+  memcpy(pKey, hash, keyLen);
+  result = udR_Success;
+
+epilogue:
   return result;
 }
 
