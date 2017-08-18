@@ -181,95 +181,224 @@ udResult udThread_Join(udThread *pThread, int waitMs)
   return udR_Success;
 }
 
+struct udSemaphore
+{
+#if UDPLATFORM_WINDOWS
+  CRITICAL_SECTION criticalSection;
+  CONDITION_VARIABLE condition;
+#else
+  pthread_mutex_t mutex;
+  pthread_cond_t condition;
+#endif
+
+  volatile int count;
+  volatile int refCount;
+};
+
 // ****************************************************************************
+// Author: Samuel Surtees, August 2017
 udSemaphore *udCreateSemaphore()
 {
+  udSemaphore *pSemaphore = udAllocType(udSemaphore, 1, udAF_None);
+
 #if UDPLATFORM_WINDOWS
-  HANDLE handle = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
-  return (udSemaphore *)handle;
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-  sem_t *sem = (sem_t *)udAlloc(sizeof(sem_t));
-  if (sem)
-  {
-    int result = sem_init(sem, 0, 0);
-    if (result == -1)
-      return nullptr;
-  }
-  return (udSemaphore*)sem;
+  InitializeCriticalSection(&pSemaphore->criticalSection);
+  InitializeConditionVariable(&pSemaphore->condition);
 #else
-# error Unknown platform
+  pthread_mutex_init(&(pSemaphore->mutex), NULL);
+  pthread_cond_init(&(pSemaphore->condition), NULL);
+#endif
+
+  pSemaphore->count = 0;
+  pSemaphore->refCount = 1;
+
+  return pSemaphore;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Samuel Surtees, August 2017
+void udDestroySemaphore_Internal(udSemaphore *pSemaphore)
+{
+  if (pSemaphore == nullptr)
+    return;
+
+#if UDPLATFORM_WINDOWS
+  DeleteCriticalSection(&pSemaphore->criticalSection);
+  // CONDITION_VARIABLE doesn't have a delete/destroy function
+#else
+  pthread_mutex_destroy(&pSemaphore->mutex);
+  pthread_cond_destroy(&pSemaphore->condition);
+#endif
+
+  udFree(pSemaphore);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Samuel Surtees, August 2017
+void udLockSemaphore_Internal(udSemaphore *pSemaphore)
+{
+#if UDPLATFORM_WINDOWS
+  EnterCriticalSection(&pSemaphore->criticalSection);
+#else
+  pthread_mutex_lock(&pSemaphore->mutex);
+#endif
+}
+
+// ----------------------------------------------------------------------------
+// Author: Samuel Surtees, August 2017
+void udUnlockSemaphore_Internal(udSemaphore *pSemaphore)
+{
+#if UDPLATFORM_WINDOWS
+  LeaveCriticalSection(&pSemaphore->criticalSection);
+#else
+  pthread_mutex_unlock(&pSemaphore->mutex);
+#endif
+}
+
+// ----------------------------------------------------------------------------
+// Author: Samuel Surtees, August 2017
+void udWakeSemaphore_Internal(udSemaphore *pSemaphore)
+{
+#if UDPLATFORM_WINDOWS
+  WakeConditionVariable(&pSemaphore->condition);
+#else
+  pthread_cond_signal(&pSemaphore->condition);
+#endif
+}
+
+// ----------------------------------------------------------------------------
+// Author: Samuel Surtees, August 2017
+bool udSleepSemaphore_Internal(udSemaphore *pSemaphore, int waitMs)
+{
+#if UDPLATFORM_WINDOWS
+  BOOL retVal = SleepConditionVariableCS(&pSemaphore->condition, &pSemaphore->criticalSection, (waitMs == UDTHREAD_WAIT_INFINITE ? INFINITE : waitMs));
+  return (retVal == TRUE);
+#else
+  int retVal = 0;
+  if (waitMs == UDTHREAD_WAIT_INFINITE)
+  {
+    retVal = pthread_cond_wait(&(pSemaphore->condition), &(pSemaphore->mutex));
+  }
+  else
+  {
+    struct timespec ts;
+    retVal = -1;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+      goto epilogue;
+
+    ts.tv_sec += waitMs / 1000;
+    ts.tv_nsec += long(waitMs % 1000) * 1000000L;
+
+    ts.tv_sec += (ts.tv_nsec / 1000000000L);
+    ts.tv_nsec %= 1000000000L;
+
+    retVal = pthread_cond_timedwait(&(pSemaphore->condition), &(pSemaphore->mutex), &ts);
+  }
+
+epilogue:
+  return (retVal == 0);
 #endif
 }
 
 // ****************************************************************************
+// Author: Samuel Surtees, August 2017
 void udDestroySemaphore(udSemaphore **ppSemaphore)
 {
-  if (ppSemaphore && *ppSemaphore)
+  if (ppSemaphore == nullptr)
+    return;
+
+  udSemaphore *pSemaphore = (*(udSemaphore*volatile*)ppSemaphore);
+  if (udInterlockedCompareExchangePointer(ppSemaphore, nullptr, pSemaphore) != pSemaphore)
+    return;
+
+  udLockSemaphore_Internal(pSemaphore);
+  if (udInterlockedPreDecrement(&pSemaphore->refCount) == 0)
   {
-#if UDPLATFORM_WINDOWS
-    HANDLE semHandle = (HANDLE)(*ppSemaphore);
-    *ppSemaphore = NULL;
-    CloseHandle(semHandle);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-    sem_t *sem = (sem_t*)(*ppSemaphore);
-    sem_destroy(sem);
-    udFree(sem);
-    *ppSemaphore = nullptr;
-#else
-#  error Unknown platform
-#endif
+    udDestroySemaphore_Internal(pSemaphore);
+  }
+  else
+  {
+    int refCount = pSemaphore->refCount;
+    for (int i = 0; i < refCount; ++i)
+    {
+      ++(pSemaphore->count);
+      udWakeSemaphore_Internal(pSemaphore);
+    }
+    udUnlockSemaphore_Internal(pSemaphore);
   }
 }
 
 // ****************************************************************************
+// Author: Samuel Surtees, August 2017
 void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
 {
-  if (pSemaphore)
+  // Exit the function if the refCount is 0 - It's being destroyed!
+  if (pSemaphore == nullptr || pSemaphore->refCount == 0)
+    return;
+
+  udInterlockedPreIncrement(&pSemaphore->refCount);
+  while (count-- > 0)
   {
-#if UDPLATFORM_WINDOWS
-    ReleaseSemaphore((HANDLE)pSemaphore, count, nullptr);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-    while (count-- > 0)
-      sem_post((sem_t*)pSemaphore);
-#else
-#   error Unknown platform
-#endif
+    udLockSemaphore_Internal(pSemaphore);
+    ++(pSemaphore->count);
+    udWakeSemaphore_Internal(pSemaphore);
+    udUnlockSemaphore_Internal(pSemaphore);
   }
+  udInterlockedPreDecrement(&pSemaphore->refCount);
 }
 
 // ****************************************************************************
+// Author: Samuel Surtees, August 2017
 int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 {
-  if (pSemaphore)
+  // Exit the function if the refCount is 0 - It's being destroyed!
+  if (pSemaphore == nullptr || pSemaphore->refCount == 0)
+    return -1;
+
+  udInterlockedPreIncrement(&pSemaphore->refCount);
+  udLockSemaphore_Internal(pSemaphore);
+  bool retVal;
+  if (waitMs == UDTHREAD_WAIT_INFINITE)
   {
-#if UDPLATFORM_WINDOWS
-    return WaitForSingleObject((HANDLE)pSemaphore, waitMs);
-#elif UDPLATFORM_LINUX
-    if (waitMs == UDTHREAD_WAIT_INFINITE)
+    retVal = true;
+    while (pSemaphore->count == 0)
     {
-      return sem_wait((sem_t*)pSemaphore);
+      retVal = udSleepSemaphore_Internal(pSemaphore, waitMs);
+
+      // If something went wrong, exit the loop
+      if (!retVal)
+        break;
     }
-    else
-    {
-      struct  timespec ts;
-      if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-        return -1;
 
-      ts.tv_sec += waitMs / 1000;
-      ts.tv_nsec += long(waitMs % 1000) * 1000000L;
-
-      ts.tv_sec += (ts.tv_nsec / 1000000000L);
-      ts.tv_nsec %= 1000000000L;
-
-      return sem_timedwait((sem_t*)pSemaphore, &ts);
-    }
-#elif UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-    return sem_wait((sem_t*)pSemaphore);  // TODO: Need to find out timedwait equiv for NACL
-#else
-#   error Unknown platform
-#endif
+    if (retVal)
+      pSemaphore->count--;
   }
-  return -1;
+  else
+  {
+    retVal = udSleepSemaphore_Internal(pSemaphore, waitMs);
+
+    if (retVal)
+    {
+      // Check for spurious wake-up
+      if (pSemaphore->count > 0)
+        pSemaphore->count--;
+      else
+        retVal = false;
+    }
+  }
+
+  if (udInterlockedPreDecrement(&pSemaphore->refCount) == 0)
+  {
+    udDestroySemaphore_Internal(pSemaphore);
+    return -1;
+  }
+  else
+  {
+    udUnlockSemaphore_Internal(pSemaphore);
+
+    // 0 is success, not 0 is failure
+    return !retVal;
+  }
 }
 
 // ****************************************************************************
