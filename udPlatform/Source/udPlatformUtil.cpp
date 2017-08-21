@@ -224,11 +224,14 @@ int udStrncmp(const char *s1, const char *s2, size_t maxChars)
   if (!s1) s1 = s_udStrEmptyString;
   if (!s2) s2 = s_udStrEmptyString;
 
-  int result;
-  do
+  int result = 0;
+  if (maxChars)
   {
-    result = *s1 - *s2;
-  } while (!result && *s1++ && *s2++ && --maxChars);
+    do
+    {
+      result = *s1 - *s2;
+    } while (!result && *s1++ && *s2++ && --maxChars);
+  }
 
   return result;
 }
@@ -240,11 +243,14 @@ int udStrncmpi(const char *s1, const char *s2, size_t maxChars)
   if (!s1) s1 = s_udStrEmptyString;
   if (!s2) s2 = s_udStrEmptyString;
 
-  int result;
-  do
+  int result = 0;
+  if (maxChars)
   {
-    result = tolower(*s1) - tolower(*s2);
-  } while (!result && *s1++ && *s2++ && --maxChars);
+    do
+    {
+      result = tolower(*s1) - tolower(*s2);
+    } while (!result && *s1++ && *s2++ && --maxChars);
+  }
 
   return result;
 }
