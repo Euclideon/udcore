@@ -182,17 +182,16 @@ udResult udThread_Join(udThread *pThread, int waitMs)
 }
 
 // ****************************************************************************
-udSemaphore *udCreateSemaphore(int maxValue, int initialValue)
+udSemaphore *udCreateSemaphore()
 {
 #if UDPLATFORM_WINDOWS
-  HANDLE handle = CreateSemaphore(NULL, initialValue, maxValue, NULL);
+  HANDLE handle = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
   return (udSemaphore *)handle;
 #elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
   sem_t *sem = (sem_t *)udAlloc(sizeof(sem_t));
-  (void)maxValue;
   if (sem)
   {
-    int result = sem_init(sem, 0, initialValue);
+    int result = sem_init(sem, 0, 0);
     if (result == -1)
       return nullptr;
   }

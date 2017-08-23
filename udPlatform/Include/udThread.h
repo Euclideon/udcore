@@ -28,7 +28,7 @@ udResult udThread_Join(udThread *pThread, int waitMs = UDTHREAD_WAIT_INFINITE);
 // Set an intercept callback which is called when before and after the thread function is executed
 void udThread_SetCreateCallback(udThreadCreateCallback *pThreadCallback);
 
-udSemaphore *udCreateSemaphore(int maxValue, int initialValue);
+udSemaphore *udCreateSemaphore();
 void udDestroySemaphore(udSemaphore **ppSemaphore);
 void udIncrementSemaphore(udSemaphore *pSemaphore, int count = 1);
 int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs = UDTHREAD_WAIT_INFINITE); // Returns zero on success
