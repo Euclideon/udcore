@@ -578,6 +578,11 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
   }
   else if (searchExp.IsNumeric())
   {
+    if (pRoot->IsVoid() && createIfNotExist) // If the entry is void, we can safely make it an array now
+    {
+      result = const_cast<udValue*>(pRoot)->SetArray();
+      UD_ERROR_HANDLE();
+    }
     // Search expression is numeric, which is typically an array index, but we also support [0] on an object which returns itself
     UD_ERROR_IF(resultNumberParsed, udR_ParseError);
     int searchIndex  = searchExp.AsInt();

@@ -150,3 +150,15 @@ TEST(udValueTests, ValueShouldNotTurnIntoObjectIfAlreadyArray)
   EXPECT_EQ(udR_Success, output.Export(&outputTestStr));
   udFree(outputTestStr);
 }
+
+TEST(udValueTests, CreateArray)
+{
+  udValue json;
+  for (size_t i = 1; i < 5; ++i)
+  {
+    udResult result = json.Set("sequences[%d].id = %d", i - 1, i);
+    EXPECT_EQ(0, result);
+    EXPECT_EQ(i, json.Get("sequences[%d].id", i - 1).AsInt());
+  }
+  EXPECT_EQ(4, json.Get("sequences").ArrayLength());
+}
