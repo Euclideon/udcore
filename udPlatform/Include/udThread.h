@@ -4,6 +4,7 @@
 
 // Minimalist MOST BASIC cross-platform thread support
 struct udSemaphore;
+struct udConditionVariable;
 struct udMutex;
 struct udThread;
 enum udThreadPriority { udTP_Lowest, udTP_Low, udTP_Normal, udTP_High, udTP_Highest };
@@ -32,6 +33,11 @@ udSemaphore *udCreateSemaphore();
 void udDestroySemaphore(udSemaphore **ppSemaphore);
 void udIncrementSemaphore(udSemaphore *pSemaphore, int count = 1);
 int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs = UDTHREAD_WAIT_INFINITE); // Returns zero on success
+
+udConditionVariable *udCreateConditionVariable();
+void udDestroyConditionVariable(udConditionVariable **ppConditionVariable);
+void udSignalConditionVariable(udConditionVariable *pConditionVariable, int count = 1);
+int udWaitConditionVariable(udConditionVariable *pConditionVariable, udMutex *pMutex, int waitMs = UDTHREAD_WAIT_INFINITE); // Returns zero on success
 
 udMutex *udCreateMutex();
 void udDestroyMutex(udMutex **ppMutex);

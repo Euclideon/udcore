@@ -9,6 +9,13 @@ TEST(udThreadTests, Mutex)
   udDestroyMutex(&pMutex);
 }
 
+TEST(udThreadTests, ConditionVariable)
+{
+  udConditionVariable *pCondition = udCreateConditionVariable();
+  EXPECT_NE(nullptr, pCondition);
+  udDestroyConditionVariable(&pCondition);
+}
+
 TEST(udThreadTests, Semaphore)
 {
   udSemaphore *pSemaphore = udCreateSemaphore();
@@ -31,6 +38,48 @@ TEST(udThreadTests, Thread)
   EXPECT_EQ(1, value);
 
   udThread_Destroy(&pThread);
+}
+
+TEST(udThreadTests, ThreadConditionVariable)
+{
+  struct TestStruct
+  {
+    udMutex *pMutex;
+    udConditionVariable *pConditionVariable;
+  };
+
+  TestStruct data;
+  data.pMutex = udCreateMutex();
+  data.pConditionVariable = udCreateConditionVariable();
+
+  udThread *pThread;
+  udThreadStart *pStartFunc = [](void *data) -> unsigned int {
+    TestStruct *pData = (TestStruct*)data;
+    udSleep(100);
+
+    udLockMutex(pData->pMutex);
+    udSignalConditionVariable(pData->pConditionVariable, 1);
+    udReleaseMutex(pData->pMutex);
+
+    return 0;
+  };
+
+  udResult result = udThread_Create(&pThread, pStartFunc, (void*)&data);
+  EXPECT_EQ(udR_Success, result);
+
+  udLockMutex(data.pMutex);
+  EXPECT_NE(0, udWaitConditionVariable(data.pConditionVariable, data.pMutex, 1));
+  EXPECT_EQ(0, udWaitConditionVariable(data.pConditionVariable, data.pMutex, 200));
+  udReleaseMutex(data.pMutex);
+
+  result = udThread_Join(pThread);
+
+  EXPECT_EQ(udR_Success, result);
+
+  udThread_Destroy(&pThread);
+
+  udDestroyMutex(&data.pMutex);
+  udDestroyConditionVariable(&data.pConditionVariable);
 }
 
 TEST(udThreadTests, ThreadSemaphore)

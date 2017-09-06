@@ -7,6 +7,21 @@
 #include <semaphore.h>
 #endif
 
+#if !UDPLATFORM_WINDOWS
+void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
+{
+  if (pTimespec == nullptr)
+    return;
+
+  clock_gettime(CLOCK_REALTIME, pTimespec);
+  pTimespec->tv_sec += waitMs / 1000;
+  pTimespec->tv_nsec += long(waitMs % 1000) * 1000000L;
+
+  pTimespec->tv_sec += (pTimespec->tv_nsec / 1000000000L);
+  pTimespec->tv_nsec %= 1000000000L;
+}
+#endif
+
 static udThreadCreateCallback *s_pThreadCreateCallback;
 
 struct udThread
@@ -144,9 +159,7 @@ udResult udThread_Join(udThread *pThread, int waitMs)
   else
   {
     timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += waitMs / 1000;
-    ts.tv_nsec += long(waitMs % 1000) * 1000000L;
+    udThread_MsToTimespec(&ts, waitMs);
 
     int result = pthread_timedjoin_np(pThread->t, nullptr, &ts);
     if (result)
@@ -276,20 +289,10 @@ bool udSleepSemaphore_Internal(udSemaphore *pSemaphore, int waitMs)
   else
   {
     struct timespec ts;
-    retVal = -1;
-    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-      goto epilogue;
-
-    ts.tv_sec += waitMs / 1000;
-    ts.tv_nsec += long(waitMs % 1000) * 1000000L;
-
-    ts.tv_sec += (ts.tv_nsec / 1000000000L);
-    ts.tv_nsec %= 1000000000L;
-
+    udThread_MsToTimespec(&ts, waitMs);
     retVal = pthread_cond_timedwait(&(pSemaphore->condition), &(pSemaphore->mutex), &ts);
   }
 
-epilogue:
   return (retVal == 0);
 #endif
 }
@@ -393,6 +396,80 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
     // 0 is success, not 0 is failure
     return !retVal;
   }
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, September 2017
+udConditionVariable *udCreateConditionVariable()
+{
+#if UDPLATFORM_WINDOWS
+  CONDITION_VARIABLE *pCondition = udAllocType(CONDITION_VARIABLE, 1, udAF_None);
+  InitializeConditionVariable(pCondition);
+#else
+  pthread_cond_t *pCondition = udAllocType(pthread_cond_t, 1, udAF_None);
+  pthread_cond_init(pCondition, NULL);
+#endif
+
+  return (udConditionVariable*)pCondition;
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, September 2017
+void udDestroyConditionVariable(udConditionVariable **ppConditionVariable)
+{
+  udConditionVariable *pCondition = *ppConditionVariable;
+  *ppConditionVariable = nullptr;
+
+  // Windows doesn't have a clean-up function
+#if !UDPLATFORM_WINDOWS
+  pthread_cond_destroy((pthread_cond_t *)pCondition);
+#endif
+
+  udFree(pCondition);
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, September 2017
+void udSignalConditionVariable(udConditionVariable *pConditionVariable, int count)
+{
+  while (count-- > 0)
+  {
+#if UDPLATFORM_WINDOWS
+    CONDITION_VARIABLE *pCondition = (CONDITION_VARIABLE*)pConditionVariable;
+    WakeConditionVariable(pCondition);
+#else
+    pthread_cond_t *pCondition = (pthread_cond_t*)pConditionVariable;
+    pthread_cond_signal(pCondition);
+#endif
+  }
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, September 2017
+int udWaitConditionVariable(udConditionVariable *pConditionVariable, udMutex *pMutex, int waitMs)
+{
+#if UDPLATFORM_WINDOWS
+  CONDITION_VARIABLE *pCondition = (CONDITION_VARIABLE*)pConditionVariable;
+  CRITICAL_SECTION *pCriticalSection = (CRITICAL_SECTION*)pMutex;
+  BOOL retVal = SleepConditionVariableCS(pCondition, pCriticalSection, (waitMs == UDTHREAD_WAIT_INFINITE ? INFINITE : waitMs));
+  return (retVal == TRUE ? 0 : 1); // This isn't (!retVal) for clarity.
+#else
+  pthread_cond_t *pCondition = (pthread_cond_t*)pConditionVariable;
+  pthread_mutex_t *pMutexInternal = (pthread_mutex_t*)pMutex;
+  int retVal = 0;
+  if (waitMs == UDTHREAD_WAIT_INFINITE)
+  {
+    retVal = pthread_cond_wait(pCondition, pMutexInternal);
+  }
+  else
+  {
+    struct timespec ts;
+    udThread_MsToTimespec(&ts, waitMs);
+    retVal = pthread_cond_timedwait(pCondition, pMutexInternal, &ts);
+  }
+
+  return retVal;
+#endif
 }
 
 // ****************************************************************************
