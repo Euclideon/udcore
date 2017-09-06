@@ -1,6 +1,6 @@
 #include "udThread.h"
 
-#if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+#if !UDPLATFORM_WINDOWS
 #include <sched.h>
 #include <pthread.h>
 #include <errno.h>
@@ -14,10 +14,8 @@ struct udThread
   // First element of structure is GUARANTEED to be the operating system thread handle
 # if UDPLATFORM_WINDOWS
   HANDLE handle;
-# elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-  pthread_t t;
 # else
-#   error Unknown platform
+  pthread_t t;
 # endif
   udThreadStart *pThreadStarter;
   void *pThreadData;
@@ -56,11 +54,9 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
   pThread->pThreadData = pThreadData;
 #if UDPLATFORM_WINDOWS
   pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+#else
   typedef void *(*PTHREAD_START_ROUTINE)(void *);
   pthread_create(&pThread->t, NULL, (PTHREAD_START_ROUTINE)udThread_Bootstrap, pThread);
-#else
-#error Unknown platform
 #endif
 
   *ppThread = pThread;
@@ -93,10 +89,8 @@ void udThread_SetPriority(udThread *pThread, udThreadPriority priority)
     int highest = sched_get_priority_max(policy);
     int pthreadPrio = (priority * (highest - lowest) / udTP_Highest) + lowest;
     pthread_setschedprio(pThread->t, pthreadPrio);
-#elif UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-    udUnused(priority);
 #else
-#   error Unknown platform
+    udUnused(priority);
 #endif
   }
 }
@@ -135,17 +129,7 @@ udResult udThread_Join(udThread *pThread, int waitMs)
 
     return udR_Failure_;
   }
-#elif UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-  udUnused(waitMs);
-  int result = pthread_join(pThread->t, nullptr);
-  if (result)
-  {
-    if (result == EINVAL)
-      return udR_InvalidParameter_;
-
-    return udR_Failure_;
-  }
-#else
+#elif UDPLATFORM_LINUX
   if (waitMs == UDTHREAD_WAIT_INFINITE)
   {
     int result = pthread_join(pThread->t, nullptr);
@@ -175,6 +159,16 @@ udResult udThread_Join(udThread *pThread, int waitMs)
 
       return udR_Failure_;
     }
+  }
+#else
+  udUnused(waitMs);
+  int result = pthread_join(pThread->t, nullptr);
+  if (result)
+  {
+    if (result == EINVAL)
+      return udR_InvalidParameter_;
+
+    return udR_Failure_;
   }
 #endif
 
@@ -405,15 +399,14 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 udMutex *udCreateMutex()
 {
 #if UDPLATFORM_WINDOWS
-  HANDLE handle = CreateMutex(NULL, FALSE, NULL);
-  return (udMutex *)handle;
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+  CRITICAL_SECTION *pCriticalSection = udAllocType(CRITICAL_SECTION, 1, udAF_None);
+  InitializeCriticalSection(pCriticalSection);
+  return (udMutex *)pCriticalSection;
+#else
   pthread_mutex_t *mutex = (pthread_mutex_t *)udAlloc(sizeof(pthread_mutex_t));
   if (mutex)
     pthread_mutex_init(mutex, NULL);
   return (udMutex*)mutex;
-#else
-#error Unknown platform
 #endif
 }
 
@@ -423,16 +416,15 @@ void udDestroyMutex(udMutex **ppMutex)
   if (ppMutex && *ppMutex)
   {
 #if UDPLATFORM_WINDOWS
-    HANDLE mutexHandle = (HANDLE)(*ppMutex);
+    CRITICAL_SECTION *pCriticalSection = (CRITICAL_SECTION*)(*ppMutex);
     *ppMutex = NULL;
-    CloseHandle(mutexHandle);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+    DeleteCriticalSection(pCriticalSection);
+    udFree(pCriticalSection);
+#else
     pthread_mutex_t *mutex = (pthread_mutex_t *)(*ppMutex);
     pthread_mutex_destroy(mutex);
     udFree(mutex);
     *ppMutex = nullptr;
-#else
-#  error Unknown platform
 #endif
   }
 }
@@ -443,11 +435,9 @@ void udLockMutex(udMutex *pMutex)
   if (pMutex)
   {
 #if UDPLATFORM_WINDOWS
-    WaitForSingleObject((HANDLE)pMutex, INFINITE);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-    pthread_mutex_lock((pthread_mutex_t *)pMutex);
+    EnterCriticalSection((CRITICAL_SECTION*)pMutex);
 #else
-#   error Unknown platform
+    pthread_mutex_lock((pthread_mutex_t *)pMutex);
 #endif
   }
 }
@@ -458,11 +448,9 @@ void udReleaseMutex(udMutex *pMutex)
   if (pMutex)
   {
 #if UDPLATFORM_WINDOWS
-    ReleaseMutex((HANDLE)pMutex);
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-    pthread_mutex_unlock((pthread_mutex_t *)pMutex);
+    LeaveCriticalSection((CRITICAL_SECTION*)pMutex);
 #else
-#error Unknown platform
+    pthread_mutex_unlock((pthread_mutex_t *)pMutex);
 #endif
   }
 }
