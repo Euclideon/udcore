@@ -70,8 +70,8 @@ static inline udValueExportOption operator|(udValueExportOption a, udValueExport
 
 class udValue;
 struct udValueKVPair;
-typedef udChunkedArray<udValue, 32> udValueArray;
-typedef udChunkedArray<udValueKVPair, 32> udValueObject;
+typedef udChunkedArray<udValue> udValueArray;
+typedef udChunkedArray<udValueKVPair> udValueObject;
 struct udValueSignatureContext;
 
 // Create a signature context that is EITHER asymmetric or symmetric, to sign or verify
@@ -184,7 +184,7 @@ public:
   udResult CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64 = nullptr) const;
 
 protected:
-  typedef udChunkedArray<const char*, 32> LineList;
+  typedef udChunkedArray<const char*> LineList;
 
   udResult ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber);
   udResult ParseXML(const char *pJSON, int *pCharCount, int *pLineNumber);

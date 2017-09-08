@@ -131,7 +131,7 @@ udResult udValue::SetArray()
 
   pTempArray = udAllocType(udValueArray, 1, udAF_Zero);
   UD_ERROR_NULL(pTempArray, udR_MemoryAllocationFailure);
-  result = pTempArray->Init();
+  result = pTempArray->Init(32);
   UD_ERROR_HANDLE();
 
   type = T_Array;
@@ -154,7 +154,7 @@ udResult udValue::SetObject()
 
   pTempObject = udAllocType(udValueObject, 1, udAF_Zero);
   UD_ERROR_NULL(pTempObject, udR_MemoryAllocationFailure);
-  result = pTempObject->Init();
+  result = pTempObject->Init(32);
   UD_ERROR_HANDLE();
 
   type = T_Object;
@@ -1227,7 +1227,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         UD_ERROR_HANDLE();
         // Export all the attributes to a separate list to be combined to a single line
         LineList attributeLines;
-        attributeLines.Init();
+        attributeLines.Init(32);
         for (size_t i = 0; i < pObject->length && attributeCount; ++i)
         {
           const udValueKVPair *pAttribute = pObject->GetElement(i);
@@ -1320,7 +1320,7 @@ udResult udValue::Export(const char **ppText, udValueExportOption option) const
   size_t totalChars;
   char *pText = nullptr;
 
-  lines.Init();
+  lines.Init(32);
   UD_ERROR_NULL(ppText, udR_InvalidParameter_);
 
   if ((option & udVEO_XML))
