@@ -15,6 +15,8 @@
 #include <sys/time.h>
 #endif
 
+#define USE_MBED 1
+
 namespace udCrypto
 {
   // Include public domain, license free source taken from https://github.com/B-Con/crypto-algorithms
@@ -32,10 +34,29 @@ namespace udCrypto
 #undef SIG0
 #undef SIG1
 };
+#if USE_MBED
+#include "mbedtls/aes.h"
+#include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
+#include "mbedtls/sha512.h"
+#endif
+
+#if !defined(AES_BLOCK_SIZE)
+enum
+{
+  AES_BLOCK_SIZE = 16
+};
+#endif
 
 struct udCryptoCipherContext
 {
+#if !USE_MBED
   udCrypto::WORD keySchedule[60];
+#else
+  mbedtls_aes_context ctx;
+#endif
+  uint8_t key[32];
+  uint8_t iv[AES_BLOCK_SIZE];
   uint8_t nonce[AES_BLOCK_SIZE-8];
   int blockSize;
   int keyLengthInBits;
@@ -43,17 +64,29 @@ struct udCryptoCipherContext
   udCryptoChainMode chainMode;
   udCryptoPaddingMode padMode;
   bool nonceSet;
+#if USE_MBED
+  bool ctxInit;
+#endif
 };
 
 struct udCryptoHashContext
 {
   udCryptoHashes hash;
   size_t hashLengthInBytes;
+#if USE_MBED
+  union
+  {
+    mbedtls_sha1_context sha1;
+    mbedtls_sha256_context sha256;
+    mbedtls_sha512_context sha512;
+  };
+#else
   union
   {
     udCrypto::SHA1_CTX sha1;
     udCrypto::SHA256_CTX sha256;
   };
+#endif
 };
 
 
@@ -69,26 +102,33 @@ udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
   pCtx = udAllocType(udCryptoCipherContext, 1, udAF_Zero);
   UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
 
+#if USE_MBED
+  mbedtls_aes_init(&pCtx->ctx);
+#endif
   pCtx->cipher = cipher;
   pCtx->padMode = padMode;
   pCtx->chainMode = chainMode;
+  pCtx->blockSize = AES_BLOCK_SIZE;
 
-  switch (cipher)
+  if (cipher == udCC_AES128)
   {
-    case udCC_AES128:
-      udCrypto::aes_key_setup(pKey, pCtx->keySchedule, 128);
-      pCtx->blockSize = AES_BLOCK_SIZE;
-      pCtx->keyLengthInBits = 128;
-      break;
-    case udCC_AES256:
-      udCrypto::aes_key_setup(pKey, pCtx->keySchedule, 256);
-      pCtx->blockSize = AES_BLOCK_SIZE;
-      pCtx->keyLengthInBits = 256;
-      break;
-    default:
-      result = udR_InvalidParameter_;
-      goto epilogue;
+    pCtx->keyLengthInBits = 128;
   }
+  else if (cipher == udCC_AES256)
+  {
+    pCtx->keyLengthInBits = 256;
+  }
+  else
+  {
+    UD_ERROR_SET(udR_InvalidParameter_);
+  }
+#if !USE_MBED
+  udCrypto::aes_key_setup(pKey, pCtx->keySchedule, pCtx->keyLengthInBits);
+#endif
+  memcpy(pCtx->key, pKey, pCtx->keyLengthInBits / 8);
+#if USE_MBED
+  pCtx->ctxInit = false;
+#endif
 
   // Give ownership of the context to the caller
   *ppCtx = pCtx;
@@ -96,7 +136,13 @@ udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
   result = udR_Success;
 
 epilogue:
-  udFree(pCtx);
+  if (pCtx)
+  {
+#if USE_MBED
+    mbedtls_aes_free(&pCtx->ctx);
+#endif
+    udFree(pCtx);
+  }
   return result;
 }
 
@@ -134,12 +180,20 @@ udResult udCrypto_CreateIVForCTRMode(udCryptoCipherContext *pCtx, uint8_t *pIV, 
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen, uint8_t *pOutIV)
+udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen, uint8_t *pOutIV)
 {
   udResult result;
   size_t paddedCliperTextLen;
 
   UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
+
+#if USE_MBED
+  if (!pCtx->ctxInit)
+  {
+    mbedtls_aes_setkey_enc(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits);
+    pCtx->ctxInit = true;
+  }
+#endif
 
   paddedCliperTextLen = plainTextLen;
   switch (pCtx->padMode)
@@ -165,23 +219,39 @@ udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int i
       {
         switch (pCtx->chainMode)
         {
-          case udCCM_ECB:
-            UD_ERROR_IF(pIV || ivLen || pOutIV, udR_InvalidParameter_);
-            for (size_t i = 0; i < plainTextLen; i += pCtx->blockSize)
-              udCrypto::aes_encrypt((udCrypto::BYTE*)pPlainText + i, (udCrypto::BYTE*)pCipherText + i, pCtx->keySchedule, pCtx->keyLengthInBits);
-            break;
           case udCCM_CBC:
             UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
+#if USE_MBED
+            memcpy(pCtx->iv, pIV, ivLen);
+            if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, plainTextLen, pCtx->iv, (const unsigned char*)pPlainText, (unsigned char*)pCipherText) != 0)
+#else
             if (!udCrypto::aes_encrypt_cbc((udCrypto::BYTE*)pPlainText, plainTextLen, (udCrypto::BYTE*)pCipherText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
+#endif
+            {
               UD_ERROR_SET(udR_Failure_);
+            }
             // For CBC, the output IV is the last encrypted block
             if (pOutIV)
               memcpy(pOutIV, (udCrypto::BYTE*)pCipherText + paddedCliperTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
             break;
+
           case udCCM_CTR:
             UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
+#if USE_MBED
+            memcpy(pCtx->iv, pIV, ivLen);
+            {
+              size_t ncoff = 0;
+              unsigned char stream_block[16];
+              if (mbedtls_aes_crypt_ctr(&pCtx->ctx, plainTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pPlainText, (unsigned char *)pCipherText) != 0)
+              {
+                UD_ERROR_SET(udR_Failure_);
+              }
+            }
+#else
             udCrypto::aes_encrypt_ctr((udCrypto::BYTE*)pPlainText, plainTextLen, (udCrypto::BYTE*)pCipherText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV);
+#endif
             break;
+
           default:
             UD_ERROR_SET(udR_InvalidConfiguration);
         }
@@ -201,7 +271,7 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen, uint8_t *pOutIV)
+udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen, uint8_t *pOutIV)
 {
   udResult result;
   size_t actualPlainTextLen;
@@ -232,14 +302,9 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int i
     {
       switch (pCtx->chainMode)
       {
-        case udCCM_ECB:
-          UD_ERROR_IF(pIV || ivLen || pOutIV, udR_InvalidParameter_);
-          for (size_t i = 0; i < cipherTextLen; i += pCtx->blockSize)
-            udCrypto::aes_encrypt((udCrypto::BYTE*)pCipherText + i, (udCrypto::BYTE*)pPlainText + i, pCtx->keySchedule, pCtx->keyLengthInBits);
-          break;
-
         case udCCM_CBC:
           UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
+#if !USE_MBED
           {
             unsigned char tempIV[16];
             // For CBC, the output IV is the last encrypted block
@@ -250,11 +315,42 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int i
             if (pOutIV)
               memcpy(pOutIV, tempIV, AES_BLOCK_SIZE);
           }
+#else
+          if (!pCtx->ctxInit)
+          {
+            mbedtls_aes_setkey_dec(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits);
+            pCtx->ctxInit = true;
+          }
+          memcpy(pCtx->iv, pIV, ivLen);
+          if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_DECRYPT, cipherTextLen, pCtx->iv, (const unsigned char*)pCipherText, (unsigned char *)pPlainText) != 0)
+          {
+            UD_ERROR_SET(udR_Failure_);
+          }
+          if (pOutIV)
+            memcpy(pOutIV, pCtx->iv, AES_BLOCK_SIZE);
+#endif
           break;
 
         case udCCM_CTR:
-          UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_);
+          UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
+#if !USE_MBED
           udCrypto::aes_encrypt_ctr((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV);
+#else
+          if (!pCtx->ctxInit)
+          {
+            mbedtls_aes_setkey_enc(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits); // NOTE: Using ENCRYPT key schedule for CTR mode
+            pCtx->ctxInit = true;
+          }
+          memcpy(pCtx->iv, pIV, ivLen);
+          {
+            size_t ncoff = 0;
+            unsigned char stream_block[16];
+            if (mbedtls_aes_crypt_ctr(&pCtx->ctx, cipherTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pCipherText, (unsigned char *)pPlainText) != 0)
+            {
+              UD_ERROR_SET(udR_Failure_);
+            }
+          }
+#endif
           break;
 
         default:
@@ -262,8 +358,8 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int i
       }
     }
     break;
-    default:
-      UD_ERROR_SET(udR_InvalidConfiguration);
+  default:
+    UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
   if (pActualPlainTextLen)
@@ -280,6 +376,9 @@ udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx)
 {
   if (!ppCtx || !*ppCtx)
     return udR_InvalidParameter_;
+#if USE_MBED
+  mbedtls_aes_free(&(*ppCtx)->ctx);
+#endif
   udFree(*ppCtx);
   return udR_Success;
 }
@@ -300,13 +399,31 @@ udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash)
   switch (hash)
   {
     case udCH_SHA1:
+#if USE_MBED
+      mbedtls_sha1_init(&pCtx->sha1);
+      mbedtls_sha1_starts(&pCtx->sha1);
+#else
       sha1_init(&pCtx->sha1);
-      pCtx->hashLengthInBytes = SHA1_BLOCK_SIZE;
+#endif
+      pCtx->hashLengthInBytes = udCHL_SHA1Length;
       break;
     case udCH_SHA256:
+#if USE_MBED
+      mbedtls_sha256_init(&pCtx->sha256);
+      mbedtls_sha256_starts(&pCtx->sha256, 0);
+#else
       sha256_init(&pCtx->sha256);
-      pCtx->hashLengthInBytes = SHA256_BLOCK_SIZE;
+#endif
+      pCtx->hashLengthInBytes = udCHL_SHA256Length;
       break;
+#if USE_MBED
+    case udCH_SHA512:
+      mbedtls_sha512_init(&pCtx->sha512);
+      mbedtls_sha512_starts(&pCtx->sha512, 0);
+      pCtx->hashLengthInBytes = udCHL_SHA512Length;
+      break;
+#endif
+
     default:
       result = udR_InvalidParameter_;
       goto epilogue;
@@ -320,7 +437,6 @@ udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash)
 epilogue:
   udFree(pCtx);
   return result;
-
 }
 
 // ***************************************************************************************
@@ -335,11 +451,24 @@ udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t l
   switch (pCtx->hash)
   {
     case udCH_SHA1:
+#if USE_MBED
+      mbedtls_sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
+#else
       sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
+#endif
       break;
     case udCH_SHA256:
+#if USE_MBED
+      mbedtls_sha256_update(&pCtx->sha256, (const uint8_t*)pBytes, length);
+#else
       sha256_update(&pCtx->sha256, (const uint8_t*)pBytes, length);
+#endif
       break;
+#if USE_MBED
+    case udCH_SHA512:
+      mbedtls_sha512_update(&pCtx->sha512, (const uint8_t*)pBytes, length);
+      break;
+#endif
     default:
       return udR_InvalidParameter_;
   }
@@ -366,18 +495,30 @@ udResult udCrypto_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t len
     switch (pCtx->hash)
     {
       case udCH_SHA1:
+#if USE_MBED
+        mbedtls_sha1_finish(&pCtx->sha1, pHash);
+#else
         sha1_final(&pCtx->sha1, pHash);
+#endif
         break;
       case udCH_SHA256:
+#if USE_MBED
+        mbedtls_sha256_finish(&pCtx->sha256, pHash);
+#else
         sha256_final(&pCtx->sha256, pHash);
+#endif
         break;
+#if USE_MBED
+      case udCH_SHA512:
+        mbedtls_sha512_finish(&pCtx->sha512, pHash);
+        break;
+#endif
       default:
         return udR_InvalidParameter_;
     }
   }
 
   return udR_Success;
-
 }
 
 // ***************************************************************************************
@@ -386,6 +527,22 @@ udResult udCrypto_DestroyHash(udCryptoHashContext **ppCtx)
 {
   if (!ppCtx || !*ppCtx)
     return udR_InvalidParameter_;
+#if USE_MBED
+  switch ((*ppCtx)->hash)
+  {
+    case udCH_SHA1:
+      mbedtls_sha1_free(&(*ppCtx)->sha1);
+      break;
+    case udCH_SHA256:
+      mbedtls_sha256_free(&(*ppCtx)->sha256);
+      break;
+    case udCH_SHA512:
+      mbedtls_sha512_free(&(*ppCtx)->sha512);
+      break;
+    default:
+      break;
+  }
+#endif
   udFree(*ppCtx);
   return udR_Success;
 }
@@ -475,6 +632,7 @@ epilogue:
 // Author: Dave Pevreal, August 2017
 udResult udCrypto_RandomKey(uint8_t *pKey, int keyLen)
 {
+  // TEMPORARY. TODO: Use mbedTLS entropy
   udResult result;
   uint8_t hash[32];
   struct Entropy
@@ -604,6 +762,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     {
       udDebugPrintf("Encrypt error CBC mode: ciphertext didn't match");
       result = udR_InternalError;
+      UD_ERROR_HANDLE();
     }
 
 
@@ -616,7 +775,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(plaintext[0], plaintext[1], sizeof(plaintext[0])) != 0)
     {
       udDebugPrintf("Decrypt error CBC mode: plaintext didn't match");
-      result = udR_InternalError;
+      UD_ERROR_SET(udR_InternalError);
     }
   }
 
@@ -641,7 +800,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(ciphertext[0], ciphertext[1], sizeof(ciphertext[0])) != 0)
     {
       udDebugPrintf("Encrypt error CTR mode: ciphertext didn't match");
-      result = udR_InternalError;
+      UD_ERROR_SET(udR_InternalError);
     }
 
 
@@ -658,7 +817,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(plaintext[0], plaintext[1], sizeof(plaintext[0])) != 0)
     {
       udDebugPrintf("Decrypt error CTR mode: plaintext didn't match");
-      result = udR_InternalError;
+      UD_ERROR_SET(udR_InternalError);
     }
   }
 

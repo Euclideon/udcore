@@ -25,7 +25,6 @@ enum udCryptoPaddingMode
 enum udCryptoChainMode
 {
   udCCM_None,   // Sentinal meaning no chaining mode has been set yet
-  udCCM_ECB,    // Insecure, used as a building block in combination with other operations
   udCCM_CBC,    // Sequential access, requires IV unique to each call to encrypt
   udCCM_CTR,    // Random access, requires a nonce unique to file
 };
@@ -42,8 +41,8 @@ udResult udCrypto_SetNonce(udCryptoCipherContext *pCtx, const uint8_t *pNonce, i
 udResult udCrypto_CreateIVForCTRMode(udCryptoCipherContext *pCtx, uint8_t *pIV, int ivLen, uint64_t counter);
 
 // Encrypt/decrypt using current mode/iv/nonce. Optional pOutIV arameter only applicable to CBC mode
-udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr, uint8_t *pOutIV = nullptr);
-udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen = nullptr, uint8_t *pOutIV = nullptr);
+udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr, uint8_t *pOutIV = nullptr);
+udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen = nullptr, uint8_t *pOutIV = nullptr);
 
 // Free resources
 udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx);
@@ -55,14 +54,16 @@ enum udCryptoHashes
 {
   udCH_SHA1,
   udCH_SHA256,
+  udCH_SHA512,
 };
 
 enum udCryptoHashLength
 {
   udCHL_SHA1Length = 20,
   udCHL_SHA256Length = 32,
+  udCHL_SHA512Length = 64,
 
-  udCHL_MaxHashLength = udCHL_SHA256Length
+  udCHL_MaxHashLength = udCHL_SHA512Length
 };
 
 
