@@ -156,7 +156,7 @@ udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int i
       UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
-  UD_ERROR_IF(paddedCliperTextLen < cipherTextLen, udR_BufferTooSmall);
+  UD_ERROR_IF(paddedCliperTextLen > cipherTextLen, udR_BufferTooSmall);
 
   switch (pCtx->cipher)
   {
@@ -223,39 +223,47 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, int i
       UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
-  UD_ERROR_IF(actualPlainTextLen < plainTextLen, udR_BufferTooSmall);
+  UD_ERROR_IF(actualPlainTextLen > plainTextLen, udR_BufferTooSmall);
 
   switch (pCtx->cipher)
   {
-  case udCC_AES128:
-  case udCC_AES256:
-  {
-    switch (pCtx->chainMode)
+    case udCC_AES128:
+    case udCC_AES256:
     {
-    case udCCM_ECB:
-      UD_ERROR_IF(pIV || ivLen || pOutIV, udR_InvalidParameter_);
-      for (size_t i = 0; i < cipherTextLen; i += pCtx->blockSize)
-        udCrypto::aes_encrypt((udCrypto::BYTE*)pCipherText + i, (udCrypto::BYTE*)pPlainText + i, pCtx->keySchedule, pCtx->keyLengthInBits);
-      break;
-    case udCCM_CBC:
-      UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
-      // For CBC, the output IV is the last encrypted block
-      if (pOutIV)
-        memcpy(pOutIV, (udCrypto::BYTE*)pCipherText + cipherTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
-      if (!udCrypto::aes_decrypt_cbc((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
-        UD_ERROR_SET(udR_Failure_);
-      break;
-    case udCCM_CTR:
-      UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_);
-      udCrypto::aes_encrypt_ctr((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV);
-      break;
+      switch (pCtx->chainMode)
+      {
+        case udCCM_ECB:
+          UD_ERROR_IF(pIV || ivLen || pOutIV, udR_InvalidParameter_);
+          for (size_t i = 0; i < cipherTextLen; i += pCtx->blockSize)
+            udCrypto::aes_encrypt((udCrypto::BYTE*)pCipherText + i, (udCrypto::BYTE*)pPlainText + i, pCtx->keySchedule, pCtx->keyLengthInBits);
+          break;
+
+        case udCCM_CBC:
+          UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
+          {
+            unsigned char tempIV[16];
+            // For CBC, the output IV is the last encrypted block
+            if (pOutIV)
+              memcpy(tempIV, (udCrypto::BYTE*)pCipherText + cipherTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+            if (!udCrypto::aes_decrypt_cbc((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
+              UD_ERROR_SET(udR_Failure_);
+            if (pOutIV)
+              memcpy(pOutIV, tempIV, AES_BLOCK_SIZE);
+          }
+          break;
+
+        case udCCM_CTR:
+          UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_);
+          udCrypto::aes_encrypt_ctr((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV);
+          break;
+
+        default:
+          UD_ERROR_SET(udR_InvalidConfiguration);
+      }
+    }
+    break;
     default:
       UD_ERROR_SET(udR_InvalidConfiguration);
-    }
-  }
-  break;
-  default:
-    UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
   if (pActualPlainTextLen)

@@ -5,8 +5,16 @@
 
 enum udCryptoCiphers
 {
-  udCC_AES128,  // 16-byte key
-  udCC_AES256,  // 32-byte key
+  udCC_AES128,
+  udCC_AES256
+};
+
+enum udCryptoCipherKeyLength
+{
+  udCCKL_AES128KeyLength = 16,
+  udCCKL_AES256KeyLength = 32,
+
+  udCCKL_MaxKeyLength = udCCKL_AES256KeyLength
 };
 
 enum udCryptoPaddingMode
@@ -45,9 +53,18 @@ udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx);
 
 enum udCryptoHashes
 {
-  udCH_SHA1,  // 20 bytes
-  udCH_SHA256 // 32 bytes
+  udCH_SHA1,
+  udCH_SHA256,
 };
+
+enum udCryptoHashLength
+{
+  udCHL_SHA1Length = 20,
+  udCHL_SHA256Length = 32,
+
+  udCHL_MaxHashLength = udCHL_SHA256Length
+};
+
 
 struct udCryptoHashContext;
 
