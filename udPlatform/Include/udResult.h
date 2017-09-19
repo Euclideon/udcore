@@ -33,6 +33,7 @@ enum udResult
   udR_SignatureMismatch,
   udR_Expired,
   udR_ParseError,
+  udR_InternalCryptoError,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,

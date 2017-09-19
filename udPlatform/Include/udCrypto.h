@@ -86,6 +86,7 @@ udResult udCrypto_Hash(udCryptoHashes hash, const void *pMessage, size_t message
                        size_t *pActualHashLength = nullptr, const void *pMessage2 = nullptr, size_t message2Length = 0);
 
 // **** Key derivation functions ****
+
 // Generate a key (max 40 bytes) from a plain-text password (compatible with CryptDeriveKey KDF)
 udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen);
 
@@ -95,6 +96,38 @@ udResult udCrypto_RandomKey(uint8_t *pKey, int keyLen);
 // **** HMAC functions ****
 udResult udCrypto_HMAC(udCryptoHashes hash, const uint8_t *pKey, size_t keyLen, const uint8_t *pMessage, size_t messageLength,
                        uint8_t *pHMAC, size_t hmacLength, size_t *pActualHMACLength = nullptr);
+
+// **** Digital signature functions ****
+
+struct udCryptoSigContext;
+enum udCryptoSigType
+{
+  udCST_RSA2048 = 2048,
+  udCST_RSA4096 = 4096,
+};
+
+enum udCryptoSigPadScheme
+{
+  udCSPS_Deterministic   // A deterministic signature that doesn't require entropy. For RSA PKCS #1.5
+};
+
+// Generate a random key-pair
+udResult udCrypto_CreateSigKey(udCryptoSigContext **ppSigCtx, udCryptoSigType type);
+
+// Import public/keypair
+udResult udCrypto_ImportSigKey(udCryptoSigContext **pSigCtx, const char *pKeyText);
+
+// Export a public/keypair as JSON
+udResult udCrypto_ExportSigKey(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate = false);
+
+// Sign a hash, be sure to udFree the result signature string when finished
+udResult udCrypto_Sign(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char **ppSignatureString, udCryptoSigPadScheme pad = udCSPS_Deterministic);
+
+// Verify a signed hash
+udResult udCrypto_VerifySig(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char *pSignatureString, udCryptoSigPadScheme pad = udCSPS_Deterministic);
+
+// Destroy a signature context
+void udCrypto_DestroySig(udCryptoSigContext **pSigCtx);
 
 
 // Internal test of algorithms

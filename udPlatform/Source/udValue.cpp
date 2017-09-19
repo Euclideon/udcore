@@ -1381,7 +1381,10 @@ udResult udValue::CalculateHMAC(uint8_t hmac[32], size_t hmacLen, const uint8_t 
 
   result = Export(&pExport, udVEO_StripWhiteSpace);
   UD_ERROR_HANDLE();
-  result = udCrypto_HMAC(udCH_SHA256, pKey, keyLen, (const uint8_t*)pExport, udStrlen(pExport), hmac, hmacLen);
+  if (pKey)
+    result = udCrypto_HMAC(udCH_SHA256, pKey, keyLen, (const uint8_t*)pExport, udStrlen(pExport), hmac, hmacLen);
+  else
+    result = udCrypto_Hash(udCH_SHA256, pExport, udStrlen(pExport), hmac, hmacLen);
 
 epilogue:
   udFree(pExport);

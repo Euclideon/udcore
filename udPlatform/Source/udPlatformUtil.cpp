@@ -923,6 +923,33 @@ epilogue:
 }
 
 // *********************************************************************
+// Author: Dave Pevreal, September 2017
+udResult udBase64Decode(uint8_t **ppOutput, size_t *pOutputLength, const char * pString)
+{
+  udResult result;
+  uint8_t *pOutput = nullptr;
+
+  UD_ERROR_NULL(ppOutput, udR_InvalidParameter_);
+  UD_ERROR_NULL(pOutputLength, udR_InvalidParameter_);
+  UD_ERROR_NULL(pString, udR_InvalidParameter_);
+
+  result = udBase64Decode(pString, 0, nullptr, 0, pOutputLength);
+  UD_ERROR_HANDLE();
+  pOutput = udAllocType(uint8_t, *pOutputLength, udAF_None);
+  UD_ERROR_NULL(pOutput, udR_MemoryAllocationFailure);
+  result = udBase64Decode(pString, 0, pOutput, *pOutputLength, pOutputLength);
+  UD_ERROR_HANDLE();
+
+  *ppOutput = pOutput;
+  pOutput = nullptr;
+  result = udR_Success;
+
+epilogue:
+  udFree(pOutput);
+  return result;
+}
+
+// *********************************************************************
 // Author: Paul Fox, March 2016
 udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten /*= nullptr*/)
 {

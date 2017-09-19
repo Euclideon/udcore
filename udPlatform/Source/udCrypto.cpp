@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
-
 #include "udCrypto.h"
+#include "udValue.h"
 
 #if UDPLATFORM_WINDOWS
 #pragma warning(disable: 4267 4244)
@@ -15,46 +15,35 @@
 #include <sys/time.h>
 #endif
 
-#define USE_MBED 1
-
-namespace udCrypto
-{
-  // Include public domain, license free source taken from https://github.com/B-Con/crypto-algorithms
-#include "crypto/aes.c"
-#include "crypto/sha1.c"
-#undef ROTLEFT
-
-#include "crypto/sha256.c"  // Include source directly and undef it's defines after
-#undef ROTLEFT
-#undef ROTRIGHT
-#undef CH
-#undef MAJ
-#undef EP0
-#undef EP1
-#undef SIG0
-#undef SIG1
-};
-#if USE_MBED
 #include "mbedtls/aes.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
-#endif
 
-#if !defined(AES_BLOCK_SIZE)
+#include "mbedtls/rsa.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+
+extern "C" int mbedtls_snprintf(char * s, size_t n, const char * format, ...)
+{
+  va_list ap;
+  va_start(ap, format);
+  int len = udSprintfVA(s, n, format, ap);
+  va_end(ap);
+  return len;
+}
+
 enum
 {
   AES_BLOCK_SIZE = 16
 };
-#endif
+
+#define TYPESTRING_RSAPRIVATE "RSA-Private"
+#define TYPESTRING_RSAPUBLIC "RSA-Public"
 
 struct udCryptoCipherContext
 {
-#if !USE_MBED
-  udCrypto::WORD keySchedule[60];
-#else
   mbedtls_aes_context ctx;
-#endif
   uint8_t key[32];
   uint8_t iv[AES_BLOCK_SIZE];
   uint8_t nonce[AES_BLOCK_SIZE-8];
@@ -64,31 +53,70 @@ struct udCryptoCipherContext
   udCryptoChainMode chainMode;
   udCryptoPaddingMode padMode;
   bool nonceSet;
-#if USE_MBED
   bool ctxInit;
-#endif
 };
 
 struct udCryptoHashContext
 {
   udCryptoHashes hash;
   size_t hashLengthInBytes;
-#if USE_MBED
   union
   {
     mbedtls_sha1_context sha1;
     mbedtls_sha256_context sha256;
     mbedtls_sha512_context sha512;
   };
-#else
-  union
-  {
-    udCrypto::SHA1_CTX sha1;
-    udCrypto::SHA256_CTX sha256;
-  };
-#endif
 };
 
+struct udCryptoSigContext
+{
+  udCryptoSigType type;
+  union
+  {
+    mbedtls_rsa_context rsa;
+  };
+};
+
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+// Helper to convert an mpi to base64
+static const char *ToString(const mbedtls_mpi &bigNum)
+{
+  unsigned char *pBuf = nullptr;
+  const char *pBase64 = nullptr;
+  size_t bufLen = mbedtls_mpi_size(&bigNum);
+
+  pBuf = udAllocType(unsigned char, bufLen, udAF_None);
+  if (pBuf)
+  {
+    if (mbedtls_mpi_write_binary(&bigNum, pBuf, bufLen) == 0)
+    {
+      udBase64Encode(&pBase64, pBuf, bufLen);
+    }
+  }
+  udFree(pBuf);
+  return pBase64;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+// Helper to parse base64 to an mpi
+static udResult FromString(mbedtls_mpi *pBigNum, const char *pBase64)
+{
+  udResult result;
+  uint8_t *pBuf = nullptr;
+  size_t bufLen;
+
+  result = udBase64Decode(&pBuf, &bufLen, pBase64);
+  UD_ERROR_HANDLE();
+  UD_ERROR_IF(mbedtls_mpi_read_binary(pBigNum, pBuf, bufLen) != 0, udR_InternalCryptoError);
+  result = udR_Success;
+
+epilogue:
+  udFree(pBuf);
+  return result;
+}
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
@@ -102,9 +130,7 @@ udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
   pCtx = udAllocType(udCryptoCipherContext, 1, udAF_Zero);
   UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
 
-#if USE_MBED
   mbedtls_aes_init(&pCtx->ctx);
-#endif
   pCtx->cipher = cipher;
   pCtx->padMode = padMode;
   pCtx->chainMode = chainMode;
@@ -122,13 +148,8 @@ udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
   {
     UD_ERROR_SET(udR_InvalidParameter_);
   }
-#if !USE_MBED
-  udCrypto::aes_key_setup(pKey, pCtx->keySchedule, pCtx->keyLengthInBits);
-#endif
   memcpy(pCtx->key, pKey, pCtx->keyLengthInBits / 8);
-#if USE_MBED
   pCtx->ctxInit = false;
-#endif
 
   // Give ownership of the context to the caller
   *ppCtx = pCtx;
@@ -138,9 +159,7 @@ udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
 epilogue:
   if (pCtx)
   {
-#if USE_MBED
     mbedtls_aes_free(&pCtx->ctx);
-#endif
     udFree(pCtx);
   }
   return result;
@@ -187,13 +206,11 @@ udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_
 
   UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
 
-#if USE_MBED
   if (!pCtx->ctxInit)
   {
     mbedtls_aes_setkey_enc(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits);
     pCtx->ctxInit = true;
   }
-#endif
 
   paddedCliperTextLen = plainTextLen;
   switch (pCtx->padMode)
@@ -221,23 +238,18 @@ udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_
         {
           case udCCM_CBC:
             UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
-#if USE_MBED
             memcpy(pCtx->iv, pIV, ivLen);
             if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, plainTextLen, pCtx->iv, (const unsigned char*)pPlainText, (unsigned char*)pCipherText) != 0)
-#else
-            if (!udCrypto::aes_encrypt_cbc((udCrypto::BYTE*)pPlainText, plainTextLen, (udCrypto::BYTE*)pCipherText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
-#endif
             {
               UD_ERROR_SET(udR_Failure_);
             }
             // For CBC, the output IV is the last encrypted block
             if (pOutIV)
-              memcpy(pOutIV, (udCrypto::BYTE*)pCipherText + paddedCliperTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+              memcpy(pOutIV, (char*)pCipherText + paddedCliperTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
             break;
 
           case udCCM_CTR:
             UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
-#if USE_MBED
             memcpy(pCtx->iv, pIV, ivLen);
             {
               size_t ncoff = 0;
@@ -247,9 +259,6 @@ udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_
                 UD_ERROR_SET(udR_Failure_);
               }
             }
-#else
-            udCrypto::aes_encrypt_ctr((udCrypto::BYTE*)pPlainText, plainTextLen, (udCrypto::BYTE*)pCipherText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV);
-#endif
             break;
 
           default:
@@ -304,18 +313,6 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_
       {
         case udCCM_CBC:
           UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
-#if !USE_MBED
-          {
-            unsigned char tempIV[16];
-            // For CBC, the output IV is the last encrypted block
-            if (pOutIV)
-              memcpy(tempIV, (udCrypto::BYTE*)pCipherText + cipherTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
-            if (!udCrypto::aes_decrypt_cbc((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV))
-              UD_ERROR_SET(udR_Failure_);
-            if (pOutIV)
-              memcpy(pOutIV, tempIV, AES_BLOCK_SIZE);
-          }
-#else
           if (!pCtx->ctxInit)
           {
             mbedtls_aes_setkey_dec(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits);
@@ -328,14 +325,10 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_
           }
           if (pOutIV)
             memcpy(pOutIV, pCtx->iv, AES_BLOCK_SIZE);
-#endif
           break;
 
         case udCCM_CTR:
           UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
-#if !USE_MBED
-          udCrypto::aes_encrypt_ctr((udCrypto::BYTE*)pCipherText, cipherTextLen, (udCrypto::BYTE*)pPlainText, pCtx->keySchedule, pCtx->keyLengthInBits, pIV);
-#else
           if (!pCtx->ctxInit)
           {
             mbedtls_aes_setkey_enc(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits); // NOTE: Using ENCRYPT key schedule for CTR mode
@@ -350,7 +343,6 @@ udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_
               UD_ERROR_SET(udR_Failure_);
             }
           }
-#endif
           break;
 
         default:
@@ -376,9 +368,7 @@ udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx)
 {
   if (!ppCtx || !*ppCtx)
     return udR_InvalidParameter_;
-#if USE_MBED
   mbedtls_aes_free(&(*ppCtx)->ctx);
-#endif
   udFree(*ppCtx);
   return udR_Success;
 }
@@ -399,30 +389,20 @@ udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash)
   switch (hash)
   {
     case udCH_SHA1:
-#if USE_MBED
       mbedtls_sha1_init(&pCtx->sha1);
       mbedtls_sha1_starts(&pCtx->sha1);
-#else
-      sha1_init(&pCtx->sha1);
-#endif
       pCtx->hashLengthInBytes = udCHL_SHA1Length;
       break;
     case udCH_SHA256:
-#if USE_MBED
       mbedtls_sha256_init(&pCtx->sha256);
       mbedtls_sha256_starts(&pCtx->sha256, 0);
-#else
-      sha256_init(&pCtx->sha256);
-#endif
       pCtx->hashLengthInBytes = udCHL_SHA256Length;
       break;
-#if USE_MBED
     case udCH_SHA512:
       mbedtls_sha512_init(&pCtx->sha512);
       mbedtls_sha512_starts(&pCtx->sha512, 0);
       pCtx->hashLengthInBytes = udCHL_SHA512Length;
       break;
-#endif
 
     default:
       result = udR_InvalidParameter_;
@@ -451,24 +431,14 @@ udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t l
   switch (pCtx->hash)
   {
     case udCH_SHA1:
-#if USE_MBED
       mbedtls_sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
-#else
-      sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
-#endif
       break;
     case udCH_SHA256:
-#if USE_MBED
       mbedtls_sha256_update(&pCtx->sha256, (const uint8_t*)pBytes, length);
-#else
-      sha256_update(&pCtx->sha256, (const uint8_t*)pBytes, length);
-#endif
       break;
-#if USE_MBED
     case udCH_SHA512:
       mbedtls_sha512_update(&pCtx->sha512, (const uint8_t*)pBytes, length);
       break;
-#endif
     default:
       return udR_InvalidParameter_;
   }
@@ -495,24 +465,14 @@ udResult udCrypto_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t len
     switch (pCtx->hash)
     {
       case udCH_SHA1:
-#if USE_MBED
         mbedtls_sha1_finish(&pCtx->sha1, pHash);
-#else
-        sha1_final(&pCtx->sha1, pHash);
-#endif
         break;
       case udCH_SHA256:
-#if USE_MBED
         mbedtls_sha256_finish(&pCtx->sha256, pHash);
-#else
-        sha256_final(&pCtx->sha256, pHash);
-#endif
         break;
-#if USE_MBED
       case udCH_SHA512:
         mbedtls_sha512_finish(&pCtx->sha512, pHash);
         break;
-#endif
       default:
         return udR_InvalidParameter_;
     }
@@ -527,7 +487,6 @@ udResult udCrypto_DestroyHash(udCryptoHashContext **ppCtx)
 {
   if (!ppCtx || !*ppCtx)
     return udR_InvalidParameter_;
-#if USE_MBED
   switch ((*ppCtx)->hash)
   {
     case udCH_SHA1:
@@ -542,7 +501,6 @@ udResult udCrypto_DestroyHash(udCryptoHashContext **ppCtx)
     default:
       break;
   }
-#endif
   udFree(*ppCtx);
   return udR_Success;
 }
@@ -593,7 +551,7 @@ udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen)
   UD_ERROR_CHECK(udCrypto_Digest(pCtx, pPassword, strlen(pPassword))); // This is a special "salt" for our KDF to make it unique to UD
   UD_ERROR_CHECK(udCrypto_Finalise(pCtx, passPhraseDigest, sizeof(passPhraseDigest), &passPhraseDigestLen));
   UD_ERROR_CHECK(udCrypto_DestroyHash(&pCtx));
-  UD_ERROR_IF(passPhraseDigestLen != 20, udR_InternalError);
+  UD_ERROR_IF(passPhraseDigestLen != 20, udR_InternalCryptoError);
 
   // Create a buffer of constant 0x36 xor'd with pass phrase hash
   memset(hashBuffer, 0x36, 64);
@@ -761,7 +719,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(ciphertext[0], ciphertext[1], sizeof(ciphertext[0])) != 0)
     {
       udDebugPrintf("Encrypt error CBC mode: ciphertext didn't match");
-      result = udR_InternalError;
+      result = udR_InternalCryptoError;
       UD_ERROR_HANDLE();
     }
 
@@ -775,7 +733,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(plaintext[0], plaintext[1], sizeof(plaintext[0])) != 0)
     {
       udDebugPrintf("Decrypt error CBC mode: plaintext didn't match");
-      UD_ERROR_SET(udR_InternalError);
+      UD_ERROR_SET(udR_InternalCryptoError);
     }
   }
 
@@ -800,7 +758,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(ciphertext[0], ciphertext[1], sizeof(ciphertext[0])) != 0)
     {
       udDebugPrintf("Encrypt error CTR mode: ciphertext didn't match");
-      UD_ERROR_SET(udR_InternalError);
+      UD_ERROR_SET(udR_InternalCryptoError);
     }
 
 
@@ -817,7 +775,7 @@ udResult udCrypto_TestCipher(udCryptoCiphers cipher)
     if (memcmp(plaintext[0], plaintext[1], sizeof(plaintext[0])) != 0)
     {
       udDebugPrintf("Decrypt error CTR mode: plaintext didn't match");
-      UD_ERROR_SET(udR_InternalError);
+      UD_ERROR_SET(udR_InternalCryptoError);
     }
   }
 
@@ -844,10 +802,10 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
   {
   case udCH_SHA1:
   {
-    uint8_t hash1[SHA1_BLOCK_SIZE] = { 0xa9,0x99,0x3e,0x36,0x47,0x06,0x81,0x6a,0xba,0x3e,0x25,0x71,0x78,0x50,0xc2,0x6c,0x9c,0xd0,0xd8,0x9d };
-    uint8_t hash2[SHA1_BLOCK_SIZE] = { 0x84,0x98,0x3e,0x44,0x1c,0x3b,0xd2,0x6e,0xba,0xae,0x4a,0xa1,0xf9,0x51,0x29,0xe5,0xe5,0x46,0x70,0xf1 };
-    uint8_t hash3[SHA1_BLOCK_SIZE] = { 0x34,0xaa,0x97,0x3c,0xd4,0xc4,0xda,0xa4,0xf6,0x1e,0xeb,0x2b,0xdb,0xad,0x27,0x31,0x65,0x34,0x01,0x6f };
-    uint8_t buf[SHA1_BLOCK_SIZE];
+    uint8_t hash1[udCHL_SHA1Length] = { 0xa9,0x99,0x3e,0x36,0x47,0x06,0x81,0x6a,0xba,0x3e,0x25,0x71,0x78,0x50,0xc2,0x6c,0x9c,0xd0,0xd8,0x9d };
+    uint8_t hash2[udCHL_SHA1Length] = { 0x84,0x98,0x3e,0x44,0x1c,0x3b,0xd2,0x6e,0xba,0xae,0x4a,0xa1,0xf9,0x51,0x29,0xe5,0xe5,0x46,0x70,0xf1 };
+    uint8_t hash3[udCHL_SHA1Length] = { 0x34,0xaa,0x97,0x3c,0xd4,0xc4,0xda,0xa4,0xf6,0x1e,0xeb,0x2b,0xdb,0xad,0x27,0x31,0x65,0x34,0x01,0x6f };
+    uint8_t buf[udCHL_SHA1Length];
 
     UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
     UD_ERROR_CHECK(udCrypto_Digest(pCtx, text1, strlen(text1)));
@@ -872,13 +830,13 @@ udResult udCrypto_TestHash(udCryptoHashes hash)
   break;
   case udCH_SHA256:
   {
-    uint8_t hash1[SHA256_BLOCK_SIZE] = { 0xba,0x78,0x16,0xbf,0x8f,0x01,0xcf,0xea,0x41,0x41,0x40,0xde,0x5d,0xae,0x22,0x23,
+    uint8_t hash1[udCHL_SHA256Length] = { 0xba,0x78,0x16,0xbf,0x8f,0x01,0xcf,0xea,0x41,0x41,0x40,0xde,0x5d,0xae,0x22,0x23,
       0xb0,0x03,0x61,0xa3,0x96,0x17,0x7a,0x9c,0xb4,0x10,0xff,0x61,0xf2,0x00,0x15,0xad };
-    uint8_t hash2[SHA256_BLOCK_SIZE] = { 0x24,0x8d,0x6a,0x61,0xd2,0x06,0x38,0xb8,0xe5,0xc0,0x26,0x93,0x0c,0x3e,0x60,0x39,
+    uint8_t hash2[udCHL_SHA256Length] = { 0x24,0x8d,0x6a,0x61,0xd2,0x06,0x38,0xb8,0xe5,0xc0,0x26,0x93,0x0c,0x3e,0x60,0x39,
       0xa3,0x3c,0xe4,0x59,0x64,0xff,0x21,0x67,0xf6,0xec,0xed,0xd4,0x19,0xdb,0x06,0xc1 };
-    uint8_t hash3[SHA256_BLOCK_SIZE] = { 0xcd,0xc7,0x6e,0x5c,0x99,0x14,0xfb,0x92,0x81,0xa1,0xc7,0xe2,0x84,0xd7,0x3e,0x67,
+    uint8_t hash3[udCHL_SHA256Length] = { 0xcd,0xc7,0x6e,0x5c,0x99,0x14,0xfb,0x92,0x81,0xa1,0xc7,0xe2,0x84,0xd7,0x3e,0x67,
       0xf1,0x80,0x9a,0x48,0xa4,0x97,0x20,0x0e,0x04,0x6d,0x39,0xcc,0xc7,0x11,0x2c,0xd0 };
-    uint8_t buf[SHA256_BLOCK_SIZE];
+    uint8_t buf[udCHL_SHA256Length];
 
     UD_ERROR_CHECK(udCrypto_CreateHash(&pCtx, hash));
     UD_ERROR_CHECK(udCrypto_Digest(pCtx, text1, strlen(text1)));
@@ -946,5 +904,212 @@ udResult udCrypto_TestHMAC(udCryptoHashes hash)
 
 epilogue:
   return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+udResult udCrypto_CreateSigKey(udCryptoSigContext **ppSigCtx, udCryptoSigType type)
+{
+  udResult result = udR_Failure_;
+  int mbErr;
+  udCryptoSigContext *pSigCtx = nullptr;
+  mbedtls_entropy_context entropy;
+  mbedtls_ctr_drbg_context ctr_drbg;
+
+  mbedtls_ctr_drbg_init(&ctr_drbg);
+  mbedtls_entropy_init(&entropy);
+  pSigCtx = udAllocType(udCryptoSigContext, 1, udAF_Zero);
+  UD_ERROR_NULL(pSigCtx, udR_MemoryAllocationFailure);
+  pSigCtx->type = type;
+
+  // Seed the DRGB and add this function name as an optional personalisation string
+  mbErr = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__));
+  UD_ERROR_IF(mbErr, udR_InternalCryptoError);
+
+  switch (type)
+  {
+    case udCST_RSA2048:
+    case udCST_RSA4096:
+      mbedtls_rsa_init(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
+      mbErr = mbedtls_rsa_gen_key(&pSigCtx->rsa, mbedtls_ctr_drbg_random, &ctr_drbg, type, 65537);
+      UD_ERROR_IF(mbErr, udR_InternalCryptoError);
+      break;
+    default:
+      UD_ERROR_SET(udR_InvalidParameter_);
+  }
+
+  *ppSigCtx = pSigCtx;
+  pSigCtx = nullptr;
+  result = udR_Success;
+
+epilogue:
+  mbedtls_entropy_free(&entropy);
+  mbedtls_ctr_drbg_free(&ctr_drbg);
+  udCrypto_DestroySig(&pSigCtx);
+
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+udResult udCrypto_ExportSigKey(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate)
+{
+  udResult result;
+  udValue v;
+  const char *p;
+
+  UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppKeyText, udR_InvalidParameter_);
+
+  switch (pSigCtx->type)
+  {
+  case udCST_RSA2048:
+  case udCST_RSA4096:
+    v.Set("Type = '%s'", exportPrivate ? TYPESTRING_RSAPRIVATE : TYPESTRING_RSAPUBLIC);
+    v.Set("Size = %d", pSigCtx->type);
+    p = ToString(pSigCtx->rsa.N); v.Set("N = '%s'", p); udFree(p);
+    p = ToString(pSigCtx->rsa.E); v.Set("E = '%s'", p); udFree(p);
+    if (exportPrivate)
+    {
+      p = ToString(pSigCtx->rsa.D); v.Set("D = '%s'", p); udFree(p);
+      p = ToString(pSigCtx->rsa.P); v.Set("P = '%s'", p); udFree(p);
+      p = ToString(pSigCtx->rsa.Q); v.Set("Q = '%s'", p); udFree(p);
+      p = ToString(pSigCtx->rsa.DP); v.Set("DP = '%s'", p); udFree(p);
+      p = ToString(pSigCtx->rsa.DQ); v.Set("DQ = '%s'", p); udFree(p);
+      p = ToString(pSigCtx->rsa.QP); v.Set("QP = '%s'", p); udFree(p);
+    }
+    break;
+  default:
+    UD_ERROR_SET(udR_InvalidConfiguration);
+  }
+
+  result = v.Export(ppKeyText);
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+udResult udCrypto_ImportSigKey(udCryptoSigContext **ppSigCtx, const char *pKeyText)
+{
+  udResult result;
+  udValue v;
+  udCryptoSigContext *pSigCtx = nullptr;
+
+  result = v.Parse(pKeyText);
+  UD_ERROR_HANDLE();
+  pSigCtx = udAllocType(udCryptoSigContext, 1, udAF_Zero);
+  UD_ERROR_NULL(pSigCtx, udR_MemoryAllocationFailure);
+  pSigCtx->type = (udCryptoSigType)v.Get("Size").AsInt();
+  switch (pSigCtx->type)
+  {
+    case udCST_RSA2048:
+    case udCST_RSA4096:
+      mbedtls_rsa_init(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
+      pSigCtx->rsa.len = pSigCtx->type / 8; // Size of the key
+      UD_ERROR_CHECK(FromString(&pSigCtx->rsa.N, v.Get("N").AsString()));
+      UD_ERROR_CHECK(FromString(&pSigCtx->rsa.E, v.Get("E").AsString()));
+      UD_ERROR_IF(mbedtls_rsa_check_pubkey(&pSigCtx->rsa) != 0, udR_InternalCryptoError);
+      if (udStrEqual(v.Get("Type").AsString(), TYPESTRING_RSAPRIVATE))
+      {
+        UD_ERROR_CHECK(FromString(&pSigCtx->rsa.D, v.Get("D").AsString()));
+        UD_ERROR_CHECK(FromString(&pSigCtx->rsa.P, v.Get("P").AsString()));
+        UD_ERROR_CHECK(FromString(&pSigCtx->rsa.Q, v.Get("Q").AsString()));
+        UD_ERROR_CHECK(FromString(&pSigCtx->rsa.DP, v.Get("DP").AsString()));
+        UD_ERROR_CHECK(FromString(&pSigCtx->rsa.DQ, v.Get("DQ").AsString()));
+        UD_ERROR_CHECK(FromString(&pSigCtx->rsa.QP, v.Get("QP").AsString()));
+        UD_ERROR_IF(mbedtls_rsa_check_privkey(&pSigCtx->rsa) != 0, udR_InternalCryptoError);
+      }
+      break;
+    default:
+      UD_ERROR_SET(udR_InvalidConfiguration);
+  }
+
+  *ppSigCtx = pSigCtx;
+  pSigCtx = nullptr;
+  result = udR_Success;
+
+epilogue:
+  udCrypto_DestroySig(&pSigCtx);
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+udResult udCrypto_Sign(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char **ppSignatureString, udCryptoSigPadScheme pad)
+{
+  udResult result = udR_Failure_;
+  unsigned char signature[udCST_RSA4096/8];
+
+  UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
+  UD_ERROR_NULL(pHash, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppSignatureString, udR_InvalidParameter_);
+
+  switch (pSigCtx->type)
+  {
+    case udCST_RSA2048:
+    case udCST_RSA4096:
+      if (pad == udCSPS_Deterministic)
+        mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
+      UD_ERROR_IF(sizeof(signature) < (pSigCtx->type / 8), udR_InternalCryptoError);
+      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_sign(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_NONE, hashLen, (const unsigned char*)pHash, signature) != 0, udR_InternalCryptoError);
+      result = udBase64Encode(ppSignatureString, signature, pSigCtx->type / 8);
+      UD_ERROR_HANDLE();
+      break;
+    default:
+      UD_ERROR_SET(udR_InvalidConfiguration);
+  }
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+udResult udCrypto_VerifySig(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char *pSignatureString, udCryptoSigPadScheme pad)
+{
+  udResult result = udR_Failure_;
+  unsigned char signature[udCST_RSA4096 / 8];
+  size_t sigLen;
+
+  UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
+  UD_ERROR_NULL(pHash, udR_InvalidParameter_);
+  UD_ERROR_NULL(pSignatureString, udR_InvalidParameter_);
+
+  switch (pSigCtx->type)
+  {
+    case udCST_RSA2048:
+    case udCST_RSA4096:
+      if (pad == udCSPS_Deterministic)
+        mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
+      UD_ERROR_IF(sizeof(signature) < (pSigCtx->type / 8), udR_InternalCryptoError);
+      UD_ERROR_CHECK(udBase64Decode(pSignatureString, 0, signature, sizeof(signature), &sigLen));
+      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_verify(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_NONE, hashLen, (const unsigned char*)pHash, signature) != 0, udR_SignatureMismatch);
+      UD_ERROR_IF(sigLen != (pSigCtx->type / 8), udR_InternalCryptoError);
+      break;
+    default:
+      UD_ERROR_SET(udR_InvalidConfiguration);
+  }
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, September 2017
+void udCrypto_DestroySig(udCryptoSigContext **ppSigCtx)
+{
+  if (ppSigCtx)
+  {
+    udCryptoSigContext *pSigCtx = *ppSigCtx;
+    if (pSigCtx)
+    {
+      *ppSigCtx = nullptr;
+      mbedtls_rsa_free(&pSigCtx->rsa);
+      memset(pSigCtx, 0, sizeof(*pSigCtx)); // zero to ensure no remnants
+      udFree(pSigCtx);
+    }
+  }
 }
 

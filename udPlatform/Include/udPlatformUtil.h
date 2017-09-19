@@ -229,6 +229,7 @@ uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
 // Simple base64 decoder, output can be same memory as input
 // Pass nullptr for pOutput to count output bytes
 udResult udBase64Decode(const char *pString, size_t length, uint8_t *pOutput, size_t outputLength, size_t *pOutputLengthWritten = nullptr);
+udResult udBase64Decode(uint8_t **ppOutput, size_t *pOutputLength, const char *pString);
 
 // *********************************************************************
 // Simple base64 encoder, unlike decode output CANNOT be the same memory as input
