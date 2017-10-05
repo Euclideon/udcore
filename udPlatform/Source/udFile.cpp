@@ -161,8 +161,8 @@ udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t 
   UD_ERROR_IF(!pFile || !pKey, udR_InvalidParameter_);
   UD_ERROR_IF(pFile->flagsCopy & udFOF_Write, udR_InvalidConfiguration); // Temp until a need for writing arises
 
-  udCrypto_DestroyCipher(&pFile->pCipherCtx); // Just in case a key is already set
-  result = udCrypto_CreateCipher(&pFile->pCipherCtx, keylen >= 32 ? udCC_AES256 : udCC_AES128, udCPM_None, pKey, udCCM_CTR);
+  udCryptoCipher_Destroy(&pFile->pCipherCtx); // Just in case a key is already set
+  result = udCryptoCipher_Create(&pFile->pCipherCtx, keylen >= 32 ? udCC_AES256 : udCC_AES128, udCPM_None, pKey, udCCM_CTR);
   UD_ERROR_HANDLE();
   result = udCrypto_SetNonce(pFile->pCipherCtx, pNonce, nonceLen);
   UD_ERROR_HANDLE();
@@ -170,7 +170,7 @@ udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t 
 
 epilogue:
   if (result)
-    udCrypto_DestroyCipher(&pFile->pCipherCtx); // Destroy if there were any errors
+    udCryptoCipher_Destroy(&pFile->pCipherCtx); // Destroy if there were any errors
   return result;
 }
 
@@ -252,7 +252,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
     UD_ERROR_HANDLE();
     result = pFile->fpRead(pFile, pCipherText, inset + bufferLength + padding, offset - inset, &alignedActual, nullptr); // Don't handle pipelined requests with encryption
     UD_ERROR_HANDLE();
-    result = udCrypto_Decrypt(pFile->pCipherCtx, iv, sizeof(iv), pCipherText, alignedActual, pCipherText, alignedActual);
+    result = udCryptoCipher_Decrypt(pFile->pCipherCtx, iv, sizeof(iv), pCipherText, alignedActual, pCipherText, alignedActual);
     UD_ERROR_HANDLE();
     actualRead = udMin(bufferLength, udMax((size_t)0, alignedActual - (size_t)inset));
     if (pCipherText != pBuffer)
@@ -383,7 +383,7 @@ udResult udFile_Close(udFile **ppFile)
   {
     udFree((*ppFile)->pFilenameCopy);
     if ((*ppFile)->pCipherCtx)
-      udCrypto_DestroyCipher(&(*ppFile)->pCipherCtx);
+      udCryptoCipher_Destroy(&(*ppFile)->pCipherCtx);
     return (*ppFile)->fpClose(ppFile);
   }
   else

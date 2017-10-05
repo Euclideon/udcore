@@ -4,7 +4,7 @@ project ("udPlatform" .. (projectSuffix or ""))
 	flags { "StaticRuntime", "OmitDefaultLibrary" }
 
 	files { "Source/**", "Include/**", "Docs/**" }
-	files { "../3rdParty/mbedtls/config.h" }
+	files { "../3rdParty/mbedtls/include/mbedtls/config.h" }
 	files { "../3rdParty/mbedtls/library/aes.c", "../3rdParty/mbedtls/include/mbedtls/aes.h" }
 	files { "../3rdParty/mbedtls/library/sha1.c", "../3rdParty/mbedtls/include/mbedtls/sha1.h" }
 	files { "../3rdParty/mbedtls/library/sha256.c", "../3rdParty/mbedtls/include/mbedtls/sha256.h" }
@@ -18,9 +18,8 @@ project ("udPlatform" .. (projectSuffix or ""))
 	files { "../3rdParty/mbedtls/library/md_wrap.c", "../3rdParty/mbedtls/include/mbedtls/md_wrap.h" }
 	files { "../3rdParty/mbedtls/library/asn1parse.c", "../3rdParty/mbedtls/include/mbedtls/asn1parse.h" }
 	files { "../3rdParty/mbedtls/library/oid.c", "../3rdParty/mbedtls/include/mbedtls/oid.h" }
-	files { "../3rdParty/mbedtls/library/ripemd160.c", "../3rdParty/mbedtls/include/mbedtls/ripemd160.h" }
-	files { "../3rdParty/mbedtls/library/md5.c", "../3rdParty/mbedtls/include/mbedtls/md5.h" }
 	files { "../3rdParty/mbedtls/library/timing.c", "../3rdParty/mbedtls/include/mbedtls/timing.h" }
+	files { "../3rdParty/mbedtls/library/dhm.c", "../3rdParty/mbedtls/include/mbedtls/dhm.h" }
 
 	files { "project.lua" }
 

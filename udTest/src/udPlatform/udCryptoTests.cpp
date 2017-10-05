@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "udCrypto.h"
+#include "udValue.h"
 #include "udPlatformUtil.h"
 
 TEST(CryptoTests, AES_CBC_MonteCarlo)
@@ -33,13 +34,13 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
     memset(prv, 0, sizeof(prv));
     memset(buf, 0, sizeof(buf));
 
-    udResult result = udCrypto_CreateCipher(&pCtx, test256 ? udCC_AES256 : udCC_AES128, udCPM_None, key, udCCM_CBC);
+    udResult result = udCryptoCipher_Create(&pCtx, test256 ? udCC_AES256 : udCC_AES128, udCPM_None, key, udCCM_CBC);
     EXPECT_EQ(udR_Success, result);
 
     if (!testEncrypt)
     {
       for (int j = 0; j < 10000; j++)
-        udCrypto_Decrypt(pCtx, iv, sizeof(iv), buf, 16, buf, sizeof(buf), nullptr, iv); // Note: specifically decrypting exactly 16 bytes, not sizeof(buf)
+        udCryptoCipher_Decrypt(pCtx, iv, sizeof(iv), buf, 16, buf, sizeof(buf), nullptr, iv); // Note: specifically decrypting exactly 16 bytes, not sizeof(buf)
 
       EXPECT_EQ(0, memcmp(buf, aes_test_cbc_dec[test256], 16));
     }
@@ -47,7 +48,7 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
     {
       for (int j = 0; j < 10000; j++)
       {
-        udCrypto_Encrypt(pCtx, iv, sizeof(iv), buf, 16, buf, sizeof(buf), nullptr, iv); // Note: specifically encrypting exactly 16 bytes, not sizeof(buf)
+        udCryptoCipher_Encrypt(pCtx, iv, sizeof(iv), buf, 16, buf, sizeof(buf), nullptr, iv); // Note: specifically encrypting exactly 16 bytes, not sizeof(buf)
         unsigned char tmp[16];
         memcpy(tmp, prv, 16);
         memcpy(prv, buf, 16);
@@ -56,7 +57,7 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
 
       EXPECT_EQ(0, memcmp(prv, aes_test_cbc_enc[test256], 16));
     }
-    EXPECT_EQ(udR_Success, udCrypto_DestroyCipher(&pCtx));
+    EXPECT_EQ(udR_Success, udCryptoCipher_Destroy(&pCtx));
   }
 }
 
@@ -118,24 +119,24 @@ TEST(CryptoTests, AES_CTR_MonteCarlo)
     memcpy(nonce_counter, aes_test_ctr_nonce_counter[testNumber], 16);
     memcpy(key, aes_test_ctr_key[testNumber], 16);
 
-    udResult result = udCrypto_CreateCipher(&pCtx, udCC_AES128, udCPM_None, key, udCCM_CTR); // We only test 128-bit for CTR mode
+    udResult result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, key, udCCM_CTR); // We only test 128-bit for CTR mode
     EXPECT_EQ(udR_Success, result);
 
     if (!testEncrypt)
     {
       int len = aes_test_ctr_len[testNumber];
       memcpy(buf, aes_test_ctr_ct[testNumber], len);
-      udCrypto_Decrypt(pCtx, aes_test_ctr_nonce_counter[testNumber], 16, buf, len, buf, len);
+      udCryptoCipher_Decrypt(pCtx, aes_test_ctr_nonce_counter[testNumber], 16, buf, len, buf, len);
       EXPECT_EQ(0, memcmp(buf, aes_test_ctr_pt[testNumber], len));
     }
     else
     {
       int len = aes_test_ctr_len[testNumber];
       memcpy(buf, aes_test_ctr_pt[testNumber], len);
-      udCrypto_Decrypt(pCtx, aes_test_ctr_nonce_counter[testNumber], 16, buf, len, buf, len);
+      udCryptoCipher_Decrypt(pCtx, aes_test_ctr_nonce_counter[testNumber], 16, buf, len, buf, len);
       EXPECT_EQ(0, memcmp(buf, aes_test_ctr_ct[testNumber], len));
     }
-    EXPECT_EQ(udR_Success, udCrypto_DestroyCipher(&pCtx));
+    EXPECT_EQ(udR_Success, udCryptoCipher_Destroy(&pCtx));
   }
 }
 
@@ -150,44 +151,44 @@ TEST(CryptoTests, CipherErrorCodes)
   memset(iv, 0, sizeof(iv));
   memset(key, 0, sizeof(key));
   memset(buf, 0, sizeof(buf));
-  result = udCrypto_CreateCipher(nullptr, udCC_AES128, udCPM_None, key, udCCM_CTR);
+  result = udCryptoCipher_Create(nullptr, udCC_AES128, udCPM_None, key, udCCM_CTR);
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_CreateCipher(&pCtx, udCC_AES128, udCPM_None, nullptr, udCCM_CTR);
+  result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, nullptr, udCCM_CTR);
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_CreateCipher(&pCtx, udCC_AES128, udCPM_None, key, udCCM_CTR);
+  result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, key, udCCM_CTR);
   EXPECT_EQ(udR_Success, result);
 
-  result = udCrypto_Encrypt(nullptr, iv, 16, buf, sizeof(buf), buf, sizeof(buf)); // context
+  result = udCryptoCipher_Encrypt(nullptr, iv, 16, buf, sizeof(buf), buf, sizeof(buf)); // context
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Encrypt(pCtx, nullptr, 16, buf, sizeof(buf), buf, sizeof(buf)); // iv
+  result = udCryptoCipher_Encrypt(pCtx, nullptr, 16, buf, sizeof(buf), buf, sizeof(buf)); // iv
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Encrypt(pCtx, iv, 15, buf, sizeof(buf), buf, sizeof(buf)); // iv length
+  result = udCryptoCipher_Encrypt(pCtx, iv, 15, buf, sizeof(buf), buf, sizeof(buf)); // iv length
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Encrypt(pCtx, iv, 16, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
+  result = udCryptoCipher_Encrypt(pCtx, iv, 16, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Encrypt(pCtx, iv, 16, buf, 1, buf, sizeof(buf)); // input alignment
+  result = udCryptoCipher_Encrypt(pCtx, iv, 16, buf, 1, buf, sizeof(buf)); // input alignment
   EXPECT_EQ(udR_AlignmentRequirement, result);
-  result = udCrypto_Encrypt(pCtx, iv, 16, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
+  result = udCryptoCipher_Encrypt(pCtx, iv, 16, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Encrypt(pCtx, iv, 16, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
+  result = udCryptoCipher_Encrypt(pCtx, iv, 16, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
   EXPECT_EQ(udR_BufferTooSmall, result);
 
-  result = udCrypto_Decrypt(nullptr, iv, 16, buf, sizeof(buf), buf, sizeof(buf)); // context
+  result = udCryptoCipher_Decrypt(nullptr, iv, 16, buf, sizeof(buf), buf, sizeof(buf)); // context
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Decrypt(pCtx, nullptr, 16, buf, sizeof(buf), buf, sizeof(buf)); // iv
+  result = udCryptoCipher_Decrypt(pCtx, nullptr, 16, buf, sizeof(buf), buf, sizeof(buf)); // iv
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Decrypt(pCtx, iv, 15, buf, sizeof(buf), buf, sizeof(buf)); // iv length
+  result = udCryptoCipher_Decrypt(pCtx, iv, 15, buf, sizeof(buf), buf, sizeof(buf)); // iv length
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Decrypt(pCtx, iv, 16, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
+  result = udCryptoCipher_Decrypt(pCtx, iv, 16, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Decrypt(pCtx, iv, 16, buf, 1, buf, sizeof(buf)); // input alignment
+  result = udCryptoCipher_Decrypt(pCtx, iv, 16, buf, 1, buf, sizeof(buf)); // input alignment
   EXPECT_EQ(udR_AlignmentRequirement, result);
-  result = udCrypto_Decrypt(pCtx, iv, 16, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
+  result = udCryptoCipher_Decrypt(pCtx, iv, 16, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCrypto_Decrypt(pCtx, iv, 16, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
+  result = udCryptoCipher_Decrypt(pCtx, iv, 16, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
   EXPECT_EQ(udR_BufferTooSmall, result);
 
-  result = udCrypto_DestroyCipher(&pCtx);
+  result = udCryptoCipher_Destroy(&pCtx);
   EXPECT_EQ(udR_Success, result);
 }
 
@@ -239,7 +240,7 @@ TEST(CryptoTests, SHA)
       size_t inputLength = udStrlen(s_testMessages[testNumber]);
 
       memset(resultHash, 0, sizeof(resultHash));
-      udResult result = udCrypto_Hash(s_testHashes[shaType], s_testMessages[testNumber], inputLength, resultHash, sizeof(resultHash), &actualHashSize);
+      udResult result = udCryptoHash_Hash(s_testHashes[shaType], s_testMessages[testNumber], inputLength, resultHash, sizeof(resultHash), &actualHashSize);
       EXPECT_EQ(udR_Success, result);
       EXPECT_EQ(s_testHashSizes[shaType], actualHashSize);
       EXPECT_EQ(0, memcmp(resultHash, s_testHashResults[shaType][testNumber], actualHashSize));
@@ -248,7 +249,7 @@ TEST(CryptoTests, SHA)
       size_t length1 = inputLength / 2;
       size_t length2 = inputLength - length1;
       memset(resultHash, 0, sizeof(resultHash));
-      result = udCrypto_Hash(s_testHashes[shaType], s_testMessages[testNumber], length1, resultHash, sizeof(resultHash), &actualHashSize, s_testMessages[testNumber] + length1, length2);
+      result = udCryptoHash_Hash(s_testHashes[shaType], s_testMessages[testNumber], length1, resultHash, sizeof(resultHash), &actualHashSize, s_testMessages[testNumber] + length1, length2);
       EXPECT_EQ(udR_Success, result);
       EXPECT_EQ(s_testHashSizes[shaType], actualHashSize);
       EXPECT_EQ(0, memcmp(resultHash, s_testHashResults[shaType][testNumber], actualHashSize));
@@ -258,11 +259,11 @@ TEST(CryptoTests, SHA)
 
 TEST(CryptoTests, Self)
 {
-  EXPECT_EQ(udR_Success, udCrypto_TestCipher(udCC_AES256));
-  EXPECT_EQ(udR_Success, udCrypto_TestHash(udCH_SHA1));
-  EXPECT_EQ(udR_Success, udCrypto_TestHash(udCH_SHA256));
-  EXPECT_EQ(udR_Success, udCrypto_TestHMAC(udCH_SHA1));
-  EXPECT_EQ(udR_Success, udCrypto_TestHMAC(udCH_SHA256));
+  EXPECT_EQ(udR_Success, udCryptoCipher_SelfTest(udCC_AES128));
+  EXPECT_EQ(udR_Success, udCryptoCipher_SelfTest(udCC_AES256));
+  EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA1));
+  EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA256));
+  EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA512));
 }
 
 static const char *pPrivateKeyText =
@@ -297,40 +298,83 @@ TEST(CryptoTests, CreateSig)
   uint8_t hash[udCHL_SHA1Length];
   const char *pSignature = nullptr;
 
-  EXPECT_EQ(udR_Success, udCrypto_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), hash, sizeof(hash)));
+  EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), hash, sizeof(hash)));
 
 #if 0 // Enable to generate a new key
-  EXPECT_EQ(udR_Success, udCrypto_CreateSigKey(&pPrivCtx, udCST_RSA2048));
-  EXPECT_EQ(udR_Success, udCrypto_ExportSigKey(pPrivCtx, &pPrivateKeyText, true));
+  EXPECT_EQ(udR_Success, udCryptoSig_CreateKeyPair(&pPrivCtx, udCST_RSA2048));
+  EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pPrivateKeyText, true));
   udDebugPrintf("Private key:\n%s\n", pPrivateKeyText);
-  EXPECT_EQ(udR_Success, udCrypto_ExportSigKey(pPrivCtx, &pPublicKeyText, false));
+  EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pPublicKeyText, false));
   udDebugPrintf("Public key:\n%s\n", pPublicKeyText);
-  EXPECT_EQ(udR_Success, udCrypto_Sign(pPrivCtx, hash, sizeof(hash), &pExpectedSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, hash, sizeof(hash), &pExpectedSignature));
   udDebugPrintf("Expected signature:\n%s\n", pExpectedSignature);
 #else
-  EXPECT_EQ(udR_Success, udCrypto_ImportSigKey(&pPrivCtx, pPrivateKeyText));
+  EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPrivCtx, pPrivateKeyText));
 #endif
   // Import the public key only
-  EXPECT_EQ(udR_Success, udCrypto_ImportSigKey(&pPubCtx, pPublicKeyText));
+  EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPubCtx, pPublicKeyText));
 
   // Sign a message using the private key
-  EXPECT_EQ(udR_Success, udCrypto_Sign(pPrivCtx, hash, sizeof(hash), &pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, hash, sizeof(hash), &pSignature));
 
   // Verify it's the expected signature (only works with PKCS_15)
   EXPECT_EQ(0, udStrcmp(pSignature, pExpectedSignature));
 
   // Verify using the private key
-  EXPECT_EQ(udR_Success, udCrypto_VerifySig(pPrivCtx, hash, sizeof(hash), pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPrivCtx, hash, sizeof(hash), pSignature));
 
   // Verify the message using the public key
-  EXPECT_EQ(udR_Success, udCrypto_VerifySig(pPubCtx, hash, sizeof(hash), pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, hash, sizeof(hash), pSignature));
 
   // Change the hash slightly to ensure the message isn't verified
   hash[1] ^= 1;
-  EXPECT_EQ(udR_SignatureMismatch, udCrypto_VerifySig(pPrivCtx, hash, sizeof(hash), pSignature));
-  EXPECT_EQ(udR_SignatureMismatch, udCrypto_VerifySig(pPubCtx, hash, sizeof(hash), pSignature));
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, hash, sizeof(hash), pSignature));
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, hash, sizeof(hash), pSignature));
 
-  udCrypto_DestroySig(&pPrivCtx);
-  udCrypto_DestroySig(&pPubCtx);
+  udCryptoSig_Destroy(&pPrivCtx);
+  udCryptoSig_Destroy(&pPubCtx);
   udFree(pSignature);
+}
+
+TEST(CryptoTests, DHM)
+{
+  udResult result;
+  udValue publicA, publicB;
+  udCryptoDHMContext *pDHM = nullptr;
+  const char *pPublicValueA = nullptr;
+  const char *pPublicValueB = nullptr;
+  uint8_t secretA[1000];
+  uint8_t secretB[1000];
+
+  result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, sizeof(secretA));
+  EXPECT_EQ(udR_Success, result);
+
+  result = udCryptoKey_DeriveFromPartyA(pPublicValueA, &pPublicValueB, secretB, sizeof(secretB));
+  EXPECT_EQ(udR_Success, result);
+
+  result = udCryptoKey_DeriveFromPartyB(pDHM, pPublicValueB, secretA, sizeof(secretA));
+  EXPECT_EQ(udR_Success, result);
+
+  EXPECT_EQ(0, memcmp(secretA, secretB, sizeof(secretA)));
+
+  EXPECT_EQ(udR_Success, publicA.Parse(pPublicValueA));
+  EXPECT_EQ(udR_Success, publicB.Parse(pPublicValueB));
+  EXPECT_EQ(2, publicA.MemberCount());
+  EXPECT_EQ(publicA.Get("keyLen").AsInt(), (int)sizeof(secretA));
+  EXPECT_EQ(1, publicB.MemberCount());
+  EXPECT_EQ(false, udStrEqual(publicA.Get("PublicValue").AsString(), publicB.Get("PublicValue").AsString()));
+
+  udFree(pPublicValueA);
+  udFree(pPublicValueB);
+  udCryptoKey_DestroyDHM(&pDHM);
+
+  // Finally, generate another secret (just to secretB) and make sure it's different from the previous one
+  result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, sizeof(secretA));
+  EXPECT_EQ(udR_Success, result);
+  result = udCryptoKey_DeriveFromPartyA(pPublicValueA, &pPublicValueB, secretB, sizeof(secretB));
+  EXPECT_EQ(udR_Success, result);
+  udFree(pPublicValueA);
+  udFree(pPublicValueB);
+  udCryptoKey_DestroyDHM(&pDHM);
+  EXPECT_NE(0, memcmp(secretA, secretB, sizeof(secretA)));
 }

@@ -6,7 +6,8 @@
 enum udCryptoCiphers
 {
   udCC_AES128,
-  udCC_AES256
+  udCC_AES256,
+  udCC_Count
 };
 
 enum udCryptoCipherKeyLength
@@ -32,7 +33,7 @@ enum udCryptoChainMode
 struct udCryptoCipherContext;
 
 // Initialise a cipher
-udResult udCrypto_CreateCipher(udCryptoCipherContext **ppCtx, udCryptoCiphers cipher, udCryptoPaddingMode padMode, const uint8_t *pKey, udCryptoChainMode chainMode);
+udResult udCryptoCipher_Create(udCryptoCipherContext **ppCtx, udCryptoCiphers cipher, udCryptoPaddingMode padMode, const uint8_t *pKey, udCryptoChainMode chainMode);
 
 // Set the nonce (for CTR mode)
 udResult udCrypto_SetNonce(udCryptoCipherContext *pCtx, const uint8_t *pNonce, int nonceLen);
@@ -41,11 +42,14 @@ udResult udCrypto_SetNonce(udCryptoCipherContext *pCtx, const uint8_t *pNonce, i
 udResult udCrypto_CreateIVForCTRMode(udCryptoCipherContext *pCtx, uint8_t *pIV, int ivLen, uint64_t counter);
 
 // Encrypt/decrypt using current mode/iv/nonce. Optional pOutIV arameter only applicable to CBC mode
-udResult udCrypto_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr, uint8_t *pOutIV = nullptr);
-udResult udCrypto_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen = nullptr, uint8_t *pOutIV = nullptr);
+udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen = nullptr, uint8_t *pOutIV = nullptr);
+udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen = nullptr, uint8_t *pOutIV = nullptr);
 
 // Free resources
-udResult udCrypto_DestroyCipher(udCryptoCipherContext **ppCtx);
+udResult udCryptoCipher_Destroy(udCryptoCipherContext **ppCtx);
+
+// Internal self-test
+udResult udCryptoCipher_SelfTest(udCryptoCiphers cipher);
 
 
 // **** Hash algorithms ****
@@ -55,6 +59,7 @@ enum udCryptoHashes
   udCH_SHA1,
   udCH_SHA256,
   udCH_SHA512,
+  udCH_Count
 };
 
 enum udCryptoHashLength
@@ -70,36 +75,59 @@ enum udCryptoHashLength
 struct udCryptoHashContext;
 
 // Initialise a hash
-udResult udCrypto_CreateHash(udCryptoHashContext **ppCtx, udCryptoHashes hash);
+udResult udCryptoHash_Create(udCryptoHashContext **ppCtx, udCryptoHashes hash);
 
 // Digest some bytes
-udResult udCrypto_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t length);
+udResult udCryptoHash_Digest(udCryptoHashContext *pCtx, const void *pBytes, size_t length);
 
 // Digest some bytes
-udResult udCrypto_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t length, size_t *pActualHashLength = nullptr);
+udResult udCryptoHash_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t length, size_t *pActualHashLength = nullptr);
 
 // Free resources
-udResult udCrypto_DestroyHash(udCryptoHashContext **ppCtx);
+udResult udCryptoHash_Destroy(udCryptoHashContext **ppCtx);
 
 // Helper to create/digest/finalise/destroy for a given block (or two) of data
-udResult udCrypto_Hash(udCryptoHashes hash, const void *pMessage, size_t messageLength, uint8_t *pHash, size_t hashLength,
-                       size_t *pActualHashLength = nullptr, const void *pMessage2 = nullptr, size_t message2Length = 0);
+udResult udCryptoHash_Hash(udCryptoHashes hash, const void *pMessage, size_t messageLength, uint8_t *pHash, size_t hashLength,
+                           size_t *pActualHashLength = nullptr, const void *pMessage2 = nullptr, size_t message2Length = 0);
 
-// **** Key derivation functions ****
+// Generate a keyed hash
+udResult udCryptoHash_HMAC(udCryptoHashes hash, const void *pKey, size_t keyLen, const void *pMessage, size_t messageLength,
+                           uint8_t *pHMAC, size_t hmacLength, size_t *pActualHMACLength = nullptr);
+
+// Internal self-test
+udResult udCryptoHash_SelfTest(udCryptoHashes hash);
+
+
+// **** Key derivation/exchange functions ****
+
+struct udCryptoDHMContext;
 
 // Generate a key (max 40 bytes) from a plain-text password (compatible with CryptDeriveKey KDF)
-udResult udCrypto_KDF(const char *pPassword, uint8_t *pKey, int keyLen);
+udResult udCryptoKey_DeriveFromPassword(const char *pPassword, void *pKey, size_t keyLen);
+
+// Generate key data from supplied data (supplied data hashed and rehashed to required length)
+udResult udCryptoKey_DeriveFromData(void *pKey, size_t keyLen, const void *pData, size_t dataLen);
 
 // Generate a random key (max 32 bytes) using system entropy
-udResult udCrypto_RandomKey(uint8_t *pKey, int keyLen);
+udResult udCryptoKey_DeriveFromRandom(void *pKey, size_t keyLen);
 
-// **** HMAC functions ****
-udResult udCrypto_HMAC(udCryptoHashes hash, const uint8_t *pKey, size_t keyLen, const uint8_t *pMessage, size_t messageLength,
-                       uint8_t *pHMAC, size_t hmacLength, size_t *pActualHMACLength = nullptr);
+// Create a Diffie-Hellman-Merkle key exchange context, generating a string of public values for the other party. Party A calls this.
+udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPublicValueA, size_t secretLen);
+
+// Generate the shared secret key using parameters from party A, also generating the public value to send back to party A. Party B calls this.
+udResult udCryptoKey_DeriveFromPartyA(const char *pPublicValueA, const char **ppPublicValueB, void *pKey, size_t keyLen);
+
+// Generate the shared secret using the public value from the other party. Party A calls this.
+udResult udCryptoKey_DeriveFromPartyB(udCryptoDHMContext *pDHMCtx, const char *pPublicValueB, void *pKey, size_t keyLen);
+
+// Destroy the DHM context
+void udCryptoKey_DestroyDHM(udCryptoDHMContext **ppDHMCtx);
+
 
 // **** Digital signature functions ****
 
 struct udCryptoSigContext;
+
 enum udCryptoSigType
 {
   udCST_RSA2048 = 2048,
@@ -112,26 +140,19 @@ enum udCryptoSigPadScheme
 };
 
 // Generate a random key-pair
-udResult udCrypto_CreateSigKey(udCryptoSigContext **ppSigCtx, udCryptoSigType type);
+udResult udCryptoSig_CreateKeyPair(udCryptoSigContext **ppSigCtx, udCryptoSigType type);
 
 // Import public/keypair
-udResult udCrypto_ImportSigKey(udCryptoSigContext **pSigCtx, const char *pKeyText);
+udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **pSigCtx, const char *pKeyText);
 
 // Export a public/keypair as JSON
-udResult udCrypto_ExportSigKey(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate = false);
+udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate = false);
 
 // Sign a hash, be sure to udFree the result signature string when finished
-udResult udCrypto_Sign(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char **ppSignatureString, udCryptoSigPadScheme pad = udCSPS_Deterministic);
+udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char **ppSignatureString, udCryptoSigPadScheme pad = udCSPS_Deterministic);
 
 // Verify a signed hash
-udResult udCrypto_VerifySig(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char *pSignatureString, udCryptoSigPadScheme pad = udCSPS_Deterministic);
+udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char *pSignatureString, udCryptoSigPadScheme pad = udCSPS_Deterministic);
 
 // Destroy a signature context
-void udCrypto_DestroySig(udCryptoSigContext **pSigCtx);
-
-
-// Internal test of algorithms
-udResult udCrypto_TestCipher(udCryptoCiphers cipher);
-udResult udCrypto_TestHash(udCryptoHashes hash);
-udResult udCrypto_TestHMAC(udCryptoHashes hash);
-
+void udCryptoSig_Destroy(udCryptoSigContext **pSigCtx);
