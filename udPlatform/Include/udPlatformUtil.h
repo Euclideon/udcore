@@ -235,8 +235,8 @@ udResult udBase64Decode(uint8_t **ppOutput, size_t *pOutputLength, const char *p
 // Simple base64 encoder, unlike decode output CANNOT be the same memory as input
 // encodes binaryLength bytes from pBinary to strLength characters in pString
 // Pass nullptr for pString to count output bytes without actually writing
-udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten = nullptr);
-udResult udBase64Encode(const char **ppDestStr, const uint8_t *pBinary, size_t binaryLength);
+udResult udBase64Encode(const void *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten = nullptr);
+udResult udBase64Encode(const char **ppDestStr, const void *pBinary, size_t binaryLength);
 
 // *********************************************************************
 // Add a string to a dynamic table of unique strings.

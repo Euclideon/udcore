@@ -48,13 +48,11 @@ struct udCryptoCipherContext
   mbedtls_aes_context ctx;
   uint8_t key[32];
   uint8_t iv[AES_BLOCK_SIZE];
-  uint8_t nonce[AES_BLOCK_SIZE-8];
   int blockSize;
   int keyLengthInBits;
   udCryptoCiphers cipher;
   udCryptoChainMode chainMode;
   udCryptoPaddingMode padMode;
-  bool nonceSet;
   bool ctxInit;
 };
 
@@ -99,8 +97,8 @@ static udResult ToValue(const mbedtls_mpi &bigNum, udValue *pValue, const char *
   result = pValue->Set("%s = '%s'", pKey, pBase64);
 
 epilogue:
-  udFree(pBuf);
-  udFree(pBase64);
+  udFreeSecure(pBuf, bufLen);
+  udCrypto_FreeSecure(pBase64);
   return result;
 }
 
@@ -124,11 +122,51 @@ epilogue:
 }
 
 // ***************************************************************************************
+// Author: Dave Pevreal, October 2017
+void udCrypto_FreeSecure(const char *&pBase64String)
+{
+  udFreeSecure(pBase64String, udStrlen(pBase64String));
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, October 2017
+void udCrypto_Obscure(const char *pBase64String)
+{
+  size_t len = udStrlen(pBase64String);
+  for (size_t i = 0; i < len; ++i)
+    const_cast<char*>(pBase64String)[i] ^= 1; // For now simple xor obscure
+}
+
+// ***************************************************************************************
+// Author: Dave Pevreal, October 2017
+udResult udCrypto_Random(void *pMem, size_t len)
+{
+  udResult result;
+  mbedtls_entropy_context entropy;
+  mbedtls_ctr_drbg_context ctr_drbg;
+
+  mbedtls_ctr_drbg_init(&ctr_drbg);
+  mbedtls_entropy_init(&entropy);
+  // Seed the random number generator
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+  // Generate some random data
+  UD_ERROR_IF(mbedtls_ctr_drbg_random(&ctr_drbg, (unsigned char*)pMem, len) != 0, udR_InternalCryptoError);
+
+  result = udR_Success;
+
+epilogue:
+  mbedtls_ctr_drbg_free(&ctr_drbg);
+  mbedtls_entropy_free(&entropy);
+  return result;
+}
+
+// ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCryptoCipher_Create(udCryptoCipherContext **ppCtx, udCryptoCiphers cipher, udCryptoPaddingMode padMode, const uint8_t *pKey, udCryptoChainMode chainMode)
+udResult udCryptoCipher_Create(udCryptoCipherContext **ppCtx, udCryptoCiphers cipher, udCryptoPaddingMode padMode, const char *pKey, udCryptoChainMode chainMode)
 {
   udResult result;
   udCryptoCipherContext *pCtx = nullptr;
+  size_t keyLen;
 
   UD_ERROR_IF(ppCtx == nullptr || pKey == nullptr, udR_InvalidParameter_);
 
@@ -153,7 +191,8 @@ udResult udCryptoCipher_Create(udCryptoCipherContext **ppCtx, udCryptoCiphers ci
   {
     UD_ERROR_SET(udR_InvalidParameter_);
   }
-  memcpy(pCtx->key, pKey, pCtx->keyLengthInBits / 8);
+  UD_ERROR_CHECK(udBase64Decode(pKey, 0, pCtx->key, sizeof(pCtx->key), &keyLen));
+  UD_ERROR_IF(keyLen != pCtx->keyLengthInBits / 8, udR_InvalidConfiguration);
   pCtx->ctxInit = false;
 
   // Give ownership of the context to the caller
@@ -165,46 +204,31 @@ epilogue:
   if (pCtx)
   {
     mbedtls_aes_free(&pCtx->ctx);
-    udFree(pCtx);
+    udFreeSecure(pCtx, sizeof(*pCtx));
   }
   return result;
 }
 
 // ***************************************************************************************
 // Author: Dave Pevreal, July 2016
-udResult udCrypto_SetNonce(udCryptoCipherContext *pCtx, const uint8_t *pNonce, int nonceLen)
-{
-  if (pCtx == nullptr || pNonce == nullptr)
-    return udR_InvalidParameter_;
-  if (pCtx->chainMode != udCCM_CTR)
-    return udR_InvalidConfiguration;
-  if (nonceLen < (AES_BLOCK_SIZE - 8))
-    return udR_BufferTooSmall;
-  memcpy(pCtx->nonce, pNonce, AES_BLOCK_SIZE - 8);
-  pCtx->nonceSet = true;
-  return udR_Success;
-}
-
-// ***************************************************************************************
-// Author: Dave Pevreal, July 2016
-udResult udCrypto_CreateIVForCTRMode(udCryptoCipherContext *pCtx, uint8_t *pIV, int ivLen, uint64_t counter)
+udResult udCrypto_CreateIVForCTRMode(udCryptoCipherContext *pCtx, udCryptoIV *pIV, uint64_t nonce, uint64_t counter)
 {
   if (pCtx == nullptr || pIV == nullptr)
     return udR_InvalidParameter_;
-  if (pCtx->chainMode != udCCM_CTR || !pCtx->nonceSet)
+  if (pCtx->chainMode != udCCM_CTR)
     return udR_InvalidConfiguration;
-  if (ivLen < AES_BLOCK_SIZE)
-    return udR_BufferTooSmall;
-  memcpy(pIV, pCtx->nonce, AES_BLOCK_SIZE - 8);
-  // Very important for counter to be assigned big endian
+  // Nonce is written little-endian as it is usually just data and every known platform we have is little endian
   for (int i = 0; i < 8; ++i)
-    pIV[8 + i] = (uint8_t)(counter >> ((7 - i) * 8));
+    pIV->iv[i] = (uint8_t)(nonce >> (i * 8));
+  // Very important for counter to be assigned big endian, this is because standards were made on stupid-endian computers
+  for (int i = 0; i < 8; ++i)
+    pIV->iv[8 + i] = (uint8_t)(counter >> ((7 - i) * 8));
   return udR_Success;
 }
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen, uint8_t *pOutIV)
+udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *pIV, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen, udCryptoIV *pOutIV)
 {
   udResult result;
   size_t paddedCliperTextLen;
@@ -242,8 +266,8 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV,
         switch (pCtx->chainMode)
         {
           case udCCM_CBC:
-            UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
-            memcpy(pCtx->iv, pIV, ivLen);
+            UD_ERROR_NULL(pIV, udR_InvalidParameter_);
+            memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
             if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, plainTextLen, pCtx->iv, (const unsigned char*)pPlainText, (unsigned char*)pCipherText) != 0)
             {
               UD_ERROR_SET(udR_Failure_);
@@ -254,8 +278,8 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV,
             break;
 
           case udCCM_CTR:
-            UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
-            memcpy(pCtx->iv, pIV, ivLen);
+            UD_ERROR_IF(pIV == nullptr || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
+            memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
             {
               size_t ncoff = 0;
               unsigned char stream_block[16];
@@ -285,7 +309,7 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV, size_t ivLen, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen, uint8_t *pOutIV)
+udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *pIV, const void *pCipherText, size_t cipherTextLen, void *pPlainText, size_t plainTextLen, size_t *pActualPlainTextLen, udCryptoIV *pOutIV)
 {
   udResult result;
   size_t actualPlainTextLen;
@@ -317,29 +341,29 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const uint8_t *pIV,
       switch (pCtx->chainMode)
       {
         case udCCM_CBC:
-          UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE, udR_InvalidParameter_);
+          UD_ERROR_NULL(pIV, udR_InvalidParameter_);
           if (!pCtx->ctxInit)
           {
             mbedtls_aes_setkey_dec(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits);
             pCtx->ctxInit = true;
           }
-          memcpy(pCtx->iv, pIV, ivLen);
+          memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
           if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_DECRYPT, cipherTextLen, pCtx->iv, (const unsigned char*)pCipherText, (unsigned char *)pPlainText) != 0)
           {
             UD_ERROR_SET(udR_Failure_);
           }
           if (pOutIV)
-            memcpy(pOutIV, pCtx->iv, AES_BLOCK_SIZE);
+            memcpy(pOutIV, pCtx->iv, sizeof(pCtx->iv));
           break;
 
         case udCCM_CTR:
-          UD_ERROR_IF(pIV == nullptr || ivLen != AES_BLOCK_SIZE || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
+          UD_ERROR_IF(pIV == nullptr || pOutIV != nullptr, udR_InvalidParameter_); // Don't allow output IV in CTR mode (yet)
           if (!pCtx->ctxInit)
           {
             mbedtls_aes_setkey_enc(&pCtx->ctx, pCtx->key, pCtx->keyLengthInBits); // NOTE: Using ENCRYPT key schedule for CTR mode
             pCtx->ctxInit = true;
           }
-          memcpy(pCtx->iv, pIV, ivLen);
+          memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
           {
             size_t ncoff = 0;
             unsigned char stream_block[16];
@@ -374,7 +398,7 @@ udResult udCryptoCipher_Destroy(udCryptoCipherContext **ppCtx)
   if (!ppCtx || !*ppCtx)
     return udR_InvalidParameter_;
   mbedtls_aes_free(&(*ppCtx)->ctx);
-  udFree(*ppCtx);
+  udFreeSecure(*ppCtx, sizeof(**ppCtx));
   return udR_Success;
 }
 
@@ -384,12 +408,12 @@ udResult udCryptoCipher_SelfTest(udCryptoCiphers cipher)
 {
   udResult result = udR_Failure_;
   udCryptoCipherContext *pCtx = nullptr;
-  uint8_t key[udCCKL_MaxKeyLength];
+  const char *pKey = nullptr;
   static const size_t keyLengths[udCC_Count] = { udCCKL_AES128KeyLength, udCCKL_AES256KeyLength };
   static const char *pPlainText = "There are two great days in every person's life; the day we are born and the day we discover why"; // Multiple of 16 characters
-  static const uint8_t iv[16] = { 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f };
-  static const uint8_t nonce[8] = { 0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7 };
-  static const uint64_t counter = 0xf8f9fafbfcfdfeffULL;
+  static const udCryptoIV iv = { { 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f } };
+  static const uint64_t nonce = 0xf7f6f5f4f3f2f1f0ULL; // Note the nonce is little endian for udCrypto
+  static const uint64_t counter = 0xf8f9fafbfcfdfeffULL; // The counter is big endian, because standards dictate that it is
   static const uint8_t cipherTextCBC[udCC_Count][96] =
   {
     // AES128-CBC
@@ -432,25 +456,25 @@ udResult udCryptoCipher_SelfTest(udCryptoCiphers cipher)
       0x36,0x2e,0xc0,0x0e,0x62,0x04,0xe4,0x0e,0x3b,0x1a,0x5f,0x06,0x7b,0x28,0xa4,0x99
     }
   };
-  uint8_t ctrIV[16];
+  udCryptoIV ctrIV;
   uint8_t cipherText[128];
   uint8_t decryptedText[128];
   size_t actualCipherTextLen, actualDecryptedTextLen;
 
   UD_ERROR_IF(cipher < 0 || cipher >= udCC_Count, udR_InvalidParameter_);
   // Use a KDF to populate the key
-  UD_ERROR_CHECK(udCryptoKey_DeriveFromPassword("password", key, keyLengths[cipher]));
+  UD_ERROR_CHECK(udCryptoKey_DeriveFromPassword(&pKey, keyLengths[cipher], "password"));
 
   memset(cipherText, 0, sizeof(cipherText));
   memset(decryptedText, 0, sizeof(decryptedText));
-  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, key, udCCM_CBC));
-  UD_ERROR_CHECK(udCryptoCipher_Encrypt(pCtx, iv, sizeof(iv), pPlainText, udStrlen(pPlainText), cipherText, sizeof(cipherText), &actualCipherTextLen));
+  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, pKey, udCCM_CBC));
+  UD_ERROR_CHECK(udCryptoCipher_Encrypt(pCtx, &iv, pPlainText, udStrlen(pPlainText), cipherText, sizeof(cipherText), &actualCipherTextLen));
   UD_ERROR_CHECK(udCryptoCipher_Destroy(&pCtx));
   UD_ERROR_IF(actualCipherTextLen != 96, udR_InternalCryptoError);
   UD_ERROR_IF(memcmp(cipherText, cipherTextCBC[cipher], actualCipherTextLen) != 0, udR_InternalCryptoError);
 
-  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, key, udCCM_CBC));
-  UD_ERROR_CHECK(udCryptoCipher_Decrypt(pCtx, iv, sizeof(iv), cipherText, actualCipherTextLen, decryptedText, sizeof(decryptedText), &actualDecryptedTextLen));
+  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, pKey, udCCM_CBC));
+  UD_ERROR_CHECK(udCryptoCipher_Decrypt(pCtx, &iv, cipherText, actualCipherTextLen, decryptedText, sizeof(decryptedText), &actualDecryptedTextLen));
   UD_ERROR_CHECK(udCryptoCipher_Destroy(&pCtx));
   UD_ERROR_IF(actualDecryptedTextLen != 96, udR_InternalCryptoError);
   UD_ERROR_IF(memcmp(pPlainText, decryptedText, actualDecryptedTextLen) != 0, udR_InternalCryptoError);
@@ -458,24 +482,23 @@ udResult udCryptoCipher_SelfTest(udCryptoCiphers cipher)
   actualCipherTextLen = actualDecryptedTextLen = 0;
   memset(cipherText, 0, sizeof(cipherText));
   memset(decryptedText, 0, sizeof(decryptedText));
-  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, key, udCCM_CTR));
-  UD_ERROR_CHECK(udCrypto_SetNonce(pCtx, nonce, sizeof(nonce)));
-  UD_ERROR_CHECK(udCrypto_CreateIVForCTRMode(pCtx, ctrIV, sizeof(ctrIV), counter));
-  UD_ERROR_CHECK(udCryptoCipher_Encrypt(pCtx, ctrIV, sizeof(ctrIV), pPlainText, udStrlen(pPlainText), cipherText, sizeof(cipherText), &actualCipherTextLen));
+  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, pKey, udCCM_CTR));
+  UD_ERROR_CHECK(udCrypto_CreateIVForCTRMode(pCtx, &ctrIV, nonce, counter));
+  UD_ERROR_CHECK(udCryptoCipher_Encrypt(pCtx, &ctrIV, pPlainText, udStrlen(pPlainText), cipherText, sizeof(cipherText), &actualCipherTextLen));
   UD_ERROR_CHECK(udCryptoCipher_Destroy(&pCtx));
   UD_ERROR_IF(actualCipherTextLen != 96, udR_InternalCryptoError);
   UD_ERROR_IF(memcmp(cipherText, cipherTextCTR[cipher], actualCipherTextLen) != 0, udR_InternalCryptoError);
 
-  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, key, udCCM_CTR));
-  UD_ERROR_CHECK(udCrypto_SetNonce(pCtx, nonce, sizeof(nonce)));
-  UD_ERROR_CHECK(udCrypto_CreateIVForCTRMode(pCtx, ctrIV, sizeof(ctrIV), counter));
-  UD_ERROR_CHECK(udCryptoCipher_Decrypt(pCtx, ctrIV, sizeof(ctrIV), cipherText, actualCipherTextLen, decryptedText, sizeof(decryptedText), &actualDecryptedTextLen));
+  UD_ERROR_CHECK(udCryptoCipher_Create(&pCtx, cipher, udCPM_None, pKey, udCCM_CTR));
+  UD_ERROR_CHECK(udCrypto_CreateIVForCTRMode(pCtx, &ctrIV, nonce, counter));
+  UD_ERROR_CHECK(udCryptoCipher_Decrypt(pCtx, &ctrIV, cipherText, actualCipherTextLen, decryptedText, sizeof(decryptedText), &actualDecryptedTextLen));
   UD_ERROR_CHECK(udCryptoCipher_Destroy(&pCtx));
   UD_ERROR_IF(actualDecryptedTextLen != 96, udR_InternalCryptoError);
   UD_ERROR_IF(memcmp(pPlainText, decryptedText, actualDecryptedTextLen) != 0, udR_InternalCryptoError);
 
 epilogue:
   udCryptoCipher_Destroy(&pCtx); // In case anything failed
+  udFree(pKey);
 
   return result;
 }
@@ -554,38 +577,28 @@ udResult udCryptoHash_Digest(udCryptoHashContext *pCtx, const void *pBytes, size
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCryptoHash_Finalise(udCryptoHashContext *pCtx, uint8_t *pHash, size_t length, size_t *pActualHashLength)
+udResult udCryptoHash_Finalise(udCryptoHashContext *pCtx, const char **ppHashBase64)
 {
-  if (!pCtx)
+  uint8_t hash[udCHL_MaxHashLength];
+  if (!pCtx || !ppHashBase64)
     return udR_InvalidParameter_;
-  if (length < pCtx->hashLengthInBytes)
-    return udR_BufferTooSmall;
 
-  if (pActualHashLength)
-    *pActualHashLength = pCtx->hashLengthInBytes;
-
-  if (pHash)
+  switch (pCtx->hash)
   {
-    if (length < pCtx->hashLengthInBytes)
-      return udR_BufferTooSmall;
-
-    switch (pCtx->hash)
-    {
-      case udCH_SHA1:
-        mbedtls_sha1_finish(&pCtx->sha1, pHash);
-        break;
-      case udCH_SHA256:
-        mbedtls_sha256_finish(&pCtx->sha256, pHash);
-        break;
-      case udCH_SHA512:
-        mbedtls_sha512_finish(&pCtx->sha512, pHash);
-        break;
-      default:
-        return udR_InvalidParameter_;
-    }
+    case udCH_SHA1:
+      mbedtls_sha1_finish(&pCtx->sha1, hash);
+      break;
+    case udCH_SHA256:
+      mbedtls_sha256_finish(&pCtx->sha256, hash);
+      break;
+    case udCH_SHA512:
+      mbedtls_sha512_finish(&pCtx->sha512, hash);
+      break;
+    default:
+      return udR_InvalidConfiguration;
   }
 
-  return udR_Success;
+  return udBase64Encode(ppHashBase64, hash, pCtx->hashLengthInBytes);
 }
 
 // ***************************************************************************************
@@ -614,8 +627,8 @@ udResult udCryptoHash_Destroy(udCryptoHashContext **ppCtx)
 
 // ***************************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udCryptoHash_Hash(udCryptoHashes hash, const void *pMessage, size_t messageLength, uint8_t *pHash, size_t hashLength,
-                       size_t *pActualHashLength, const void *pMessage2, size_t message2Length)
+udResult udCryptoHash_Hash(udCryptoHashes hash, const void *pMessage, size_t messageLength, const char **ppHashBase64,
+                           const void *pMessage2, size_t message2Length)
 {
   udResult result;
   udCryptoHashContext *pCtx = nullptr;
@@ -628,7 +641,7 @@ udResult udCryptoHash_Hash(udCryptoHashes hash, const void *pMessage, size_t mes
     // Digesting 2 concatenated message parts is very common in various crypto functions
     UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, pMessage2, message2Length));
   }
-  UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, pHash, hashLength, pActualHashLength));
+  UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, ppHashBase64));
 
 epilogue:
   udCryptoHash_Destroy(&pCtx);
@@ -637,11 +650,13 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udCryptoHash_HMAC(udCryptoHashes hash, const void *pKey, size_t keyLen, const void *pMessage, size_t messageLength,
-  uint8_t *pHMAC, size_t hmacLength, size_t *pActualHMACLength)
+udResult udCryptoHash_HMAC(udCryptoHashes hash, const char *pKeyBase64, const void *pMessage, size_t messageLength, const char **ppHMACBase64)
 {
   // See https://en.wikipedia.org/wiki/Hash-based_message_authentication_code
   udResult result;
+  uint8_t *pLongKeyData = nullptr;
+  const char *pLongKeyHashBase64 = nullptr;
+  const char *pIpadHashBase64 = nullptr;
   enum { blockSize = 64 };
   uint8_t key[blockSize];
   uint8_t opad[blockSize];
@@ -650,10 +665,14 @@ udResult udCryptoHash_HMAC(udCryptoHashes hash, const void *pKey, size_t keyLen,
   size_t ipadHashLen;
 
   memset(key, 0, blockSize);
-  if (keyLen > blockSize)
-    udCryptoHash_Hash(hash, pKey, keyLen, key, blockSize);
-  else
-    memcpy(key, pKey, keyLen);
+  if (udBase64Decode(pKeyBase64, 0, key, sizeof(key)) != udR_Success)
+  {
+    // Key is longer than a block, so we need to hash it down
+    size_t longKeyDataLen = 0;
+    UD_ERROR_CHECK(udBase64Decode(&pLongKeyData, &longKeyDataLen, pKeyBase64));
+    UD_ERROR_CHECK(udCryptoHash_Hash(hash, pLongKeyData, longKeyDataLen, &pLongKeyHashBase64));
+    UD_ERROR_CHECK(udBase64Decode(pLongKeyHashBase64, 0, key, sizeof(key)));
+  }
 
   for (int i = 0; i < blockSize; ++i)
   {
@@ -662,11 +681,17 @@ udResult udCryptoHash_HMAC(udCryptoHashes hash, const void *pKey, size_t keyLen,
   }
 
   // First hash the concat of ipad and the message
-  UD_ERROR_CHECK(udCryptoHash_Hash(hash, ipad, blockSize, ipadHash, blockSize, &ipadHashLen, pMessage, messageLength));
+  UD_ERROR_CHECK(udCryptoHash_Hash(hash, ipad, blockSize, &pIpadHashBase64, pMessage, messageLength));
+  // Need to decode it from base64
+  UD_ERROR_CHECK(udBase64Decode(pIpadHashBase64, 0, ipadHash, sizeof(ipadHash), &ipadHashLen));
   // Then hash the concat of the opad and the result of first hash
-  UD_ERROR_CHECK(udCryptoHash_Hash(hash, opad, blockSize, pHMAC, hmacLength, pActualHMACLength, ipadHash, ipadHashLen));
+  UD_ERROR_CHECK(udCryptoHash_Hash(hash, opad, blockSize, ppHMACBase64, ipadHash, ipadHashLen));
 
 epilogue:
+  memset(key, 0, sizeof(key));
+  udFree(pIpadHashBase64);
+  udFree(pLongKeyHashBase64);
+  udFree(pLongKeyData);
   return result;
 }
 
@@ -676,43 +701,31 @@ udResult udCryptoHash_SelfTest(udCryptoHashes hash)
 {
   udResult result = udR_Failure_;
 
-  static const char hmacKey[] = { "Jefe" };
+  static const char *pHmacKeyBase64 = "SmVmZQ=="; // "Jefe"
   static const char testText[] = { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" };
-  uint8_t resultBuf[udCHL_MaxHashLength];
-  size_t resultLen;
-  static const uint8_t hashResults[udCH_Count][udCHL_MaxHashLength] =
+  static const char *hashResults[udCH_Count] =
   {
-    // udCH_SHA1
-    { 0x84,0x98,0x3e,0x44,0x1c,0x3b,0xd2,0x6e,0xba,0xae,0x4a,0xa1,0xf9,0x51,0x29,0xe5,0xe5,0x46,0x70,0xf1 },
-    // udCH_SHA256
-    { 0x24,0x8d,0x6a,0x61,0xd2,0x06,0x38,0xb8,0xe5,0xc0,0x26,0x93,0x0c,0x3e,0x60,0x39,
-      0xa3,0x3c,0xe4,0x59,0x64,0xff,0x21,0x67,0xf6,0xec,0xed,0xd4,0x19,0xdb,0x06,0xc1 },
-    // udCH_SHA512
-    { 0x20,0x4a,0x8f,0xc6,0xdd,0xa8,0x2f,0x0a,0x0c,0xed,0x7b,0xeb,0x8e,0x08,0xa4,0x16,
-      0x57,0xc1,0x6e,0xf4,0x68,0xb2,0x28,0xa8,0x27,0x9b,0xe3,0x31,0xa7,0x03,0xc3,0x35,
-      0x96,0xfd,0x15,0xc1,0x3b,0x1b,0x07,0xf9,0xaa,0x1d,0x3b,0xea,0x57,0x78,0x9c,0xa0,
-      0x31,0xad,0x85,0xc7,0xa7,0x1d,0xd7,0x03,0x54,0xec,0x63,0x12,0x38,0xca,0x34,0x45 }
+    "hJg+RBw70m66rkqh+VEp5eVGcPE=", // udCH_SHA1
+    "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE=", // udCH_SHA256
+    "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ==" // udCH_SHA512
   };
-  static const uint8_t hmacResults[udCH_Count][udCHL_MaxHashLength] =
+  static const char *hmacResults[udCH_Count] =
   {
-    // udCH_SHA1
-    { 0x80,0xd4,0x88,0x4c,0x70,0xc5,0x34,0x06,0xe0,0xa7,0x07,0x1a,0x2e,0x21,0x35,0xc9,0x79,0x03,0xbf,0x49 },
-    // udCH_SHA256
-    { 0xde,0x34,0x44,0xcd,0x63,0x1f,0x7d,0x36,0x89,0xaf,0x1e,0xcc,0x13,0x19,0xe5,0x77,
-      0x7c,0x03,0xe5,0x9a,0xe9,0xb0,0xd5,0xdd,0xdd,0x0a,0xc0,0x58,0x96,0x64,0xba,0x77 },
-    // udCH_SHA512
-    { 0x18,0xfa,0x29,0xa1,0x31,0xce,0xa9,0xa1,0x65,0xbf,0x3e,0xab,0x0b,0x5e,0x61,0xc8,
-      0x0e,0xf3,0xf9,0x57,0xc7,0xea,0xfe,0x28,0x93,0x74,0x76,0x1b,0x43,0x91,0x9b,0x97,
-      0x72,0x72,0xd5,0x0f,0x1a,0x4b,0xf1,0x0f,0xa0,0x1a,0x91,0xbb,0x5a,0xf4,0x9a,0x1d,
-      0xa9,0x91,0xc5,0x2a,0xd7,0x38,0x34,0x12,0x03,0x16,0xf1,0x16,0xf8,0xd3,0x24,0x16 }
+    "gNSITHDFNAbgpwcaLiE1yXkDv0k=", // udCH_SHA1
+    "3jREzWMffTaJrx7MExnld3wD5ZrpsNXd3QrAWJZkunc=", // udCH_SHA256
+    "GPopoTHOqaFlvz6rC15hyA7z+VfH6v4ok3R2G0ORm5dyctUPGkvxD6Aakbta9JodqZHFKtc4NBIDFvEW+NMkFg=="// udCH_SHA512
   };
+  const char *pResultBase64 = nullptr;
 
-  UD_ERROR_CHECK(udCryptoHash_Hash(hash, testText, strlen(testText), resultBuf, sizeof(resultBuf), &resultLen));
-  UD_ERROR_IF(memcmp(hashResults[hash], resultBuf, resultLen) != 0, udR_Failure_);
-  UD_ERROR_CHECK(udCryptoHash_HMAC(hash, hmacKey, sizeof(hmacKey), testText, strlen(testText), resultBuf, sizeof(resultBuf), &resultLen));
-  UD_ERROR_IF(memcmp(hmacResults[hash], resultBuf, resultLen) != 0, udR_Failure_);
+  UD_ERROR_CHECK(udCryptoHash_Hash(hash, testText, strlen(testText), &pResultBase64));
+  UD_ERROR_IF(!udStrEqual(hashResults[hash], pResultBase64), udR_Failure_);
+  udFree(pResultBase64);
+  UD_ERROR_CHECK(udCryptoHash_HMAC(hash, pHmacKeyBase64, testText, strlen(testText), &pResultBase64));
+  UD_ERROR_IF(!udStrEqual(hmacResults[hash], pResultBase64), udR_Failure_);
+  udFree(pResultBase64); // Freed here for consistency in case more tests added
 
 epilogue:
+  udFree(pResultBase64);
   return result;
 }
 
@@ -721,61 +734,49 @@ epilogue:
 udResult udCrypto_TestHMAC(udCryptoHashes hash)
 {
   udResult result;
-  const char *pKey = "key";
+  const char *pKeyBase64 = "a2V5";
   const char *pMessage = "The quick brown fox jumps over the lazy dog";
-  uint8_t hmac[32];
-  size_t hmacLength;
-  static const uint8_t sha1Result[] =
+  const char *pHMACBase64 = nullptr;
+  static const char *pHMACResults[udCH_Count] =
   {
-    0xde,0x7c,0x9b,0x85,0xb8,0xb7,0x8a,0xa6,0xbc,0x8a,0x7a,0x36,0xf7,0x0a,0x90,0x70,0x1c,0x9d,0xb4,0xd9
-  };
-  static const uint8_t sha256Result[] =
-  {
-    0xf7,0xbc,0x83,0xf4,0x30,0x53,0x84,0x24,0xb1,0x32,0x98,0xe6,0xaa,0x6f,0xb1,0x43,0xef,0x4d,0x59,0xa1,0x49,0x46,0x17,0x59,0x97,0x47,0x9d,0xbc,0x2d,0x1a,0x3c,0xd8
+    "3nybhbi3iqa8ino29wqQcBydtNk=", // udCH_SHA1
+    "97yD9DBThCSxMpjmqm+xQ+9NWaFJRhdZl0edvC0aPNg=", // udCH_SHA256
+    nullptr // TODO: Include SHA512
   };
 
-  result = udCryptoHash_HMAC(hash, pKey, strlen(pKey), pMessage, strlen(pMessage), hmac, sizeof(hmac), &hmacLength);
-  UD_ERROR_HANDLE();
-  switch (hash)
-  {
-  case udCH_SHA1:
-    UD_ERROR_IF(hmacLength != sizeof(sha1Result), udR_Failure_);
-    UD_ERROR_IF(memcmp(sha1Result, hmac, hmacLength) != 0, udR_Failure_);
-    break;
-  case udCH_SHA256:
-    UD_ERROR_IF(hmacLength != sizeof(sha256Result), udR_Failure_);
-    UD_ERROR_IF(memcmp(sha256Result, hmac, hmacLength) != 0, udR_Failure_);
-    break;
-  default:
-    UD_ERROR_SET(udR_InvalidParameter_);
-  }
+  UD_ERROR_IF(hash < udCH_SHA1 || hash > udCH_SHA256, udR_InvalidParameter_); // TODO: Include SHA512
+  UD_ERROR_CHECK(udCryptoHash_HMAC(hash, pKeyBase64, pMessage, strlen(pMessage), &pHMACBase64));
+  UD_ERROR_IF(!udStrEqual(pHMACBase64, pHMACResults[hash]), udR_Failure_);
 
 epilogue:
+  udFree(pHMACBase64);
   return result;
 }
 
 // ***************************************************************************************
 // Author: Dave Pevreal, September 2015
-udResult udCryptoKey_DeriveFromPassword(const char *pPassword, void *pKey, size_t keyLen)
+udResult udCryptoKey_DeriveFromPassword(const char **ppKey, size_t keyLen, const char *pPassword)
 {
   // Derive a secure key from a password string, using the same algorithm used by the Windows APIs to maintain interoperability with Geoverse
   // See the remarks section of the MS documentation here: http://msdn.microsoft.com/en-us/library/aa379916(v=vs.85).aspx
   udResult result;
   udCryptoHashContext *pCtx = nullptr;
+  const char *pHashBase64 = nullptr;
   uint8_t passPhraseDigest[32];
   size_t passPhraseDigestLen;
   unsigned char hashBuffer[64];
   unsigned char derivedKey[40];
 
-  UD_ERROR_IF(!pPassword || !pKey, udR_InvalidParameter_);
-  UD_ERROR_IF(keyLen > 40, udR_Unsupported); // Limit of 40 byte key length due to SHA1 use
+  UD_ERROR_IF(!pPassword || !ppKey, udR_InvalidParameter_);
 
                                              // Hash the pass phrase
   UD_ERROR_CHECK(udCryptoHash_Create(&pCtx, udCH_SHA1));
   UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, "ud1971", 6)); // This is a special "salt" for our KDF to make it unique to UD
   UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, pPassword, strlen(pPassword))); // This is a special "salt" for our KDF to make it unique to UD
-  UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, passPhraseDigest, sizeof(passPhraseDigest), &passPhraseDigestLen));
+  UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, &pHashBase64));
   UD_ERROR_CHECK(udCryptoHash_Destroy(&pCtx));
+  UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, passPhraseDigest, sizeof(passPhraseDigest), &passPhraseDigestLen));
+  udFree(pHashBase64);
   UD_ERROR_IF(passPhraseDigestLen != 20, udR_InternalCryptoError);
 
   // Create a buffer of constant 0x36 xor'd with pass phrase hash
@@ -786,8 +787,10 @@ udResult udCryptoKey_DeriveFromPassword(const char *pPassword, void *pKey, size_
   // Hash the result again and this gives us the key
   UD_ERROR_CHECK(udCryptoHash_Create(&pCtx, udCH_SHA1));
   UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, hashBuffer, sizeof(hashBuffer)));
-  UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, derivedKey, 20));
+  UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, &pHashBase64));
   UD_ERROR_CHECK(udCryptoHash_Destroy(&pCtx));
+  UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, derivedKey, 20));
+  udFree(pHashBase64);
 
   // For keys greater than 20 bytes, do the same thing with a different constant for the next 20 bytes
   if (keyLen > 20)
@@ -799,64 +802,53 @@ udResult udCryptoKey_DeriveFromPassword(const char *pPassword, void *pKey, size_
     // Hash the result again and this gives us the key
     UD_ERROR_CHECK(udCryptoHash_Create(&pCtx, udCH_SHA1));
     UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, hashBuffer, sizeof(hashBuffer)));
-    UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, derivedKey + 20, 20));
+    UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, &pHashBase64));
+    UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, derivedKey + 20, 20));
+    udFree(pHashBase64);
     UD_ERROR_CHECK(udCryptoHash_Destroy(&pCtx));
   }
 
-  memcpy(pKey, derivedKey, keyLen);
-  result = udR_Success;
+  result = udBase64Encode(ppKey, derivedKey, keyLen);
 
 epilogue:
+  memset(derivedKey, 0, sizeof(derivedKey));
+  udFree(pHashBase64);
   udCryptoHash_Destroy(&pCtx);
   return result;
 }
 
 // ***************************************************************************************
 // Author: Dave Pevreal, August 2017
-udResult udCryptoKey_DeriveFromData(void *pKey, size_t keyLen, const void *pData, size_t dataLen)
+udResult udCryptoKey_DeriveFromData(const char **ppKey, size_t keyLen, const void *pData, size_t dataLen)
 {
   udResult result;
   uint8_t hashBuffer[udCHL_SHA512Length];
+  const char *pHashBase64 = nullptr;
   size_t i;
 
-  UD_ERROR_CHECK(udCryptoHash_Hash(udCH_SHA512, pData, dataLen, hashBuffer, sizeof(hashBuffer), &i));
-  i = udMin(i, keyLen); // In case key length required is less than the hash
-  memcpy(pKey, hashBuffer, i);
-  // If the key required is longer than the hash, then re-hash the hash buffer
-  while (i < keyLen)
-  {
-    pKey = udAddBytes(pKey, i);
-    keyLen -= i;
-    UD_ERROR_CHECK(udCryptoHash_Hash(udCH_SHA512, hashBuffer, sizeof(hashBuffer), hashBuffer, sizeof(hashBuffer), &i));
-    i = udMin(i, keyLen); // In case secret length required is less than the hash
-    memcpy(pKey, hashBuffer, i);
-  }
+  UD_ERROR_IF(keyLen > sizeof(hashBuffer), udR_CountExceeded);
+  UD_ERROR_CHECK(udCryptoHash_Hash((keyLen > udCHL_SHA256Length) ? udCH_SHA512 : udCH_SHA256, pData, dataLen, &pHashBase64, &i));
+  UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hashBuffer, sizeof(hashBuffer)));
+  result = udBase64Encode(ppKey, hashBuffer, keyLen);
 
 epilogue:
+  udFree(pHashBase64);
   return result;
 }
 
 // ***************************************************************************************
 // Author: Dave Pevreal, August 2017
-udResult udCryptoKey_DeriveFromRandom(void *pKey, size_t keyLen)
+udResult udCryptoKey_DeriveFromRandom(const char **ppKey, size_t keyLen)
 {
   udResult result;
-  mbedtls_entropy_context entropy;
-  mbedtls_ctr_drbg_context ctr_drbg;
-  uint8_t randomData[32];
+  uint8_t randomData[64];
 
-  mbedtls_ctr_drbg_init(&ctr_drbg);
-  mbedtls_entropy_init(&entropy);
-  // Seed the random number generator
-  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
-  // Generate some random data
-  UD_ERROR_IF(mbedtls_ctr_drbg_random(&ctr_drbg, randomData, sizeof(randomData)) !=  0, udR_InternalCryptoError);
-
-  result = udCryptoKey_DeriveFromData(pKey, keyLen,randomData, sizeof(randomData));
+  result = udCrypto_Random(randomData, sizeof(randomData));
+  UD_ERROR_HANDLE();
+  result = udCryptoKey_DeriveFromData(ppKey, keyLen, randomData, sizeof(randomData));
 
 epilogue:
-  mbedtls_ctr_drbg_free(&ctr_drbg);
-  mbedtls_entropy_free(&entropy);
+  memset(randomData, 0, sizeof(randomData)); // Don't leave the source for the key sitting on the stack
   return result;
 }
 
@@ -865,21 +857,23 @@ struct udCryptoDHMContext
   mbedtls_dhm_context dhm;
   mbedtls_ctr_drbg_context ctr_drbg;
   mbedtls_entropy_context entropy;
+  size_t keyLen;
 
-  udResult Init();
-  udResult GenerateKey(void *pKey, size_t keyLen);
+  udResult Init(size_t keyLen);
+  udResult GenerateKey(const char **ppKey);
   void Destroy();
 };
 
 // ---------------------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2017
-udResult udCryptoDHMContext::Init()
+udResult udCryptoDHMContext::Init(size_t _keyLen)
 {
   udResult result;
   int mbErr;
   unsigned char tempBuf[2048 / 8 * 3 + 16]; // A temporary buffer to export params, I don't use it but there's no choice
   size_t tempoutlen;
 
+  keyLen = _keyLen;
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
 
@@ -905,20 +899,20 @@ epilogue:
 
 // ---------------------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2017
-udResult udCryptoDHMContext::GenerateKey(void *pKey, size_t keyLen)
+udResult udCryptoDHMContext::GenerateKey(const char **ppKey)
 {
   udResult result;
   unsigned char output[2048 / 8];
   size_t outputLen;
 
-  UD_ERROR_NULL(pKey, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppKey, udR_InvalidParameter_);
   UD_ERROR_IF(keyLen < 1, udR_InvalidParameter_);
   if (mbedtls_dhm_calc_secret(&dhm, output, sizeof(output), &outputLen, mbedtls_ctr_drbg_random, &ctr_drbg))
   {
     UD_ERROR_SET(udR_InternalCryptoError);
   }
 
-  result = udCryptoKey_DeriveFromData(pKey, keyLen, output, outputLen);
+  result = udCryptoKey_DeriveFromData(ppKey, keyLen, output, outputLen);
 
 epilogue:
   return result;
@@ -944,7 +938,7 @@ udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPub
 
   pCtx = udAllocType(udCryptoDHMContext, 1, udAF_Zero);
   UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
-  UD_ERROR_CHECK(pCtx->Init());
+  UD_ERROR_CHECK(pCtx->Init(keyLen));
 
   // Now export the important bits to JSON
   v.Set("keyLen = %d", keyLen);
@@ -964,45 +958,46 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, October 2017
-udResult udCryptoKey_DeriveFromPartyA(const char *pPublicValueA, const char **ppPublicValueB, void *pKey, size_t keyLen)
+udResult udCryptoKey_DeriveFromPartyA(const char *pPublicValueA, const char **ppPublicValueB, const char **ppKey)
 {
   udResult result;
   udValue v;
   udCryptoDHMContext ctx;
+  bool ctxInit = false;
 
-  UD_ERROR_IF(ctx.Init() != 0, udR_InternalCryptoError);
   UD_ERROR_NULL(pPublicValueA, udR_InvalidParameter_);
   UD_ERROR_NULL(ppPublicValueB, udR_InvalidParameter_);
-  UD_ERROR_NULL(pKey, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppKey, udR_InvalidParameter_);
 
   UD_ERROR_CHECK(v.Parse(pPublicValueA));
-  UD_ERROR_IF(v.Get("keyLen").AsInt() != (int)keyLen, udR_InvalidParameter_);
+  UD_ERROR_IF(ctx.Init(v.Get("keyLen").AsInt()) != 0, udR_InternalCryptoError);
+  ctxInit = true;
   UD_ERROR_CHECK(FromString(&ctx.dhm.GY, v.Get("PublicValue").AsString())); // Read other party's GX into our GY
-  UD_ERROR_CHECK(ctx.GenerateKey(pKey, keyLen));
+  UD_ERROR_CHECK(ctx.GenerateKey(ppKey));
   v.Destroy();
   UD_ERROR_CHECK(ToValue(ctx.dhm.GX, &v, "PublicValue"));
-  v.Export(ppPublicValueB, udVEO_JSON | udVEO_StripWhiteSpace);
+  UD_ERROR_CHECK(v.Export(ppPublicValueB, udVEO_JSON | udVEO_StripWhiteSpace));
 
 epilogue:
-  ctx.Destroy();
+  if (ctxInit)
+    ctx.Destroy();
   return result;
 }
 
 // ***************************************************************************************
 // Author: Dave Pevreal, October 2017
-udResult udCryptoKey_DeriveFromPartyB(udCryptoDHMContext *pCtx, const char *pPublicValueB, void *pKey, size_t keyLen)
+udResult udCryptoKey_DeriveFromPartyB(udCryptoDHMContext *pCtx, const char *pPublicValueB, const char **ppKey)
 {
   udResult result;
   udValue v;
 
   UD_ERROR_NULL(pCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(pPublicValueB, udR_InvalidParameter_);
-  UD_ERROR_NULL(pKey, udR_InvalidParameter_);
-  UD_ERROR_IF(keyLen < 1, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppKey, udR_InvalidParameter_);
 
   UD_ERROR_CHECK(v.Parse(pPublicValueB));
   UD_ERROR_CHECK(FromString(&pCtx->dhm.GY, v.Get("PublicValue").AsString())); // Read other party's GX into our GY
-  UD_ERROR_CHECK(pCtx->GenerateKey(pKey, keyLen));
+  UD_ERROR_CHECK(pCtx->GenerateKey(ppKey));
 
 epilogue:
   return result;
@@ -1015,7 +1010,7 @@ void udCryptoKey_DestroyDHM(udCryptoDHMContext **ppDHMCtx)
   if (ppDHMCtx && *ppDHMCtx)
   {
     (*ppDHMCtx)->Destroy();
-    udFree((*ppDHMCtx));
+    udFreeSecure((*ppDHMCtx), sizeof(**ppDHMCtx));
   }
 }
 
@@ -1149,14 +1144,18 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, September 2017
-udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char **ppSignatureString, udCryptoSigPadScheme pad)
+udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char **ppSignatureBase64, udCryptoSigPadScheme pad)
 {
   udResult result = udR_Failure_;
   unsigned char signature[udCST_RSA4096/8];
+  unsigned char hash[udCHL_MaxHashLength];
+  size_t hashLen;
 
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
-  UD_ERROR_NULL(pHash, udR_InvalidParameter_);
-  UD_ERROR_NULL(ppSignatureString, udR_InvalidParameter_);
+  UD_ERROR_NULL(pHashBase64, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppSignatureBase64, udR_InvalidParameter_);
+
+  UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
   switch (pSigCtx->type)
   {
@@ -1165,8 +1164,8 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const void *pHash, size_t
       if (pad == udCSPS_Deterministic)
         mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
       UD_ERROR_IF(sizeof(signature) < (pSigCtx->type / 8), udR_InternalCryptoError);
-      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_sign(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_NONE, hashLen, (const unsigned char*)pHash, signature) != 0, udR_InternalCryptoError);
-      result = udBase64Encode(ppSignatureString, signature, pSigCtx->type / 8);
+      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_sign(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_NONE, hashLen, hash, signature) != 0, udR_InternalCryptoError);
+      result = udBase64Encode(ppSignatureBase64, signature, pSigCtx->type / 8);
       UD_ERROR_HANDLE();
       break;
     default:
@@ -1179,15 +1178,19 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, September 2017
-udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const void *pHash, size_t hashLen, const char *pSignatureString, udCryptoSigPadScheme pad)
+udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char *pSignatureBase64, udCryptoSigPadScheme pad)
 {
   udResult result = udR_Failure_;
   unsigned char signature[udCST_RSA4096 / 8];
+  unsigned char hash[udCHL_MaxHashLength];
+  size_t hashLen;
   size_t sigLen;
 
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
-  UD_ERROR_NULL(pHash, udR_InvalidParameter_);
-  UD_ERROR_NULL(pSignatureString, udR_InvalidParameter_);
+  UD_ERROR_NULL(pHashBase64, udR_InvalidParameter_);
+  UD_ERROR_NULL(pSignatureBase64, udR_InvalidParameter_);
+
+  UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
   switch (pSigCtx->type)
   {
@@ -1196,8 +1199,8 @@ udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const void *pHash, size
       if (pad == udCSPS_Deterministic)
         mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
       UD_ERROR_IF(sizeof(signature) < (pSigCtx->type / 8), udR_InternalCryptoError);
-      UD_ERROR_CHECK(udBase64Decode(pSignatureString, 0, signature, sizeof(signature), &sigLen));
-      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_verify(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_NONE, hashLen, (const unsigned char*)pHash, signature) != 0, udR_SignatureMismatch);
+      UD_ERROR_CHECK(udBase64Decode(pSignatureBase64, 0, signature, sizeof(signature), &sigLen));
+      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_verify(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_NONE, hashLen, hash, signature) != 0, udR_SignatureMismatch);
       UD_ERROR_IF(sigLen != (size_t)(pSigCtx->type / 8), udR_InternalCryptoError);
       break;
     default:
@@ -1219,8 +1222,7 @@ void udCryptoSig_Destroy(udCryptoSigContext **ppSigCtx)
     {
       *ppSigCtx = nullptr;
       mbedtls_rsa_free(&pSigCtx->rsa);
-      memset(pSigCtx, 0, sizeof(*pSigCtx)); // zero to ensure no remnants
-      udFree(pSigCtx);
+      udFreeSecure(pSigCtx, sizeof(*pSigCtx));
     }
   }
 }

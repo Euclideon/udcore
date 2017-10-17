@@ -951,7 +951,7 @@ epilogue:
 
 // *********************************************************************
 // Author: Paul Fox, March 2016
-udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten /*= nullptr*/)
+udResult udBase64Encode(const void *pBinary, size_t binaryLength, char *pString, size_t strLength, size_t *pOutputLengthWritten /*= nullptr*/)
 {
   udResult result;
   uint32_t accum = 0; // Accumulator for data (read 8 bits at a time but only consume 6)
@@ -970,7 +970,7 @@ udResult udBase64Encode(const uint8_t *pBinary, size_t binaryLength, char *pStri
 
   for (size_t inputIndex = 0; inputIndex < binaryLength; ++inputIndex)
   {
-    accum = (accum << 8) | pBinary[inputIndex];
+    accum = (accum << 8) | ((uint8_t*)pBinary)[inputIndex];
     accumBits += 8;
     while (accumBits >= 6)
     {
@@ -1011,7 +1011,7 @@ epilogue:
 
 // *********************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udBase64Encode(const char **ppDestStr, const uint8_t *pBinary, size_t binaryLength)
+udResult udBase64Encode(const char **ppDestStr, const void *pBinary, size_t binaryLength)
 {
   udResult result;
   size_t expectedOutputLength = (binaryLength + 2) / 3 * 4 + 1; // +1 for nul terminator

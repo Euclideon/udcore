@@ -154,23 +154,25 @@ void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength)
 
 // ****************************************************************************
 // Author: Dave Pevreal, July 2016
-udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t *pNonce, int nonceLen, int64_t counterOffset)
+udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint64_t nonce, int64_t counterOffset)
 {
   udResult result;
+  const char *pKeyBase64 = nullptr;
 
   UD_ERROR_IF(!pFile || !pKey, udR_InvalidParameter_);
   UD_ERROR_IF(pFile->flagsCopy & udFOF_Write, udR_InvalidConfiguration); // Temp until a need for writing arises
 
+  UD_ERROR_CHECK(udBase64Encode(&pKeyBase64, pKey, keylen));
   udCryptoCipher_Destroy(&pFile->pCipherCtx); // Just in case a key is already set
-  result = udCryptoCipher_Create(&pFile->pCipherCtx, keylen >= 32 ? udCC_AES256 : udCC_AES128, udCPM_None, pKey, udCCM_CTR);
+  result = udCryptoCipher_Create(&pFile->pCipherCtx, keylen >= 32 ? udCC_AES256 : udCC_AES128, udCPM_None, pKeyBase64, udCCM_CTR);
   UD_ERROR_HANDLE();
-  result = udCrypto_SetNonce(pFile->pCipherCtx, pNonce, nonceLen);
-  UD_ERROR_HANDLE();
+  pFile->nonce = nonce;
   pFile->counterOffset = counterOffset;
 
 epilogue:
   if (result)
     udCryptoCipher_Destroy(&pFile->pCipherCtx); // Destroy if there were any errors
+  udFree(pKeyBase64);
   return result;
 }
 
@@ -247,12 +249,12 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
     else
       pCipherText = pBuffer;
     UD_ERROR_NULL(pCipherText, udR_MemoryAllocationFailure);
-    uint8_t iv[16];
-    result = udCrypto_CreateIVForCTRMode(pFile->pCipherCtx, iv, sizeof(iv), (offset - pFile->seekBase) / 16 + pFile->counterOffset);
+    udCryptoIV iv;
+    result = udCrypto_CreateIVForCTRMode(pFile->pCipherCtx, &iv, pFile->nonce, ((offset - pFile->seekBase) / 16) + pFile->counterOffset);
     UD_ERROR_HANDLE();
     result = pFile->fpRead(pFile, pCipherText, inset + bufferLength + padding, offset - inset, &alignedActual, nullptr); // Don't handle pipelined requests with encryption
     UD_ERROR_HANDLE();
-    result = udCryptoCipher_Decrypt(pFile->pCipherCtx, iv, sizeof(iv), pCipherText, alignedActual, pCipherText, alignedActual);
+    result = udCryptoCipher_Decrypt(pFile->pCipherCtx, &iv, pCipherText, alignedActual, pCipherText, alignedActual);
     UD_ERROR_HANDLE();
     actualRead = udMin(bufferLength, udMax((size_t)0, alignedActual - (size_t)inset));
     if (pCipherText != pBuffer)

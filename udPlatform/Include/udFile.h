@@ -55,7 +55,7 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
 void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength = 0);
 
 // Set the encryption key/nonce (currently only supported on files opened for read due to alignment complexities)
-udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint8_t *pNonce, int nonceLen, int64_t counterOffset = 0);
+udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint64_t nonce, int64_t counterOffset = 0);
 
 // Get the filename associated with the file
 const char *udFile_GetFilename(udFile *pFile);

@@ -1374,17 +1374,17 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udValue::CalculateHMAC(uint8_t hmac[32], size_t hmacLen, const uint8_t *pKey, size_t keyLen) const
+udResult udValue::CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64) const
 {
   udResult result;
   const char *pExport = nullptr;
 
   result = Export(&pExport, udVEO_StripWhiteSpace);
   UD_ERROR_HANDLE();
-  if (pKey)
-    result = udCryptoHash_HMAC(udCH_SHA256, pKey, keyLen, (const uint8_t*)pExport, udStrlen(pExport), hmac, hmacLen);
+  if (pKeyBase64)
+    result = udCryptoHash_HMAC(udCH_SHA256, pKeyBase64, pExport, udStrlen(pExport), ppHMACBase64);
   else
-    result = udCryptoHash_Hash(udCH_SHA256, pExport, udStrlen(pExport), hmac, hmacLen);
+    result = udCryptoHash_Hash(udCH_SHA256, pExport, udStrlen(pExport), ppHMACBase64);
 
 epilogue:
   udFree(pExport);

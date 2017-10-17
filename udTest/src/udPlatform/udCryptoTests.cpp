@@ -18,9 +18,13 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
     { 0xFE, 0x3C, 0x53, 0x65, 0x3E, 0x2F, 0x45, 0xB5, 0x6F, 0xCD, 0x88, 0xB2, 0xCC, 0x89, 0x8F, 0xF0 }
   };
 
-  unsigned char key[32];
+  static const char *pZeroKeys[2] =
+  {
+    "AAAAAAAAAAAAAAAAAAAAAA==", // 16-bytes of zeros
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" // 32-bytes of zeros
+  };
   unsigned char buf[64];
-  unsigned char iv[16];
+  udCryptoIV iv;
   unsigned char prv[16];
   udCryptoCipherContext *pCtx = nullptr;
 
@@ -29,18 +33,17 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
     int test256 = i >> 1;
     int testEncrypt = i & 1;
 
-    memset(key, 0, sizeof(key));
-    memset(iv, 0, sizeof(iv));
+    memset(&iv, 0, sizeof(iv));
     memset(prv, 0, sizeof(prv));
     memset(buf, 0, sizeof(buf));
 
-    udResult result = udCryptoCipher_Create(&pCtx, test256 ? udCC_AES256 : udCC_AES128, udCPM_None, key, udCCM_CBC);
+    udResult result = udCryptoCipher_Create(&pCtx, test256 ? udCC_AES256 : udCC_AES128, udCPM_None, pZeroKeys[test256], udCCM_CBC);
     EXPECT_EQ(udR_Success, result);
 
     if (!testEncrypt)
     {
       for (int j = 0; j < 10000; j++)
-        udCryptoCipher_Decrypt(pCtx, iv, sizeof(iv), buf, 16, buf, sizeof(buf), nullptr, iv); // Note: specifically decrypting exactly 16 bytes, not sizeof(buf)
+        udCryptoCipher_Decrypt(pCtx, &iv, buf, 16, buf, sizeof(buf), nullptr, &iv); // Note: specifically decrypting exactly 16 bytes, not sizeof(buf)
 
       EXPECT_EQ(0, memcmp(buf, aes_test_cbc_dec[test256], 16));
     }
@@ -48,7 +51,7 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
     {
       for (int j = 0; j < 10000; j++)
       {
-        udCryptoCipher_Encrypt(pCtx, iv, sizeof(iv), buf, 16, buf, sizeof(buf), nullptr, iv); // Note: specifically encrypting exactly 16 bytes, not sizeof(buf)
+        udCryptoCipher_Encrypt(pCtx, &iv, buf, 16, buf, sizeof(buf), nullptr, &iv); // Note: specifically encrypting exactly 16 bytes, not sizeof(buf)
         unsigned char tmp[16];
         memcpy(tmp, prv, 16);
         memcpy(prv, buf, 16);
@@ -64,18 +67,16 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
 TEST(CryptoTests, AES_CTR_MonteCarlo)
 {
   // Do the first only monte carlo tests for CTR mode (400 tests in official monte carlo)
-  static const unsigned char aes_test_ctr_key[3][16] =
+  static const char *aes_test_ctr_key[3] =
   {
-    { 0xAE, 0x68, 0x52, 0xF8, 0x12, 0x10, 0x67, 0xCC, 0x4B, 0xF7, 0xA5, 0x76, 0x55, 0x77, 0xF3, 0x9E },
-    { 0x7E, 0x24, 0x06, 0x78, 0x17, 0xFA, 0xE0, 0xD7, 0x43, 0xD6, 0xCE, 0x1F, 0x32, 0x53, 0x91, 0x63 },
-    { 0x76, 0x91, 0xBE, 0x03, 0x5E, 0x50, 0x20, 0xA8, 0xAC, 0x6E, 0x61, 0x85, 0x29, 0xF9, 0xA0, 0xDC }
+    "rmhS+BIQZ8xL96V2VXfzng==", "fiQGeBf64NdD1s4fMlORYw==", "dpG+A15QIKisbmGFKfmg3A=="
   };
 
-  static const unsigned char aes_test_ctr_nonce_counter[3][16] =
+  static const udCryptoIV aes_test_ctr_nonce_counter[3] =
   {
-    { 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 },
-    { 0x00, 0x6C, 0xB6, 0xDB, 0xC0, 0x54, 0x3B, 0x59, 0xDA, 0x48, 0xD9, 0x0B, 0x00, 0x00, 0x00, 0x01 },
-    { 0x00, 0xE0, 0x01, 0x7B, 0x27, 0x77, 0x7F, 0x3F, 0x4A, 0x17, 0x86, 0xF0, 0x00, 0x00, 0x00, 0x01 }
+    { { 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 } },
+    { { 0x00, 0x6C, 0xB6, 0xDB, 0xC0, 0x54, 0x3B, 0x59, 0xDA, 0x48, 0xD9, 0x0B, 0x00, 0x00, 0x00, 0x01 } },
+    { { 0x00, 0xE0, 0x01, 0x7B, 0x27, 0x77, 0x7F, 0x3F, 0x4A, 0x17, 0x86, 0xF0, 0x00, 0x00, 0x00, 0x01 } }
   };
 
   static const unsigned char aes_test_ctr_pt[3][48] =
@@ -104,9 +105,7 @@ TEST(CryptoTests, AES_CTR_MonteCarlo)
 
   static const int aes_test_ctr_len[3] = { 16, 32, 36 };
 
-  unsigned char key[32];
   unsigned char buf[64];
-  unsigned char nonce_counter[16];
   udCryptoCipherContext *pCtx = nullptr;
 
   for (int i = 0; i < 4; i++)
@@ -114,26 +113,23 @@ TEST(CryptoTests, AES_CTR_MonteCarlo)
     int testNumber = i >> 1;
     int testEncrypt = i & 1;
 
-    memset(key, 0, sizeof(key));
     memset(buf, 0, sizeof(buf));
-    memcpy(nonce_counter, aes_test_ctr_nonce_counter[testNumber], 16);
-    memcpy(key, aes_test_ctr_key[testNumber], 16);
 
-    udResult result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, key, udCCM_CTR); // We only test 128-bit for CTR mode
+    udResult result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, aes_test_ctr_key[testNumber], udCCM_CTR); // We only test 128-bit for CTR mode
     EXPECT_EQ(udR_Success, result);
 
     if (!testEncrypt)
     {
       int len = aes_test_ctr_len[testNumber];
       memcpy(buf, aes_test_ctr_ct[testNumber], len);
-      udCryptoCipher_Decrypt(pCtx, aes_test_ctr_nonce_counter[testNumber], 16, buf, len, buf, len);
+      udCryptoCipher_Decrypt(pCtx, &aes_test_ctr_nonce_counter[testNumber], buf, len, buf, len);
       EXPECT_EQ(0, memcmp(buf, aes_test_ctr_pt[testNumber], len));
     }
     else
     {
       int len = aes_test_ctr_len[testNumber];
       memcpy(buf, aes_test_ctr_pt[testNumber], len);
-      udCryptoCipher_Decrypt(pCtx, aes_test_ctr_nonce_counter[testNumber], 16, buf, len, buf, len);
+      udCryptoCipher_Decrypt(pCtx, &aes_test_ctr_nonce_counter[testNumber], buf, len, buf, len);
       EXPECT_EQ(0, memcmp(buf, aes_test_ctr_ct[testNumber], len));
     }
     EXPECT_EQ(udR_Success, udCryptoCipher_Destroy(&pCtx));
@@ -143,49 +139,44 @@ TEST(CryptoTests, AES_CTR_MonteCarlo)
 TEST(CryptoTests, CipherErrorCodes)
 {
   udResult result;
-  unsigned char key[32];
   udCryptoCipherContext *pCtx = nullptr;
   unsigned char buf[64];
-  unsigned char iv[16];
+  udCryptoIV iv;
+  static const char *pZeroKey = "AAAAAAAAAAAAAAAAAAAAAA=="; // 16-bytes of zeros
 
-  memset(iv, 0, sizeof(iv));
-  memset(key, 0, sizeof(key));
+  memset(&iv, 0, sizeof(iv));
   memset(buf, 0, sizeof(buf));
-  result = udCryptoCipher_Create(nullptr, udCC_AES128, udCPM_None, key, udCCM_CTR);
+  result = udCryptoCipher_Create(nullptr, udCC_AES128, udCPM_None, pZeroKey, udCCM_CTR);
   EXPECT_EQ(udR_InvalidParameter_, result);
   result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, nullptr, udCCM_CTR);
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, key, udCCM_CTR);
+  result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, pZeroKey, udCCM_CTR);
   EXPECT_EQ(udR_Success, result);
 
-  result = udCryptoCipher_Encrypt(nullptr, iv, 16, buf, sizeof(buf), buf, sizeof(buf)); // context
+  result = udCryptoCipher_Encrypt(nullptr, &iv, buf, sizeof(buf), buf, sizeof(buf)); // context
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Encrypt(pCtx, nullptr, 16, buf, sizeof(buf), buf, sizeof(buf)); // iv
+  result = udCryptoCipher_Encrypt(pCtx, nullptr, buf, sizeof(buf), buf, sizeof(buf)); // iv
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Encrypt(pCtx, iv, 15, buf, sizeof(buf), buf, sizeof(buf)); // iv length
+  result = udCryptoCipher_Encrypt(pCtx, &iv, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Encrypt(pCtx, iv, 16, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
-  EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Encrypt(pCtx, iv, 16, buf, 1, buf, sizeof(buf)); // input alignment
+  result = udCryptoCipher_Encrypt(pCtx, &iv, buf, 1, buf, sizeof(buf)); // input alignment
   EXPECT_EQ(udR_AlignmentRequirement, result);
-  result = udCryptoCipher_Encrypt(pCtx, iv, 16, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
+  result = udCryptoCipher_Encrypt(pCtx, &iv, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Encrypt(pCtx, iv, 16, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
+  result = udCryptoCipher_Encrypt(pCtx, &iv, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
   EXPECT_EQ(udR_BufferTooSmall, result);
 
-  result = udCryptoCipher_Decrypt(nullptr, iv, 16, buf, sizeof(buf), buf, sizeof(buf)); // context
+  result = udCryptoCipher_Decrypt(nullptr, &iv, buf, sizeof(buf), buf, sizeof(buf)); // context
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Decrypt(pCtx, nullptr, 16, buf, sizeof(buf), buf, sizeof(buf)); // iv
+  result = udCryptoCipher_Decrypt(pCtx, nullptr, buf, sizeof(buf), buf, sizeof(buf)); // iv
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Decrypt(pCtx, iv, 15, buf, sizeof(buf), buf, sizeof(buf)); // iv length
+  result = udCryptoCipher_Decrypt(pCtx, &iv, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Decrypt(pCtx, iv, 16, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
-  EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Decrypt(pCtx, iv, 16, buf, 1, buf, sizeof(buf)); // input alignment
+  result = udCryptoCipher_Decrypt(pCtx, &iv, buf, 1, buf, sizeof(buf)); // input alignment
   EXPECT_EQ(udR_AlignmentRequirement, result);
-  result = udCryptoCipher_Decrypt(pCtx, iv, 16, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
+  result = udCryptoCipher_Decrypt(pCtx, &iv, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
   EXPECT_EQ(udR_InvalidParameter_, result);
-  result = udCryptoCipher_Decrypt(pCtx, iv, 16, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
+  result = udCryptoCipher_Decrypt(pCtx, &iv, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
   EXPECT_EQ(udR_BufferTooSmall, result);
 
   result = udCryptoCipher_Destroy(&pCtx);
@@ -205,54 +196,45 @@ TEST(CryptoTests, SHA)
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
   };
 
-  static udCryptoHashes s_testHashes[3] = { udCH_SHA1, udCH_SHA256, udCH_SHA512 };
-  static const unsigned char s_testHashSizes[3] { udCHL_SHA1Length, udCHL_SHA256Length, udCHL_SHA512Length };
-  static const unsigned char s_testHashResults[3][3][udCHL_MaxHashLength] =
+  static udCryptoHashes s_testHashes[udCH_Count] = { udCH_SHA1, udCH_SHA256, udCH_SHA512 };
+  static const char *s_testHashResults[udCH_Count][3] =
   {
     { // SHA-1
-      { 0xA9, 0x99, 0x3E, 0x36, 0x47, 0x06, 0x81, 0x6A, 0xBA, 0x3E, 0x25, 0x71, 0x78, 0x50, 0xC2, 0x6C, 0x9C, 0xD0, 0xD8, 0x9D },
-      { 0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D, 0x32, 0x55, 0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90, 0xAF, 0xD8, 0x07, 0x09 },
-      { 0x84, 0x98, 0x3E, 0x44, 0x1C, 0x3B, 0xD2, 0x6E, 0xBA, 0xAE, 0x4A, 0xA1, 0xF9, 0x51, 0x29, 0xE5, 0xE5, 0x46, 0x70, 0xF1 },
+      "qZk+NkcGgWq6PiVxeFDCbJzQ2J0=",
+      "2jmj7l5rSw0yVb/vlWAYkK/YBwk=",
+      "hJg+RBw70m66rkqh+VEp5eVGcPE="
     },
     { // SHA-256
-      { 0xBA, 0x78, 0x16, 0xBF, 0x8F, 0x01, 0xCF, 0xEA, 0x41, 0x41, 0x40, 0xDE, 0x5D, 0xAE, 0x22, 0x23, 0xB0, 0x03, 0x61, 0xA3, 0x96, 0x17, 0x7A, 0x9C, 0xB4, 0x10, 0xFF, 0x61, 0xF2, 0x00, 0x15, 0xAD },
-      { 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC, 0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24, 0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55 },
-      { 0x24, 0x8D, 0x6A, 0x61, 0xD2, 0x06, 0x38, 0xB8, 0xE5, 0xC0, 0x26, 0x93, 0x0C, 0x3E, 0x60, 0x39, 0xA3, 0x3C, 0xE4, 0x59, 0x64, 0xFF, 0x21, 0x67, 0xF6, 0xEC, 0xED, 0xD4, 0x19, 0xDB, 0x06, 0xC1 }
+      "ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=",
+      "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE="
     },
     { // SHA-512
-      { 0xDD, 0xAF, 0x35, 0xA1, 0x93, 0x61, 0x7A, 0xBA, 0xCC, 0x41, 0x73, 0x49, 0xAE, 0x20, 0x41, 0x31, 0x12, 0xE6, 0xFA, 0x4E, 0x89, 0xA9, 0x7E, 0xA2, 0x0A, 0x9E, 0xEE, 0xE6, 0x4B, 0x55, 0xD3, 0x9A,
-        0x21, 0x92, 0x99, 0x2A, 0x27, 0x4F, 0xC1, 0xA8, 0x36, 0xBA, 0x3C, 0x23, 0xA3, 0xFE, 0xEB, 0xBD, 0x45, 0x4D, 0x44, 0x23, 0x64, 0x3C, 0xE8, 0x0E, 0x2A, 0x9A, 0xC9, 0x4F, 0xA5, 0x4C, 0xA4, 0x9F },
-      {
-        0xCF, 0x83, 0xE1, 0x35, 0x7E, 0xEF, 0xB8, 0xBD, 0xF1, 0x54, 0x28, 0x50, 0xD6, 0x6D, 0x80, 0x07, 0xD6, 0x20, 0xE4, 0x05, 0x0B, 0x57, 0x15, 0xDC, 0x83, 0xF4, 0xA9, 0x21, 0xD3, 0x6C, 0xE9, 0xCE,
-        0x47, 0xD0, 0xD1, 0x3C, 0x5D, 0x85, 0xF2, 0xB0, 0xFF, 0x83, 0x18, 0xD2, 0x87, 0x7E, 0xEC, 0x2F, 0x63, 0xB9, 0x31, 0xBD, 0x47, 0x41, 0x7A, 0x81, 0xA5, 0x38, 0x32, 0x7A, 0xF9, 0x27, 0xDA, 0x3E },
-      {
-        0x20, 0x4A, 0x8F, 0xC6, 0xDD, 0xA8, 0x2F, 0x0A, 0x0C, 0xED, 0x7B, 0xEB, 0x8E, 0x08, 0xA4, 0x16, 0x57, 0xC1, 0x6E, 0xF4, 0x68, 0xB2, 0x28, 0xA8, 0x27, 0x9B, 0xE3, 0x31, 0xA7, 0x03, 0xC3, 0x35,
-        0x96, 0xFD, 0x15, 0xC1, 0x3B, 0x1B, 0x07, 0xF9, 0xAA, 0x1D, 0x3B, 0xEA, 0x57, 0x78, 0x9C, 0xA0, 0x31, 0xAD, 0x85, 0xC7, 0xA7, 0x1D, 0xD7, 0x03, 0x54, 0xEC, 0x63, 0x12, 0x38, 0xCA, 0x34, 0x45 }
+      "3a81oZNherrMQXNJriBBMRLm+k6JqX6iCp7u5ktV05ohkpkqJ0/BqDa6PCOj/uu9RU1EI2Q86A4qmslPpUyknw==",
+      "z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg==",
+      "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ=="
     }
   };
 
-  for (int shaType = 0; shaType < UDARRAYSIZE(s_testHashes); ++shaType)
+  for (size_t shaType = 0; shaType < UDARRAYSIZE(s_testHashes); ++shaType)
   {
-    for (int testNumber = 0; testNumber < UDARRAYSIZE(s_testMessages); ++testNumber)
+    for (size_t testNumber = 0; testNumber < UDARRAYSIZE(s_testMessages); ++testNumber)
     {
-      unsigned char resultHash[udCHL_MaxHashLength];
-      size_t actualHashSize;
+      const char *pResultHash = nullptr;
       size_t inputLength = udStrlen(s_testMessages[testNumber]);
 
-      memset(resultHash, 0, sizeof(resultHash));
-      udResult result = udCryptoHash_Hash(s_testHashes[shaType], s_testMessages[testNumber], inputLength, resultHash, sizeof(resultHash), &actualHashSize);
+      udResult result = udCryptoHash_Hash(s_testHashes[shaType], s_testMessages[testNumber], inputLength, &pResultHash);
       EXPECT_EQ(udR_Success, result);
-      EXPECT_EQ(s_testHashSizes[shaType], actualHashSize);
-      EXPECT_EQ(0, memcmp(resultHash, s_testHashResults[shaType][testNumber], actualHashSize));
+      EXPECT_EQ(true, udStrEqual(pResultHash, s_testHashResults[shaType][testNumber]));
+      udFree(pResultHash);
 
       // Do an additional test of digesting the string in two separate parts
       size_t length1 = inputLength / 2;
       size_t length2 = inputLength - length1;
-      memset(resultHash, 0, sizeof(resultHash));
-      result = udCryptoHash_Hash(s_testHashes[shaType], s_testMessages[testNumber], length1, resultHash, sizeof(resultHash), &actualHashSize, s_testMessages[testNumber] + length1, length2);
+      result = udCryptoHash_Hash(s_testHashes[shaType], s_testMessages[testNumber], length1, &pResultHash, s_testMessages[testNumber] + length1, length2);
       EXPECT_EQ(udR_Success, result);
-      EXPECT_EQ(s_testHashSizes[shaType], actualHashSize);
-      EXPECT_EQ(0, memcmp(resultHash, s_testHashResults[shaType][testNumber], actualHashSize));
+      EXPECT_EQ(true, udStrEqual(pResultHash, s_testHashResults[shaType][testNumber]));
+      udFree(pResultHash);
     }
   }
 }
@@ -295,10 +277,10 @@ TEST(CryptoTests, CreateSig)
   udCryptoSigContext *pPubCtx = nullptr;
   static const char *pMessage = "No problem can be solved from the same level of consciousness that created it. -Einstein";
   static const char *pExpectedSignature = "I7iQO1dRmnh1BeEw//vRB/81eKXzKgC3Uuchny/iHfzFoFGxcVa2DG9RE5pILsChDnJLdFpcaSHK258r5285jgJPn2rHTVf3xBvs5Su4fAFAOmB95dlTaux3eVt0Pl8XXvxuTl9SDLjCFeplPxsHRE5LKTj8ySVeVenWWUInvzrJ/QXFmYILt9WQb65lHeMErEAGb2mrUiLWyRaJY4/KsaYAQhZwydW49P8dVoopU7MhoIb6QgJw2azmNXuY2c22qonMOsPTbMSvBCC27iSg5mrLkd0N5eDMhwvzOGFHjHo55oCvfvuUexe5wPqRTbI2KeJElr3SA6MZFvYkfb5YGw==";
-  uint8_t hash[udCHL_SHA1Length];
+  const char *pHash = nullptr;
   const char *pSignature = nullptr;
 
-  EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), hash, sizeof(hash)));
+  EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), &pHash));
 
 #if 0 // Enable to generate a new key
   EXPECT_EQ(udR_Success, udCryptoSig_CreateKeyPair(&pPrivCtx, udCST_RSA2048));
@@ -315,24 +297,25 @@ TEST(CryptoTests, CreateSig)
   EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPubCtx, pPublicKeyText));
 
   // Sign a message using the private key
-  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, hash, sizeof(hash), &pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pSignature));
 
   // Verify it's the expected signature (only works with PKCS_15)
   EXPECT_EQ(0, udStrcmp(pSignature, pExpectedSignature));
 
   // Verify using the private key
-  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPrivCtx, hash, sizeof(hash), pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPrivCtx, pHash, pSignature));
 
   // Verify the message using the public key
-  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, hash, sizeof(hash), pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pSignature));
 
   // Change the hash slightly to ensure the message isn't verified
-  hash[1] ^= 1;
-  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, hash, sizeof(hash), pSignature));
-  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, hash, sizeof(hash), pSignature));
+  ((char*)pHash)[1] ^= 1;
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, pHash, pSignature));
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pSignature));
 
   udCryptoSig_Destroy(&pPrivCtx);
   udCryptoSig_Destroy(&pPubCtx);
+  udFree(pHash);
   udFree(pSignature);
 }
 
@@ -343,38 +326,72 @@ TEST(CryptoTests, DHM)
   udCryptoDHMContext *pDHM = nullptr;
   const char *pPublicValueA = nullptr;
   const char *pPublicValueB = nullptr;
-  uint8_t secretA[1000];
-  uint8_t secretB[1000];
+  const char *pSecretA;
+  const char *pSecretB;
+  const size_t keyLen = 64; // Maximum length secret
 
-  result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, sizeof(secretA));
+  result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, keyLen);
   EXPECT_EQ(udR_Success, result);
 
-  result = udCryptoKey_DeriveFromPartyA(pPublicValueA, &pPublicValueB, secretB, sizeof(secretB));
+  result = udCryptoKey_DeriveFromPartyA(pPublicValueA, &pPublicValueB, &pSecretB);
   EXPECT_EQ(udR_Success, result);
 
-  result = udCryptoKey_DeriveFromPartyB(pDHM, pPublicValueB, secretA, sizeof(secretA));
+  result = udCryptoKey_DeriveFromPartyB(pDHM, pPublicValueB, &pSecretA);
   EXPECT_EQ(udR_Success, result);
 
-  EXPECT_EQ(0, memcmp(secretA, secretB, sizeof(secretA)));
+  EXPECT_EQ(true, udStrEqual(pSecretA, pSecretB));
 
   EXPECT_EQ(udR_Success, publicA.Parse(pPublicValueA));
   EXPECT_EQ(udR_Success, publicB.Parse(pPublicValueB));
   EXPECT_EQ(2, publicA.MemberCount());
-  EXPECT_EQ(publicA.Get("keyLen").AsInt(), (int)sizeof(secretA));
+  EXPECT_EQ(publicA.Get("keyLen").AsInt(), (int)keyLen);
   EXPECT_EQ(1, publicB.MemberCount());
-  EXPECT_EQ(false, udStrEqual(publicA.Get("PublicValue").AsString(), publicB.Get("PublicValue").AsString()));
+  EXPECT_NE(true, udStrEqual(publicA.Get("PublicValue").AsString(), publicB.Get("PublicValue").AsString()));
 
   udFree(pPublicValueA);
   udFree(pPublicValueB);
   udCryptoKey_DestroyDHM(&pDHM);
 
   // Finally, generate another secret (just to secretB) and make sure it's different from the previous one
-  result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, sizeof(secretA));
+  result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, keyLen);
   EXPECT_EQ(udR_Success, result);
-  result = udCryptoKey_DeriveFromPartyA(pPublicValueA, &pPublicValueB, secretB, sizeof(secretB));
+  udFree(pSecretB);
+  result = udCryptoKey_DeriveFromPartyA(pPublicValueA, &pPublicValueB, &pSecretB);
   EXPECT_EQ(udR_Success, result);
   udFree(pPublicValueA);
   udFree(pPublicValueB);
   udCryptoKey_DestroyDHM(&pDHM);
-  EXPECT_NE(0, memcmp(secretA, secretB, sizeof(secretA)));
+  EXPECT_NE(true, udStrEqual(pSecretA, pSecretB));
+  udFree(pSecretA);
+  udFree(pSecretB);
 }
+
+TEST(udCryptoTests, Utilities)
+{
+  static const char *pZeros = "AAAAAAAAAAAAAAAAAAAAAA=="; // 16-bytes of zeros
+  uint64_t rand1, rand2;
+  const char *pTestStr = udStrdup(pZeros);
+
+  EXPECT_EQ(udR_Success, udCrypto_Random(&rand1, sizeof(rand1)));
+  EXPECT_EQ(udR_Success, udCrypto_Random(&rand2, sizeof(rand2)));
+  EXPECT_TRUE(rand1 != rand2);
+
+  EXPECT_NE(nullptr, pTestStr);
+  if (pTestStr)
+  {
+    EXPECT_TRUE(udStrEqual(pZeros, pTestStr));
+    udCrypto_Obscure(pTestStr);
+    EXPECT_FALSE(udStrEqual(pZeros, pTestStr));
+    udCrypto_Obscure(pTestStr);
+    EXPECT_TRUE(udStrEqual(pZeros, pTestStr));
+
+    const char *pOldPointer = pTestStr;
+    udCrypto_FreeSecure(pTestStr);
+    EXPECT_EQ(nullptr, pTestStr);
+    EXPECT_FALSE(udStrEqual(pOldPointer, pZeros));
+  }
+
+
+
+}
+

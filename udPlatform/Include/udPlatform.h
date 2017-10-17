@@ -231,6 +231,14 @@ protected:
 #include <alloca.h>
 #endif
 
+#if defined(_MSC_VER)
+  UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { __stosd((unsigned long*)pDest, val, size); }
+#else
+  UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { uint32_t *p = (uint32_t*)pDest; while (size--) *p++ = val; }
+#endif
+
+UDFORCE_INLINE void *udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
+
 enum udAllocationFlags
 {
   udAF_None = 0,
@@ -259,26 +267,40 @@ void *_udRealloc(void *pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile =
 void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__));
 #define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
+void _udFreeInternal(void *pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
 template <typename T>
 void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
   void *pActualPtr = (void*)pMemory;
   if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
   {
-    void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line));
     _udFreeInternal((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
   }
 }
 #define udFree(pMemory) _udFree(pMemory IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
+// A secure free will overwrite the memory (to the size specified) with a random 32-bit
+// constant. For example cryptographic functions use this to overwrite key data before freeing
+template <typename T>
+void _udFreeSecure(T *&pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
+{
+  void *pActualPtr = (void*)pMemory;
+  if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  {
+    // Use a simple random value just to avoid filling sensitive memory with a constant
+    // that can be used to identify the locations in memory where sensitive data was stored
+    int randVal = rand();
+    size_t i = size & ~3;
+    if (i)
+      udMemset32((void*)pActualPtr, randVal, i >> 2); // Fill 32-bits at a time first for performance reasons
+    // Fill the last odd bytes
+    while (i < size)
+      ((uint8_t*)pActualPtr)[i++] = (uint8_t)randVal;
+    _udFreeInternal((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
+  }
+}
+#define udFreeSecure(pMemory, size) _udFreeSecure(pMemory, size IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-#if defined(_MSC_VER)
-UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { __stosd((unsigned long*)pDest, val, size); }
-#else
-UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { uint32_t *p = (uint32_t*)pDest; while (size--) *p++ = val; }
-#endif
-
-UDFORCE_INLINE void *udSetZero(void *pMemory, size_t size) { memset(pMemory, 0, size); return pMemory; }
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
 #define udAllocStack(type, count, flags)   ((flags | udAF_None) & udAF_Zero) ? (type*)udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count);
 #define udFreeStack(pMemory)

@@ -33,7 +33,7 @@ static void udValue_TestContent(udValue &v)
   // Test accessing objects as implicit arrays
   EXPECT_EQ(5, v.Get("Settings[0].Inside[0].Count").AsInt());
   EXPECT_EQ(2, v.Get("Settings.Outside.Count").AsInt());
-  for (int i = 0; i < v.Get("Settings.TestArray").ArrayLength(); ++i)
+  for (int i = 0; i < (int)v.Get("Settings.TestArray").ArrayLength(); ++i)
   {
     EXPECT_EQ(i, v.Get("Settings.TestArray[%d]", i).AsInt());
   }

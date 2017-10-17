@@ -72,6 +72,10 @@ class udValue;
 struct udValueKVPair;
 typedef udChunkedArray<udValue, 32> udValueArray;
 typedef udChunkedArray<udValueKVPair, 32> udValueObject;
+struct udValueSignatureContext;
+
+// Create a signature context that is EITHER asymmetric or symmetric, to sign or verify
+udResult udValueCreateSignatureContext(const char *pAsymmetricKeyPair, const void *pSymmetric, size_t symmetricLen);
 
 class udValue
 {
@@ -172,12 +176,12 @@ public:
   // Export to a JSON/XML string depending on content
   udResult Export(const char **ppText, udValueExportOption option = udVEO_JSON) const;
 
-  // If pKey is non-null, create a HMAC of the white-space-stripped text (giving a private-key digital signature)
-  // If pKey is null, create a SHA256 of the white-space-stripped text (giving a hash for a public key digital signature)
+  // If pKeyBase64 is non-null, create a HMAC of the white-space-stripped text (giving a private-key digital signature)
+  // If pKeyBase64 is null, create a SHA256 of the white-space-stripped text (giving a hash for a public key digital signature)
   // This function is a simple helper provided here only to encourage standardisation of how signatures are created/used
   // Remember to remove the existing "signature" attribute before calculating the signature
   // The result is always 32 bytes
-  udResult CalculateHMAC(uint8_t hmac[32], size_t hmacLen, const uint8_t *pKey, size_t keyLen) const;
+  udResult CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64 = nullptr) const;
 
 protected:
   typedef udChunkedArray<const char*, 32> LineList;
