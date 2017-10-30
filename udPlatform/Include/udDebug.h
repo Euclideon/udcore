@@ -113,7 +113,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 #endif //UDRELASSERT_ON
 
 #if UDCPP11
-# define UDCOMPILEASSERT(a_condition, a_error) static_assert(a_condition, #a_error)
+# define UDCOMPILEASSERT(a_condition, a_error) static_assert(a_condition, a_error)
 #else
 # if UDPLATFORM_WINDOWS
 #   define UDCOMPILEASSERT(a_condition, a_error) typedef char UDCOMPILEASSERT##__LINE__[(a_condition)?1:-1]

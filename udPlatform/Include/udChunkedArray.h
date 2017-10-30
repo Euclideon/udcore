@@ -63,7 +63,7 @@ struct udChunkedArray
 template <typename T, size_t chunkElementCount>
 inline udResult udChunkedArray<T,chunkElementCount>::Init()
 {
-  UDCOMPILEASSERT(chunkElementCount >= 32, _Chunk_Count_Must_Be_At_Least_32);
+  UDCOMPILEASSERT(chunkElementCount >= 32, "Chunk count must be at least 32");
   udResult result = udR_Success;
   size_t c = 0;
 
