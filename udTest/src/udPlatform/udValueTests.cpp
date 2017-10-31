@@ -162,3 +162,22 @@ TEST(udValueTests, CreateArray)
   }
   EXPECT_EQ(4, json.Get("sequences").ArrayLength());
 }
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, June 2017
+TEST(udValueTests, RemoveKey)
+{
+  udValue v;
+
+  // Assign attributes, these are present in both JSON and XML
+  EXPECT_EQ(udR_Success, v.Set("Settings.One = 1"));
+  EXPECT_EQ(udR_Success, v.Set("Settings.Two = 1"));
+  EXPECT_EQ(udR_Success, v.Set("Settings.Three = 1"));
+  EXPECT_EQ(3, v.Get("Settings").MemberCount());
+  EXPECT_EQ(udR_Success, v.Set("Settings.Two"));
+  EXPECT_EQ(2, v.Get("Settings").MemberCount());
+  EXPECT_EQ(udR_Success, v.Set("Settings.Three"));
+  EXPECT_EQ(1, v.Get("Settings").MemberCount());
+  EXPECT_EQ(udR_Success, v.Set("Settings"));
+  EXPECT_EQ(0, v.MemberCount());
+}

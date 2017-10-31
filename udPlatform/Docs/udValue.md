@@ -41,6 +41,10 @@ Expression syntax for Get/Set:
   v.Set("Settings.TestArray[] = 2"); // Append a numeric type to an array
   v.Set("Settings.TestArray[] = { 'member': 100, 'something': 200 }"); // Append an object to an array
 ```
+* To remove a key, use set without setting to anything (any children/subkeys are also removed)
+```cpp
+  v.Set("Settings"); // Remove the Settings key and all it's children
+```
 
 To create a udValue tree from scratch:
 
