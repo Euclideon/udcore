@@ -45,8 +45,127 @@
 #define MINIZ_NO_MALLOC
 #include "miniz/miniz.c"
 
-#define WINDOW_BITS (-MZ_DEFAULT_WINDOW_BITS)
 #include "udPlatform.h"
+#include "udCompression.h"
+
+struct MiniZPrealloc
+{
+  size_t size;
+  void *pMemory;
+  bool inuse;
+};
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, November 2017
+static void *MiniZAlloc(void *pOpaque, size_t items, size_t size)
+{
+  MiniZPrealloc *pPrealloc = (MiniZPrealloc*)pOpaque;
+  if (pPrealloc && !pPrealloc->inuse && pPrealloc->size == (items * size))
+  {
+    pPrealloc->inuse = true;
+    return pPrealloc->pMemory;
+  }
+  return udAlloc(items * size);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, November 2017
+static void MiniZFree(void *pOpaque, void *pPtr)
+{
+  MiniZPrealloc *pPrealloc = (MiniZPrealloc*)pOpaque;
+  if (pPrealloc && pPrealloc->pMemory == pPtr)
+  {
+    pPrealloc->inuse = false;
+    return;
+  }
+  udFree(pPtr);
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, November 2017
+udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSource, size_t sourceSize, udCompressionType type)
+{
+  udResult result;
+  void *pTemp = nullptr;
+  mz_ulong destSize;
+  mz_stream stream;
+  int mzErr;
+  tdefl_compressor compressorMemory;
+  MiniZPrealloc prealloc = { sizeof(compressorMemory), &compressorMemory, false };
+
+  memset(&stream, 0, sizeof(stream));
+  UD_ERROR_IF(!ppDest || !pDestSize || !pSource || type != udCT_MiniZ, udR_InvalidParameter_);
+
+  // Initially allocate a temp buffer that's conservatively larger in case deflate fails to make a gain
+  destSize = mz_deflateBound(nullptr, (mz_ulong)sourceSize);
+  pTemp = udAlloc(destSize);
+  UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+
+  // We use the more advanced miniz interface to avoid miniz allocating via malloc
+  stream.next_in = (const uint8_t*)pSource;
+  stream.avail_in = (mz_uint32)sourceSize;
+  stream.next_out = (uint8_t*)pTemp;
+  stream.avail_out = (mz_uint32)destSize;
+  stream.zalloc = MiniZAlloc;
+  stream.zfree = MiniZFree;
+  stream.opaque = &prealloc; // We know there's only one alloc, so save some processor power
+
+  mzErr = mz_deflateInit2(&stream, MZ_BEST_COMPRESSION, MZ_DEFLATED, MZ_DEFAULT_WINDOW_BITS, 9, MZ_DEFAULT_STRATEGY);
+  UD_ERROR_IF(mzErr != MZ_OK, udR_CompressionError);
+
+  mzErr = mz_deflate(&stream, MZ_FINISH);
+  UD_ERROR_IF(mzErr != MZ_STREAM_END, udR_CompressionOutputExhausted);
+
+  destSize = stream.total_out;
+
+  // Size the allocation as required
+  *pDestSize = destSize;
+  *ppDest = udRealloc(pTemp, destSize);
+  UD_ERROR_NULL(*ppDest, udR_MemoryAllocationFailure);
+  pTemp = nullptr; // Prevent freeing on successful realloc
+
+  result = udR_Success;
+
+epilogue:
+  mz_deflateEnd(&stream); // Ok to call on a zero'd but not initialised stream
+  udFree(pTemp);
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, November 2017
+udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource, size_t sourceSize, size_t *pInflatedSize, udCompressionType type)
+{
+  udResult result;
+  tinfl_status mzErr;
+  tinfl_decompressor decompressor;
+  size_t inflatedSize = destSize; // in-out parameter, in is destSize, out is inflatedSize
+
+  UD_ERROR_IF(!pDest || !pSource || type != udCT_MiniZ, udR_InvalidParameter_);
+
+  tinfl_init(&decompressor);
+
+  mzErr = udCompTInf_decompress(&decompressor, (const mz_uint8*)pSource, &sourceSize, (mz_uint8*)pDest, (mz_uint8*)pDest, &inflatedSize,
+            TINFL_FLAG_PARSE_ZLIB_HEADER | TINFL_FLAG_COMPUTE_ADLER32 | TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
+
+  UD_ERROR_IF(mzErr == TINFL_STATUS_NEEDS_MORE_INPUT, udR_CompressionInputExhausted);
+  UD_ERROR_IF(mzErr == TINFL_STATUS_HAS_MORE_OUTPUT, udR_CompressionOutputExhausted);
+  UD_ERROR_IF(mzErr != TINFL_STATUS_DONE, udR_CompressionError);
+
+  if (pInflatedSize)
+    *pInflatedSize = inflatedSize;
+  UD_ERROR_IF(!pInflatedSize && inflatedSize != destSize, udR_CompressionInputExhausted);
+
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+
+
+
+#define WINDOW_BITS (-MZ_DEFAULT_WINDOW_BITS)
 
 static void *MiniZCompressor_Alloc(void *pOpaque, size_t items, size_t size);
 static void MiniZCompressor_Free(void *pOpaque, void *address);
