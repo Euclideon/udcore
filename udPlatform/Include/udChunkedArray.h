@@ -37,7 +37,7 @@ struct udChunkedArray
   udResult ReserveBack(size_t newCapacity);      // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
   udResult AddChunks(size_t numberOfNewChunks);  // Add a given number of chunks capacity without changing 'length'
 
-
+  size_t GetElementRunLength(size_t index);      // At element index, return the number of elements including index that follow in the same chunk (ie can be indexed directly)
   size_t ChunkElementCount()                     { return chunkElementCount; }
   size_t ElementSize()                           { return sizeof(T); }
 
@@ -556,6 +556,20 @@ inline udResult udChunkedArray<T>::Insert(size_t index, const T *pData)
     memcpy(&ppChunks[index / chunkElementCount]->data[index % chunkElementCount], pData, sizeof(T));
 
   return result;
+}
+
+// --------------------------------------------------------------------------
+// Author: Dave Pevreal, November 2017
+template <typename T>
+inline size_t udChunkedArray<T>::GetElementRunLength(size_t index)
+{
+  if (index < length)
+  {
+    index += inset;
+    size_t runLength = chunkElementCount - (index % chunkElementCount);
+    return (runLength > length - index) ? length - index : runLength;
+  }
+  return 0;
 }
 
 #endif // UDCHUNKEDARRAY_H
