@@ -477,7 +477,8 @@ udMutex *udCreateMutex()
 {
 #if UDPLATFORM_WINDOWS
   CRITICAL_SECTION *pCriticalSection = udAllocType(CRITICAL_SECTION, 1, udAF_None);
-  InitializeCriticalSection(pCriticalSection);
+  if (pCriticalSection)
+    InitializeCriticalSection(pCriticalSection);
   return (udMutex *)pCriticalSection;
 #else
   pthread_mutex_t *mutex = (pthread_mutex_t *)udAlloc(sizeof(pthread_mutex_t));

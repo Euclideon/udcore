@@ -1058,7 +1058,6 @@ int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const 
   return offset;
 }
 
-
 // *********************************************************************
 int udGetHardwareThreadCount()
 {
@@ -1894,4 +1893,3 @@ udResult udSprintf(const char **ppDest, const char *pFormat, ...)
 
   return udR_Success;
 }
-

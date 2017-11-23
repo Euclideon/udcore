@@ -245,7 +245,6 @@ udResult udBase64Encode(const char **ppDestStr, const void *pBinary, size_t bina
 // *********************************************************************
 int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString);
 
-
 // *********************************************************************
 // Threading and concurrency
 // *********************************************************************

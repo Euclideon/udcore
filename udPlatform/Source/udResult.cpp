@@ -6,7 +6,7 @@
 
 const char *g_udLastErrorFilename = nullptr;
 int g_udLastErrorLine = 0;
-bool g_udBreakOnError;
+bool g_udBreakOnError = true;
 
 struct udResultInfo
 {
