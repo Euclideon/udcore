@@ -192,19 +192,19 @@ inline udResult udChunkedArray<T>::GrowBack(size_t numberOfNewElements)
   if (usedChunkDelta)
   {
     if (head)
-      memset(&ppChunks[prevUsedChunkCount - 1]->data[head], 0, (chunkElementCount - head) * sizeof(T));
+      memset(&ppChunks[prevUsedChunkCount - 1][head], 0, (chunkElementCount - head) * sizeof(T));
 
     size_t tail = newLength % chunkElementCount;
 
     for (size_t chunkIndex = prevUsedChunkCount; chunkIndex < (newUsedChunkCount - 1 + !tail); ++chunkIndex)
-      memset(ppChunks[chunkIndex]->data, 0, sizeof(T) * chunkElementCount);
+      memset(ppChunks[chunkIndex], 0, sizeof(T) * chunkElementCount);
 
     if (tail)
-      memset(&ppChunks[newUsedChunkCount - 1]->data[0], 0, tail * sizeof(T));
+      memset(&ppChunks[newUsedChunkCount - 1][0], 0, tail * sizeof(T));
   }
   else
   {
-    memset(&ppChunks[prevUsedChunkCount - 1]->data[head], 0, numberOfNewElements * sizeof(T));
+    memset(&ppChunks[prevUsedChunkCount - 1][head], 0, numberOfNewElements * sizeof(T));
   }
 
   length += numberOfNewElements;
@@ -386,7 +386,7 @@ inline udResult udChunkedArray<T>::PushFront(T **ppElement)
 
   ++length;
 
-  *ppElement = ppChunks[0]->data + inset;
+  *ppElement = ppChunks[0] + inset;
 
   return udR_Success;
 }
@@ -548,12 +548,12 @@ inline udResult udChunkedArray<T>::Insert(size_t index, const T *pData)
   // Move each element at and after the insertion point to the right by one
   for (size_t i = length - 1; i > index; --i)
   {
-    memcpy(&ppChunks[i / chunkElementCount]->data[i % chunkElementCount], &ppChunks[(i - 1) / chunkElementCount]->data[(i - 1) % chunkElementCount], sizeof(T));
+    memcpy(&ppChunks[i / chunkElementCount][i % chunkElementCount], &ppChunks[(i - 1) / chunkElementCount][(i - 1) % chunkElementCount], sizeof(T));
   }
 
   // Copy the new element into the insertion point if it exists
   if (pData != nullptr)
-    memcpy(&ppChunks[index / chunkElementCount]->data[index % chunkElementCount], pData, sizeof(T));
+    memcpy(&ppChunks[index / chunkElementCount][index % chunkElementCount], pData, sizeof(T));
 
   return result;
 }
