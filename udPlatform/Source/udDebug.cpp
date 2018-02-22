@@ -39,9 +39,11 @@ void udDebugPrintf(const char *format, ...)
     // The string is bigger than the temp on-stack buffer, so allocate a bigger one
     pBuffer[prefix] = 0;
     bufferLen = required + prefix + 1;
-    pBuffer = udStrdup(pBuffer, required - prefix);
-    if (!pBuffer)
+    char *pNewBuf = udAllocStack(char, bufferLen, udAF_None);
+    if (!pNewBuf)
       return;
+    udStrcpy(pNewBuf, bufferLen, pBuffer);
+    pBuffer = pNewBuf;
 
     va_start(args, format);
     udSprintfVA(pBuffer + prefix, bufferLen - prefix, format, args);
@@ -60,8 +62,6 @@ void udDebugPrintf(const char *format, ...)
     fprintf(stderr, "%s", pBuffer);
 #endif
   }
-  if (pBuffer != bufferStackMem)
-    udFree(pBuffer);
 }
 
 UDTHREADLOCAL udTrace *udTrace::head = NULL;

@@ -97,7 +97,7 @@ void udMemoryOutputLeaks()
 {
   if (pMemoryTrackingMap)
   {
-    udLockMutex(pMemoryTrackingMutex);
+    udScopeLock scopeLock(pMemoryTrackingMutex);
 
     if (pMemoryTrackingMap->size() > 0)
     {
@@ -107,15 +107,13 @@ void udMemoryOutputLeaks()
       for (MemTrackMap::iterator memIt = pMemoryTrackingMap->begin(); memIt != pMemoryTrackingMap->end(); ++memIt)
       {
         const MemTrack &track = memIt->second;
-        udDebugPrintf("%s(%d): Allocation 0x%p Address 0x%p, size %u\n", track.pFile, track.line, (void*)track.allocationNumber, track.pMemory, track.size);
+        udDebugPrintf("%s(%d): Allocation %d Address 0x%p, size %u\n", track.pFile, track.line, (void*)track.allocationNumber, track.pMemory, track.size);
       }
     }
     else
     {
       udDebugPrintf("All tracked allocations freed\n");
     }
-
-    udReleaseMutex(pMemoryTrackingMutex);
   }
 }
 
@@ -123,12 +121,10 @@ void udMemoryOutputLeaks()
 // Author: David Ely
 void udMemoryOutputAllocInfo(void *pAlloc)
 {
-  udLockMutex(pMemoryTrackingMutex);
+  udScopeLock scopeLock(pMemoryTrackingMutex);
 
   const MemTrack &track = (*pMemoryTrackingMap)[size_t(pAlloc)];
   udDebugPrintf("%s(%d): Allocation 0x%p Address 0x%p, size %u\n", track.pFile, track.line, (void*)track.allocationNumber, track.pMemory, track.size);
-
-  udReleaseMutex(pMemoryTrackingMutex);
 }
 
 static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile, int line)
@@ -139,51 +135,36 @@ static void DebugTrackMemoryAlloc(void *pMemory, size_t size, const char * pFile
     __debugbreak();
   }
 
-  if (!pMemoryTrackingMutex)
+  if (pMemoryTrackingMutex)
   {
-    udMemoryDebugTrackingInit();
+    udScopeLock scopeLock(pMemoryTrackingMutex);
+    MemTrack track = { pMemory, size, pFile, line, gAllocationCount };
+
+    if (pMemoryTrackingMap->find(size_t(pMemory)) != pMemoryTrackingMap->end())
+    {
+      udDebugPrintf("Tracked allocation already exists %p at File %s, line %d", pMemory, pFile, line);
+      __debugbreak();
+    }
+
+    (*pMemoryTrackingMap)[size_t(pMemory)] = track;
+    ++gAllocationCount;
   }
-
-  udLockMutex(pMemoryTrackingMutex);
-
-#if UDASSERT_ON
-  size_t sizeOfMap = pMemoryTrackingMap->size();
-#endif
-  MemTrack track = { pMemory, size, pFile, line, gAllocationCount };
-
-  if (pMemoryTrackingMap->find(size_t(pMemory)) != pMemoryTrackingMap->end())
-  {
-    udDebugPrintf("Tracked allocation already exists %p at File %s, line %d", pMemory, pFile, line);
-    __debugbreak();
-  }
-
-  (*pMemoryTrackingMap)[size_t(pMemory)] = track;
-
-  ++gAllocationCount;
-
-  UDASSERT(pMemoryTrackingMap->size() > sizeOfMap, "map didn't grow"); // I think this is incorrect as the map may not need to grow if its reusing a slot that has been freed.
-
-  udReleaseMutex(pMemoryTrackingMutex);
 }
 
 // ----------------------------------------------------------------------------
 // Author: David Ely
 static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
 {
-# if UDASSERT_ON
-  size_t sizeOfMap;
-# endif
-
   if (gAddressToBreakOnFree == (uint64_t)pMemory)
   {
     udDebugPrintf("Allocation 0x%p address 0x%p, at File %s, line %d", (void*)gAllocationCount, pMemory, pFile, line);
     __debugbreak();
   }
 
-  udLockMutex(pMemoryTrackingMutex);
-
-  if (pMemoryTrackingMap)
+  if (pMemoryTrackingMutex)
   {
+    udScopeLock scopelock(pMemoryTrackingMutex);
+
     MemTrackMap::iterator it = pMemoryTrackingMap->find(size_t(pMemory));
     if (it == pMemoryTrackingMap->end())
     {
@@ -192,18 +173,11 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
       goto epilogue;
     }
     UDASSERT(it->second.pMemory == (pMemory), "Pointers didn't match");
-
-# if UDASSERT_ON
-    sizeOfMap = pMemoryTrackingMap->size();
-# endif
     pMemoryTrackingMap->erase(it);
-
-    UDASSERT(pMemoryTrackingMap->size() < sizeOfMap, "map didn't shrink");
   }
 
 epilogue:
-
- udReleaseMutex(pMemoryTrackingMutex);
+  return;
 }
 
 void udMemoryDebugLogMemoryStats()
