@@ -381,26 +381,26 @@ const char *udValue::AsString(const char *pDefaultValue) const
 // Author: Dave Pevreal, May 2017
 udDouble3 udValue::AsDouble3() const
 {
-  udDouble3 ret;
+  udDouble3 ret = udDouble3::zero();
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
   {
     for (size_t i = 0; i < ret.ElementCount; ++i)
       ret[i] = u.pArray->GetElement(i)->AsDouble();
   }
-  return ret.zero();
+  return ret;
 }
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
 udDouble4 udValue::AsDouble4() const
 {
-  udDouble4 ret;
+  udDouble4 ret = udDouble4::zero();
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
   {
     for (size_t i = 0; i < ret.ElementCount; ++i)
       ret[i] = u.pArray->GetElement(i)->AsDouble();
   }
-  return ret.zero();
+  return ret;
 }
 
 // ****************************************************************************
@@ -413,7 +413,7 @@ udQuaternion<double> udValue::AsQuaternion() const
     for (size_t i = 0; i < ret.ElementCount; ++i)
       ret[i] = u.pArray->GetElement(i)->AsDouble();
   }
-  return ret.zero();
+  return ret;
 }
 
 // ****************************************************************************

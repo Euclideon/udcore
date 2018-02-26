@@ -181,3 +181,103 @@ TEST(udValueTests, RemoveKey)
   EXPECT_EQ(udR_Success, v.Set("Settings"));
   EXPECT_EQ(0, v.MemberCount());
 }
+
+// ----------------------------------------------------------------------------
+// Author: Samuel Surtees, February 2018
+TEST(udValueTests, udMathSpecialSupport)
+{
+  udValue v;
+
+  udDouble3 vec3 = udDouble3::create(1.0, 2.0, 3.0);
+  udDouble4 vec4 = udDouble4::create(1.0, 2.0, 3.0, 4.0);
+  udDoubleQuat quat = udDoubleQuat::identity();
+  quat.x = 1.0;
+  quat.y = 2.0;
+  quat.z = 3.0;
+  quat.w = 4.0;
+  udDouble4x4 mat3 = udDouble4x4::create(1.0, 2.0, 3.0, 0.0, 4.0, 5.0, 6.0, 0.0, 7.0, 8.0, 9.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+  udDouble4x4 mat4 = udDouble4x4::create(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0);
+
+  EXPECT_EQ(udR_Success, v.Set("vec2 = [ 1.0, 2.0 ]"));
+  EXPECT_EQ(udR_Success, v.Set("vec3 = [ 1.0, 2.0, 3.0 ]"));
+  EXPECT_EQ(udR_Success, v.Set("vec4 = [ 1.0, 2.0, 3.0, 4.0 ]"));
+  EXPECT_EQ(udR_Success, v.Set("quat = [ 1.0, 2.0, 3.0, 4.0 ]"));
+  EXPECT_EQ(udR_Success, v.Set("mat3 = [ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 ]"));
+  EXPECT_EQ(udR_Success, v.Set("mat4 = [ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0 ]"));
+
+  EXPECT_EQ(vec3, v.Get("vec3").AsDouble3());
+  EXPECT_EQ(vec4, v.Get("vec4").AsDouble4());
+  // udQuaternion doesn't have an equal operator overload,
+  // I believe this is due to the complexity of comparing two quaternions.
+  // In this particular case, we're satisfied with the simple case.
+  EXPECT_EQ(quat.toVector4(), v.Get("quat").AsQuaternion().toVector4());
+  EXPECT_EQ(mat3, v.Get("mat3").AsDouble4x4());
+  EXPECT_EQ(mat4, v.Get("mat4").AsDouble4x4());
+
+  // Expected failures
+  EXPECT_EQ(udDouble3::zero(), v.Get("vec2").AsDouble3());
+  EXPECT_EQ(udDouble4::zero(), v.Get("vec2").AsDouble4());
+  EXPECT_EQ(udDoubleQuat::identity().toVector4(), v.Get("vec2").AsQuaternion().toVector4());
+  EXPECT_EQ(udDouble4x4::identity(), v.Get("vec2").AsDouble4x4());
+  EXPECT_EQ(udDouble4x4::identity(), v.Get("vec2").AsDouble4x4());
+
+  // Set udFloat3 function
+  v.Clear();
+  EXPECT_EQ(udR_Success, v.Set(vec3));
+  EXPECT_TRUE(v.IsArray());
+  EXPECT_EQ(3, v.ArrayLength());
+  for (size_t i = 0; i < vec3.ElementCount; i++)
+  {
+    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
+  }
+
+  // Set udFloat4 function
+  v.Clear();
+  EXPECT_EQ(udR_Success, v.Set(vec4));
+  EXPECT_TRUE(v.IsArray());
+  EXPECT_EQ(4, v.ArrayLength());
+  for (size_t i = 0; i < vec4.ElementCount; i++)
+  {
+    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
+  }
+
+  // Set udQuaternion function
+  v.Clear();
+  EXPECT_EQ(udR_Success, v.Set(quat));
+  EXPECT_TRUE(v.IsArray());
+  EXPECT_EQ(4, v.ArrayLength());
+  for (size_t i = 0; i < quat.ElementCount; i++)
+  {
+    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
+  }
+
+  // Set udFloat3x3 function - minimally
+  v.Clear();
+  EXPECT_EQ(udR_Success, v.Set(mat3, true));
+  EXPECT_TRUE(v.IsArray());
+  EXPECT_EQ(9, v.ArrayLength());
+  for (size_t i = 0; i < 9; i++)
+  {
+    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
+  }
+
+  // Set udFloat3x3 function - not minimally
+  v.Clear();
+  EXPECT_EQ(udR_Success, v.Set(mat3, false));
+  EXPECT_TRUE(v.IsArray());
+  EXPECT_EQ(16, v.ArrayLength());
+  for (size_t i = 0; i < 9; i++)
+  {
+    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", (i / 3) * 4 + (i % 3)).AsDouble());
+  }
+
+  // Set udFloat4x4 function
+  v.Clear();
+  EXPECT_EQ(udR_Success, v.Set(mat4));
+  EXPECT_TRUE(v.IsArray());
+  EXPECT_EQ(16, v.ArrayLength());
+  for (size_t i = 0; i < 16; i++)
+  {
+    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
+  }
+}
