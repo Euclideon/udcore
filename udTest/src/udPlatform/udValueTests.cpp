@@ -222,7 +222,7 @@ TEST(udValueTests, udMathSpecialSupport)
   EXPECT_EQ(udDouble4x4::identity(), v.Get("vec2").AsDouble4x4());
 
   // Set udFloat3 function
-  v.Clear();
+  v.Destroy();
   EXPECT_EQ(udR_Success, v.Set(vec3));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(3, v.ArrayLength());
@@ -232,7 +232,7 @@ TEST(udValueTests, udMathSpecialSupport)
   }
 
   // Set udFloat4 function
-  v.Clear();
+  v.Destroy();
   EXPECT_EQ(udR_Success, v.Set(vec4));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(4, v.ArrayLength());
@@ -242,7 +242,7 @@ TEST(udValueTests, udMathSpecialSupport)
   }
 
   // Set udQuaternion function
-  v.Clear();
+  v.Destroy();
   EXPECT_EQ(udR_Success, v.Set(quat));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(4, v.ArrayLength());
@@ -252,7 +252,7 @@ TEST(udValueTests, udMathSpecialSupport)
   }
 
   // Set udFloat3x3 function - minimally
-  v.Clear();
+  v.Destroy();
   EXPECT_EQ(udR_Success, v.Set(mat3, true));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(9, v.ArrayLength());
@@ -262,7 +262,7 @@ TEST(udValueTests, udMathSpecialSupport)
   }
 
   // Set udFloat3x3 function - not minimally
-  v.Clear();
+  v.Destroy();
   EXPECT_EQ(udR_Success, v.Set(mat3, false));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(16, v.ArrayLength());
@@ -272,7 +272,7 @@ TEST(udValueTests, udMathSpecialSupport)
   }
 
   // Set udFloat4x4 function
-  v.Clear();
+  v.Destroy();
   EXPECT_EQ(udR_Success, v.Set(mat4));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(16, v.ArrayLength());
