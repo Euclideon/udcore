@@ -108,3 +108,126 @@ TEST(udStrTests, udStrncmp)
   udDebugPrintf("\n");
 #endif
 }
+
+TEST(udStrTests, udStrchr)
+{
+  const char input[] = "This is a special string, can you tell how?";
+  EXPECT_NE(udStrchr(input, "s"), udStrrchr(input, "s"));
+  EXPECT_STREQ(&input[3], udStrchr(input, "s"));
+  EXPECT_EQ(&input[3], udStrchr(input, "s"));
+  EXPECT_STREQ(&input[18], udStrrchr(input, "s"));
+  EXPECT_EQ(&input[18], udStrrchr(input, "s"));
+}
+
+TEST(udStrTests, udStrstr)
+{
+  const char input[] = "That last string wasn't special at all, this one is special though.";
+  EXPECT_STREQ(&input[24], udStrstr(input, UDARRAYSIZE(input), "special"));
+  EXPECT_EQ(&input[24], udStrstr(input, UDARRAYSIZE(input), "special"));
+}
+
+TEST(udStrTests, udStrAto)
+{
+  // Positive
+  EXPECT_FLOAT_EQ(52.5f, udStrAtof("52.5"));
+  EXPECT_DOUBLE_EQ(52.5, udStrAtof64("52.5"));
+  EXPECT_EQ(52, udStrAtoi("52"));
+  EXPECT_EQ(52, udStrAtoi64("52"));
+  EXPECT_EQ(52, udStrAtou("52"));
+  EXPECT_EQ(52, udStrAtou64("52"));
+
+  // Negative
+  EXPECT_FLOAT_EQ(-52.5f, udStrAtof("-52.5"));
+  EXPECT_DOUBLE_EQ(-52.5, udStrAtof64("-52.5"));
+  EXPECT_EQ(-52, udStrAtoi("-52"));
+  EXPECT_EQ(-52, udStrAtoi64("-52"));
+  EXPECT_EQ(0, udStrAtou("-52"));
+  EXPECT_EQ(0, udStrAtou64("-52"));
+
+  // Radix-16 - Uppercase
+  EXPECT_EQ(164, udStrAtoi("A4", nullptr, 16));
+  EXPECT_EQ(163, udStrAtoi64("A3", nullptr, 16));
+  EXPECT_EQ(162, udStrAtou("A2", nullptr, 16));
+  EXPECT_EQ(161, udStrAtou64("A1", nullptr, 16));
+
+  // Radix-16 - Lowercase
+  EXPECT_EQ(164, udStrAtoi("a4", nullptr, 16));
+  EXPECT_EQ(163, udStrAtoi64("a3", nullptr, 16));
+  EXPECT_EQ(162, udStrAtou("a2", nullptr, 16));
+  EXPECT_EQ(161, udStrAtou64("a1", nullptr, 16));
+}
+
+TEST(udStrTests, udStrtoa)
+{
+  char buffer[1024];
+
+  // Positive
+  EXPECT_EQ(2, udStrUtoa(buffer, UDARRAYSIZE(buffer), 52));
+  EXPECT_STREQ("52", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(2, udStrItoa(buffer, UDARRAYSIZE(buffer), 52));
+  EXPECT_STREQ("52", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(2, udStrItoa64(buffer, UDARRAYSIZE(buffer), 52));
+  EXPECT_STREQ("52", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(5, udStrFtoa(buffer, UDARRAYSIZE(buffer), 52.5, 2));
+  EXPECT_STREQ("52.50", buffer);
+  buffer[0] = '\0';
+
+  // Negative
+  EXPECT_EQ(20, udStrUtoa(buffer, UDARRAYSIZE(buffer), -52));
+  EXPECT_STREQ("18446744073709551564", buffer); // This probably should generate 0
+  EXPECT_EQ(3, udStrItoa(buffer, UDARRAYSIZE(buffer), -52));
+  EXPECT_STREQ("-52", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(3, udStrItoa64(buffer, UDARRAYSIZE(buffer), -52));
+  EXPECT_STREQ("-52", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(6, udStrFtoa(buffer, UDARRAYSIZE(buffer), -52.5, 2));
+  EXPECT_STREQ("-52.50", buffer);
+  buffer[0] = '\0';
+
+  // Radix-16 - Uppercase
+  EXPECT_EQ(2, udStrUtoa(buffer, UDARRAYSIZE(buffer), 164, -16));
+  EXPECT_STREQ("A4", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(0, udStrItoa(buffer, UDARRAYSIZE(buffer), 164, -16));
+  EXPECT_STREQ("", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(0, udStrItoa64(buffer, UDARRAYSIZE(buffer), 164, -16));
+  EXPECT_STREQ("", buffer);
+  buffer[0] = '\0';
+
+  // Radix-16 - Lowercase
+  EXPECT_EQ(2, udStrUtoa(buffer, UDARRAYSIZE(buffer), 164, 16));
+  EXPECT_STREQ("a4", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(2, udStrItoa(buffer, UDARRAYSIZE(buffer), 164, 16));
+  EXPECT_STREQ("a4", buffer);
+  buffer[0] = '\0';
+  EXPECT_EQ(2, udStrItoa64(buffer, UDARRAYSIZE(buffer), 164, 16));
+  EXPECT_STREQ("a4", buffer);
+  buffer[0] = '\0';
+}
+
+TEST(udStrTests, udStrStringWhitespace)
+{
+  char input[] = "  \n\t\r\n\r\t Will Thou Strip All Whitespace? \t\r\n\r\t\n  ";
+  const char output[] = "WillThouStripAllWhitespace?";
+  EXPECT_EQ(UDARRAYSIZE(output), udStrStripWhiteSpace(input));
+  EXPECT_STREQ(output, input);
+}
+
+TEST(udStrTests, udAddToStringTable)
+{
+  char *pStringTable = nullptr;
+  uint32_t stringTableLength = 0;
+  EXPECT_EQ(0, udAddToStringTable(pStringTable, &stringTableLength, "StringOne"));
+  EXPECT_EQ(0, memcmp("StringOne", pStringTable, UDARRAYSIZE("StringOne")));
+  EXPECT_EQ(10, udAddToStringTable(pStringTable, &stringTableLength, "StringTwo"));
+  EXPECT_EQ(0, memcmp("StringOne\0StringTwo", pStringTable, UDARRAYSIZE("StringOne\0StringTwo")));
+  EXPECT_EQ(20, udAddToStringTable(pStringTable, &stringTableLength, "StringThree"));
+  EXPECT_EQ(0, memcmp("StringOne\0StringTwo\0StringThree", pStringTable, UDARRAYSIZE("StringOne\0StringTwo\0StringThree")));
+  udFree(pStringTable);
+}
