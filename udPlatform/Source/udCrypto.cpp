@@ -26,6 +26,7 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 
+#if !defined(FULL_MBEDTLS)
 extern "C" int mbedtls_snprintf(char * s, size_t n, const char * format, ...)
 {
   va_list ap;
@@ -34,6 +35,7 @@ extern "C" int mbedtls_snprintf(char * s, size_t n, const char * format, ...)
   va_end(ap);
   return len;
 }
+#endif
 
 enum
 {
