@@ -101,8 +101,17 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
   MiniZPrealloc prealloc = { sizeof(compressorMemory), &compressorMemory, false };
 
   memset(&stream, 0, sizeof(stream));
-  UD_ERROR_IF(!ppDest || !pDestSize || !pSource || type != udCT_MiniZ, udR_InvalidParameter_);
+  UD_ERROR_IF(!ppDest || !pDestSize || !pSource, udR_InvalidParameter_);
 
+  // Handle the special case of no compression, using udMemDup
+  if (type == udCT_None)
+  {
+    *ppDest = udMemDup(pSource, sourceSize, 0, udAF_None);
+    *pDestSize = sourceSize;
+    return udR_Success;
+  }
+
+  UD_ERROR_IF(type != udCT_MiniZ, udR_InvalidParameter_);
   // Initially allocate a temp buffer that's conservatively larger in case deflate fails to make a gain
   destSize = mz_deflateBound(nullptr, (mz_ulong)sourceSize);
   pTemp = udAlloc(destSize);

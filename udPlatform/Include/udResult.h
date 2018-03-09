@@ -34,6 +34,9 @@ enum udResult
   udR_Expired,
   udR_ParseError,
   udR_InternalCryptoError,
+  udR_OutOfOrder,
+  udR_OutOfRange,
+  udR_CalledMoreThanOnce,
 
   udR_Writer_InitFailure,
   udR_Writer_WritePointCloudHeaderFailure,

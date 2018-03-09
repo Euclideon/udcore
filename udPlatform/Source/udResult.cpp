@@ -47,6 +47,9 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_Expired),
   RESULTINFO(udR_ParseError),
   RESULTINFO(udR_InternalCryptoError),
+  RESULTINFO(udR_OutOfOrder),
+  RESULTINFO(udR_OutOfRange),
+  RESULTINFO(udR_CalledMoreThanOnce),
 
   RESULTINFO(udR_Writer_InitFailure),
   RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),

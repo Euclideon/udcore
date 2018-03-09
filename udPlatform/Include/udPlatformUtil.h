@@ -50,6 +50,11 @@ inline udResult udWriteToPointer(T *pSrc, P *&pDest, int *pBytesRemaining = null
   pDest = udAddBytes(pDest, bytesRequired);
   return udR_Success;
 }
+template <typename T, typename P>
+inline udResult udWriteValueToPointer(T value, P *&pDest, int *pBytesRemaining = nullptr)
+{
+  return udWriteToPointer(&value, pDest, pBytesRemaining);
+}
 
 // *********************************************************************
 // Camera helpers

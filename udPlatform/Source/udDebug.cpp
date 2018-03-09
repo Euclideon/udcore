@@ -34,7 +34,7 @@ void udDebugPrintf(const char *format, ...)
   va_start(args, format);
   required = udSprintfVA(pBuffer + prefix, bufferLen-prefix, format, args);
   va_end(args);
-  if (required > (bufferLen - prefix))
+  if (required >= (bufferLen - prefix))
   {
     // The string is bigger than the temp on-stack buffer, so allocate a bigger one
     pBuffer[prefix] = 0;
