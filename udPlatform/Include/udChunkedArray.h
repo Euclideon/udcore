@@ -16,6 +16,7 @@ struct udChunkedArray
   const T &operator[](size_t index) const;
   T *GetElement(size_t index);
   const T *GetElement(size_t index) const;
+  size_t FindIndex(const T &element, size_t compareLen = sizeof(T)) const; // Linear search for matching element (first compareLen bytes compared)
   void SetElement(size_t index, const T &data);
 
   udResult PushBack(const T &v);
@@ -252,7 +253,7 @@ inline const T &udChunkedArray<T>::operator[](size_t index) const
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T>
-inline T* udChunkedArray<T>::GetElement(size_t  index)
+inline T* udChunkedArray<T>::GetElement(size_t index)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
@@ -263,12 +264,32 @@ inline T* udChunkedArray<T>::GetElement(size_t  index)
 // --------------------------------------------------------------------------
 // Author: Khan Maxfield, January 2016
 template <typename T>
-inline const T* udChunkedArray<T>::GetElement(size_t  index) const
+inline const T* udChunkedArray<T>::GetElement(size_t index) const
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
   size_t chunkIndex = index / chunkElementCount;
   return &ppChunks[chunkIndex][index % chunkElementCount];
+}
+
+// --------------------------------------------------------------------------
+// Author: Dave Pevreal, March 2018
+template <typename T>
+inline size_t udChunkedArray<T>::FindIndex(const T &element, size_t compareLen) const
+{
+  size_t index = 0;
+  while (index < length)
+  {
+    size_t runLen = GetElementRunLength(index);
+    const T *pRun = GetElement(index);
+    for (size_t runIndex = 0; runIndex < runLen; ++runIndex)
+    {
+      if (memcmp(&element, &pRun[runIndex], compareLen) == 0)
+        return index + runIndex;
+    }
+    index += runLen;
+  }
+  return length; // Sentinal to indicate not found
 }
 
 // --------------------------------------------------------------------------
