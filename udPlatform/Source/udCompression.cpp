@@ -43,7 +43,14 @@
 #define MINIZ_NO_STDIO
 #define MINIZ_NO_TIME
 #define MINIZ_NO_MALLOC
+#if defined(_MSC_VER)
+# pragma warning(push)
+# pragma warning(disable:4334)
+#endif
 #include "miniz/miniz.c"
+#if defined(_MSC_VER)
+# pragma warning(pop)
+#endif
 
 #include "udPlatform.h"
 #include "udCompression.h"
