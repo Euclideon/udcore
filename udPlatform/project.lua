@@ -17,6 +17,9 @@ project ("udPlatform" .. (projectSuffix or ""))
 
 	files { "Source/**", "Include/**", "Docs/**" }
 
+	files { "../3rdParty/libdeflate/libdeflate.h", "../3rdParty/libdeflate/lib/**" }
+	includedirs { "../3rdParty/libdeflate", "../3rdParty/libdeflate/common" }
+
 	files { "project.lua" }
 
 	includedirs { "../3rdParty" }

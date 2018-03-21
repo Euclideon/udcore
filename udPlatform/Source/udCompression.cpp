@@ -1,3 +1,5 @@
+#include "libdeflate.h"
+
 // To prevent collisions with other apps using miniz
 #define mz_adler32 udComp_adler32
 #define mz_crc32 udComp_crc32
@@ -62,6 +64,7 @@ struct MiniZPrealloc
   bool inuse;
 };
 
+#ifndef LIBDEFLATE_H
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, November 2017
 static void *MiniZAlloc(void *pOpaque, size_t items, size_t size)
@@ -87,11 +90,54 @@ static void MiniZFree(void *pOpaque, void *pPtr)
   }
   udFree(pPtr);
 }
+#endif
 
 // ****************************************************************************
 // Author: Dave Pevreal, November 2017
 udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSource, size_t sourceSize, udCompressionType type)
 {
+  // Handle the special case of no compression, using udMemDup
+  if (type == udCT_None)
+  {
+    *ppDest = udMemDup(pSource, sourceSize, 0, udAF_None);
+    *pDestSize = sourceSize;
+    return udR_Success;
+  }
+
+#ifdef LIBDEFLATE_H
+  udResult result;
+  size_t destSize;
+  void *pTemp = nullptr;
+  struct libdeflate_compressor *ldComp = nullptr;
+
+  UD_ERROR_IF(!ppDest || !pDestSize || !pSource, udR_InvalidParameter_);
+  UD_ERROR_IF(type != udCT_MiniZ, udR_InvalidParameter_);
+
+  ldComp = libdeflate_alloc_compressor(6);
+  UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+
+  destSize = libdeflate_zlib_compress_bound(ldComp, sourceSize);
+  UD_ERROR_IF(destSize == 0, udR_CompressionError);
+  pTemp = udAlloc(destSize);
+  UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+
+  destSize = libdeflate_zlib_compress(ldComp, pSource, sourceSize, pTemp, destSize);
+  UD_ERROR_IF(destSize == 0, udR_CompressionError);
+
+  // Size the allocation as required
+  *pDestSize = destSize;
+  *ppDest = udRealloc(pTemp, destSize);
+  UD_ERROR_NULL(*ppDest, udR_MemoryAllocationFailure);
+  pTemp = nullptr; // Prevent freeing on successful realloc
+
+  result = udR_Success;
+
+epilogue:
+  if (ldComp)
+    libdeflate_free_compressor(ldComp);
+
+  return result;
+#else
   udResult result;
   void *pTemp = nullptr;
   mz_ulong destSize;
@@ -102,16 +148,8 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
 
   memset(&stream, 0, sizeof(stream));
   UD_ERROR_IF(!ppDest || !pDestSize || !pSource, udR_InvalidParameter_);
-
-  // Handle the special case of no compression, using udMemDup
-  if (type == udCT_None)
-  {
-    *ppDest = udMemDup(pSource, sourceSize, 0, udAF_None);
-    *pDestSize = sourceSize;
-    return udR_Success;
-  }
-
   UD_ERROR_IF(type != udCT_MiniZ, udR_InvalidParameter_);
+
   // Initially allocate a temp buffer that's conservatively larger in case deflate fails to make a gain
   destSize = mz_deflateBound(nullptr, (mz_ulong)sourceSize);
   pTemp = udAlloc(destSize);
@@ -146,6 +184,7 @@ epilogue:
   mz_deflateEnd(&stream); // Ok to call on a zero'd but not initialised stream
   udFree(pTemp);
   return result;
+#endif
 }
 
 // ****************************************************************************
