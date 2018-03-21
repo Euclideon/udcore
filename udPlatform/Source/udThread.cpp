@@ -34,6 +34,7 @@ struct udThread
 # endif
   udThreadStart *pThreadStarter;
   void *pThreadData;
+  volatile int32_t refCount;
 };
 
 // ****************************************************************************
@@ -53,6 +54,10 @@ static uint32_t udThread_Bootstrap(udThread *pThread)
   if (s_pThreadCreateCallback)
     (*s_pThreadCreateCallback)(pThread, false);
 
+  // Call to destroy here will decrement reference count, and only destroy if
+  // the original creator of the thread didn't take a reference themselves
+  udThread_Destroy(&pThread);
+
   return threadReturnValue;
 }
 
@@ -67,6 +72,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
   UD_ERROR_NULL(pThread, udR_MemoryAllocationFailure);
   pThread->pThreadStarter = pThreadStarter;
   pThread->pThreadData = pThreadData;
+  udInterlockedExchange(&pThread->refCount, 1);
 #if UDPLATFORM_WINDOWS
   pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
 #else
@@ -74,12 +80,15 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
   pthread_create(&pThread->t, NULL, (PTHREAD_START_ROUTINE)udThread_Bootstrap, pThread);
 #endif
 
-  *ppThread = pThread;
-  pThread = nullptr;
+  if (ppThread)
+  {
+    // Since we're returning a handle, increment the ref count because the caller is now expected to destroy it
+    *ppThread = pThread;
+    udInterlockedPreIncrement(&pThread->refCount);
+  }
   result = udR_Success;
 
 epilogue:
-  udFree(pThread);
   return result;
 }
 
@@ -117,7 +126,7 @@ void udThread_Destroy(udThread **ppThread)
   {
     udThread *pThread = *ppThread;
     *ppThread = nullptr;
-    if (pThread)
+    if (pThread && udInterlockedPreDecrement(&pThread->refCount) == 0)
     {
 #if UDPLATFORM_WINDOWS
       CloseHandle(pThread->handle);
