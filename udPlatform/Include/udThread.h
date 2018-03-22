@@ -12,7 +12,6 @@ enum udThreadCreateFlags { udTCF_None }; // For future expansion
 #define UDTHREAD_WAIT_INFINITE -1
 
 typedef uint32_t(udThreadStart)(void *data);
-typedef void (udThreadCreateCallback)(udThread *pThread, bool isCreate); // True on create, false on destroy
 
 // Create a thread object
 udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, void *pThreadData, udThreadCreateFlags flags = udTCF_None);
@@ -25,9 +24,6 @@ void udThread_Destroy(udThread **ppThreadHandle);
 
 // Wait for a thread to complete
 udResult udThread_Join(udThread *pThread, int waitMs = UDTHREAD_WAIT_INFINITE);
-
-// Set an intercept callback which is called when before and after the thread function is executed
-void udThread_SetCreateCallback(udThreadCreateCallback *pThreadCallback);
 
 udSemaphore *udCreateSemaphore();
 void udDestroySemaphore(udSemaphore **ppSemaphore);
@@ -53,21 +49,5 @@ public:
 protected:
   udMutex *m_mutex;
 };
-
-// Temporary for backwards compatibility
-#if !defined(UDTHREAD_NO_BACKWARDS_COMPATIBILITY)
-typedef udThread* udThreadHandle;
-inline udThreadHandle udCreateThread(udThreadStart *pThreadStarter, void *pThreadData)
-{
-  udThread *pThread = nullptr;
-  udResult result = udThread_Create(&pThread, pThreadStarter, pThreadData);
-  return (result == udR_Success) ? pThread : nullptr;
-}
-inline void udDestroyThread(udThreadHandle *pThreadHandle) { udThread_Destroy(pThreadHandle); }
-inline void udSetThreadPriority(udThreadHandle threadHandle, udThreadPriority priority) { udThread_SetPriority(threadHandle, priority); }
-#endif
-
-
-
 
 #endif // UDTHREAD_H

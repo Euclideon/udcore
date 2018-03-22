@@ -22,7 +22,10 @@ void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
 }
 #endif
 
-static udThreadCreateCallback *s_pThreadCreateCallback;
+#define DEBUG_CACHE 0
+#define MAX_CACHED_THREADS 16
+#define CACHE_WAIT_SECONDS 30
+static volatile udThread *s_pCachedThreads[MAX_CACHED_THREADS ? MAX_CACHED_THREADS : 1];
 
 struct udThread
 {
@@ -34,29 +37,69 @@ struct udThread
 # endif
   udThreadStart *pThreadStarter;
   void *pThreadData;
+  udSemaphore *pCacheSemaphore; // Semaphore is non-null only while on the cached thread list
   volatile int32_t refCount;
 };
-
-// ****************************************************************************
-void udThread_SetCreateCallback(udThreadCreateCallback *pThreadCreateCallback)
-{
-  s_pThreadCreateCallback = pThreadCreateCallback;
-}
 
 // ----------------------------------------------------------------------------
 static uint32_t udThread_Bootstrap(udThread *pThread)
 {
-  if (s_pThreadCreateCallback)
-    (*s_pThreadCreateCallback)(pThread, true);
+  uint32_t threadReturnValue;
+  bool reclaimed = false; // Set to true when the thread is reclaimed by the cache system
+  UDASSERT(pThread->pThreadStarter, "No starter function");
+  do
+  {
+#if DEBUG_CACHE
+    if (reclaimed)
+      udDebugPrintf("Successfully reclaimed thread %p\n", pThread);
+#endif
+    threadReturnValue = pThread->pThreadStarter ? pThread->pThreadStarter(pThread->pThreadData) : 0;
 
-  uint32_t threadReturnValue = pThread->pThreadStarter(pThread->pThreadData);
+    pThread->pThreadStarter = nullptr;
+    pThread->pThreadData = nullptr;
+    reclaimed = false;
 
-  if (s_pThreadCreateCallback)
-    (*s_pThreadCreateCallback)(pThread, false);
+    if (pThread->refCount == 1)
+    {
+      // Instead of letting this thread go to waste, see if we can cache it to be recycled
+      UDASSERT(pThread->pCacheSemaphore == nullptr, "pCachedSemaphore non-null");
+      pThread->pCacheSemaphore = udCreateSemaphore(); // Only create a semaphore if a slot is available
+      if (pThread->pCacheSemaphore)
+      {
+        for (int slotIndex = 0; slotIndex < MAX_CACHED_THREADS; ++slotIndex)
+        {
+          if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], pThread, nullptr) == nullptr)
+          {
+#if DEBUG_CACHE
+            udDebugPrintf("Making thread %p available for cache (slot %d)\n", pThread, slotIndex);
+#endif
+            // Successfully added to the cache, now wait to see if anyone wants to dance
+            udWaitSemaphore(pThread->pCacheSemaphore, CACHE_WAIT_SECONDS * 1000);
+            if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) == pThread)
+            {
+#if DEBUG_CACHE
+              udDebugPrintf("Allowing thread %p to die\n", pThread);
+#endif
+            }
+            else
+            {
+#if DEBUG_CACHE
+              udDebugPrintf("Reclaiming thread %p\n", pThread);
+#endif
+              reclaimed = true;
+            }
+            break;
+          }
+        }
+        udDestroySemaphore(&pThread->pCacheSemaphore);
+      }
+    }
+  } while (reclaimed);
 
   // Call to destroy here will decrement reference count, and only destroy if
   // the original creator of the thread didn't take a reference themselves
-  udThread_Destroy(&pThread);
+  if (pThread)
+    udThread_Destroy(&pThread);
 
   return threadReturnValue;
 }
@@ -67,18 +110,40 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
 {
   udResult result;
   udThread *pThread = nullptr;
+  int slotIndex;
 
-  pThread = udAllocType(udThread, 1, udAF_Zero);
-  UD_ERROR_NULL(pThread, udR_MemoryAllocationFailure);
-  pThread->pThreadStarter = pThreadStarter;
-  pThread->pThreadData = pThreadData;
-  udInterlockedExchange(&pThread->refCount, 1);
-#if UDPLATFORM_WINDOWS
-  pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
-#else
-  typedef void *(*PTHREAD_START_ROUTINE)(void *);
-  pthread_create(&pThread->t, NULL, (PTHREAD_START_ROUTINE)udThread_Bootstrap, pThread);
+  UD_ERROR_NULL(pThreadStarter, udR_InvalidParameter_);
+  for (slotIndex = 0; pThread == nullptr && slotIndex < MAX_CACHED_THREADS; ++slotIndex)
+  {
+    pThread = const_cast<udThread*>(s_pCachedThreads[slotIndex]);
+    if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) != pThread)
+      pThread = nullptr;
+    else
+      UDASSERT(s_pCachedThreads[slotIndex] == nullptr, "exchange failed");
+  }
+  if (pThread)
+  {
+    pThread->pThreadStarter = pThreadStarter;
+    pThread->pThreadData = pThreadData;
+    udIncrementSemaphore(pThread->pCacheSemaphore);
+  }
+  else
+  {
+    pThread = udAllocType(udThread, 1, udAF_Zero);
+    UD_ERROR_NULL(pThread, udR_MemoryAllocationFailure);
+#if DEBUG_CACHE
+    udDebugPrintf("Creating udThread %p\n", pThread);
 #endif
+    pThread->pThreadStarter = pThreadStarter;
+    pThread->pThreadData = pThreadData;
+    udInterlockedExchange(&pThread->refCount, 1);
+# if UDPLATFORM_WINDOWS
+    pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
+#else
+    typedef void *(*PTHREAD_START_ROUTINE)(void *);
+    pthread_create(&pThread->t, NULL, (PTHREAD_START_ROUTINE)udThread_Bootstrap, pThread);
+#endif
+  }
 
   if (ppThread)
   {
@@ -128,6 +193,7 @@ void udThread_Destroy(udThread **ppThread)
     *ppThread = nullptr;
     if (pThread && udInterlockedPreDecrement(&pThread->refCount) == 0)
     {
+      UDASSERT(pThread->pCacheSemaphore == nullptr, "pCachedSemaphore non-null");
 #if UDPLATFORM_WINDOWS
       CloseHandle(pThread->handle);
 #endif
