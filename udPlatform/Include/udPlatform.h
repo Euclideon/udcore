@@ -272,7 +272,7 @@ template <typename T>
 void _udFree(T *&pMemory IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
   void *pActualPtr = (void*)pMemory;
-  if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
   {
     _udFreeInternal((void*)pActualPtr IF_MEMORY_DEBUG(pFile, line));
   }
@@ -285,7 +285,7 @@ template <typename T>
 void _udFreeSecure(T *&pMemory, size_t size IF_MEMORY_DEBUG(const char * pFile = __FILE__, int  line = __LINE__))
 {
   void *pActualPtr = (void*)pMemory;
-  if (udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
   {
     // Use a simple random value just to avoid filling sensitive memory with a constant
     // that can be used to identify the locations in memory where sensitive data was stored

@@ -353,15 +353,12 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment IF_MEMORY_D
 // Author: David Ely
 void _udFreeInternal(void * pMemory IF_MEMORY_DEBUG(const char * pFile, int line))
 {
-  if (pMemory)
-  {
-    DebugTrackMemoryFree(pMemory, pFile, line);
+  DebugTrackMemoryFree(pMemory, pFile, line);
 #if defined(_MSC_VER)
-    _aligned_free(pMemory);
+  _aligned_free(pMemory);
 #else
-    free(pMemory);
+  free(pMemory);
 #endif // defined(_MSC_VER)
-  }
 }
 
 // ----------------------------------------------------------------------------
