@@ -144,6 +144,7 @@ enum udCryptoSigType
 {
   udCST_RSA2048 = 2048,
   udCST_RSA4096 = 4096,
+  udCST_ECPBP384 = 384
 };
 
 enum udCryptoSigPadScheme
@@ -161,10 +162,10 @@ udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **pSigCtx, const char *pKe
 udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate = false);
 
 // Sign a hash, be sure to udFree the result signature string when finished
-udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char **ppSignatureBase64, udCryptoSigPadScheme pad = udCSPS_Deterministic);
+udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char **ppSignatureBase64, udCryptoHashes hashMethod, udCryptoSigPadScheme pad = udCSPS_Deterministic);
 
 // Verify a signed hash
-udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char *pSignatureBase64, udCryptoSigPadScheme pad = udCSPS_Deterministic);
+udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char *pSignatureBase64, udCryptoHashes hashMethod, udCryptoSigPadScheme pad = udCSPS_Deterministic);
 
 // Destroy a signature context
 void udCryptoSig_Destroy(udCryptoSigContext **pSigCtx);

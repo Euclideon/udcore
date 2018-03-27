@@ -24,7 +24,7 @@ project ("udPlatform" .. (projectSuffix or ""))
 
 	-- include common stuff
 	dofile "../common-proj.lua"
-	
+
 	filter { "options:mbedTLS=minimal" }
 		files { "../3rdParty/mbedtls/include/mbedtls/config.h" }
 		files { "../3rdParty/mbedtls/library/aes.c", "../3rdParty/mbedtls/include/mbedtls/aes.h" }
@@ -39,10 +39,15 @@ project ("udPlatform" .. (projectSuffix or ""))
 		files { "../3rdParty/mbedtls/library/md.c", "../3rdParty/mbedtls/include/mbedtls/md.h" }
 		files { "../3rdParty/mbedtls/library/md_wrap.c", "../3rdParty/mbedtls/include/mbedtls/md_wrap.h" }
 		files { "../3rdParty/mbedtls/library/asn1parse.c", "../3rdParty/mbedtls/include/mbedtls/asn1parse.h" }
+		files { "../3rdParty/mbedtls/library/asn1write.c", "../3rdParty/mbedtls/include/mbedtls/asn1write.h" }
 		files { "../3rdParty/mbedtls/library/oid.c", "../3rdParty/mbedtls/include/mbedtls/oid.h" }
 		files { "../3rdParty/mbedtls/library/timing.c", "../3rdParty/mbedtls/include/mbedtls/timing.h" }
 		files { "../3rdParty/mbedtls/library/dhm.c", "../3rdParty/mbedtls/include/mbedtls/dhm.h" }
-		
+		files { "../3rdParty/mbedtls/library/ecp.c", "../3rdParty/mbedtls/include/mbedtls/ecp.h" }
+		files { "../3rdParty/mbedtls/library/ecp_curves.c", "../3rdParty/mbedtls/include/mbedtls/ecp_curves.h" }
+		files { "../3rdParty/mbedtls/library/ecdsa.c", "../3rdParty/mbedtls/include/mbedtls/ecdsa.h" }
+		files { "../3rdParty/mbedtls/library/hmac_drbg.c", "../3rdParty/mbedtls/include/mbedtls/hmac_drbg.h" }
+
 	filter { "options:mbedTLS=full" }
 		files { "../3rdParty/mbedtls/library/*.c", "../3rdParty/mbedtls/include/mbedtls/*.h" }
 		defines { "FULL_MBEDTLS" }

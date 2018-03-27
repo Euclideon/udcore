@@ -248,35 +248,35 @@ TEST(CryptoTests, Self)
   EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA512));
 }
 
-static const char *pPrivateKeyText =
-  "{\n"
-  "  'Type': 'RSA-Private',\n"
-  "  'Size': 2048,\n"
-  "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
-  "  'E': 'AQAB',\n"
-  "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
-  "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
-  "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
-  "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
-  "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
-  "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
-  "}\n";
-
-static const char *pPublicKeyText =
-  "{\n"
-  "  'Type': 'RSA-Public',\n"
-  "  'Size': 2048,\n"
-  "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
-  "  'E': 'AQAB',\n"
-  "}\n";
-
-
-TEST(CryptoTests, CreateSig)
+TEST(CryptoTests, RSACreateSig)
 {
+  static const char *pPrivateKeyText =
+    "{\n"
+    "  'Type': 'RSA',\n"
+    "  'Private': true,\n"
+    "  'Size': 2048,\n"
+    "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
+    "  'E': 'AQAB',\n"
+    "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
+    "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
+    "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
+    "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
+    "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
+    "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
+    "}\n";
+
+  static const char *pPublicKeyText =
+    "{\n"
+    "  'Type': 'RSA',\n"
+    "  'Size': 2048,\n"
+    "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
+    "  'E': 'AQAB',\n"
+    "}\n";
+
   udCryptoSigContext *pPrivCtx = nullptr;
   udCryptoSigContext *pPubCtx = nullptr;
   static const char *pMessage = "No problem can be solved from the same level of consciousness that created it. -Einstein";
-  static const char *pExpectedSignature = "I7iQO1dRmnh1BeEw//vRB/81eKXzKgC3Uuchny/iHfzFoFGxcVa2DG9RE5pILsChDnJLdFpcaSHK258r5285jgJPn2rHTVf3xBvs5Su4fAFAOmB95dlTaux3eVt0Pl8XXvxuTl9SDLjCFeplPxsHRE5LKTj8ySVeVenWWUInvzrJ/QXFmYILt9WQb65lHeMErEAGb2mrUiLWyRaJY4/KsaYAQhZwydW49P8dVoopU7MhoIb6QgJw2azmNXuY2c22qonMOsPTbMSvBCC27iSg5mrLkd0N5eDMhwvzOGFHjHo55oCvfvuUexe5wPqRTbI2KeJElr3SA6MZFvYkfb5YGw==";
+  static const char *pExpectedSignature = "jZzErtTWtEjEIDJsf0HRPJA/9z2MLu2tCvd/OgOojinZ9y+hbQSADgnFVN/cGV965Z6x6burvYVWPT8TjF00+9aXIGY3vFncrdRYhM2ynq+cisOxzIacC1AraDcuQgMvyxv9NKjCNWvLJL1GaP6PzKJmuDT5HDiEz9DqNhya5U43dIFoXu3AlTZlT8uuUuSwbxk4G+rkfG2Jm6cj6l8BhvpMhxA7GYmuiA9ByQ7tcU8/G/zi1xY/zIHTOlzGc7h+BfXXkpNH+NdyMOW0NnQg1jfy5VuK3eYeDfP2xSDlvOivvXwwFR9lQCizx4kzSuSpoIg7pW0HvmjgXXcMC29kqg==";
   const char *pHash = nullptr;
   const char *pSignature = nullptr;
 
@@ -297,21 +297,90 @@ TEST(CryptoTests, CreateSig)
   EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPubCtx, pPublicKeyText));
 
   // Sign a message using the private key
-  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pSignature, udCH_SHA1));
+
+  udDebugPrintf("Current Sig: \n%s\n", pSignature);
 
   // Verify it's the expected signature (only works with PKCS_15)
   EXPECT_EQ(0, udStrcmp(pSignature, pExpectedSignature));
 
   // Verify using the private key
-  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPrivCtx, pHash, pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPrivCtx, pHash, pSignature, udCH_SHA1));
 
   // Verify the message using the public key
-  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
 
   // Change the hash slightly to ensure the message isn't verified
   ((char*)pHash)[1] ^= 1;
-  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, pHash, pSignature));
-  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pSignature));
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, pHash, pSignature, udCH_SHA1));
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
+
+  udCryptoSig_Destroy(&pPrivCtx);
+  udCryptoSig_Destroy(&pPubCtx);
+  udFree(pHash);
+  udFree(pSignature);
+}
+
+TEST(CryptoTests, ECDSADigiSig)
+{
+  udCryptoSigContext *pPrivCtx = nullptr;
+  udCryptoSigContext *pPubCtx = nullptr;
+  static const char *pMessage = "No problem can be solved from the same level of consciousness that created it. -Einstein";
+  static const char *pExpectedSignature = "MGQCMBUQ3UEJCsTpWveYHKtNj1TQcAh1i3uiIYdUUvVrVR1+ZgW7RvIoaPDLPj0NP0+OpwIwLGR5Tc9Qp8XEV3iemWsxhcXG5L1dS6Us8doQ4CSdrLLj2zWgbz1tXXv2sBmxT6bh";
+  const char *pHash = nullptr;
+  const char *pSignature = nullptr;
+
+  static const char *pPrivateKeyText = R"key({
+  "Type": "ECDSA",
+  "Curve": "BP384R1",
+  "Private": true,
+  "X": "CRsaWnhJdlED7s82LjUUvomBxU5frr2FcoEiKCbmuKlnjToyKMcGLtuhliIqsIaO",
+  "Y": "el3DpHAOA7bC7O/3TjN81STeOpOBOlQ7WIjPGHJxLbIhDlMm63GCMUPczB5S1IJi",
+  "Z": "AQ==",
+  "D": "LP+e429tIN/RzkeGyrYW6kmJ7WyAOHUOd8cnfb+z/ciPelesB+85qQyVeggOHWfX"
+})key";
+
+  static const char *pPublicKeyText = R"key({
+  "Type": "ECDSA",
+  "Curve": "BP384R1",
+  "X": "CRsaWnhJdlED7s82LjUUvomBxU5frr2FcoEiKCbmuKlnjToyKMcGLtuhliIqsIaO",
+  "Y": "el3DpHAOA7bC7O/3TjN81STeOpOBOlQ7WIjPGHJxLbIhDlMm63GCMUPczB5S1IJi",
+  "Z": "AQ=="
+})key";
+
+  EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), &pHash));
+
+#if 0 // Enable to generate a new key
+  EXPECT_EQ(udR_Success, udCryptoSig_CreateKeyPair(&pPrivCtx, udCST_ECPBP384));
+  EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pPrivateKeyText, true));
+  udDebugPrintf("Private key:\n%s\n", pPrivateKeyText);
+  EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pPublicKeyText, false));
+  udDebugPrintf("Public key:\n%s\n", pPublicKeyText);
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pSignature, udCH_SHA1));
+  udDebugPrintf("Actual signature:\n%s\n", pSignature);
+  udDebugPrintf("Expected signature:\n%s\n", pExpectedSignature);
+#else
+  EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPrivCtx, pPrivateKeyText));
+#endif
+  // Import the public key only
+  EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPubCtx, pPublicKeyText));
+
+  // Sign a message using the private key
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pSignature, udCH_SHA1));
+
+  // Verify it's the expected signature (only works with PKCS_15)
+  EXPECT_TRUE(udStrEqual(pSignature, pExpectedSignature));
+
+  // Verify using the private key
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPrivCtx, pHash, pSignature, udCH_SHA1));
+
+  // Verify the message using the public key
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
+
+  // Change the hash slightly to ensure the message isn't verified
+  ((char*)pHash)[1] ^= 1;
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, pHash, pSignature, udCH_SHA1));
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
 
   udCryptoSig_Destroy(&pPrivCtx);
   udCryptoSig_Destroy(&pPubCtx);
