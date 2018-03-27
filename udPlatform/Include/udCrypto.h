@@ -144,6 +144,7 @@ struct udCryptoSigContext;
 
 enum udCryptoSigType
 {
+  udCST_RSA1024 = 1024,
   udCST_RSA2048 = 2048,
   udCST_RSA4096 = 4096,
   udCST_ECPBP384 = 384
@@ -159,6 +160,7 @@ udResult udCryptoSig_CreateKeyPair(udCryptoSigContext **ppSigCtx, udCryptoSigTyp
 
 // Import public/keypair
 udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **pSigCtx, const char *pKeyText);
+udResult udCryptoSig_ImportMSBlob(udCryptoSigContext **ppSigCtx, void *pBlob, size_t blobLen);
 
 // Export a public/keypair as JSON
 udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate = false);

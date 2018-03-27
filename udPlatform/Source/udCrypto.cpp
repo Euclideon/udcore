@@ -133,6 +133,26 @@ epilogue:
 }
 
 // ***************************************************************************************
+// Author: Dave Pevreal, March 2018
+// Helper to parse little endian binary to an mpi, INCREMENTS the pBuf pointer for convenience
+static udResult FromLittleEndianBinary(mbedtls_mpi *pBigNum, uint8_t *&pBuf, size_t &bufLen, int numLen)
+{
+  udResult result;
+  uint8_t buf[4096/8];
+
+  UD_ERROR_IF(numLen > sizeof(buf), udR_InternalError);
+  UD_ERROR_IF(numLen > bufLen, udR_InternalError);
+  for (int i = numLen - 1; i >= 0; --i)
+    buf[i] = *pBuf++;
+  bufLen -= numLen;
+  UD_ERROR_IF(mbedtls_mpi_read_binary(pBigNum, buf, numLen) != 0, udR_InternalCryptoError);
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
 // Author: Dave Pevreal, October 2017
 void udCrypto_FreeSecure(const char *&pBase64String)
 {
@@ -1063,6 +1083,7 @@ udResult udCryptoSig_CreateKeyPair(udCryptoSigContext **ppSigCtx, udCryptoSigTyp
 
   switch (type)
   {
+    case udCST_RSA1024:
     case udCST_RSA2048:
     case udCST_RSA4096:
       mbedtls_rsa_init(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
@@ -1105,22 +1126,23 @@ udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppK
 
   switch (pSigCtx->type)
   {
-  case udCST_RSA2048:
-  case udCST_RSA4096:
+    case udCST_RSA1024:
+    case udCST_RSA2048:
+    case udCST_RSA4096:
     v.Set("Type = '%s'", TYPESTRING_RSA);
-    v.Set("Size = %d", pSigCtx->type);
-    UD_ERROR_CHECK(ToValue(pSigCtx->rsa.N, &v, "N"));
-    UD_ERROR_CHECK(ToValue(pSigCtx->rsa.E, &v, "E"));
-    if (exportPrivate)
-    {
-      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.D, &v, "D"));
-      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.P, &v, "P"));
-      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.Q, &v, "Q"));
-      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.DP, &v, "DP"));
-      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.DQ, &v, "DQ"));
-      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.QP, &v, "QP"));
-    }
-    break;
+      v.Set("Size = %d", pSigCtx->type);
+      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.N, &v, "N"));
+      UD_ERROR_CHECK(ToValue(pSigCtx->rsa.E, &v, "E"));
+      if (exportPrivate)
+      {
+        UD_ERROR_CHECK(ToValue(pSigCtx->rsa.D, &v, "D"));
+        UD_ERROR_CHECK(ToValue(pSigCtx->rsa.P, &v, "P"));
+        UD_ERROR_CHECK(ToValue(pSigCtx->rsa.Q, &v, "Q"));
+        UD_ERROR_CHECK(ToValue(pSigCtx->rsa.DP, &v, "DP"));
+        UD_ERROR_CHECK(ToValue(pSigCtx->rsa.DQ, &v, "DQ"));
+        UD_ERROR_CHECK(ToValue(pSigCtx->rsa.QP, &v, "QP"));
+      }
+      break;
   case udCST_ECPBP384:
     v.Set("Type = '%s'", TYPESTRING_ECDSA);
     v.Set("Curve = '%s'", TYPESTRING_CURVE_BP384R1);
@@ -1130,8 +1152,8 @@ udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppK
     if (exportPrivate)
       UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.d, &v, "D"));
     break;
-  default:
-    UD_ERROR_SET(udR_InvalidConfiguration);
+    default:
+      UD_ERROR_SET(udR_InvalidConfiguration);
   }
 
   result = v.Export(ppKeyText);
@@ -1166,7 +1188,7 @@ udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **ppSigCtx, const char *pK
   }
   else if (udStrEqual(pTypeString, TYPESTRING_RSA))
   {
-    pSigCtx->type = (udCryptoSigType)v.Get("Size").AsInt();
+  pSigCtx->type = (udCryptoSigType)v.Get("Size").AsInt();
   }
   else
   {
@@ -1175,6 +1197,7 @@ udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **ppSigCtx, const char *pK
 
   switch (pSigCtx->type)
   {
+    case udCST_RSA1024:
     case udCST_RSA2048:
     case udCST_RSA4096:
       mbedtls_rsa_init(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
@@ -1220,6 +1243,61 @@ epilogue:
 }
 
 // ***************************************************************************************
+// Author: Dave Pevreal, March 2018
+udResult udCryptoSig_ImportMSBlob(udCryptoSigContext **ppSigCtx, void *pBlob, size_t blobLen)
+{
+  // https://msdn.microsoft.com/en-us/library/cc250013.aspx
+  struct MSBlob
+  {
+    uint8_t type, version;
+    uint16_t res1;
+    int32_t keyAlg;
+    int32_t magic;
+    int32_t bitLen;
+  };
+  MSBlob *pPriv = (MSBlob*)pBlob;
+  uint8_t *p = (uint8_t*)(pPriv+1);
+
+  udResult result;
+  udValue v;
+  udCryptoSigContext *pSigCtx = nullptr;
+
+  UD_ERROR_IF(pPriv->type != 6 && pPriv->type != 7, udR_InvalidParameter_); // public/private key
+  UD_ERROR_IF(pPriv->version != 2, udR_InvalidParameter_);
+  UD_ERROR_IF(pPriv->keyAlg != 0x00002400, udR_InvalidParameter_);
+  UD_ERROR_IF(pPriv->magic != 0x32415352 && pPriv->magic != 0x31415352, udR_InvalidParameter_);
+  UD_ERROR_IF(pPriv->bitLen != 1024 && pPriv->bitLen != 2048 && pPriv->bitLen != 4096, udR_InvalidParameter_);
+  pSigCtx = udAllocType(udCryptoSigContext, 1, udAF_Zero);
+  UD_ERROR_NULL(pSigCtx, udR_MemoryAllocationFailure);
+
+  pSigCtx->type = (udCryptoSigType)pPriv->bitLen;
+  mbedtls_rsa_init(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
+  pSigCtx->rsa.len = pSigCtx->type / 8; // Size of the key
+
+  UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.E,  p, blobLen, 4));
+  UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.N,  p, blobLen, pPriv->bitLen / 8));
+  UD_ERROR_IF(mbedtls_rsa_check_pubkey(&pSigCtx->rsa) != 0, udR_InternalCryptoError);
+  if (pPriv->type == 7)
+  {
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.P,  p, blobLen, pPriv->bitLen / 16));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.Q,  p, blobLen, pPriv->bitLen / 16));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.DP, p, blobLen, pPriv->bitLen / 16));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.DQ, p, blobLen, pPriv->bitLen / 16));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.QP, p, blobLen, pPriv->bitLen / 16)); // Iq == inv(q % p)
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.D,  p, blobLen, pPriv->bitLen / 8));
+    UD_ERROR_IF(mbedtls_rsa_check_privkey(&pSigCtx->rsa) != 0, udR_InternalCryptoError);
+  }
+
+  *ppSigCtx = pSigCtx;
+  pSigCtx = nullptr;
+  result = udR_Success;
+
+epilogue:
+  udCryptoSig_Destroy(&pSigCtx);
+  return result;
+}
+
+// ***************************************************************************************
 // Author: Dave Pevreal, September 2017
 udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char **ppSignatureBase64, udCryptoHashes hashMethod, udCryptoSigPadScheme pad)
 {
@@ -1238,6 +1316,7 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
 
   switch (pSigCtx->type)
   {
+    case udCST_RSA1024:
     case udCST_RSA2048:
     case udCST_RSA4096:
       if (pad == udCSPS_Deterministic)
@@ -1279,6 +1358,7 @@ udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64
 
   switch (pSigCtx->type)
   {
+    case udCST_RSA1024:
     case udCST_RSA2048:
     case udCST_RSA4096:
       if (pad == udCSPS_Deterministic)
@@ -1312,16 +1392,16 @@ void udCryptoSig_Destroy(udCryptoSigContext **ppSigCtx)
       *ppSigCtx = nullptr;
       switch (pSigCtx->type)
       {
-      case udCST_RSA2048:
-      case udCST_RSA4096:
-        mbedtls_rsa_free(&pSigCtx->rsa);
-        break;
-      case udCST_ECPBP384:
-        mbedtls_ecdsa_free(&pSigCtx->ecdsa);
-        break;
-      default:
-        UDUNREACHABLE(); //Something went wrong
-        break;
+        case udCST_RSA1024:
+        case udCST_RSA2048:
+        case udCST_RSA4096:
+          mbedtls_rsa_free(&pSigCtx->rsa);
+          break;
+        case udCST_ECPBP384:
+          mbedtls_ecdsa_free(&pSigCtx->ecdsa);
+          break;
+        default:
+          break;
       }
       udFreeSecure(pSigCtx, sizeof(*pSigCtx));
     }
