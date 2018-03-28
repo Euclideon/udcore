@@ -19,6 +19,7 @@
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
+#include "mbedtls/md5.h"
 
 #include "mbedtls/dhm.h"
 
@@ -48,8 +49,8 @@ enum
 
 #define TYPESTRING_CURVE_BP384R1 "BP384R1"
 
-const mbedtls_md_type_t udc_to_mbed_hashfunctions[] = { MBEDTLS_MD_SHA1, MBEDTLS_MD_SHA256, MBEDTLS_MD_SHA512 };
-UDCOMPILEASSERT(UDARRAYSIZE(udc_to_mbed_hashfunctions) == udCH_Count, "Hash methods array not updated as well!");
+const mbedtls_md_type_t udc_to_mbed_hashfunctions[] = { MBEDTLS_MD_SHA1, MBEDTLS_MD_SHA256, MBEDTLS_MD_SHA512, MBEDTLS_MD_MD5, MBEDTLS_MD_NONE };
+UDCOMPILEASSERT(UDARRAYSIZE(udc_to_mbed_hashfunctions) == udCH_Count+1, "Hash methods array not updated as well!");
 
 struct udCryptoCipherContext
 {
@@ -66,13 +67,14 @@ struct udCryptoCipherContext
 
 struct udCryptoHashContext
 {
-  udCryptoHashes hash;
+  udCryptoHashes hashMethod;
   size_t hashLengthInBytes;
   union
   {
     mbedtls_sha1_context sha1;
     mbedtls_sha256_context sha256;
     mbedtls_sha512_context sha512;
+    mbedtls_md5_context md5;
   };
 };
 
@@ -514,18 +516,19 @@ epilogue:
 
 // ***************************************************************************************
 // Author: Dave Pevreal, December 2014
-udResult udCryptoHash_Create(udCryptoHashContext **ppCtx, udCryptoHashes hash)
+udResult udCryptoHash_Create(udCryptoHashContext **ppCtx, udCryptoHashes hashMethod)
 {
   udResult result;
   udCryptoHashContext *pCtx = nullptr;
 
+  UD_ERROR_IF(hashMethod >= udCH_Count, udR_InvalidParameter_);
   UD_ERROR_NULL(ppCtx, udR_InvalidParameter_);
 
   pCtx = udAllocType(udCryptoHashContext, 1, udAF_Zero);
   UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
 
-  pCtx->hash = hash;
-  switch (hash)
+  pCtx->hashMethod = hashMethod;
+  switch (hashMethod)
   {
     case udCH_SHA1:
       mbedtls_sha1_init(&pCtx->sha1);
@@ -542,7 +545,11 @@ udResult udCryptoHash_Create(udCryptoHashContext **ppCtx, udCryptoHashes hash)
       mbedtls_sha512_starts(&pCtx->sha512, 0);
       pCtx->hashLengthInBytes = udCHL_SHA512Length;
       break;
-
+    case udCH_MD5:
+      mbedtls_md5_init(&pCtx->md5);
+      mbedtls_md5_starts(&pCtx->md5);
+      pCtx->hashLengthInBytes = udCHL_MD5Length;
+      break;
     default:
       result = udR_InvalidParameter_;
       goto epilogue;
@@ -567,7 +574,7 @@ udResult udCryptoHash_Digest(udCryptoHashContext *pCtx, const void *pBytes, size
   if (length && !pBytes)
     return udR_InvalidParameter_;
 
-  switch (pCtx->hash)
+  switch (pCtx->hashMethod)
   {
     case udCH_SHA1:
       mbedtls_sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
@@ -577,6 +584,9 @@ udResult udCryptoHash_Digest(udCryptoHashContext *pCtx, const void *pBytes, size
       break;
     case udCH_SHA512:
       mbedtls_sha512_update(&pCtx->sha512, (const uint8_t*)pBytes, length);
+      break;
+    case udCH_MD5:
+      mbedtls_md5_update(&pCtx->md5, (const uint8_t*)pBytes, length);
       break;
     default:
       return udR_InvalidParameter_;
@@ -592,7 +602,7 @@ udResult udCryptoHash_Finalise(udCryptoHashContext *pCtx, const char **ppHashBas
   if (!pCtx || !ppHashBase64)
     return udR_InvalidParameter_;
 
-  switch (pCtx->hash)
+  switch (pCtx->hashMethod)
   {
     case udCH_SHA1:
       mbedtls_sha1_finish(&pCtx->sha1, hash);
@@ -602,6 +612,9 @@ udResult udCryptoHash_Finalise(udCryptoHashContext *pCtx, const char **ppHashBas
       break;
     case udCH_SHA512:
       mbedtls_sha512_finish(&pCtx->sha512, hash);
+      break;
+    case udCH_MD5:
+      mbedtls_md5_finish(&pCtx->md5, hash);
       break;
     default:
       return udR_InvalidConfiguration;
@@ -616,7 +629,7 @@ udResult udCryptoHash_Destroy(udCryptoHashContext **ppCtx)
 {
   if (!ppCtx || !*ppCtx)
     return udR_InvalidParameter_;
-  switch ((*ppCtx)->hash)
+  switch ((*ppCtx)->hashMethod)
   {
     case udCH_SHA1:
       mbedtls_sha1_free(&(*ppCtx)->sha1);
@@ -712,19 +725,24 @@ udResult udCryptoHash_SelfTest(udCryptoHashes hash)
 
   static const char *pHmacKeyBase64 = "SmVmZQ=="; // "Jefe"
   static const char testText[] = { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" };
-  static const char *hashResults[udCH_Count] =
+  static const char *hashResults[] =
   {
     "hJg+RBw70m66rkqh+VEp5eVGcPE=", // udCH_SHA1
     "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE=", // udCH_SHA256
-    "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ==" // udCH_SHA512
+    "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ==", // udCH_SHA512
+    "ghXvB5aiC8qq4RbTh2xmSg==" // udCH_MD5
   };
-  static const char *hmacResults[udCH_Count] =
+  static const char *hmacResults[] =
   {
     "gNSITHDFNAbgpwcaLiE1yXkDv0k=", // udCH_SHA1
     "3jREzWMffTaJrx7MExnld3wD5ZrpsNXd3QrAWJZkunc=", // udCH_SHA256
-    "GPopoTHOqaFlvz6rC15hyA7z+VfH6v4ok3R2G0ORm5dyctUPGkvxD6Aakbta9JodqZHFKtc4NBIDFvEW+NMkFg=="// udCH_SHA512
+    "GPopoTHOqaFlvz6rC15hyA7z+VfH6v4ok3R2G0ORm5dyctUPGkvxD6Aakbta9JodqZHFKtc4NBIDFvEW+NMkFg==", // udCH_SHA512
+    "5NqJxWSrcHlNi4YwIo5+Qg==" // udCH_MD5
   };
   const char *pResultBase64 = nullptr;
+
+  UDCOMPILEASSERT(UDARRAYSIZE(hashResults) == udCH_Count, "Updated hash list without updating tests!");
+  UDCOMPILEASSERT(UDARRAYSIZE(hmacResults) == udCH_Count, "Updated hash list without updating tests!");
 
   UD_ERROR_CHECK(udCryptoHash_Hash(hash, testText, strlen(testText), &pResultBase64));
   UD_ERROR_IF(!udStrEqual(hashResults[hash], pResultBase64), udR_Failure_);
@@ -1211,6 +1229,7 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   size_t hashLen;
   size_t sigLen = sizeof(signature);
 
+  UD_ERROR_IF(hashMethod > udCH_Count, udR_InvalidParameter_);
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter_);
   UD_ERROR_NULL(ppSignatureBase64, udR_InvalidParameter_);
@@ -1251,6 +1270,7 @@ udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64
   size_t hashLen;
   size_t sigLen;
 
+  UD_ERROR_IF(hashMethod > udCH_Count, udR_InvalidParameter_);
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter_);
   UD_ERROR_NULL(pSignatureBase64, udR_InvalidParameter_);

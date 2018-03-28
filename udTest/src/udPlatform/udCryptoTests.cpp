@@ -196,8 +196,8 @@ TEST(CryptoTests, SHA)
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
   };
 
-  static udCryptoHashes s_testHashes[udCH_Count] = { udCH_SHA1, udCH_SHA256, udCH_SHA512 };
-  static const char *s_testHashResults[udCH_Count][3] =
+  static udCryptoHashes s_testHashes[] = { udCH_SHA1, udCH_SHA256, udCH_SHA512 };
+  static const char *s_testHashResults[][3] =
   {
     { // SHA-1
       "qZk+NkcGgWq6PiVxeFDCbJzQ2J0=",
@@ -246,6 +246,7 @@ TEST(CryptoTests, Self)
   EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA1));
   EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA256));
   EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_SHA512));
+  EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_MD5));
 }
 
 TEST(CryptoTests, RSACreateSig)

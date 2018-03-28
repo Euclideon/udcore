@@ -73,6 +73,7 @@ enum udCryptoHashes
   udCH_SHA1,
   udCH_SHA256,
   udCH_SHA512,
+  udCH_MD5,
   udCH_Count
 };
 
@@ -81,6 +82,7 @@ enum udCryptoHashLength
   udCHL_SHA1Length = 20,
   udCHL_SHA256Length = 32,
   udCHL_SHA512Length = 64,
+  udCHL_MD5Length = 16,
 
   udCHL_MaxHashLength = udCHL_SHA512Length
 };
