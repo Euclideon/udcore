@@ -12,7 +12,8 @@ newoption {
 project ("udPlatform" .. (projectSuffix or ""))
 	kind "StaticLib"
 	language "C++"
-	flags { "StaticRuntime", "OmitDefaultLibrary", "C++11" }
+	cppdialect "C++11"
+	flags { "StaticRuntime", "OmitDefaultLibrary" }
 
 	files { "Source/**", "Include/**", "Docs/**" }
 
