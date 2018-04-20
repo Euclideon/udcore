@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #if UDPLATFORM_WINDOWS
 #include <io.h>
@@ -127,6 +128,68 @@ float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end)
 #endif
 }
 
+// *********************************************************************
+// Author: Dave Pevreal, April 2018
+float udPerfCounterSeconds(uint64_t startValue, uint64_t end)
+{
+  return udPerfCounterMilliseconds(startValue, end) / 1000.f;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, April 2018
+int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr)
+{
+  // Calculate the build year/month compile-time constants
+  #define BUILDDATE __DATE__
+  #define BUILDDATEYEAR (BUILDDATE[7]*1000 + BUILDDATE[8]*100 + BUILDDATE[9]*10 + BUILDDATE[10] - 1111*'0')
+  #define BUILDDATEMONTH  (((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'n')) ?  1 : ( /* Jan */ \
+                           ((BUILDDATE[0] == 'F') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'b')) ?  2 : ( /* Feb */ \
+                           ((BUILDDATE[0] == 'M') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'r')) ?  3 : ( /* Mar */ \
+                           ((BUILDDATE[0] == 'A') && (BUILDDATE[1] == 'p') && (BUILDDATE[2] == 'r')) ?  4 : ( /* Apr */ \
+                           ((BUILDDATE[0] == 'M') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'y')) ?  5 : ( /* May */ \
+                           ((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'n')) ?  6 : ( /* Jun */ \
+                           ((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'l')) ?  7 : ( /* Jul */ \
+                           ((BUILDDATE[0] == 'A') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'g')) ?  8 : ( /* Aug */ \
+                           ((BUILDDATE[0] == 'S') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'p')) ?  9 : ( /* Sep */ \
+                           ((BUILDDATE[0] == 'O') && (BUILDDATE[1] == 'c') && (BUILDDATE[2] == 't')) ? 10 : ( /* Oct */ \
+                           ((BUILDDATE[0] == 'N') && (BUILDDATE[1] == 'o') && (BUILDDATE[2] == 'v')) ? 11 : ( /* Nov */ \
+                           ((BUILDDATE[0] == 'D') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'c')) ? 12 : ( /* Dec */ \
+                            -1 )))))))))))))
+  #define BUILDDATEDAY (BUILDDATE[4] * 10 + BUILDDATE[5] - 11*'0')
+
+  time_t nowMoment = time(0), testMoment;
+  struct tm nowTm = *localtime(&nowMoment);
+  struct tm buildTm = nowTm;
+  struct tm testTm;
+  buildTm.tm_year = BUILDDATEYEAR - 1900;
+  buildTm.tm_mon = BUILDDATEMONTH - 1;
+  buildTm.tm_mday = BUILDDATEDAY; // Only field that starts at 1 not zero.
+  #undef BUILDDATE
+  #undef BUILDDATEYEAR
+  #undef BUILDDATEMONTH
+  #undef BUILDDATEDAY
+
+  int daysSince = -1;
+  do
+  {
+    testTm = buildTm;
+    testTm.tm_mday += ++daysSince;
+    testMoment = mktime(&testTm);
+  } while (testMoment < nowMoment && (daysSince < maxDays));
+
+  if (ppExpireDateStr)
+  {
+    static char str[100];
+    testTm = buildTm;
+    testTm.tm_mday += maxDays;
+    time_t expireTime = mktime(&testTm);
+    testTm = *localtime(&expireTime);
+    udSprintf(str, sizeof(str), "%04d-%02d-%02d", testTm.tm_year + 1900, testTm.tm_mon + 1, testTm.tm_mday);
+    *ppExpireDateStr = str;
+  }
+
+  return maxDays - daysSince;
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014

@@ -69,7 +69,8 @@ void udUpdateCamera(float camera[16], float yawRadians, float pitchRadians, floa
 uint32_t udGetTimeMs(); // Get a millisecond-resolution timer that is thread-independent - timeGetTime() on windows
 uint64_t udPerfCounterStart(); // Get a starting point value for now (thread dependent)
 float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
-
+float udPerfCounterSeconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
+int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr); // Return the number of days until the build expires
 
 // *********************************************************************
 // Some string functions that are safe,
