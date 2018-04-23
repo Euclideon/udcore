@@ -22,8 +22,8 @@ enum udResult
   udR_NodeLimitExceeded,
   udR_BlockLimitExceeded,
   udR_CorruptData,
-  udR_CompressionInputExhausted,
-  udR_CompressionOutputExhausted,
+  udR_InputExhausted,
+  udR_OutputExhausted,
   udR_CompressionError,
   udR_Unsupported,
   udR_Timeout,
@@ -38,34 +38,16 @@ enum udResult
   udR_OutOfRange,
   udR_CalledMoreThanOnce,
 
-  udR_Writer_InitFailure,
-  udR_Writer_WritePointCloudHeaderFailure,
-  udR_Writer_WriteBlockHeaderFailure,
-  udR_Writer_WriteBlockFailure,
-  udR_Writer_ReadBlockFailure,
-  udR_Writer_ReadNextBlockFailure,
-  udR_Writer_WriteBlockInfoArrayFailure,
-  udR_Writer_WriteStringTableFailure,
-  udR_Writer_WriteResourceFailure,
-  udR_Writer_DeinitFailure,
+  udR_OpenFailure,
+  udR_CloseFailure,
+  udR_ReadFailure,
+  udR_WriteFailure,
+  udR_SocketError,
 
-  udR_BlockInfoArrayExhausted,
-
-  udR_File_OpenFailure,
-  udR_File_CloseFailure,
-  udR_File_NoFileJobsAvailable,
-  udR_File_SeekFailure,
-  udR_File_ReadFailure,
-  udR_File_WriteFailure,
-  udR_File_FailedToAddFileJob,
-  udR_File_SocketError,
-
-  udR_UDI_MaxOctreeCountExceeded,
-  udR_UDI_MaxGridTreeDepthExceeded,
   udR_EventNotHandled,
+  udR_DatabaseError,
 
   udR_Count,
-
 
   udR_ForceInt = 0x7FFFFFFF
 };

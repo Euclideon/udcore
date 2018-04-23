@@ -50,7 +50,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
       goto epilogue;
     if (actualRead != (size_t)length)
     {
-      result = udR_File_ReadFailure;
+      result = udR_ReadFailure;
       goto epilogue;
     }
   }
@@ -107,7 +107,7 @@ epilogue:
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
   UDTRACE();
-  udResult result = udR_File_OpenFailure;
+  udResult result = udR_OpenFailure;
   if (ppFile == nullptr || pFilename == nullptr)
   {
     result = udR_InvalidParameter_;
@@ -284,7 +284,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
 
   // If the caller isn't checking the actual read (ie it's null), and it's not the requested amount, return an error when full amount isn't actually read
   if (result == udR_Success && pActualRead == nullptr && actualRead != bufferLength)
-    result = udR_File_ReadFailure;
+    result = udR_ReadFailure;
 
 epilogue:
   if (pCipherText != nullptr && pCipherText != pBuffer)
@@ -329,7 +329,7 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
 
   // If the caller isn't checking the actual written (ie it's null), and it's not the requested amount, return an error when full amount isn't actually written
   if (result == udR_Success && pActualWritten == nullptr && actualWritten != bufferLength)
-    result = udR_File_WriteFailure;
+    result = udR_WriteFailure;
 
 epilogue:
   return result;
@@ -390,7 +390,7 @@ udResult udFile_Close(udFile **ppFile)
   }
   else
   {
-    return udR_File_CloseFailure;
+    return udR_CloseFailure;
   }
 }
 

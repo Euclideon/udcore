@@ -67,7 +67,7 @@ static udResult udFileHandler_HTTPOpenSocket(udFile_HTTP *pFile)
 {
   udResult result;
 
-  result = udR_File_SocketError;
+  result = udR_SocketError;
   if (pFile->sock == INVALID_SOCKET)
   {
     pFile->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -119,7 +119,7 @@ static udResult udFileHandler_HTTPSendRequest(udFile_HTTP *pFile, int len)
   if (result != udR_Success)
     goto epilogue;
 
-  result = udR_File_SocketError;
+  result = udR_SocketError;
   if (send(pFile->sock, pFile->recvBuffer, len, 0) == SOCKET_ERROR)
   {
     // On error, first try closing and re-opening the socket before giving up
@@ -160,7 +160,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     goto epilogue;
   }
 
-  result = udR_File_OpenFailure; // For now, all failures will be generic file failure
+  result = udR_OpenFailure; // For now, all failures will be generic file failure
 
   recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
   if (recvCode == SOCKET_ERROR)
@@ -219,7 +219,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     if (contentLength > (int64_t)bufferLength)
     {
       udDebugPrintf("contentLength=%lld bufferLength=%lld\n", contentLength, bufferLength);
-      result = udR_File_ReadFailure; // TODO: Maybe a better error code?
+      result = udR_ReadFailure; // TODO: Maybe a better error code?
       goto epilogue;
     }
 
@@ -261,7 +261,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   int actualHeaderLen;
 
   // Automatically fail if trying to write to files on http
-  result = udR_File_OpenFailure;
+  result = udR_OpenFailure;
   if (flags & (udFOF_Write|udFOF_Create))
     goto epilogue;
 
@@ -286,7 +286,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   if (result != udR_Success)
     goto epilogue;
 
-  result = udR_File_OpenFailure;
+  result = udR_OpenFailure;
   if (!udStrEqual(pFile->url.GetScheme(), "http"))
     goto epilogue;
 
@@ -300,7 +300,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile->wsInitialised = true;
 #endif
 
-  result = udR_File_OpenFailure;
+  result = udR_OpenFailure;
   //udDebugPrintf("Resolving %s to ip address...", pFile->url.GetDomain());
   hp = gethostbyname(pFile->url.GetDomain());
   if (!hp)
@@ -317,7 +317,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPHeaderString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain());
   if (actualHeaderLen < 0)
     goto epilogue;
-  result = udR_File_SocketError;
+  result = udR_SocketError;
   //udDebugPrintf("Sending:\n%s", pFile->recvBuffer);
   result = udFileHandler_HTTPSendRequest(pFile, (int)actualHeaderLen);
   if (result != udR_Success)
@@ -400,7 +400,7 @@ static udResult udFileHandler_HTTPBlockForPipelinedRequest(udFile *pBaseFile, ud
   if (sockID != pFile->sockID)
   {
     udDebugPrintf("Pipelined request failed due to socket close/reopen. Expected %d, socket id is now %d\n", sockID, pFile->sockID);
-    result = udR_File_SocketError;
+    result = udR_SocketError;
   }
   else
   {

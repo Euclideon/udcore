@@ -25,7 +25,7 @@ TEST(udFileTests, GeneralDirectoryTests)
   const char *pDirectoryName = "._notadirectory";
 
   udFindDir *pDir = nullptr;
-  EXPECT_EQ(udR_File_OpenFailure, udOpenDir(&pDir, pDirectoryName));
+  EXPECT_EQ(udR_OpenFailure, udOpenDir(&pDir, pDirectoryName));
   ASSERT_EQ(nullptr, pDir);
 }
 

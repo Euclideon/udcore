@@ -130,7 +130,7 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
   UD_ERROR_IF(mzErr != MZ_OK, udR_CompressionError);
 
   mzErr = mz_deflate(&stream, MZ_FINISH);
-  UD_ERROR_IF(mzErr != MZ_STREAM_END, udR_CompressionOutputExhausted);
+  UD_ERROR_IF(mzErr != MZ_STREAM_END, udR_OutputExhausted);
 
   destSize = stream.total_out;
 
@@ -164,13 +164,13 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
   mzErr = udCompTInf_decompress(&decompressor, (const mz_uint8*)pSource, &sourceSize, (mz_uint8*)pDest, (mz_uint8*)pDest, &inflatedSize,
             TINFL_FLAG_PARSE_ZLIB_HEADER | TINFL_FLAG_COMPUTE_ADLER32 | TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
 
-  UD_ERROR_IF(mzErr == TINFL_STATUS_NEEDS_MORE_INPUT, udR_CompressionInputExhausted);
-  UD_ERROR_IF(mzErr == TINFL_STATUS_HAS_MORE_OUTPUT, udR_CompressionOutputExhausted);
+  UD_ERROR_IF(mzErr == TINFL_STATUS_NEEDS_MORE_INPUT, udR_InputExhausted);
+  UD_ERROR_IF(mzErr == TINFL_STATUS_HAS_MORE_OUTPUT, udR_OutputExhausted);
   UD_ERROR_IF(mzErr != TINFL_STATUS_DONE, udR_CompressionError);
 
   if (pInflatedSize)
     *pInflatedSize = inflatedSize;
-  UD_ERROR_IF(!pInflatedSize && inflatedSize != destSize, udR_CompressionInputExhausted);
+  UD_ERROR_IF(!pInflatedSize && inflatedSize != destSize, udR_InputExhausted);
 
   result = udR_Success;
 
@@ -340,7 +340,7 @@ udResult udMiniZCompressor_Deflate(udMiniZCompressor *pCompressor, void *pDest, 
   if (status != MZ_STREAM_END)
   {
     udComp_deflateEnd(&stream);
-    return udR_CompressionOutputExhausted;
+    return udR_OutputExhausted;
   }
 
   *pCompressedSize = stream.total_out;
@@ -430,9 +430,9 @@ udResult udMiniZDecompressor_Inflate(udMiniZDecompressor *pDecompressor, void *p
   if (status != TINFL_STATUS_DONE)
   {
     if (status == TINFL_STATUS_NEEDS_MORE_INPUT)
-      return udR_CompressionInputExhausted;
+      return udR_InputExhausted;
     if (status == TINFL_STATUS_HAS_MORE_OUTPUT)
-      return udR_CompressionOutputExhausted;
+      return udR_OutputExhausted;
     return udR_CompressionError;
   }
 
@@ -468,7 +468,7 @@ static udResult udFileHandler_MiniZSeekRead(udFile *a_pFile, void *pBuffer, size
 {
   udFile_MiniZFile *pFile = static_cast<udFile_MiniZFile *>(a_pFile);
   if (seekOffset >= pFile->length)
-    return udR_File_ReadFailure;
+    return udR_ReadFailure;
   size_t actualRead = (seekOffset + (int64_t)bufferLength) > pFile->length ? (size_t)(pFile->length - seekOffset) : bufferLength;
   memcpy(pBuffer, pFile->data + seekOffset, actualRead);
 
@@ -496,13 +496,13 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
 static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
 {
   if (!s_pZip || (flags & udFOF_Write))
-    return udR_File_OpenFailure;
+    return udR_OpenFailure;
   int index = mz_zip_reader_locate_file(s_pZip, pFilename, nullptr, 0);
   if (index < 0)
-    return udR_File_OpenFailure;
+    return udR_OpenFailure;
   mz_zip_archive_file_stat stat;
   if (!mz_zip_reader_file_stat(s_pZip, index, &stat))
-    return udR_File_OpenFailure;
+    return udR_OpenFailure;
   udFile_MiniZFile *pFile = (udFile_MiniZFile *)udAllocFlags(sizeof(udFile_MiniZFile) + (size_t)stat.m_uncomp_size, udAF_Zero);
   if (!pFile)
     return udR_MemoryAllocationFailure;
@@ -510,7 +510,7 @@ static udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, 
   if (!mz_zip_reader_extract_to_mem(s_pZip, index, pFile->data, (size_t)stat.m_uncomp_size, 0))
   {
     udFree(pFile);
-    return udR_File_ReadFailure;
+    return udR_ReadFailure;
   }
 
   pFile->length = (size_t)stat.m_uncomp_size;

@@ -116,7 +116,7 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
     if (!pFile->pCrtFile)
     {
       // Do this the manual way so that file open failures don't trigger breakpoints with BREAK_ON_ERROR defined.
-      result = udR_File_OpenFailure;
+      result = udR_OpenFailure;
       goto epilogue;
     }
   }
@@ -164,14 +164,14 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
     udDebugPrintf("Reopening handle for %s (handleCount=%d)\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount);
 #endif
     pFILE->pCrtFile = OpenWithFlags(pFile->pFilenameCopy, pFile->flagsCopy);
-    UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
+    UD_ERROR_NULL(pFILE->pCrtFile, udR_OpenFailure);
   }
 
   fseeko(pFILE->pCrtFile, seekOffset, SEEK_SET);
   actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
   if (pActualRead)
     *pActualRead = actualRead;
-  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_ReadFailure);
+  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_ReadFailure);
 
   result = udR_Success;
 
@@ -196,13 +196,13 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
-  UD_ERROR_NULL(pFILE->pCrtFile, udR_File_OpenFailure);
+  UD_ERROR_NULL(pFILE->pCrtFile, udR_OpenFailure);
 
   fseeko(pFILE->pCrtFile, seekOffset, SEEK_SET);
   actualWritten = fwrite(pBuffer, 1, bufferLength, pFILE->pCrtFile);
   if (pActualWritten)
     *pActualWritten = actualWritten;
-  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_File_WriteFailure);
+  UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_WriteFailure);
 
   result = udR_Success;
 
@@ -265,7 +265,7 @@ static udResult udFileHandler_FILEClose(udFile **ppFile)
 
   if (pFILE->pCrtFile)
   {
-    result = (fclose(pFILE->pCrtFile) != 0) ? udR_File_CloseFailure : udR_Success;
+    result = (fclose(pFILE->pCrtFile) != 0) ? udR_CloseFailure : udR_Success;
     pFILE->pCrtFile = nullptr;
     udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
   }

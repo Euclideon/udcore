@@ -35,8 +35,8 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_NodeLimitExceeded),
   RESULTINFO(udR_BlockLimitExceeded),
   RESULTINFO(udR_CorruptData),
-  RESULTINFO(udR_CompressionInputExhausted),
-  RESULTINFO(udR_CompressionOutputExhausted),
+  RESULTINFO(udR_InputExhausted),
+  RESULTINFO(udR_OutputExhausted),
   RESULTINFO(udR_CompressionError),
   RESULTINFO(udR_Unsupported),
   RESULTINFO(udR_Timeout),
@@ -51,31 +51,14 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_OutOfRange),
   RESULTINFO(udR_CalledMoreThanOnce),
 
-  RESULTINFO(udR_Writer_InitFailure),
-  RESULTINFO(udR_Writer_WritePointCloudHeaderFailure),
-  RESULTINFO(udR_Writer_WriteBlockHeaderFailure),
-  RESULTINFO(udR_Writer_WriteBlockFailure),
-  RESULTINFO(udR_Writer_ReadBlockFailure),
-  RESULTINFO(udR_Writer_ReadNextBlockFailure),
-  RESULTINFO(udR_Writer_WriteBlockInfoArrayFailure),
-  RESULTINFO(udR_Writer_WriteStringTableFailure),
-  RESULTINFO(udR_Writer_WriteResourceFailure),
-  RESULTINFO(udR_Writer_DeinitFailure),
+  RESULTINFO(udR_OpenFailure),
+  RESULTINFO(udR_CloseFailure),
+  RESULTINFO(udR_ReadFailure),
+  RESULTINFO(udR_WriteFailure),
+  RESULTINFO(udR_SocketError),
 
-  RESULTINFO(udR_BlockInfoArrayExhausted),
-
-  RESULTINFO(udR_File_OpenFailure),
-  RESULTINFO(udR_File_CloseFailure),
-  RESULTINFO(udR_File_NoFileJobsAvailable),
-  RESULTINFO(udR_File_SeekFailure),
-  RESULTINFO(udR_File_ReadFailure),
-  RESULTINFO(udR_File_WriteFailure),
-  RESULTINFO(udR_File_FailedToAddFileJob),
-  RESULTINFO(udR_File_SocketError),
-
-  RESULTINFO(udR_UDI_MaxOctreeCountExceeded),
-  RESULTINFO(udR_UDI_MaxGridTreeDepthExceeded),
-  RESULTINFO(udR_EventNotHandled)
+  RESULTINFO(udR_EventNotHandled),
+  RESULTINFO(udR_DatabaseError),
 };
 
 UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), "Result code not entered in strings table");

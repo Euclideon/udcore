@@ -1573,7 +1573,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     pFindData->hFind = FindFirstFileW(udOSString(fn.GetPath()), &pFindData->findFileData);
     if (pFindData->hFind == INVALID_HANDLE_VALUE)
     {
-      result = udR_File_OpenFailure;
+      result = udR_OpenFailure;
       goto epilogue;
     }
     pFindData->SetMembers();
@@ -1582,7 +1582,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
   pFindData->pDir = opendir(pFolder);
   if (!pFindData->pDir)
   {
-    result = udR_File_OpenFailure;
+    result = udR_OpenFailure;
     goto epilogue;
   }
   pFindData->pDirent = readdir(pFindData->pDir);
