@@ -46,6 +46,7 @@ enum udResult
 
   udR_EventNotHandled,
   udR_DatabaseError,
+  udR_NotAllowed,
 
   udR_Count,
 
