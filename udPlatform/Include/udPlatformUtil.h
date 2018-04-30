@@ -351,9 +351,17 @@ protected:
 udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColorData, int pitch = 0);
 udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **pColorData);
 
+// *********************************************************************
+// Some helper functions that make use of internal cycling buffers for convenience (threadsafe)
+// *********************************************************************
+
 // Give back pretty version (ie with commas) of an int (returns one of 32 cycing static buffers)
 const char *udCommaInt(int64_t n);
 
+// Give back a H:MM:SS format string, optionally trimming to MM:SS if hours is zero
+const char *udSecondsToString(int seconds, bool trimHours = true);
+
+// *********************************************************************
 // Directory iteration for OS file system only
 struct udFindDir
 {

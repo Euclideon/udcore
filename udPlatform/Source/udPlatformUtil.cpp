@@ -1512,14 +1512,16 @@ epilogue:
   return result;
 }
 
+#define SMALLSTRING_BUFFER_COUNT 32
+#define SMALLSTRING_BUFFER_SIZE 32
+static char s_smallStringBuffers[SMALLSTRING_BUFFER_COUNT][SMALLSTRING_BUFFER_SIZE]; // 32 cycling buffers of 32 characters, which is enough for biggest 64-bit integer
+static int32_t s_smallStringBufferIndex = 0;  // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
+
 // ****************************************************************************
 // Author: Dave Pevreal, October 2015
 const char *udCommaInt(int64_t n)
 {
-  static char buffers[32][32]; // 32 cycling buffers of 32 characters, which is enough for biggest 64-bit integer
-  static int bufferIndex = 0;
-  char *pBuf = buffers[bufferIndex];
-  bufferIndex = (bufferIndex + 1) % 32;
+  char *pBuf = s_smallStringBuffers[udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT-1)];
   uint64_t v = (uint64_t)n;
 
   int i = 0;
@@ -1548,6 +1550,20 @@ const char *udCommaInt(int64_t n)
   } while (digitCount);
   pBuf[i++] = 0;
 
+  return pBuf;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, May 2018
+const char *udSecondsToString(int seconds, bool trimHours)
+{
+  char *pBuf = s_smallStringBuffers[udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)];
+  int hours = seconds / (60 * 60);
+  int minutes = (seconds / 60) % 60;
+  int secs = seconds % 60;
+  udSprintf(pBuf, SMALLSTRING_BUFFER_SIZE, "%d:%02d:%02d", hours, minutes, secs);
+  if (trimHours && !hours)
+    pBuf += 2; // Skip leading 0: when hours is zero
   return pBuf;
 }
 
