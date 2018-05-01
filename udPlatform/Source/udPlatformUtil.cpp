@@ -155,7 +155,7 @@ int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr)
                            ((BUILDDATE[0] == 'N') && (BUILDDATE[1] == 'o') && (BUILDDATE[2] == 'v')) ? 11 : ( /* Nov */ \
                            ((BUILDDATE[0] == 'D') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'c')) ? 12 : ( /* Dec */ \
                             -1 )))))))))))))
-  #define BUILDDATEDAY (BUILDDATE[4] * 10 + BUILDDATE[5] - 11*'0')
+  #define BUILDDATEDAY ((BUILDDATE[4] == ' ' ? '0' : BUILDDATE[4]) * 10 + BUILDDATE[5] - 11*'0')
 
   time_t nowMoment = time(0), testMoment;
   struct tm nowTm = *localtime(&nowMoment);
