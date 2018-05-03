@@ -13,7 +13,7 @@ project ("udPlatform" .. (projectSuffix or ""))
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++11"
-	flags { "StaticRuntime", "OmitDefaultLibrary" }
+	flags { "StaticRuntime", "OmitDefaultLibrary", "FatalWarnings" }
 
 	files { "Source/**", "Include/**", "Docs/**" }
 
@@ -54,8 +54,15 @@ project ("udPlatform" .. (projectSuffix or ""))
 		files { "../3rdParty/mbedtls/library/*.c", "../3rdParty/mbedtls/include/mbedtls/*.h" }
 		defines { "FULL_MBEDTLS" }
 
+	filter { "files:../3rdParty/**" }
+		warnings "Off"
+
 	filter { "configurations:Release", "system:Windows" }
 		symbols "On"
+
+	filter { "system:linux", "toolset:gcc" }
+		buildoptions { "-pedantic" }
+		enablewarnings { "undef" }
 
 	-- for windows, make the output name and location identical to that of udbin
 	filter { "system:Windows" }

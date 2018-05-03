@@ -551,7 +551,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
     {
       // [,n] which indicates member index
       UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
-      UD_ERROR_IF(resultNumber >= pRoot->AsObject()->length, udR_ObjectNotFound);
+      UD_ERROR_IF(resultNumber < 0 || (size_t)resultNumber >= pRoot->AsObject()->length, udR_ObjectNotFound);
       const udValue *pV = &pRoot->AsObject()->GetElement(resultNumber)->value;
       if (ppValue)
         *ppValue = pV;
@@ -602,7 +602,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
       udValue *pV = (size_t(searchIndex) < pRoot->AsArray()->length) ? pRoot->AsArray()->GetElement(searchIndex) : nullptr;
       if (!pV && createIfNotExist)
       {
-        while (pRoot->AsArray()->length <= searchIndex)
+        while (pRoot->AsArray()->length <= (size_t)searchIndex)
         {
           pV = pRoot->AsArray()->PushBack();
           UD_ERROR_NULL(pV, udR_MemoryAllocationFailure);
@@ -1501,7 +1501,7 @@ static udResult ParseXMLString(const char **ppStr, const char *pXML, int *pCharC
     for (int si = 1; pXML[si] != *pXML;)
     {
       bool escaped = false;
-      for (int e = 0; pXML[si] == '&' && !escaped && e < UDARRAYSIZE(s_pXMLEscStrings); ++e)
+      for (int e = 0; pXML[si] == '&' && !escaped && e < (int)UDARRAYSIZE(s_pXMLEscStrings); ++e)
       {
         if (udStrBeginsWith(pXML+si, s_pXMLEscStrings[e]))
         {

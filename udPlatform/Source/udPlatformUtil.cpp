@@ -701,7 +701,9 @@ int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
 // Author: Dave Pevreal, March 2017
 int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars)
 {
-  bool negative = *((int64_t*)&value) < 0; // Only reliable way I've found to detect -0.0
+  int64_t temp;
+  memcpy(&temp, &value, sizeof(value));
+  bool negative = temp < 0; // Only reliable way I've found to detect -0.0
   // Apply the rounding before splitting whole and fraction so that the whole rounds if necessary
   value += pow(10.0, -precision) * (negative ? -0.5 : 0.5);
   // modf does this however it doesn't split the sign out whereas this removes the sign efficiently
@@ -1602,7 +1604,11 @@ struct udFindDirData : public udFindDir
 // Author: Dave Pevreal, August 2014
 udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
 {
-#if UD_32BIT || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+#if UD_32BIT
+  struct stat st = { 0 };
+  if (stat(pFilename, &st) == 0)
+#elif UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
+  // Apple made these 64bit and deprecated the 64bit variants
   struct stat st = { 0 };
   if (stat(pFilename, &st) == 0)
 #elif UDPLATFORM_WINDOWS

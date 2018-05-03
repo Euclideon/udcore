@@ -140,8 +140,8 @@ static udResult FromLittleEndianBinary(mbedtls_mpi *pBigNum, uint8_t *&pBuf, siz
   udResult result;
   uint8_t buf[4096/8];
 
-  UD_ERROR_IF(numLen > sizeof(buf), udR_InternalError);
-  UD_ERROR_IF(numLen > bufLen, udR_InternalError);
+  UD_ERROR_IF(numLen > (int)sizeof(buf), udR_InternalError);
+  UD_ERROR_IF(numLen < 0 || (size_t)numLen > bufLen, udR_InternalError);
   for (int i = numLen - 1; i >= 0; --i)
     buf[i] = *pBuf++;
   bufLen -= numLen;
@@ -1321,7 +1321,7 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
     case udCST_RSA4096:
       if (pad == udCSPS_Deterministic)
         mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
-      UD_ERROR_IF(sizeof(signature) < (pSigCtx->type / 8), udR_InternalCryptoError);
+      UD_ERROR_IF(sizeof(signature) < (size_t)(pSigCtx->type / 8), udR_InternalCryptoError);
       UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_sign(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PRIVATE, udc_to_mbed_hashfunctions[hashMethod], hashLen, hash, signature) != 0, udR_InternalCryptoError);
       result = udBase64Encode(ppSignatureBase64, signature, pSigCtx->type / 8);
       UD_ERROR_HANDLE();
@@ -1363,7 +1363,7 @@ udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64
     case udCST_RSA4096:
       if (pad == udCSPS_Deterministic)
         mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, 0);
-      UD_ERROR_IF(sizeof(signature) < (pSigCtx->type / 8), udR_InternalCryptoError);
+      UD_ERROR_IF(sizeof(signature) < (size_t)(pSigCtx->type / 8), udR_InternalCryptoError);
       UD_ERROR_CHECK(udBase64Decode(pSignatureBase64, 0, signature, sizeof(signature), &sigLen));
       UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_verify(&pSigCtx->rsa, NULL, NULL, MBEDTLS_RSA_PUBLIC, udc_to_mbed_hashfunctions[hashMethod], hashLen, hash, signature) != 0, udR_SignatureMismatch);
       UD_ERROR_IF(sigLen != (size_t)(pSigCtx->type / 8), udR_InternalCryptoError);

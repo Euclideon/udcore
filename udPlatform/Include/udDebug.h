@@ -100,7 +100,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 # define UDASSERT(condition, ...) do { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } } while (0)
 # define IF_UDASSERT(x) x
 #else
-# define UDASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
+# define UDASSERT(condition, ...) do { } while (0) // TODO: Make platform-specific __assume(condition)
 # define IF_UDASSERT(x)
 #endif // UDASSERT_ON
 
@@ -108,7 +108,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 # define UDRELASSERT(condition, ...) do { bool testCondition = !!(condition); if (!testCondition) { udDebugPrintf(__VA_ARGS__); DebugBreak(); udDebugPrintf("\n"); } } while(0)
 # define IF_UDRELASSERT(x) x
 #else
-# define UDRELASSERT(condition, ...) // TODO: Make platform-specific __assume(condition)
+# define UDRELASSERT(condition, ...) do { } while (0) // TODO: Make platform-specific __assume(condition)
 # define IF_UDRELASSERT(x)
 #endif //UDRELASSERT_ON
 
