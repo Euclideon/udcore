@@ -4,7 +4,6 @@
 #include "udResult.h"
 
 // --------------------------------------------------------------------------
-// Author: David Ely, May 2015
 template <typename T>
 struct udChunkedArray
 {
@@ -33,6 +32,9 @@ struct udChunkedArray
   bool PopFront(T *pData = nullptr);             // Returns false if no element to pop
   void RemoveAt(size_t index);                   // Remove the element at index, moving all elements after to fill the gap.
   void RemoveSwapLast(size_t index);             // Remove the element at index, swapping with the last element to ensure array is contiguous
+
+  udResult ToArray(T *pArray, size_t arrayLength, size_t startIndex = 0, size_t count = 0); // Copy elements to an array supplied by caller
+  udResult ToArray(T **ppArray, size_t startIndex = 0, size_t count = 0);                   // Copy elements to an array allocated and returned to caller
 
   udResult GrowBack(size_t numberOfNewElements); // Push back a number of new elements, zeroing the memory
   udResult ReserveBack(size_t newCapacity);      // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
@@ -488,19 +490,6 @@ inline bool udChunkedArray<T>::PopFront(T *pDest)
 }
 
 // --------------------------------------------------------------------------
-// Author: Dave Pevreal, May 2015
-template <typename T>
-inline void udChunkedArray<T>::RemoveSwapLast(size_t index)
-{
-  UDASSERT(index < length, "Index out of bounds");
-
-  // Only copy the last element over if the element being removed isn't the last element
-  if (index != (length - 1))
-    SetElement(index, *GetElement(length - 1));
-  PopBack();
-}
-
-// --------------------------------------------------------------------------
 // Author: Samuel Surtees, October 2015
 template <typename T>
 inline void udChunkedArray<T>::RemoveAt(size_t index)
@@ -547,6 +536,74 @@ inline void udChunkedArray<T>::RemoveAt(size_t index)
 
     PopBack();
   }
+}
+
+// --------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2015
+template <typename T>
+inline void udChunkedArray<T>::RemoveSwapLast(size_t index)
+{
+  UDASSERT(index < length, "Index out of bounds");
+
+  // Only copy the last element over if the element being removed isn't the last element
+  if (index != (length - 1))
+    SetElement(index, *GetElement(length - 1));
+  PopBack();
+}
+
+// --------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2018
+template <typename T>
+inline udResult udChunkedArray<T>::ToArray(T *pArray, size_t arrayLength, size_t startIndex, size_t count)
+{
+  udResult result;
+
+  if (count == 0)
+    count = length - startIndex;
+  UD_ERROR_IF(startIndex >= length, udR_OutOfRange);
+  UD_ERROR_NULL(pArray, udR_InvalidParameter_);
+  UD_ERROR_IF(arrayLength < count, udR_BufferTooSmall);
+  while (count)
+  {
+    size_t runLen = udMin(count, GetElementRunLength(startIndex));
+    memcpy(pArray, GetElement(startIndex), runLen * sizeof(T));
+    pArray += runLen;
+    startIndex += runLen;
+    count -= runLen;
+  }
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+// --------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2018
+template <typename T>
+udResult udChunkedArray<T>::ToArray(T **ppArray, size_t startIndex, size_t count)
+{
+  udResult result;
+  T *pArray = nullptr;
+
+  if (count == 0)
+    count = length - startIndex;
+  UD_ERROR_IF(startIndex >= length, udR_OutOfRange);
+  UD_ERROR_NULL(ppArray, udR_InvalidParameter_);
+
+  if (count)
+  {
+    pArray = udAllocType(T, count, udAF_None);
+    UD_ERROR_NULL(pArray, udR_MemoryAllocationFailure);
+    UD_ERROR_CHECK(ToArray(pArray, count, startIndex, count));
+  }
+  // Transfer ownership of array and assign success
+  *ppArray = pArray;
+  pArray = nullptr;
+  result = udR_Success;
+
+epilogue:
+  udFree(pArray);
+  return result;
 }
 
 // --------------------------------------------------------------------------
