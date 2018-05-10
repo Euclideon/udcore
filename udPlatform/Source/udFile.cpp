@@ -103,6 +103,21 @@ epilogue:
 }
 
 // ****************************************************************************
+// Author: Dave Pevreal, May 2018
+udResult udFile_Save(const char *pFilename, void *pBuffer, size_t length)
+{
+  udResult result;
+  udFile *pFile = nullptr;
+
+  UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Create|udFOF_Write));
+  UD_ERROR_CHECK(udFile_Write(pFile, pBuffer, (size_t)length));
+
+epilogue:
+  udFile_Close(&pFile);
+  return result;
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, March 2014
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes)
 {
