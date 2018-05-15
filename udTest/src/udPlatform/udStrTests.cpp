@@ -176,8 +176,8 @@ TEST(udStrTests, udStrtoa)
   buffer[0] = '\0';
 
   // Negative
-  EXPECT_EQ(20, udStrUtoa(buffer, UDARRAYSIZE(buffer), -52));
-  EXPECT_STREQ("18446744073709551564", buffer); // This probably should generate 0
+  EXPECT_EQ(20, udStrUtoa(buffer, UDARRAYSIZE(buffer), (uint64_t)-52));
+  EXPECT_STREQ("18446744073709551564", buffer);
   EXPECT_EQ(3, udStrItoa(buffer, UDARRAYSIZE(buffer), -52));
   EXPECT_STREQ("-52", buffer);
   buffer[0] = '\0';

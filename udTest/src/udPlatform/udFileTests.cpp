@@ -105,7 +105,7 @@ TEST(udFileTests, EncryptedReadWriteFILE)
   EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Read));
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer)));
   EXPECT_STRNE(writeBuffer, readBuffer);
-  EXPECT_EQ(udR_Success, udFile_SetEncryption(pFile, pKey, keyLen, 12));
+  EXPECT_EQ(udR_Success, udFile_SetEncryption(pFile, pKey, (int)keyLen, 12));
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer), 0, udFSW_SeekSet));
   EXPECT_STREQ(writeBuffer, readBuffer);
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
