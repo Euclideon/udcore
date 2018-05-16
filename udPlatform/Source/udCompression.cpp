@@ -76,7 +76,26 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
         *pDestSize = sourceSize;
       break;
 
-    case udCT_Deflate:
+    case udCT_RawDeflate:
+      ldComp = libdeflate_alloc_compressor(6);
+      UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+
+      destSize = libdeflate_deflate_compress_bound(ldComp, sourceSize);
+      UD_ERROR_IF(destSize == 0, udR_CompressionError);
+      pTemp = udAlloc(destSize);
+      UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+
+      destSize = libdeflate_deflate_compress(ldComp, pSource, sourceSize, pTemp, destSize);
+      UD_ERROR_IF(destSize == 0, udR_CompressionError);
+
+      // Size the allocation as required
+      *pDestSize = destSize;
+      *ppDest = udRealloc(pTemp, destSize);
+      UD_ERROR_NULL(*ppDest, udR_MemoryAllocationFailure);
+      pTemp = nullptr; // Prevent freeing on successful realloc
+      break;
+
+    case udCT_ZlibDeflate:
       ldComp = libdeflate_alloc_compressor(6);
       UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
 
@@ -86,6 +105,25 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
       UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
       destSize = libdeflate_zlib_compress(ldComp, pSource, sourceSize, pTemp, destSize);
+      UD_ERROR_IF(destSize == 0, udR_CompressionError);
+
+      // Size the allocation as required
+      *pDestSize = destSize;
+      *ppDest = udRealloc(pTemp, destSize);
+      UD_ERROR_NULL(*ppDest, udR_MemoryAllocationFailure);
+      pTemp = nullptr; // Prevent freeing on successful realloc
+      break;
+
+    case udCT_GzipDeflate:
+      ldComp = libdeflate_alloc_compressor(6);
+      UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+
+      destSize = libdeflate_gzip_compress_bound(ldComp, sourceSize);
+      UD_ERROR_IF(destSize == 0, udR_CompressionError);
+      pTemp = udAlloc(destSize);
+      UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+
+      destSize = libdeflate_gzip_compress(ldComp, pSource, sourceSize, pTemp, destSize);
       UD_ERROR_IF(destSize == 0, udR_CompressionError);
 
       // Size the allocation as required
@@ -116,6 +154,7 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
   size_t inflatedSize;
   void *pTemp = nullptr;
   struct libdeflate_decompressor *ldComp = nullptr;
+  libdeflate_result lresult;
 
   UD_ERROR_IF(!pDest || !pSource, udR_InvalidParameter_);
   switch (type)
@@ -127,13 +166,50 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
       *pInflatedSize = sourceSize;
     break;
 
-  case udCT_Deflate:
+  case udCT_RawDeflate:
     ldComp = libdeflate_alloc_decompressor();
     UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
 
     pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
     UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
-    UD_ERROR_IF(libdeflate_zlib_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize) != LIBDEFLATE_SUCCESS, udR_CompressionError);
+
+    lresult = libdeflate_deflate_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
+    UD_ERROR_IF(lresult == LIBDEFLATE_INSUFFICIENT_SPACE, udR_BufferTooSmall);
+    UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
+
+    if (pInflatedSize)
+      *pInflatedSize = inflatedSize;
+    if (pTemp != pDest)
+      memcpy(pDest, pTemp, inflatedSize);
+    break;
+
+  case udCT_ZlibDeflate:
+    ldComp = libdeflate_alloc_decompressor();
+    UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+
+    pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
+    UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+
+    lresult = libdeflate_zlib_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
+    UD_ERROR_IF(lresult == LIBDEFLATE_INSUFFICIENT_SPACE, udR_BufferTooSmall);
+    UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
+
+    if (pInflatedSize)
+      *pInflatedSize = inflatedSize;
+    if (pTemp != pDest)
+      memcpy(pDest, pTemp, inflatedSize);
+    break;
+
+  case udCT_GzipDeflate:
+    ldComp = libdeflate_alloc_decompressor();
+    UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+
+    pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
+    UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+
+    lresult = libdeflate_gzip_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
+    UD_ERROR_IF(lresult == LIBDEFLATE_INSUFFICIENT_SPACE, udR_BufferTooSmall);
+    UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
     if (pInflatedSize)
       *pInflatedSize = inflatedSize;
