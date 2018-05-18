@@ -10,6 +10,10 @@ udResult udAsyncJob_Create(udAsyncJob **ppJobHandle);
 // Get the result of an async job (wait on semaphore)
 udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle);
 
+// Get the result of an async job (wait on semaphore for specified time)
+// Returns true if job is complete (*pResult is set), false if timed out
+bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int timeoutMs);
+
 // Set the result (increment semaphore)
 void udAsyncJob_SetResult(udAsyncJob *pJobHandle, udResult returnResult);
 
