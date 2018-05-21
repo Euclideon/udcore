@@ -84,7 +84,7 @@ TEST(udThreadTests, ThreadConditionVariable)
 
 TEST(udThreadTests, ThreadSemaphore)
 {
-  gpudDebugPrintfOutputCallback = [](const char *pBuffer) { printf(pBuffer); };
+  //gpudDebugPrintfOutputCallback = [](const char *pBuffer) { printf(pBuffer); };
 
   struct TestStruct
   {

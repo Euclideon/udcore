@@ -553,6 +553,10 @@ TEST(MathTests, LinearAlgebraFunctions_MinMax)
   EXPECT_EQ(udFloat4::create(4.f), udMin(udFloat4::create(8.f), udFloat4::create(4.f)));
   EXPECT_EQ(udFloat4::create(8.f), udMax(udFloat4::create(4.f), udFloat4::create(8.f)));
   EXPECT_EQ(udFloat4::create(8.f), udMax(udFloat4::create(8.f), udFloat4::create(4.f)));
+  EXPECT_EQ(1.f, udMinElement(udFloat4::create(1.f, 2.f, 4.f, 8.f)));
+  EXPECT_EQ(-8.f, udMinElement(udFloat4::create(1.f, 2.f, 4.f, -8.f)));
+  EXPECT_EQ(8.f, udMaxElement(udFloat4::create(1.f, 2.f, 4.f, 8.f)));
+  EXPECT_EQ(4.f, udMaxElement(udFloat4::create(1.f, 2.f, 4.f, -8.f)));
 
   // Doubles
   EXPECT_EQ(4.0, udMin(4.0, 8.0));
@@ -571,6 +575,10 @@ TEST(MathTests, LinearAlgebraFunctions_MinMax)
   EXPECT_EQ(udDouble4::create(4.0), udMin(udDouble4::create(8.0), udDouble4::create(4.0)));
   EXPECT_EQ(udDouble4::create(8.0), udMax(udDouble4::create(4.0), udDouble4::create(8.0)));
   EXPECT_EQ(udDouble4::create(8.0), udMax(udDouble4::create(8.0), udDouble4::create(4.0)));
+  EXPECT_EQ(1.0, udMinElement(udDouble4::create(1.f, 2.f, 4.f, 8.f)));
+  EXPECT_EQ(-8.0, udMinElement(udDouble4::create(1.f, 2.f, 4.f, -8.f)));
+  EXPECT_EQ(8.0, udMaxElement(udDouble4::create(1.f, 2.f, 4.f, 8.f)));
+  EXPECT_EQ(4.0, udMaxElement(udDouble4::create(1.f, 2.f, 4.f, -8.f)));
 
   // Signed Integers
   EXPECT_EQ(4, udMin(4, 8));

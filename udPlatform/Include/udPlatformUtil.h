@@ -7,6 +7,10 @@
 
 class udValue;
 
+#define UDNAMEASSTRING(s) #s
+#define UDSTRINGIFY(s) UDNAMEASSTRING(s)
+
+
 // *********************************************************************
 // Some simple utility template functions
 // *********************************************************************
@@ -355,13 +359,26 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
 
 // *********************************************************************
 // Some helper functions that make use of internal cycling buffers for convenience (threadsafe)
+// The caller has the responsibility not to hold the pointer or do stupid
+// things with these functions. They are generally useful for passing a
+// string directly to a function, the buffer can be overwritten.
+// Do not assume the buffer can be used beyond the string null terminator
 // *********************************************************************
 
-// Give back pretty version (ie with commas) of an int (returns one of 32 cycing static buffers)
-const char *udCommaInt(int64_t n);
+// Create a temporary small string using one of a number of cycling static buffers
+const char *udTempStr(const char *pFormat, ...);
 
-// Give back a H:MM:SS format string, optionally trimming to MM:SS if hours is zero
-const char *udSecondsToString(int seconds, bool trimHours = true);
+// Give back pretty version (ie with commas) of an int using one of a number of cycling static buffers
+const char *udTempStr_CommaInt(int64_t n);
+inline const char *udCommaInt(int64_t n) { return udTempStr_CommaInt(n); } // DEPRECATED NAME
+
+// Give back a H:MM:SS format string, optionally trimming to MM:SS if hours is zero using one of a number of cycling static buffers
+const char *udTempStr_ElapsedTime(int seconds, bool trimHours = true);
+inline const char *udSecondsToString(int seconds, bool trimHours = true) { return udTempStr_ElapsedTime(seconds, trimHours); } // DEPRECATED NAME
+
+// Return a human readable measurement string such as 1cm for 0.01, 2mm for 0.002 etc using one of a number of cycling static buffers
+const char *udTempStr_HumanMeasurement(double measurement);
+
 
 // *********************************************************************
 // Directory iteration for OS file system only

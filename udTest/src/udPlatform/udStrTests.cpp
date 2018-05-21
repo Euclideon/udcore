@@ -51,9 +51,9 @@ TEST(udStrTests, udStrncmp)
     { 1, -1, -1, 1, -1, 0 },
   };
 
-  for (int i = 0; i < UDARRAYSIZE(strings); ++i)
+  for (size_t i = 0; i < UDARRAYSIZE(strings); ++i)
   {
-    for (int j = 0; j < UDARRAYSIZE(strings); ++j)
+    for (size_t j = 0; j < UDARRAYSIZE(strings); ++j)
     {
 #if GENERATE_EXPECTED
       int vs = GETSIGN(strcmp(strings[i], strings[j]));
@@ -231,3 +231,15 @@ TEST(udStrTests, udAddToStringTable)
   EXPECT_EQ(0, memcmp("StringOne\0StringTwo\0StringThree", pStringTable, UDARRAYSIZE("StringOne\0StringTwo\0StringThree")));
   udFree(pStringTable);
 }
+
+TEST(udStrTests, udTempStr)
+{
+  EXPECT_STREQ("2.01m", udTempStr_HumanMeasurement(2.01));
+  EXPECT_STREQ("5.5cm", udTempStr_HumanMeasurement(0.055));
+  EXPECT_STREQ("3mm", udTempStr_HumanMeasurement(0.003));
+  EXPECT_STREQ("3.2mm", udTempStr_HumanMeasurement(0.0032));
+  EXPECT_STREQ("01:23", udTempStr_ElapsedTime(60 + 23));
+  EXPECT_STREQ("0:01:23", udTempStr_ElapsedTime(60 + 23, false));
+  EXPECT_STREQ("2:01:23", udTempStr_ElapsedTime(120*60 + 60 + 23, false));
+}
+

@@ -376,7 +376,7 @@ bool udSleepSemaphore_Internal(udSemaphore *pSemaphore, int waitMs)
 // Author: Samuel Surtees, August 2017
 void udDestroySemaphore(udSemaphore **ppSemaphore)
 {
-  if (ppSemaphore == nullptr)
+  if (ppSemaphore == nullptr || *ppSemaphore == nullptr)
     return;
 
   udSemaphore *pSemaphore = (*(udSemaphore*volatile*)ppSemaphore);
