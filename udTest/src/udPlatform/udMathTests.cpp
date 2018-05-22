@@ -1,6 +1,13 @@
 #include "udMath.h"
 #include "gtest/gtest.h"
 
+// Due to IEEE-754 supporting two different ways to specify 8.f and 2.f, the next three EXPECT_* calls are different
+// This appears to only occur when using Clang in Release, and only for udFloat4 - SIMD optimizations perhaps?
+#define EXPECT_UDFLOAT2_EQ(expected, _actual) { udFloat2 actual = _actual; EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); }
+#define EXPECT_UDFLOAT3_EQ(expected, _actual) { udFloat3 actual = _actual; EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); EXPECT_FLOAT_EQ(expected.z, actual.z); }
+#define EXPECT_UDFLOAT4_EQ(expected, _actual) { udFloat4 actual = _actual; EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); EXPECT_FLOAT_EQ(expected.z, actual.z); EXPECT_FLOAT_EQ(expected.w, actual.w); }
+
+
 // This test slerps 2 quaterions rotating about the -Y axis (backwards) q0 theta PI/4 and q1 theta 3PI/4
 template <typename T>
 bool udQuaternion_SlerpBasicUnitTest()
@@ -754,7 +761,7 @@ TEST(MathTests, BasicVectorFunctions)
     EXPECT_EQ(udFloat2::create(-1.f), b - d);
     EXPECT_EQ(udFloat2::create(2.f), b * d);
     EXPECT_EQ(udFloat2::create(4.f), b * 4);
-    EXPECT_EQ(udFloat2::create(0.5f), b / d);
+    EXPECT_UDFLOAT2_EQ(udFloat2::create(0.5f), b / d);
     EXPECT_EQ(udFloat2::create(0.25f), b / 4);
     EXPECT_EQ(d, e);
     EXPECT_EQ(udFloat2::one(), f);
@@ -802,7 +809,7 @@ TEST(MathTests, BasicVectorFunctions)
     EXPECT_EQ(udFloat3::create(-1.f), b - d);
     EXPECT_EQ(udFloat3::create(2.f), b * d);
     EXPECT_EQ(udFloat3::create(4.f), b * 4);
-    EXPECT_EQ(udFloat3::create(0.5f), b / d);
+    EXPECT_UDFLOAT3_EQ(udFloat3::create(0.5f), b / d);
     EXPECT_EQ(udFloat3::create(0.25f), b / 4);
     EXPECT_EQ(udFloat2::create(1.f, 0.f), c.toVector2());
     EXPECT_EQ(udFloat2::create(1.f, 0.f), constC.toVector2());
@@ -853,7 +860,7 @@ TEST(MathTests, BasicVectorFunctions)
     EXPECT_EQ(udFloat4::create(-1.f), b - d);
     EXPECT_EQ(udFloat4::create(2.f), b * d);
     EXPECT_EQ(udFloat4::create(4.f), b * 4);
-    EXPECT_EQ(udFloat4::create(0.5f), b / d);
+    EXPECT_UDFLOAT4_EQ(udFloat4::create(0.5f), b / d);
     EXPECT_EQ(udFloat4::create(0.25f), b / 4);
     EXPECT_EQ(udFloat2::create(1.f, 0.f), c.toVector2());
     EXPECT_EQ(udFloat2::create(1.f, 0.f), constC.toVector2());
@@ -884,9 +891,6 @@ TEST(MathTests, BasicVectorFunctions)
     res *= 4;
     EXPECT_EQ(udFloat4::create(16.f), res);
     res /= d;
-    // Due to IEEE-754 supporting two different ways to specify 8.f and 2.f, the next three EXPECT_* calls are different
-    // This appears to only occur when using Clang in Release, and only for udFloat4 - SIMD optimizations perhaps?
-#define EXPECT_UDFLOAT4_EQ(expected, actual) { EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); EXPECT_FLOAT_EQ(expected.z, actual.z); EXPECT_FLOAT_EQ(expected.w, actual.w); }
     EXPECT_UDFLOAT4_EQ(udFloat4::create(8.f), res);
     res /= 4;
     EXPECT_UDFLOAT4_EQ(udFloat4::create(2.f), res);
