@@ -69,7 +69,7 @@ TEST(udThreadTests, ThreadConditionVariable)
 
   udLockMutex(data.pMutex);
   EXPECT_NE(0, udWaitConditionVariable(data.pConditionVariable, data.pMutex, 1));
-  EXPECT_EQ(0, udWaitConditionVariable(data.pConditionVariable, data.pMutex, 200));
+  EXPECT_EQ(0, udWaitConditionVariable(data.pConditionVariable, data.pMutex, 1000));
   udReleaseMutex(data.pMutex);
 
   result = udThread_Join(pThread);
