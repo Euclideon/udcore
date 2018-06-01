@@ -1308,8 +1308,8 @@ udResult udURL::SetURL(const char *pURLText)
   m_pScheme = s_udStrEmptyString;
   m_pDomain = s_udStrEmptyString;
   m_pPath = s_udStrEmptyString;
-  static const char specialChars[]   = { ' ',  '#',   '%',   '+',   '?',   }; // Made for extending later, not wanting to encode any more than we need to
-  static const char *pSpecialSubs[] = { "%20", "%23", "%25", "%2B", "%3F", };
+  static const char specialChars[]   = { ' ',  '#',   '%',   '+',   '?',   '\0', }; // Made for extending later, not wanting to encode any more than we need to
+  static const char *pSpecialSubs[] = { "%20", "%23", "%25", "%2B", "%3F", "", };
 
   if (pURLText)
   {

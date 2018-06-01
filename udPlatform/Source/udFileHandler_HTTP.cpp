@@ -236,7 +236,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   result = udR_Success;
 
 epilogue:
-  if (result != udR_Success || closeConnection)
+  //if (result != udR_Success || closeConnection)
     udFileHandler_HTTPCloseSocket(pFile);
   if (result != udR_Success)
     udDebugPrintf("Error receiving request:\n%s\n--end--\n", pFile->recvBuffer);
