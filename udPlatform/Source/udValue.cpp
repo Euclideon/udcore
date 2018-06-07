@@ -834,6 +834,7 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
   if (pSetToValue)
   {
     UD_ERROR_NULL(pRoot, udR_InternalError);
+    pRoot->Destroy();
     *pRoot = *pSetToValue;
     pSetToValue->Clear(); // Clear it out without destroying
   }
