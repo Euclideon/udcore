@@ -1,10 +1,20 @@
 #include "udGeoZone.h"
 
 // ----------------------------------------------------------------------------
-// Author: Lauren Jones, June 2018
-udResult udGeoZone_FindSRID(int32_t * /*pSRIDCode*/, const udDouble2 & /*longLat*/)
+// Author: Dave Pevreal, June 2018
+udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat)
 {
-  return udR_Unsupported;
+  double lat = !flipFromLongLat ? latLong.x : latLong.y;
+  double lon = !flipFromLongLat ? latLong.y : latLong.x;
+
+  int32_t zone = (uint32_t)(udFloor(lon + 186.0) / 6.0);
+  if (zone < 1 || zone > 60)
+    return udR_ObjectNotFound;
+
+  int32_t sridCode = (lat >= 0) ? zone + 32600 : zone + 32700;
+  if (pSRIDCode)
+    *pSRIDCode = sridCode;
+  return udR_Success;
 }
 
 // ----------------------------------------------------------------------------
@@ -13,8 +23,8 @@ static void SetUTMZoneBounds(udGeoZone *pZone, bool northernHemisphere)
 {
   pZone->latLongBoundMin.x = (northernHemisphere) ? 0 : -80;
   pZone->latLongBoundMax.x = (northernHemisphere) ? 84 : 0;
-  pZone->latLongBoundMin.y = (pZone->meridian >= 0) ? pZone->meridian - 3 : pZone->meridian + 3;
-  pZone->latLongBoundMax.y = (pZone->meridian >= 0) ? pZone->meridian + 3 : pZone->meridian - 3;
+  pZone->latLongBoundMin.y = pZone->meridian - 3;
+  pZone->latLongBoundMax.y = pZone->meridian + 3;
 }
 
 // ----------------------------------------------------------------------------
@@ -224,11 +234,11 @@ static double conformal(double phi, double e)
 
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
-udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong)
+udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat)
 {
   double e = zone.eccentricity;
-  double phi = UD_DEG2RAD(latLong[0]);
-  double omega = UD_DEG2RAD(latLong[1] - zone.meridian);
+  double phi = UD_DEG2RAD((!flipFromLongLat) ? latLong.x : latLong.y);
+  double omega = UD_DEG2RAD(((!flipFromLongLat) ? latLong.y : latLong.x) - zone.meridian);
   double X, Y;
 
   if (zone.secondParallel == 0.0)
@@ -280,7 +290,7 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong)
 
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
-udDouble3 udGeoZone_ToLatLong(const udGeoZone & zone, const udDouble3 &position)
+udDouble3 udGeoZone_ToLatLong(const udGeoZone & zone, const udDouble3 &position, bool flipToLongLat)
 {
   udDouble3 latLong;
   double e = zone.eccentricity;
@@ -341,6 +351,6 @@ udDouble3 udGeoZone_ToLatLong(const udGeoZone & zone, const udDouble3 &position)
     latLong.y = UD_RAD2DEG(theta / n) + zone.meridian;
     latLong.z = position.z;
   }
-  return latLong;
+  return (!flipToLongLat) ? latLong : udDouble3::create(latLong.y, latLong.x, latLong.z);
 }
 

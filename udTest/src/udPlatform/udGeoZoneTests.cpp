@@ -14,6 +14,33 @@ TEST(udGeoZoneTests, Init)
   EXPECT_EQ(0, memcmp(&zone1, &zone2, sizeof(zone1)));
 }
 
+TEST(udGeoZoneTests, FindSRID)
+{
+  udResult result;
+  int32_t sridCode;
+
+  result = udGeoZone_FindSRID(&sridCode, udDouble3::create(153, 42, 0), true);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(32656, sridCode);
+
+  for (double lon = -180.0; lon < 180; ++lon)
+  {
+    for (double lat = -45.0; lat <= 45; lat += 45)
+    {
+      udGeoZone zone;
+
+      result = udGeoZone_FindSRID(&sridCode, udDouble3::create(lat, lon, 0));
+      EXPECT_EQ(udR_Success, result);
+      result = udGeoZone_SetFromSRID(&zone, sridCode);
+      EXPECT_EQ(udR_Success, result);
+      EXPECT_TRUE(lat >= zone.latLongBoundMin.x);
+      EXPECT_TRUE(lat <= zone.latLongBoundMax.x);
+      EXPECT_TRUE(lon >= zone.latLongBoundMin.y);
+      EXPECT_TRUE(lon <= zone.latLongBoundMax.y);
+    }
+  }
+}
+
 TEST(udGeoZoneTests, Basic)
 {
   udResult result;
