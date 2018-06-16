@@ -2,11 +2,13 @@
 #include "udThread.h"
 
 #define RESULT_SENTINAL ((udResult)-1) // A sentinal value used to determine when valid result has been written
+#define RESULT_PENDING ((udResult)-2) // A sentinal value used to determine when async call has been made and not returned
 
 struct udAsyncJob
 {
   udSemaphore *pSemaphore;
   volatile udResult returnResult;
+  volatile bool pending;
 };
 
 // ****************************************************************************
@@ -21,6 +23,7 @@ udResult udAsyncJob_Create(udAsyncJob **ppJobHandle)
   pJob->pSemaphore = udCreateSemaphore();
   UD_ERROR_NULL(pJob->pSemaphore, udR_MemoryAllocationFailure);
   pJob->returnResult = RESULT_SENTINAL;
+  pJob->pending = false;
   *ppJobHandle = pJob;
   pJob = nullptr;
   result = udR_Success;
@@ -38,6 +41,7 @@ void udAsyncJob_SetResult(udAsyncJob *pJobHandle, udResult returnResult)
   if (pJobHandle)
   {
     pJobHandle->returnResult = returnResult;
+    pJobHandle->pending = false;
     udIncrementSemaphore(pJobHandle->pSemaphore);
   }
 }
@@ -51,6 +55,7 @@ udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle)
     udWaitSemaphore(pJobHandle->pSemaphore);
     udResult result = pJobHandle->returnResult;
     pJobHandle->returnResult = RESULT_SENTINAL;
+    pJobHandle->pending = false;
     return result;
   }
   return udR_InvalidParameter_;
@@ -67,10 +72,26 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
     {
       *pResult = pJobHandle->returnResult;
       pJobHandle->returnResult = RESULT_SENTINAL;
+      pJobHandle->pending = false;
       return true;
     }
   }
   return false;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, June 2018
+void udAsyncJob_SetPending(udAsyncJob *pJobHandle)
+{
+  if (pJobHandle)
+    pJobHandle->pending = true;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, June 2018
+bool udAsyncJob_IsPending(udAsyncJob *pJobHandle)
+{
+  return (pJobHandle) ? pJobHandle->pending : false;
 }
 
 // ****************************************************************************

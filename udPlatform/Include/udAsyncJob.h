@@ -17,6 +17,12 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
 // Set the result (increment semaphore)
 void udAsyncJob_SetResult(udAsyncJob *pJobHandle, udResult returnResult);
 
+// Set the pending flag (called internally by UDASYNC_CALLx macros)
+void udAsyncJob_SetPending(udAsyncJob *pJobHandle);
+
+// Get the pending flag (used to determine if an async call is in flight)
+bool udAsyncJob_IsPending(udAsyncJob *pJobHandle);
+
 // Destroy the async job (destroy semaphore)
 void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
 
@@ -32,6 +38,7 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
 #define UDASYNC_CALL2(func, t0, p0, t1, p1) if (pAsyncJob) {                                                            \
@@ -43,6 +50,7 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
 #define UDASYNC_CALL3(func, t0, p0, t1, p1, t2, p2) if (pAsyncJob) {                                                    \
@@ -54,6 +62,7 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
 #define UDASYNC_CALL4(func, t0, p0, t1, p1, t2, p2, t3, p3) if (pAsyncJob) {                                            \
@@ -65,6 +74,7 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
 #define UDASYNC_CALL5(func, t0, p0, t1, p1, t2, p2, t3, p3, t4, p4) if (pAsyncJob) {                                    \
@@ -76,6 +86,7 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
 #define UDASYNC_CALL6(func, t0, p0, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5) if (pAsyncJob) {                            \
@@ -87,6 +98,7 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
 #define UDASYNC_CALL7(func, t0, p0, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5, t6, p6) if (pAsyncJob) {                    \
@@ -98,5 +110,6 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               udFree(p);                                                                                                \
               return 0;                                                                                                 \
             };                                                                                                          \
+            udAsyncJob_SetPending(pAsyncJob);                                                                           \
             return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
         }
