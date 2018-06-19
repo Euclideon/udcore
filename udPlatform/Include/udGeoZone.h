@@ -1,3 +1,6 @@
+#ifndef UDGEOZONE_H
+#define UDGEOZONE_H
+
 #include "udMath.h"
 
 struct udGeoZone
@@ -5,20 +8,24 @@ struct udGeoZone
   udDouble2 latLongBoundMin;
   udDouble2 latLongBoundMax;
   double meridian;
+  double parallel;
   double flattening;
   double semiMajorAxis;
   double semiMinorAxis;
   double thirdFlattening;
   double eccentricity;
-  double secEccentricitySq;
+  double eccentricitySq;
+  double radius;
   double scaleFactor;
-  double meridonialParams[5];
-  double phiParams[4];
-  int32_t falseNorthing;
-  int32_t falseEasting;
+  double n[10];
+  double alpha[7];
+  double beta[7];
+  double firstParallel;
+  double secondParallel;
+  double falseNorthing;
+  double falseEasting;
   int32_t zone;
-  char hemisphere;
-  char padding[3];
+  int32_t padding;
 };
 
 // Find an appropriate SRID code for a given lat/long (for example as a default value)
@@ -32,3 +39,5 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong)
 
 // Convert a point from the cartesian coordinate system defined by the zone to lat/long
 udDouble3 udGeoZone_ToLatLong(const udGeoZone &zone, const udDouble3 &position);
+
+#endif // UDGEOZONE_H
