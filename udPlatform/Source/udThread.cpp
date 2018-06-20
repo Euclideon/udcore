@@ -118,8 +118,6 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
     pThread = const_cast<udThread*>(s_pCachedThreads[slotIndex]);
     if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) != pThread)
       pThread = nullptr;
-    else
-      UDASSERT(s_pCachedThreads[slotIndex] == nullptr, "exchange failed");
   }
   if (pThread)
   {
