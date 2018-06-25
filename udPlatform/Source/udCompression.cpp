@@ -48,10 +48,17 @@
 #if defined(_MSC_VER)
 # pragma warning(push)
 # pragma warning(disable:4334)
+#else
+# pragma GCC diagnostic push
+# if __GNUC__ >= 6 && !defined(__clang_major__)
+#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
+# endif
 #endif
 #include "miniz/miniz.c"
 #if defined(_MSC_VER)
 # pragma warning(pop)
+#else
+# pragma GCC diagnostic pop
 #endif
 
 #include "udPlatform.h"

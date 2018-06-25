@@ -793,10 +793,10 @@ TEST(MathTests, BasicVectorFunctions)
     res *= 4;
     EXPECT_EQ(udFloat2::create(16.f), res);
     res /= d;
-    EXPECT_EQ(udFloat2::create(8.f), res);
+    EXPECT_UDFLOAT2_EQ(udFloat2::create(8.f), res);
     res /= 4;
-    EXPECT_EQ(udFloat2::create(2.f), res);
-    EXPECT_EQ(udFloat2::create(8.f), 4.f * res);
+    EXPECT_UDFLOAT2_EQ(udFloat2::create(2.f), res);
+    EXPECT_UDFLOAT2_EQ(udFloat2::create(8.f), 4.f * res);
   }
 
   // udVector3<>
@@ -842,10 +842,10 @@ TEST(MathTests, BasicVectorFunctions)
     res *= 4;
     EXPECT_EQ(udFloat3::create(16.f), res);
     res /= d;
-    EXPECT_EQ(udFloat3::create(8.f), res);
+    EXPECT_UDFLOAT3_EQ(udFloat3::create(8.f), res);
     res /= 4;
-    EXPECT_EQ(udFloat3::create(2.f), res);
-    EXPECT_EQ(udFloat3::create(8.f), 4.f * res);
+    EXPECT_UDFLOAT3_EQ(udFloat3::create(2.f), res);
+    EXPECT_UDFLOAT3_EQ(udFloat3::create(8.f), 4.f * res);
   }
 
   // udVector4<>
