@@ -14,7 +14,7 @@ enum udThreadCreateFlags { udTCF_None }; // For future expansion
 typedef uint32_t(udThreadStart)(void *data);
 
 // Create a thread object
-udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, void *pThreadData, udThreadCreateFlags flags = udTCF_None);
+udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, void *pThreadData, udThreadCreateFlags flags = udTCF_None, const char *pThreadName = nullptr);
 
 // Set the thread priority
 void udThread_SetPriority(udThread *pThread, udThreadPriority priority);

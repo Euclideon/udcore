@@ -39,7 +39,8 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
 #define UDASYNC_CALL2(func, t0, p0, t1, p1) if (pAsyncJob) {                                                            \
             struct UDAJParams { t0 _p0; t1 _p1;                                                                         \
@@ -51,7 +52,8 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
 #define UDASYNC_CALL3(func, t0, p0, t1, p1, t2, p2) if (pAsyncJob) {                                                    \
             struct UDAJParams { t0 _p0; t1 _p1; t2 _p2;                                                                 \
@@ -63,7 +65,8 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
 #define UDASYNC_CALL4(func, t0, p0, t1, p1, t2, p2, t3, p3) if (pAsyncJob) {                                            \
             struct UDAJParams { t0 _p0; t1 _p1; t2 _p2; t3 _p3;                                                         \
@@ -75,7 +78,8 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
 #define UDASYNC_CALL5(func, t0, p0, t1, p1, t2, p2, t3, p3, t4, p4) if (pAsyncJob) {                                    \
             struct UDAJParams { t0 _p0; t1 _p1; t2 _p2; t3 _p3; t4 _p4;                                                 \
@@ -87,7 +91,8 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
 #define UDASYNC_CALL6(func, t0, p0, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5) if (pAsyncJob) {                            \
             struct UDAJParams { t0 _p0; t1 _p1; t2 _p2; t3 _p3; t4 _p4; t5 _p5;                                         \
@@ -99,7 +104,8 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
 #define UDASYNC_CALL7(func, t0, p0, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5, t6, p6) if (pAsyncJob) {                    \
             struct UDAJParams { t0 _p0; t1 _p1; t2 _p2; t3 _p3; t4 _p4; t5 _p5; t6 _p6;                                 \
@@ -111,5 +117,6 @@ void udAsyncJob_Destroy(udAsyncJob **ppJobHandle);
               return 0;                                                                                                 \
             };                                                                                                          \
             udAsyncJob_SetPending(pAsyncJob);                                                                           \
-            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None));    \
+            return udThread_Create(nullptr, udajStartFunc, udMemDup(&udajParams, sizeof(udajParams), 0, udAF_None),     \
+                                   udTCF_None, UDSTRINGIFY(func));                                                      \
         }
