@@ -41,7 +41,6 @@ void udAsyncJob_SetResult(udAsyncJob *pJobHandle, udResult returnResult)
   if (pJobHandle)
   {
     pJobHandle->returnResult = returnResult;
-    pJobHandle->pending = false;
     udIncrementSemaphore(pJobHandle->pSemaphore);
   }
 }
@@ -52,11 +51,18 @@ udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle)
 {
   if (pJobHandle)
   {
-    udWaitSemaphore(pJobHandle->pSemaphore);
-    udResult result = pJobHandle->returnResult;
-    pJobHandle->returnResult = RESULT_SENTINAL;
-    pJobHandle->pending = false;
-    return result;
+    if (pJobHandle->pending)
+    {
+      udWaitSemaphore(pJobHandle->pSemaphore);
+      udResult result = pJobHandle->returnResult;
+      pJobHandle->returnResult = RESULT_SENTINAL;
+      pJobHandle->pending = false;
+      return result;
+    }
+    else
+    {
+      return udR_NothingToDo;
+    }
   }
   return udR_InvalidParameter_;
 }
