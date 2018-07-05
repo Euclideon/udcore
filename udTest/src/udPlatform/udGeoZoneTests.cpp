@@ -73,6 +73,33 @@ TEST(udGeoZoneTests, Basic)
   EXPECT_EQ(int64_t(latLong.x * testPrecision), int64_t(latLong2.x * testPrecision));
   EXPECT_EQ(int64_t(latLong.y * testPrecision), int64_t(latLong2.y * testPrecision));
 
+  latLong = udDouble3::create(33.506796258583, -116.05780332653, 0);
+
+  result = udGeoZone_SetFromSRID(&zone, 2771);
+  EXPECT_EQ(udR_Success, result);
+  pos = udGeoZone_ToCartesian(zone, latLong);
+  latLong2 = udGeoZone_ToLatLong(zone, pos);
+  EXPECT_EQ(int64_t(latLong.x * testPrecision), int64_t(latLong2.x * testPrecision));
+  EXPECT_EQ(int64_t(latLong.y * testPrecision), int64_t(latLong2.y * testPrecision));
+
+  latLong = udDouble3::create(32.914105550772, -115.42966896127, 0);
+
+  result = udGeoZone_SetFromSRID(&zone, 2771);
+  EXPECT_EQ(udR_Success, result);
+  pos = udGeoZone_ToCartesian(zone, latLong);
+  latLong2 = udGeoZone_ToLatLong(zone, pos);
+  EXPECT_EQ(int64_t(latLong.x * testPrecision), int64_t(latLong2.x * testPrecision));
+  EXPECT_EQ(int64_t(latLong.y * testPrecision), int64_t(latLong2.y * testPrecision));
+
+  latLong = udDouble3::create(30.119412462227, -85.432053878903, 0);
+
+  result = udGeoZone_SetFromSRID(&zone, 2238);
+  EXPECT_EQ(udR_Success, result);
+  pos = udGeoZone_ToCartesian(zone, latLong);
+  latLong2 = udGeoZone_ToLatLong(zone, pos);
+  EXPECT_EQ(int64_t(latLong.x * testPrecision), int64_t(latLong2.x * testPrecision));
+  EXPECT_EQ(int64_t(latLong.y * testPrecision), int64_t(latLong2.y * testPrecision));
+
   latLong = udDouble3::create(48.93793227151, 1.0107421875, 0);
 
   result = udGeoZone_SetFromSRID(&zone, 3949);

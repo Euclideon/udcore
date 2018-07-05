@@ -138,20 +138,20 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
   {
     switch (sridCode)
     {
-    case 2222: // TEST Clarke 1866
+    case 2238: // NAD83 / Florida North (ftUS)
       pZone->zone = sridCode;
-      pZone->meridian = -96.0;
-      pZone->parallel = 23.0;
-      pZone->firstParallel = 33;
-      pZone->secondParallel = 45;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
+      pZone->meridian = -84.5;
+      pZone->parallel = 29.0;
+      pZone->firstParallel = 30.75;
+      pZone->secondParallel = 29.0 + 175.0 / 300.0;
+      pZone->falseNorthing = 0.0;
+      pZone->falseEasting = 1968500.0 * 0.3048006096012192;
       pZone->scaleFactor = 1.0;
-      pZone->flattening = 1 / 294.9786982;
-      pZone->semiMajorAxis = 6378206.4;
+      pZone->flattening = 1 / 298.257222101;
+      pZone->semiMajorAxis = 6378137.0;
       SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(33.0, -98.0);
-      pZone->latLongBoundMax = udDouble2::create(45.0, -94.0);
+      pZone->latLongBoundMin = udDouble2::create(29.28, -87.64);
+      pZone->latLongBoundMax = udDouble2::create(31.0, -82.05);
       break;
     case 2248: // NAD83 / Maryland(ftUS)
       pZone->zone = sridCode;
@@ -167,6 +167,21 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(37.88, -79.49);
       pZone->latLongBoundMax = udDouble2::create(39.72, -74.98);
+      break;
+    case 2250: // NAD83 / Maryland(ftUS)
+      pZone->zone = sridCode;
+      pZone->meridian = -70.5;
+      pZone->parallel = 41.0;
+      pZone->firstParallel = 41.0 + 145.0 / 300.0;
+      pZone->secondParallel = 41.0 + 85.0 / 300.0;;
+      pZone->falseNorthing = 0.0;
+      pZone->falseEasting = 500000;
+      pZone->scaleFactor = 1.0;
+      pZone->flattening = 1 / 298.257222101;
+      pZone->semiMajorAxis = 6378137.0;
+      SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(41.2, -70.87);
+      pZone->latLongBoundMax = udDouble2::create(41.51, -69.9);
       break;
     case 3949: // France Conic Conformal zone 8
       pZone->zone = sridCode;
@@ -198,6 +213,21 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(47.08, -124.75);
       pZone->latLongBoundMax = udDouble2::create(49.0, -117.03);
       break;
+    case 2771: // NAD83 / California zone 6 (ftUS)
+      pZone->zone = sridCode;
+      pZone->meridian = -116.25;
+      pZone->parallel = 32.0 + 1.0 / 6.0;
+      pZone->firstParallel = 33.0 + 265.0 / 300.0;
+      pZone->secondParallel = 32.0 + 235.0 / 300.0;
+      pZone->falseNorthing = 500000.0;
+      pZone->falseEasting = 2000000.0;
+      pZone->scaleFactor = 1.0;
+      pZone->flattening = 1 / 298.257222101;
+      pZone->semiMajorAxis = 6378137.0;
+      SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(32.51, -118.14);
+      pZone->latLongBoundMax = udDouble2::create(34.08, -114.43);
+      break;
     default:
       return udR_ObjectNotFound;
     }
@@ -205,9 +235,9 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
   return udR_Success;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
+// Root finding with Newton's method to calculate conformal latitude.
 static double latConverge(double t, double td, double e)
 {
   double s = udSinh(e * udATanh(e * t / udSqrt(1 + t * t)));
@@ -243,6 +273,7 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
 
   if (zone.secondParallel == 0.0)
   {
+    // UTM rather than Lambert CC which requires two parallels for calculaion
     double sigma = udSinh(e * udATanh(e * udTan(phi) / udSqrt(1 + udPow(udTan(phi), 2))));
     double tanConformalPhi = udTan(phi) * udSqrt(1 + udPow(sigma, 2)) - sigma * udSqrt(1 + udPow(udTan(phi), 2));
 
@@ -269,6 +300,7 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
   }
   else
   {
+    // If two standard parallels, project onto Lambert Conformal Conic
     double phi0 = UD_DEG2RAD(zone.parallel);
     double phi1 = UD_DEG2RAD(zone.firstParallel);
     double phi2 = UD_DEG2RAD(zone.secondParallel);
