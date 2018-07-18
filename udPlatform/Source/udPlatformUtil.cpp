@@ -768,7 +768,6 @@ size_t udStrMatchBrace(const char *pLine, char escapeChar)
   return offset;
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, April 2017
 const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount, int *pLineNumber)
@@ -788,6 +787,28 @@ const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount, int *pLineNu
   return pLine + charCount;
 }
 
+// *********************************************************************
+// Author: Dave Pevreal, July 2018
+const char *udStrSkipToEOL(const char *pLine, int *pCharCount, int *pLineNumber)
+{
+  int charCount = 0;
+  // Skip to NUL, \r or \n
+  while (pLine[charCount] != '\0' && pLine[charCount] != '\r' && pLine[charCount] != '\n')
+    ++charCount;
+  // Do a check for \r\n combination
+  if (pLine[charCount] == '\r' && pLine[charCount + 1] == '\n')
+    ++charCount;
+  // If not a NUL, skip over the EOL character (whatever it may have been)
+  if (pLine[charCount] != '\0')
+  {
+    ++charCount;
+    if (pLineNumber)
+      ++*pLineNumber;
+  }
+  if (pCharCount)
+    *pCharCount = charCount;
+  return pLine + charCount;
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, April 2016

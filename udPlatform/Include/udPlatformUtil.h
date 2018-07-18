@@ -134,6 +134,8 @@ int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], i
 size_t udStrMatchBrace(const char *pLine, char escapeChar = 0);
 // Helper to skip white space (space,8,10,13), optionally incrementing a line number appropriately
 const char *udStrSkipWhiteSpace(const char *pLine, int *pCharCount = nullptr, int *pLineNumber = nullptr);
+// Helper to skip to the end of line or null character, optionally incrementing a line number appropriately
+const char *udStrSkipToEOL(const char *pLine, int *pCharCount = nullptr, int *pLineNumber = nullptr);
 // In-place remove all non-quoted white space (newlines, spaces, tabs), returns new length
 size_t udStrStripWhiteSpace(char *pLine);
 // Return new string with \ char before any chars in pCharList, optionally freeing pStr
