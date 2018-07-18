@@ -183,3 +183,47 @@ TEST(udFileTests, CustomFileHandler)
   EXPECT_EQ(udR_Success, udFile_DeregisterHandler(udFileTests_CustomFileHandler_Open));
   EXPECT_NE(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Write));
 }
+
+TEST(udFileTests, TranslatingPaths)
+{
+  const char *pNewPath = nullptr;
+  const char *pPath = "~";
+
+  EXPECT_EQ(udR_Success, udFile_TranslatePath(&pNewPath, pPath));
+  EXPECT_NE(nullptr, pNewPath);
+#if UDPLATFORM_WINDOWS
+  EXPECT_TRUE(udStrBeginsWithi(pNewPath, "C:\\Users\\"));
+#elif UDPLATFORM_OSX
+  EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/Users/"));
+#else
+  // '/home/' for regular users and '/root' for the root user
+  EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/home/") || udStrBeginsWith(pNewPath, "/root"));
+#endif
+  udFree(pNewPath);
+
+  // Test with additional path
+  pPath = "~/test.file";
+  EXPECT_EQ(udR_Success, udFile_TranslatePath(&pNewPath, pPath));
+  EXPECT_NE(nullptr, pNewPath);
+#if UDPLATFORM_WINDOWS
+  EXPECT_TRUE(udStrBeginsWithi(pNewPath, "C:\\Users\\"));
+#elif UDPLATFORM_OSX
+  EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/Users/"));
+#else
+  // '/home/' for regular users and '/root' for the root user
+  EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/home/") || udStrBeginsWith(pNewPath, "/root"));
+#endif
+  EXPECT_NE(nullptr, udStrstr(pNewPath, 0, "/test.file"));
+  EXPECT_EQ(nullptr, udStrstr(pNewPath, 0, "//test.file"));
+  udFree(pNewPath);
+
+  // Test invalid translation
+  pPath = "~MagicWindowsFile";
+  EXPECT_NE(udR_Success, udFile_TranslatePath(&pNewPath, pPath));
+  EXPECT_EQ(nullptr, pNewPath);
+
+  // Test invalid input
+  EXPECT_NE(udR_Success, udFile_TranslatePath(nullptr, pPath));
+  EXPECT_NE(udR_Success, udFile_TranslatePath(&pNewPath, nullptr));
+  EXPECT_NE(udR_Success, udFile_TranslatePath(nullptr, nullptr));
+}
