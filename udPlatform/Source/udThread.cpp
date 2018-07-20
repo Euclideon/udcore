@@ -239,6 +239,29 @@ void udThread_Destroy(udThread **ppThread)
 }
 
 // ****************************************************************************
+// Author: Dave Pevreal, July 2018
+void udThread_DestroyCached()
+{
+  while (1)
+  {
+    bool anyThreadsLeft = false;
+    for (int slotIndex = 0; slotIndex < MAX_CACHED_THREADS; ++slotIndex)
+    {
+      volatile udThread *pThread = s_pCachedThreads[slotIndex];
+      if (pThread && pThread->pCacheSemaphore)
+      {
+        udIncrementSemaphore(pThread->pCacheSemaphore);
+        anyThreadsLeft = true;
+      }
+    }
+    if (anyThreadsLeft)
+      udYield();
+    else
+      break;
+  }
+}
+
+// ****************************************************************************
 udResult udThread_Join(udThread *pThread, int waitMs)
 {
   if (!pThread)

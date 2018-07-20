@@ -22,6 +22,9 @@ void udThread_SetPriority(udThread *pThread, udThreadPriority priority);
 // Destroy a thread, this should be called after the thread has exited (udThread_Join can be used to assist)
 void udThread_Destroy(udThread **ppThreadHandle);
 
+// Destroy cached threads
+void udThread_DestroyCached();
+
 // Wait for a thread to complete
 udResult udThread_Join(udThread *pThread, int waitMs = UDTHREAD_WAIT_INFINITE);
 
