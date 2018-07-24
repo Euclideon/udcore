@@ -34,6 +34,7 @@ enum udResult
   udR_RenderAlreadyInProgress,
   udR_BufferTooSmall,
   udR_VersionMismatch,
+  udR_FormatVariationNotSupported,
   udR_ObjectTypeMismatch,
   udR_NodeLimitExceeded,
   udR_BlockLimitExceeded,
