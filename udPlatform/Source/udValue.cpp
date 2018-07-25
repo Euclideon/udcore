@@ -676,7 +676,8 @@ static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char
       case '.':
         {
           pRoot = pRoot->FindMember(exp.pKey);
-          UD_ERROR_NULL(pRoot, udR_ObjectNotFound);
+          if (!pRoot)
+            UD_ERROR_SET_NO_BREAK(udR_ObjectNotFound);
         }
         break;
     }
