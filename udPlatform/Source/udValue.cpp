@@ -1640,7 +1640,8 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
   {
     while (*pXML && !udStrBeginsWith(pXML, "</"))
     {
-      if (*pXML == '<')
+      bool cData = udStrBeginsWith(pXML, "<![CDATA[");
+      if (*pXML == '<' && !cData)
       {
         // An embedded tag (a subobject)
         int lineCount;
@@ -1654,9 +1655,17 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
       else
       {
         // Content string
-        udStrchr(pXML, "<>", &len);
-        while (len > 1 && (pXML[len] == ' ' || pXML[len] == '\t' || pXML[len] == '\r' || pXML[len] == '\n'))
-          --len;
+        if (cData)
+        {
+          pXML += 9;
+          udStrstr(pXML, 0, "]]>", &len);
+        }
+        else
+        {
+          udStrchr(pXML, "<>", &len);
+          while (len > 1 && (pXML[len] == ' ' || pXML[len] == '\t' || pXML[len] == '\r' || pXML[len] == '\n'))
+            --len;
+        }
         udValueKVPair *pAttr = pElement->AsObject()->PushBack();
         UD_ERROR_NULL(pAttr, udR_MemoryAllocationFailure);
         pAttr->pKey = udStrdup(CONTENT_MEMBER);
@@ -1665,6 +1674,8 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
         pAttr->value.u.pStr = udStrndup(pXML, len);
         UD_ERROR_NULL(pAttr->value.u.pStr, udR_MemoryAllocationFailure);
         pAttr->value.type = T_String;
+        if (cData)
+          len += 3; // Skip the closing ]]>
         pXML = udStrSkipWhiteSpace(pXML + len, nullptr, pLineNumber);
       }
     }
