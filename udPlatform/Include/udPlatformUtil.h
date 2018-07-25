@@ -236,8 +236,12 @@ inline uint32_t udCountBits8(uint8_t a_number)
 
 
 // *********************************************************************
-// Create (or optionally update) a standard 32-bit CRC
+// Create (or optionally update) a standard 32-bit CRC (polynomial 0xedb88320)
 uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
+
+// Create (or optionally update) a iSCSI standard 32-bit CRC (polynomial 0x1edc6f41)
+uint32_t udCrc32c(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
+
 
 // *********************************************************************
 // Simple base64 decoder, output can be same memory as input
