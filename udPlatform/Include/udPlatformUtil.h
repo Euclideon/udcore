@@ -412,6 +412,9 @@ udResult udCloseDir(udFindDir **ppFindDir);
 // Create a folder
 udResult udCreateDir(const char *pFolder);
 
+// Removes a folder
+udResult udRemoveDir(const char *pFolder);
+
 // Write a formatted string to the buffer
 int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
 int udSprintfVA(char *pDest, size_t destlength, const char *pFormat, va_list args);

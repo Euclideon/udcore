@@ -1831,6 +1831,23 @@ udResult udCreateDir(const char *pFolder)
 }
 
 // ****************************************************************************
+// Author: Dave Pevreal, August 2018
+udResult udRemoveDir(const char *pFolder)
+{
+#if UDPLATFORM_WINDOWS
+  // Returns 0 on fail
+  if (RemoveDirectoryW(udOSString(pFolder)) == 0)
+    return udR_Failure_;
+#else
+  // Returns -1 on fail
+  if (rmdir(pFolder) != 0)
+    return udR_Failure_;
+#endif
+
+  return udR_Success;
+}
+
+// ****************************************************************************
 // Author: Paul Fox, September 2015
 int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...)
 {
