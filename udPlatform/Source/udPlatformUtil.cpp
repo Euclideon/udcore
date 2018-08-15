@@ -3,6 +3,9 @@
 #include "udFile.h"
 #include "udMath.h"
 #include "udValue.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
