@@ -23,6 +23,9 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
 udResult udCompression_RegisterMemoryZipHandler(void *pMem, size_t size);
 
 // Remove registered handler (only one handler can be registered at a time)
-udResult udMiniZ_DegisterMemoryZipHandler();
+udResult udCompression_DegisterMemoryZipHandler();
+
+// Generate a compressed PNG from a raw image, caller to udFree the memory
+udResult udCompression_CreatePNG(void **ppPNG, size_t *pPNGLen, const uint8_t *pImage, int width, int height, int channels);
 
 #endif // UDCOMPRESSION_H

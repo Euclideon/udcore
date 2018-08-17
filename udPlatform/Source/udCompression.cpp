@@ -1,68 +1,7 @@
-#include "libdeflate.h"
-
-// To prevent collisions with other apps using miniz
-#define mz_adler32 udComp_adler32
-#define mz_crc32 udComp_crc32
-#define mz_free udComp_free
-#define mz_version  udComp_version
-#define mz_deflateEnd udComp_deflateEnd
-#define mz_deflateBound udComp_deflateBound
-#define mz_compressBound udComp_compressBound
-#define mz_inflateInit2 udComp_inflateInit2
-#define mz_inflateInit udComp_inflateInit
-#define mz_inflateEnd udComp_inflateEnd
-#define mz_error udComp_error
-#define tinfl_decompress udCompTInf_decompress
-#define tinfl_decompress_mem_to_heap udCompTInf_decompress_mem_to_heap
-#define tinfl_decompress_mem_to_mem udCompTInf_decompress_mem_to_mem
-#define tinfl_decompress_mem_to_callback udCompTInf_decompress_mem_to_callback
-#define tdefl_compress udCompTDefl_compress
-#define tdefl_compress_buffer udCompTDefl_compress_buffer
-#define tdefl_init udCompTDefl_init
-#define tdefl_get_prev_return_status udCompTDefl_get_prev_return_status
-#define tdefl_get_adler32 udCompTDefl_get_adler32
-#define tdefl_compress_mem_to_output udCompTDefl_compress_mem_to_output
-#define tdefl_compress_mem_to_heap udCompTDefl_compress_mem_to_heap
-#define tdefl_compress_mem_to_mem udCompTDefl_compress_mem_to_mem
-#define tdefl_create_comp_flags_from_zip_params udCompTDefl_create_comp_flags_from_zip_params
-#define tdefl_write_image_to_png_file_in_memory_ex udCompTDefl_write_image_to_png_file_in_memory_ex
-#define tdefl_write_image_to_png_file_in_memory udCompTDefl_write_image_to_png_file_in_memory
-#define mz_deflateInit2 udComp_deflateInit2
-#define mz_deflateReset udComp_deflateReset
-#define mz_deflate udComp_deflate
-#define mz_inflate udComp_inflate
-#define mz_uncompress udComp_uncompress
-#define mz_deflateInit udComp_deflateInit
-#define mz_compress2 udComp_compress2
-#define mz_compress udComp_compress
-
-#define mz_zip_writer_init_from_reader udComp_zip_writer_init_from_reader
-#define mz_zip_reader_end udComp_mz_zip_reader_end
-#define mz_zip_reader_init_mem udComp_mz_zip_reader_init_mem
-#define mz_zip_reader_locate_file udComp_mz_zip_reader_locate_file
-#define mz_zip_reader_file_stat udComp_mz_zip_reader_file_stat
-
-#define MINIZ_NO_STDIO
-#define MINIZ_NO_TIME
-#define MINIZ_NO_MALLOC
-#if defined(_MSC_VER)
-# pragma warning(push)
-# pragma warning(disable:4334)
-#else
-# pragma GCC diagnostic push
-# if __GNUC__ >= 6 && !defined(__clang_major__)
-#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
-# endif
-#endif
-#include "miniz/miniz.c"
-#if defined(_MSC_VER)
-# pragma warning(pop)
-#else
-# pragma GCC diagnostic pop
-#endif
-
 #include "udPlatform.h"
 #include "udCompression.h"
+#include "udFileHandler.h"
+#include "libdeflate.h"
 
 // ****************************************************************************
 // Author: Dave Pevreal, November 2017
@@ -239,7 +178,66 @@ epilogue:
   return result;
 }
 
-#include "udFileHandler.h"
+// To prevent collisions with other apps using miniz
+#define mz_adler32 udComp_adler32
+#define mz_crc32 udComp_crc32
+#define mz_free udComp_free
+#define mz_version  udComp_version
+#define mz_deflateEnd udComp_deflateEnd
+#define mz_deflateBound udComp_deflateBound
+#define mz_compressBound udComp_compressBound
+#define mz_inflateInit2 udComp_inflateInit2
+#define mz_inflateInit udComp_inflateInit
+#define mz_inflateEnd udComp_inflateEnd
+#define mz_error udComp_error
+#define tinfl_decompress udCompTInf_decompress
+#define tinfl_decompress_mem_to_heap udCompTInf_decompress_mem_to_heap
+#define tinfl_decompress_mem_to_mem udCompTInf_decompress_mem_to_mem
+#define tinfl_decompress_mem_to_callback udCompTInf_decompress_mem_to_callback
+#define tdefl_compress udCompTDefl_compress
+#define tdefl_compress_buffer udCompTDefl_compress_buffer
+#define tdefl_init udCompTDefl_init
+#define tdefl_get_prev_return_status udCompTDefl_get_prev_return_status
+#define tdefl_get_adler32 udCompTDefl_get_adler32
+#define tdefl_compress_mem_to_output udCompTDefl_compress_mem_to_output
+#define tdefl_compress_mem_to_heap udCompTDefl_compress_mem_to_heap
+#define tdefl_compress_mem_to_mem udCompTDefl_compress_mem_to_mem
+#define tdefl_create_comp_flags_from_zip_params udCompTDefl_create_comp_flags_from_zip_params
+#define tdefl_write_image_to_png_file_in_memory_ex udCompTDefl_write_image_to_png_file_in_memory_ex
+#define tdefl_write_image_to_png_file_in_memory udCompTDefl_write_image_to_png_file_in_memory
+#define mz_deflateInit2 udComp_deflateInit2
+#define mz_deflateReset udComp_deflateReset
+#define mz_deflate udComp_deflate
+#define mz_inflate udComp_inflate
+#define mz_uncompress udComp_uncompress
+#define mz_deflateInit udComp_deflateInit
+#define mz_compress2 udComp_compress2
+#define mz_compress udComp_compress
+
+#define mz_zip_writer_init_from_reader udComp_zip_writer_init_from_reader
+#define mz_zip_reader_end udComp_mz_zip_reader_end
+#define mz_zip_reader_init_mem udComp_mz_zip_reader_init_mem
+#define mz_zip_reader_locate_file udComp_mz_zip_reader_locate_file
+#define mz_zip_reader_file_stat udComp_mz_zip_reader_file_stat
+
+#define MINIZ_NO_STDIO
+#define MINIZ_NO_TIME
+//#define MINIZ_NO_MALLOC Removed because the PNG creator requires malloc
+#if defined(_MSC_VER)
+# pragma warning(push)
+# pragma warning(disable:4334)
+#else
+# pragma GCC diagnostic push
+# if __GNUC__ >= 6 && !defined(__clang_major__)
+#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
+# endif
+#endif
+#include "miniz/miniz.c"
+#if defined(_MSC_VER)
+# pragma warning(pop)
+#else
+# pragma GCC diagnostic pop
+#endif
 
 static mz_zip_archive *s_pZip;
 struct udFile_MiniZFile : public udFile
@@ -350,11 +348,40 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, October 2014
-udResult udMiniZ_DegisterMemoryZipHandler()
+udResult udCompression_DegisterMemoryZipHandler()
 {
   if (!s_pZip || udFile_DeregisterHandler(udFileHandler_MiniZOpen))
     return udR_ObjectNotFound;
   mz_zip_reader_end(s_pZip);
   udFree(s_pZip);
   return udR_Success;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2018
+udResult udCompression_CreatePNG(void **ppPNG, size_t *pPNGLen, const uint8_t *pImage, int width, int height, int channels)
+{
+  udResult result;
+  void *pPNG = nullptr;
+
+  UD_ERROR_NULL(ppPNG, udR_InvalidParameter_);
+  UD_ERROR_NULL(pPNGLen, udR_InvalidParameter_);
+  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
+  UD_ERROR_IF(width <= 0 || height <= 0, udR_InvalidParameter_);
+  UD_ERROR_IF(channels < 3 || channels > 4, udR_InvalidParameter_);
+
+  pPNG = tdefl_write_image_to_png_file_in_memory((const void *)pImage, width, height, channels, pPNGLen);
+  UD_ERROR_NULL(pPNG, udR_InvalidConfiguration); // Something went wrong, but we don't know what
+
+  // Unfortunately the PNG writer doesn't support custom memory allocators, so to allow
+  // the caller to free with regular udFree we must duplicate the allocation.
+  *ppPNG = udMemDup(pPNG, *pPNGLen, 0, udAF_None);
+  UD_ERROR_NULL(*ppPNG, udR_MemoryAllocationFailure);
+
+  result = udR_Success;
+
+epilogue:
+  if (pPNG)
+    MZ_FREE(pPNG);
+  return result;
 }
