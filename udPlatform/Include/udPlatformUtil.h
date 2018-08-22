@@ -150,6 +150,8 @@ int udStrncmp(const char *s1, const char *s2, size_t maxChars);
 int udStrncmpi(const char *s1, const char *s2, size_t maxChars);
 bool udStrBeginsWith(const char *s, const char *prefix);
 bool udStrBeginsWithi(const char *s, const char *prefix);
+bool udStrEndsWith(const char *s, const char *pSuffix);
+bool udStrEndsWithi(const char *s, const char *pSuffix);
 inline bool udStrEqual(const char *s1, const char *s2) { return udStrcmp(s1, s2) == 0; }
 inline bool udStrEquali(const char *s1, const char *s2) { return udStrcmpi(s1, s2) == 0; }
 

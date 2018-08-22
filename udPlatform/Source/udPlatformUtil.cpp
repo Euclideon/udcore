@@ -365,6 +365,33 @@ bool udStrBeginsWithi(const char *s, const char *prefix)
   return true;
 }
 
+// *********************************************************************
+// Author: Dave Pevreal, August 2018
+bool udStrEndsWith(const char *s, const char *pSuffix)
+{
+  if (!s) s = s_udStrEmptyString;
+  if (!pSuffix) pSuffix = s_udStrEmptyString;
+  size_t sLen = udStrlen(s);
+  size_t suffixLen = udStrlen(pSuffix);
+
+  if (sLen < suffixLen)
+    return false;
+  return udStrcmp(s + sLen - suffixLen, pSuffix) == 0;
+}
+
+// *********************************************************************
+// Author: Dave Pevreal, August 2018
+bool udStrEndsWithi(const char *s, const char *pSuffix)
+{
+  if (!s) s = s_udStrEmptyString;
+  if (!pSuffix) pSuffix = s_udStrEmptyString;
+  size_t sLen = udStrlen(s);
+  size_t suffixLen = udStrlen(pSuffix);
+
+  if (sLen < suffixLen)
+    return false;
+  return udStrcmpi(s + sLen - suffixLen, pSuffix) == 0;
+}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
