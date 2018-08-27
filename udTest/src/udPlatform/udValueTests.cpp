@@ -349,3 +349,44 @@ TEST(udValueTests, WKT)
     v.Destroy();
   }
 }
+
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2018
+TEST(udValueTests, XMLExport)
+{
+  udResult result;
+  const char *pXML = nullptr;
+  udValue value;
+
+  // Two child elements with no attributes
+  result = value.Set("a.b[] = null");
+  EXPECT_EQ(udR_Success, result);
+  result = value.Set("a.b[] = null");
+  EXPECT_EQ(udR_Success, result);
+  result = value.Export(&pXML, udVEO_XML | udVEO_StripWhiteSpace);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_STREQ("<a><b></b><b></b></a>", pXML);
+  udFree(pXML);
+  value.Destroy();
+
+  // An attribute and no child elements
+  result = value.Set("a.c = 'string'");
+  EXPECT_EQ(udR_Success, result);
+  result = value.Export(&pXML, udVEO_XML | udVEO_StripWhiteSpace);
+  EXPECT_STREQ("<a c=\"string\"/>", pXML);
+  EXPECT_EQ(udR_Success, result);
+  udFree(pXML);
+  value.Destroy();
+
+  // Attribute and child elements
+  result = value.Set("a.b[] = null");
+  EXPECT_EQ(udR_Success, result);
+  result = value.Set("a.c = 'string'");
+  EXPECT_EQ(udR_Success, result);
+  result = value.Export(&pXML, udVEO_XML | udVEO_StripWhiteSpace);
+  EXPECT_STREQ("<a c=\"string\"><b></b></a>", pXML);
+  EXPECT_EQ(udR_Success, result);
+  udFree(pXML);
+  value.Destroy();
+}

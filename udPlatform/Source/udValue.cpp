@@ -1255,7 +1255,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         }
 
         // Create opening tag, optionally self-closing it if there's nothing else to add to it
-        result = udSprintf(&pStr, "%*s<%s%s", indent, "", pKeyText, (!attributeCount && !subObjectCount && !pContentString) ? "/>" : "");
+        result = udSprintf(&pStr, "%*s<%s%s", indent, "", pKeyText, (!attributeCount && !subObjectCount && !pContentString) ? "/>" : (!attributeCount) ? ">" : "");
         UD_ERROR_HANDLE();
         // Export all the attributes to a separate list to be combined to a single line
         LineList attributeLines;
