@@ -276,12 +276,9 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   switch (pCtx->padMode)
   {
     case udCPM_None:
-      if ((plainTextLen % pCtx->blockSize) != 0)
-      {
-        result = udR_AlignmentRequirement;
-        goto epilogue;
-      }
+      UD_ERROR_IF((plainTextLen % pCtx->blockSize) != 0, udR_AlignmentRequirement);
       break;
+
     // TODO: Add a padding mode
     default:
       UD_ERROR_SET(udR_InvalidConfiguration);
@@ -300,9 +297,8 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
             UD_ERROR_NULL(pIV, udR_InvalidParameter_);
             memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
             if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, plainTextLen, pCtx->iv, (const unsigned char*)pPlainText, (unsigned char*)pCipherText) != 0)
-            {
               UD_ERROR_SET(udR_Failure_);
-            }
+
             // For CBC, the output IV is the last encrypted block
             if (pOutIV)
               memcpy(pOutIV, (char*)pCipherText + paddedCliperTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
@@ -351,12 +347,9 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   switch (pCtx->padMode)
   {
     case udCPM_None:
-      if ((cipherTextLen % pCtx->blockSize) != 0)
-      {
-        result = udR_AlignmentRequirement;
-        goto epilogue;
-      }
+      UD_ERROR_IF((cipherTextLen % pCtx->blockSize) != 0, udR_AlignmentRequirement);
       break;
+
     // TODO: Add a padding mode
     default:
       UD_ERROR_SET(udR_InvalidConfiguration);
@@ -571,8 +564,7 @@ udResult udCryptoHash_Create(udCryptoHashContext **ppCtx, udCryptoHashes hashMet
       pCtx->hashLengthInBytes = udCHL_MD5Length;
       break;
     default:
-      result = udR_InvalidParameter_;
-      goto epilogue;
+      UD_ERROR_SET(udR_InvalidParameter_);
   }
 
   // Give ownership of the context to the caller

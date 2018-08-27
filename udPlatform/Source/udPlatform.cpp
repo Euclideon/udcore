@@ -170,14 +170,11 @@ static void DebugTrackMemoryFree(void *pMemory, const char * pFile, int line)
     {
       udDebugPrintf("Error freeing address %p at File %s, line %d, did not find a matching allocation", pMemory, pFile, line);
       //__debugbreak();
-      goto epilogue;
+      return;
     }
     UDASSERT(it->second.pMemory == (pMemory), "Pointers didn't match");
     pMemoryTrackingMap->erase(it);
   }
-
-epilogue:
-  return;
 }
 
 void udMemoryDebugLogMemoryStats()

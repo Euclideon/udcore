@@ -318,24 +318,17 @@ udResult udCompression_RegisterMemoryZipHandler(void *pMem, size_t size)
 {
   udResult result;
 
-  if (s_pZip)
-    return udR_OutstandingReferences;
+  UD_ERROR_IF(s_pZip, udR_OutstandingReferences);
+
   s_pZip = udAllocType(mz_zip_archive, 1, udAF_Zero);
-  if (!s_pZip)
-  {
-    result = udR_MemoryAllocationFailure;
-    goto epilogue;
-  }
+  UD_ERROR_NULL(s_pZip, udR_MemoryAllocationFailure);
+
   // Assign our internal allocator
   s_pZip->m_pAlloc = udMiniZ_Alloc;
   s_pZip->m_pRealloc = udMiniZ_Realloc;
   s_pZip->m_pFree = udMiniZ_Free;
 
-  if (!mz_zip_reader_init_mem(s_pZip, pMem, size, 0))
-  {
-    result = udR_Failure_;
-    goto epilogue;
-  }
+  UD_ERROR_IF(!mz_zip_reader_init_mem(s_pZip, pMem, size, 0), udR_Failure_);
 
   result = udFile_RegisterHandler(udFileHandler_MiniZOpen, "");
 
