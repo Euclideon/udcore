@@ -227,3 +227,37 @@ TEST(udFileTests, TranslatingPaths)
   EXPECT_NE(udR_Success, udFile_TranslatePath(&pNewPath, nullptr));
   EXPECT_NE(udR_Success, udFile_TranslatePath(nullptr, nullptr));
 }
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, August 2018
+TEST(udFileTests, raw)
+{
+  udResult result;
+  void *pMemory = nullptr;
+  int64_t len;
+
+  result = udFile_Load("raw://SGVsbG8gV29ybGQ=", &pMemory, &len);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(11, len);
+  EXPECT_STREQ("Hello World", (char*)pMemory); // Can do strcmp here because udFile_Load always adds a nul
+  udFree(pMemory);
+
+  udFile_Load("raw://VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==", &pMemory, &len);
+  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFree(pMemory);
+
+  udFile_Load("raw://compression=RawDeflate,size=43@C8lIVSgszUzOVkgqyi/PU0jLr1D"
+              "IKs0tKFbIL0stUigBSuckVlUqpOSnAwA=", &pMemory, &len);
+  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFree(pMemory);
+
+  udFile_Load("raw://compression=GzipDeflate,size=43@H4sIAAAAAAAA/wvJSFUoLM1Mzl"
+              "ZIKsovz1NIy69QyCrNLShWyC9LLVIoAUrnJFZVKqTkpwMAOaNPQSsAAAA=", &pMemory, &len);
+  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFree(pMemory);
+
+  udFile_Load("raw://compression=ZlibDeflate,size=43@eJwLyUhVKCzNTM5WSCrKL89TSM"
+              "uvUMgqzS0oVsgvSy1SKAFK5yRWVSqk5KcDAFvcD9o=", &pMemory, &len);
+  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFree(pMemory);
+}

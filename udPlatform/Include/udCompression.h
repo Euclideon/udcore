@@ -11,6 +11,7 @@ enum udCompressionType
 
   udCT_Count
 };
+const char *udCompressionTypeAsString(udCompressionType type); // Return a string of the enum (eg "RawDeflate"), or null if not defined
 
 // Compress a buffer, providing an allocate buffer of the compressed data
 udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSource, size_t sourceSize, udCompressionType type = udCT_ZlibDeflate);

@@ -19,6 +19,7 @@
 #define CONTENT_LOAD_CHUNK_SIZE 65536 // When loading an entire file of unknown size, read in chunks of this many bytes
 
 udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
+udFile_OpenHandlerFunc udFileHandler_RawOpen;      // Default raw handler
 
 struct udFileHandler
 {
@@ -28,9 +29,10 @@ struct udFileHandler
 
 static udFileHandler s_handlers[MAX_HANDLERS] =
 {
-  { udFileHandler_FILEOpen, "" }    // Default file handler
+  { udFileHandler_FILEOpen, "" },       // Default file handler
+  { udFileHandler_RawOpen, "raw://" }   // Raw handler
 };
-static int s_handlersCount = 1;
+static int s_handlersCount = 2;
 
 // ****************************************************************************
 // Author: Dave Pevreal, Ocober 2014
@@ -492,3 +494,37 @@ udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler)
   return udR_ObjectNotFound;
 }
 
+// ****************************************************************************
+// Author: Dave Pevreal, August 2018
+void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompressionType ct, size_t charsPerLine)
+{
+  const char *pBase64 = nullptr;
+  const char *pDeclare = nullptr;
+  if (ct != udCT_None)
+  {
+    void *pCompressed = nullptr;
+    size_t compressedLen;
+    udCompression_Deflate(&pCompressed, &compressedLen, pBuffer, bufferLen, ct);
+    udBase64Encode(&pBase64, pCompressed, compressedLen);
+    udFree(pCompressed);
+  }
+  else
+  {
+    udBase64Encode(&pBase64, pBuffer, bufferLen);
+  }
+
+  size_t len = udStrlen(pBase64);
+  if (ct != udCT_None)
+    udSprintf(&pDeclare, "raw://compression=%s,size=%d@", udCompressionTypeAsString(ct), bufferLen);
+  else
+    udSprintf(&pDeclare, "raw://");
+  size_t i = udStrlen(pDeclare);
+  charsPerLine = udMax(charsPerLine, i);
+  udDebugPrintf("\"%s%.*s\"\n", pDeclare, charsPerLine - i, pBase64);
+  i = charsPerLine - i;
+  for (; i < len; i += charsPerLine)
+    udDebugPrintf("\"%.*s\"\n", charsPerLine, pBase64 + i);
+
+  udFree(pBase64);
+  udFree(pDeclare);
+}

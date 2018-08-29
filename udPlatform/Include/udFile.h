@@ -7,10 +7,14 @@
 //
 // This module is used to perform file i/o, with a number of handlers provided internally.
 // The module can be extended to provide custom handlers
+// By default, a file will open with crt FILE
+// The prefix raw://base64 can be used for in-memory files contained in the filename
+// The prefix raw://compression=ZlibDeflate,size=123@base64 can be used for compressed in-memory files contained in the filename (see udCompressionTypeAsString)
 //
 
 #include "udPlatform.h"
 #include "udResult.h"
+#include "udCompression.h"
 
 struct udFile;
 enum udFileOpenFlags
@@ -68,17 +72,9 @@ udResult udFile_GetPerformance(udFile *pFile, udFilePerformance *pPerformance);
 
 // Seek and read some data
 udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr);
-inline udResult udFile_SeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualRead = nullptr, int64_t *pFilePos = nullptr, udFilePipelinedRequest *pPipelinedRequest = nullptr)
-{
-  return udFile_Read(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualRead, pFilePos, pPipelinedRequest);
-}
 
 // Seek and write some data
 udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr, int64_t *pFilePos = nullptr);
-inline udResult udFile_SeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset = 0, udFileSeekWhence seekWhence = udFSW_SeekCur, size_t *pActualWritten = nullptr, int64_t *pFilePos = nullptr)
-{
-  return udFile_Write(pFile, pBuffer, bufferLength, seekOffset, seekWhence, pActualWritten, pFilePos);
-}
 
 // Receive the data for a piped request, returning an error if attempting to receive pipelined requests out of order
 udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *pPipelinedRequest, size_t *pActualRead = nullptr);
@@ -95,5 +91,8 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath);
 
 // Optional handlers (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP();
+
+// Helper function to output a raw filename for a given buffer to the debug output
+void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompressionType ct = udCT_None, size_t charsPerLine = 64);
 
 #endif // UDFILE_H

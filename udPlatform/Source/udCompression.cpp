@@ -4,6 +4,20 @@
 #include "libdeflate.h"
 
 // ****************************************************************************
+// Author: Dave Pevreal, August 2018
+const char *udCompressionTypeAsString(udCompressionType type)
+{
+  switch (type)
+  {
+    case udCT_None:         return "None";
+    case udCT_RawDeflate:   return "RawDeflate";
+    case udCT_ZlibDeflate:  return "ZlibDeflate";
+    case udCT_GzipDeflate:  return "GzipDeflate";
+    default:                return nullptr;
+  }
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, November 2017
 udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSource, size_t sourceSize, udCompressionType type)
 {
@@ -106,7 +120,7 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
   switch (type)
   {
   case udCT_None:
-    // Handle the special case of no compression, using udMemDup
+    // Handle the special case of no compression
     memcpy(pDest, pSource, sourceSize);
     if (pInflatedSize)
       *pInflatedSize = sourceSize;
