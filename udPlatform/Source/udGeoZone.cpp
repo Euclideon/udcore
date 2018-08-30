@@ -354,3 +354,45 @@ udDouble3 udGeoZone_ToLatLong(const udGeoZone & zone, const udDouble3 &position,
   return (!flipToLongLat) ? latLong : udDouble3::create(latLong.y, latLong.x, latLong.z);
 }
 
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, August 2018
+udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sourceZone, const udGeoZone &destZone)
+{
+  if (sourceZone.zone == destZone.zone)
+    return point;
+
+  udDouble3 latlon = udGeoZone_ToLatLong(sourceZone, point);
+  return udGeoZone_ToCartesian(destZone, latlon);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, August 2018
+udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone &sourceZone, const udGeoZone &destZone)
+{
+  if (sourceZone.zone == destZone.zone)
+    return matrix;
+
+  // A very large model will lead to inaccuracies, so in this case, scale it down
+  double accuracyScale = (matrix.a[0] > 1000) ? matrix.a[0] / 1000.0 : 1.0;
+
+  udDouble3 llO = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3());
+  udDouble3 llX = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.x.toVector3() * accuracyScale));
+  udDouble3 llY = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.y.toVector3() * accuracyScale));
+  udDouble3 llZ = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.z.toVector3() * accuracyScale));
+
+  accuracyScale = 1.0 / accuracyScale;
+  udDouble3 czO = udGeoZone_ToCartesian(destZone, llO);
+  udDouble3 czX = (udGeoZone_ToCartesian(destZone, llX) - czO) * accuracyScale;
+  udDouble3 czY = (udGeoZone_ToCartesian(destZone, llY) - czO) * accuracyScale;
+  udDouble3 czZ = (udGeoZone_ToCartesian(destZone, llZ) - czO) * accuracyScale;
+
+  // TODO: Get scale from matrix, ortho-normalise, then reset scale
+
+  udDouble4x4 m;
+  m.axis.x = udDouble4::create(czX, 0);
+  m.axis.y = udDouble4::create(czY, 0);
+  m.axis.z = udDouble4::create(czZ, 0);
+  m.axis.t = udDouble4::create(czO, 1);
+
+  return m;
+}

@@ -40,4 +40,10 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
 // Convert a point from the cartesian coordinate system defined by the zone to lat/long
 udDouble3 udGeoZone_ToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat = false);
 
+// Transform a point from one zone to another
+udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sourceZone, const udGeoZone &destZone);
+
+// Transform a matrix from one zone to another
+udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone &sourceZone, const udGeoZone &destZone);
+
 #endif // UDGEOZONE_H
