@@ -1004,7 +1004,11 @@ udResult udValue::Parse(const char *pString, int *pCharCount, int *pLineNumber)
     }
     else
     {
-      UD_ERROR_SET(udR_ParseError);
+      // Don't flag an error when nothing to parse
+      if ((totalCharCount + charCount) == 0)
+        UD_ERROR_SET_NO_BREAK(udR_ParseError);
+      else
+        UD_ERROR_SET(udR_ParseError);
     }
     totalCharCount += charCount;
   }
