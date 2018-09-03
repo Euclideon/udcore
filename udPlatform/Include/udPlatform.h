@@ -345,7 +345,9 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 #endif
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
-#define UDARRAYSIZE(_array) ( sizeof(_array) / sizeof((_array)[0]) )
+
+template <typename T, size_t N> constexpr size_t udLengthOf(T(&)[N]) { return N; }
+#define UDARRAYSIZE udLengthOf
 
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 

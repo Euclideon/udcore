@@ -162,51 +162,51 @@ TEST(udStrTests, udStrtoa)
   char buffer[1024];
 
   // Positive
-  EXPECT_EQ(2, udStrUtoa(buffer, UDARRAYSIZE(buffer), 52));
+  EXPECT_EQ(2, udStrUtoa(buffer, (int)udLengthOf(buffer), 52));
   EXPECT_STREQ("52", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(2, udStrItoa(buffer, UDARRAYSIZE(buffer), 52));
+  EXPECT_EQ(2, udStrItoa(buffer, (int)udLengthOf(buffer), 52));
   EXPECT_STREQ("52", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(2, udStrItoa64(buffer, UDARRAYSIZE(buffer), 52));
+  EXPECT_EQ(2, udStrItoa64(buffer, (int)udLengthOf(buffer), 52));
   EXPECT_STREQ("52", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(5, udStrFtoa(buffer, UDARRAYSIZE(buffer), 52.5, 2));
+  EXPECT_EQ(5, udStrFtoa(buffer, (int)udLengthOf(buffer), 52.5, 2));
   EXPECT_STREQ("52.50", buffer);
   buffer[0] = '\0';
 
   // Negative
-  EXPECT_EQ(20, udStrUtoa(buffer, UDARRAYSIZE(buffer), (uint64_t)-52));
+  EXPECT_EQ(20, udStrUtoa(buffer, (int)udLengthOf(buffer), (uint64_t)-52));
   EXPECT_STREQ("18446744073709551564", buffer);
-  EXPECT_EQ(3, udStrItoa(buffer, UDARRAYSIZE(buffer), -52));
+  EXPECT_EQ(3, udStrItoa(buffer, (int)udLengthOf(buffer), -52));
   EXPECT_STREQ("-52", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(3, udStrItoa64(buffer, UDARRAYSIZE(buffer), -52));
+  EXPECT_EQ(3, udStrItoa64(buffer, (int)udLengthOf(buffer), -52));
   EXPECT_STREQ("-52", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(6, udStrFtoa(buffer, UDARRAYSIZE(buffer), -52.5, 2));
+  EXPECT_EQ(6, udStrFtoa(buffer, (int)udLengthOf(buffer), -52.5, 2));
   EXPECT_STREQ("-52.50", buffer);
   buffer[0] = '\0';
 
   // Radix-16 - Uppercase
-  EXPECT_EQ(2, udStrUtoa(buffer, UDARRAYSIZE(buffer), 164, -16));
+  EXPECT_EQ(2, udStrUtoa(buffer, (int)udLengthOf(buffer), 164, -16));
   EXPECT_STREQ("A4", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(0, udStrItoa(buffer, UDARRAYSIZE(buffer), 164, -16));
+  EXPECT_EQ(0, udStrItoa(buffer, (int)udLengthOf(buffer), 164, -16));
   EXPECT_STREQ("", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(0, udStrItoa64(buffer, UDARRAYSIZE(buffer), 164, -16));
+  EXPECT_EQ(0, udStrItoa64(buffer, (int)udLengthOf(buffer), 164, -16));
   EXPECT_STREQ("", buffer);
   buffer[0] = '\0';
 
   // Radix-16 - Lowercase
-  EXPECT_EQ(2, udStrUtoa(buffer, UDARRAYSIZE(buffer), 164, 16));
+  EXPECT_EQ(2, udStrUtoa(buffer, (int)udLengthOf(buffer), 164, 16));
   EXPECT_STREQ("a4", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(2, udStrItoa(buffer, UDARRAYSIZE(buffer), 164, 16));
+  EXPECT_EQ(2, udStrItoa(buffer, (int)udLengthOf(buffer), 164, 16));
   EXPECT_STREQ("a4", buffer);
   buffer[0] = '\0';
-  EXPECT_EQ(2, udStrItoa64(buffer, UDARRAYSIZE(buffer), 164, 16));
+  EXPECT_EQ(2, udStrItoa64(buffer, (int)udLengthOf(buffer), 164, 16));
   EXPECT_STREQ("a4", buffer);
   buffer[0] = '\0';
 }
