@@ -1534,17 +1534,51 @@ epilogue:
 #define SMALLSTRING_BUFFER_COUNT 32
 #define SMALLSTRING_BUFFER_SIZE 64
 static char s_smallStringBuffers[SMALLSTRING_BUFFER_COUNT][SMALLSTRING_BUFFER_SIZE]; // 32 cycling buffers of 64 characters
-static int32_t s_smallStringBufferIndex = 0;  // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
+static volatile int32_t s_smallStringBufferIndex = 0;  // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2018
 const char *udTempStr(const char *pFormat, ...)
 {
-  char *pBuf = s_smallStringBuffers[udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)];
+  int32_t bufIndex = udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1);
+  size_t bufferSize = SMALLSTRING_BUFFER_SIZE;
+
+retry:
+  UDASSERT(bufIndex < SMALLSTRING_BUFFER_COUNT, "buffer index out of range");
+  UDASSERT(bufIndex * SMALLSTRING_BUFFER_SIZE + bufferSize <= (int)sizeof(s_smallStringBuffers), "bufferSize would lead to overrun");
+  char *pBuf = s_smallStringBuffers[bufIndex];
   va_list args;
   va_start(args, pFormat);
-  udSprintfVA(pBuf, SMALLSTRING_BUFFER_SIZE, pFormat, args);
+  int charCount = udSprintfVA(pBuf, bufferSize, pFormat, args);
   va_end(args);
+
+  if (charCount >= (int)bufferSize-1 && bufferSize < (SMALLSTRING_BUFFER_COUNT * SMALLSTRING_BUFFER_SIZE))
+  {
+    // The output buffer wasn't big enough, so look for a series of contiguous buffers
+    // To keep things simple, attempt to undo the allocation done on the first line of the function
+    int previous = bufIndex | (s_smallStringBufferIndex & ~(SMALLSTRING_BUFFER_COUNT - 1));
+    // Reset to previous iff current value is exactly previous + 1
+    udInterlockedCompareExchange(&s_smallStringBufferIndex, previous, previous + 1);
+
+    int requiredBufferCount = udMin(SMALLSTRING_BUFFER_COUNT, (charCount + SMALLSTRING_BUFFER_SIZE) / SMALLSTRING_BUFFER_SIZE);
+    bufferSize = requiredBufferCount * SMALLSTRING_BUFFER_SIZE;
+    // Try to allocate a number of sequential buffers, understanding that another thread can allocate one also
+    while ((((bufIndex = s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)) + requiredBufferCount) <= SMALLSTRING_BUFFER_COUNT)
+    {
+      if (udInterlockedCompareExchange(&s_smallStringBufferIndex, bufIndex + requiredBufferCount, bufIndex) == bufIndex)
+      {
+        // The bufIndex has upper bits set for the compareExchange, clear them before retrying
+        bufIndex &= (SMALLSTRING_BUFFER_COUNT - 1);
+        goto retry;
+      }
+    }
+    // We need to wrap and hopefully no other thread is still using their string.
+    if (requiredBufferCount > (s_smallStringBufferIndex & (SMALLSTRING_BUFFER_COUNT - 1)))
+      udDebugPrintf("Warning: very long string (%d chars) created using udTempStr - NOT THREADSAFE\n", charCount + 1);
+    s_smallStringBufferIndex = requiredBufferCount;
+    bufIndex = 0;
+    goto retry;
+  }
   return pBuf;
 }
 

@@ -241,5 +241,36 @@ TEST(udStrTests, udTempStr)
   EXPECT_STREQ("01:23", udTempStr_ElapsedTime(60 + 23));
   EXPECT_STREQ("0:01:23", udTempStr_ElapsedTime(60 + 23, false));
   EXPECT_STREQ("2:01:23", udTempStr_ElapsedTime(120*60 + 60 + 23, false));
+
+  // These tests assume 32 buffers of 64 characters each
+  const char *pBuffers[32];
+  const int bufferLen = 64;
+  size_t index;
+
+  // Make sure we can generate all the temp strings without overwriting
+  for (index = 0; index < udLengthOf(pBuffers); ++index)
+    pBuffers[index] = udTempStr("%d", (int)index);
+  for (index = 0; index < udLengthOf(pBuffers); ++index)
+    EXPECT_EQ(index, udStrAtoi(pBuffers[index]));
+
+  // Test two strings longer than a buffer size don't overwrite each other
+  const char *pMediumString1 = udTempStr("%*s", 3 * bufferLen - 2, "@");
+  const char *pMediumString2 = udTempStr("%*s", 3 * bufferLen - 2, "*");
+  udStrchr(pMediumString1, "@", &index);
+  EXPECT_EQ(3 * bufferLen - 3, index);
+  udStrchr(pMediumString2, "*", &index);
+  EXPECT_EQ(3 * bufferLen - 3, index);
+
+  // Test a single string the size of all the buffers (force a wrap)
+  const char *pLongString = udTempStr("%*s", int(udLengthOf(pBuffers)) * bufferLen - 2, "!");
+  udStrchr(pLongString, "!", &index);
+  EXPECT_EQ(32 * bufferLen - 3, index);
+  // Make sure it is the lowest pointer of all of them
+  for (index = 0; index < udLengthOf(pBuffers); ++index)
+    EXPECT_TRUE(pLongString <= pBuffers[index]);
+
+  // Test a string longer than all the buffers
+  pLongString = udTempStr("%*s", int(udLengthOf(pBuffers) + 1) * bufferLen, "!");
+  EXPECT_EQ(nullptr, udStrchr(pLongString, "!"));
 }
 
