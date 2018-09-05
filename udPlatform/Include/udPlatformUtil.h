@@ -421,7 +421,7 @@ udResult udRemoveDir(const char *pFolder);
 // Write a formatted string to the buffer
 int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
 int udSprintfVA(char *pDest, size_t destlength, const char *pFormat, va_list args);
-// Create an allocated string to fit the output
+// Create an allocated string to fit the output, *ppDest will be freed if non-null, and may be an argument to the string
 udResult udSprintf(const char **ppDest, const char *pFormat, ...);
 
 // *********************************************************************

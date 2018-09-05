@@ -2084,6 +2084,7 @@ udResult udSprintf(const char **ppDest, const char *pFormat, ...)
   va_start(ap, pFormat);
   udSprintfVA(pStr, length + 1, pFormat, ap);
   va_end(ap);
+  udFree(*ppDest);
   *ppDest = pStr;
 
   return udR_Success;
@@ -2159,7 +2160,6 @@ static udResult GetWKTElementStr(const char **ppOutput, const udValue &value)
   const char *pElementSeperator = ""; // Changed to "," after first element is written
   const char *pStr = nullptr;
   const char *pElementStr = nullptr;
-  const char *pTemp = nullptr;
   const char *pTypeStr;
   const char *pNameStr;
   size_t valuesCount;
@@ -2171,16 +2171,11 @@ static udResult GetWKTElementStr(const char **ppOutput, const udValue &value)
   UD_ERROR_CHECK(udSprintf(&pStr, "%s[", pTypeStr));
   if (pNameStr)
   {
-    pTemp = pStr;
-    pStr = nullptr;
-    UD_ERROR_CHECK(udSprintf(&pStr, "%s\"%s\"", pTemp, pNameStr));
-    udFree(pTemp);
+    UD_ERROR_CHECK(udSprintf(&pStr, "%s\"%s\"", pStr, pNameStr));
     pElementSeperator = ",";
   }
   for (size_t i = 0; i < valuesCount; ++i)
   {
-    pTemp = pStr;
-    pStr = nullptr;
     const udValue &arrayValue = value.Get("values[%d]", i);
     if (arrayValue.IsObject())
       UD_ERROR_CHECK(GetWKTElementStr(&pElementStr, arrayValue));
@@ -2190,15 +2185,12 @@ static udResult GetWKTElementStr(const char **ppOutput, const udValue &value)
       UD_ERROR_CHECK(udSprintf(&pElementStr, "\"%s\"", arrayValue.AsString()));
     else
       UD_ERROR_CHECK(arrayValue.ToString(&pElementStr));
-    UD_ERROR_CHECK(udSprintf(&pStr, "%s%s%s", pTemp, pElementSeperator, pElementStr));
-    udFree(pTemp);
+    UD_ERROR_CHECK(udSprintf(&pStr, "%s%s%s", pStr, pElementSeperator, pElementStr));
     udFree(pElementStr);
     pElementSeperator = ",";
   }
   // Put the closing brace on
-  pTemp = pStr;
-  pStr = nullptr;
-  UD_ERROR_CHECK(udSprintf(&pStr, "%s]", pTemp));
+  UD_ERROR_CHECK(udSprintf(&pStr, "%s]", pStr));
 
   // Transfer ownership
   *ppOutput = pStr;
@@ -2208,7 +2200,6 @@ static udResult GetWKTElementStr(const char **ppOutput, const udValue &value)
 epilogue:
   udFree(pStr);
   udFree(pElementStr);
-  udFree(pTemp);
   return result;
 }
 
