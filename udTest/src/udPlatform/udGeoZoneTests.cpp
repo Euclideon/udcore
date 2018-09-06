@@ -77,6 +77,8 @@ TEST(udGeoZoneTests, RoundTripPrecision)
     { 28350, -33.5338767941, 115.00626123502 },
     { 28350, -41.953243413307, 146.54738222308 },
     { 28350, -70.463470357348, 119.69509496061 },
+
+    { 3112, -29.013435591336, 152.46461046582 },
     //{ 27700, 52.7545342, 0.2885422 }, // This test fails. See udGeoZone.OSGB below for a specific test for 27700 dataset, the InaccuracyScalar should be increased to 1.0 for this line to work
   };
 
@@ -100,6 +102,45 @@ TEST(udGeoZoneTests, RoundTripPrecision)
 
     EXPECT_EQ(int64_t(cartesian.x * localPrecision), int64_t(cartesian2.x * localPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
     EXPECT_EQ(int64_t(cartesian.y * localPrecision), int64_t(cartesian2.y * localPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
+  }
+}
+
+TEST(udGeoZone, SouthernHemisphereLCC_GDA94)
+{
+  // 3112 - GDA94
+  udGeoZone zone;
+
+  const int64_t angularPrecision = 1 * 60 * 60; // 60x60 to get to arc seconds
+  const int64_t localPrecision = 1; // 1m
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, 3112));
+
+  // spatialreference conversions
+  const udDouble3 expectedLatLongs[] = { //WGS84
+    udDouble3::create(-28.0386128, 153.2827519, 0), // Lake Advancement
+    udDouble3::create(-29.014848, 134.7520264, 0), // Coober Pedy
+    udDouble3::create(-22.6979855, 116.2332262, 0) // Wyloo Station
+  };
+
+  const udDouble3 expectedLocalSpaces[] = {
+    udDouble3::create(1865670.94, -3317869.21, 0.0),
+    udDouble3::create(72407.23, -3281573.42, 0.0),
+    udDouble3::create(-1802424.68, -2717219.62, 0.0)
+  };
+
+  udDouble3 latLong, localSpace;
+
+  // The ordering for the tests in this loop is important- if 27700-4277 or 4326-4277 aren't accurate the last one can't be either
+  for (size_t i = 0; i < UDARRAYSIZE(expectedLatLongs); ++i)
+  {
+    localSpace = udGeoZone_ToCartesian(zone, expectedLatLongs[i]);
+    latLong = udGeoZone_ToLatLong(zone, expectedLocalSpaces[i]);
+
+    EXPECT_EQ(int64_t(udRound(expectedLatLongs[i].x * angularPrecision)), int64_t(udRound(latLong.x * angularPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(expectedLatLongs[i].y * angularPrecision)), int64_t(udRound(latLong.y * angularPrecision))) << "PointSet:" << i;
+
+    EXPECT_EQ(int64_t(udRound(expectedLocalSpaces[i].x * localPrecision)), int64_t(udRound(localSpace.x * localPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(expectedLocalSpaces[i].y * localPrecision)), int64_t(udRound(localSpace.y * localPrecision))) << "PointSet:" << i;
   }
 }
 
