@@ -1619,6 +1619,32 @@ const char *udTempStr_CommaInt(int64_t n)
 }
 
 // ****************************************************************************
+// Author: Dave Pevreal, September 2018
+const char *udTempStr_TrimDouble(double v, int maxDecimalPlaces, int minDecimalPlaces, bool undoRounding)
+{
+  char *pBuf = s_smallStringBuffers[udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)];
+  udStrFtoa(pBuf, SMALLSTRING_BUFFER_SIZE, v, maxDecimalPlaces + (undoRounding ? 1 : 0));
+  size_t pointIndex;
+  if (udStrchr(pBuf, ".", &pointIndex))
+  {
+    size_t i = udStrlen(pBuf) - 1;
+    // If requested, truncate the last decimal place (to undo rounding)
+    if (undoRounding && i > pointIndex)
+      pBuf[i--] = '\0';
+    for (; i > (pointIndex + minDecimalPlaces); --i)
+    {
+      if (pBuf[i] == '0')
+        pBuf[i] = '\0';
+      else
+        break;
+    }
+    if (minDecimalPlaces == 0 && pBuf[pointIndex + 1] == '\0')
+      pBuf[pointIndex] = '\0';
+  }
+  return pBuf;
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, May 2018
 const char *udTempStr_ElapsedTime(int seconds, bool trimHours)
 {

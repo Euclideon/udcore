@@ -242,6 +242,15 @@ TEST(udStrTests, udTempStr)
   EXPECT_STREQ("0:01:23", udTempStr_ElapsedTime(60 + 23, false));
   EXPECT_STREQ("2:01:23", udTempStr_ElapsedTime(120*60 + 60 + 23, false));
 
+  EXPECT_STREQ("0", udTempStr_TrimDouble(0, 10, 0));
+  EXPECT_STREQ("0.0", udTempStr_TrimDouble(0, 10, 1));
+  EXPECT_STREQ("0.00", udTempStr_TrimDouble(0, 10, 2));
+  EXPECT_STREQ("0.0000000000", udTempStr_TrimDouble(0, 10, 12));
+  EXPECT_STREQ("10.6667", udTempStr_TrimDouble(10.666666667, 4, 0));
+  EXPECT_STREQ("10.6666", udTempStr_TrimDouble(10.666666667, 4, 0, true));
+  EXPECT_STREQ("123", udTempStr_TrimDouble(123.666666667, 0, 0, true));
+  EXPECT_STREQ("124", udTempStr_TrimDouble(123.666666667, 0, 0, false));
+
   // These tests assume 32 buffers of 64 characters each
   const char *pBuffers[32];
   const int bufferLen = 64;
