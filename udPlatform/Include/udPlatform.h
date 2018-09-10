@@ -148,8 +148,8 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 #include <sched.h>
 inline int32_t udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
 inline int32_t udInterlockedPostIncrement(volatile int32_t *p) { return __sync_fetch_and_add(p, 1); }
-inline int32_t udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, -1); }
-inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetch_and_add(p, -1); }
+inline int32_t udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_sub_and_fetch(p, 1); }
+inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetch_and_sub(p, 1); }
 inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return __sync_lock_test_and_set(dest, exchange); }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 template <typename T>
