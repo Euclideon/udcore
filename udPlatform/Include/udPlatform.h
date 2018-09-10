@@ -168,10 +168,10 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 #error Unknown platform
 #endif
 // Helpers to perform various interlocked functions based on the platform-wrapped primitives
-inline long udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
+inline int32_t udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
 inline ptrdiff_t udInterlockedAddPtrDiff(volatile ptrdiff_t *p, ptrdiff_t amount) { ptrdiff_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchangePointer((void*volatile*)p, (void*)after, (void*)prev) != (void*)prev); return after; }
-inline long udInterlockedMin(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue < newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
-inline long udInterlockedMax(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue > newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
+inline int32_t udInterlockedMin(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue < newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
+inline int32_t udInterlockedMax(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue > newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
 
 class udInterlockedInt32
 {
