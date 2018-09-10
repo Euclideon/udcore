@@ -60,6 +60,10 @@ project ("udPlatform" .. (projectSuffix or ""))
 	filter { "files:../3rdParty/**" }
 		warnings "Off"
 
+	-- XCode4 can't set per-file configurations, so FatalWarnings needs to be off to build
+	filter { "action:xcode4" }
+		removeflags { "FatalWarnings" }
+
 	filter { "configurations:Release", "system:Windows" }
 		symbols "On"
 
