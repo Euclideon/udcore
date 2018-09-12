@@ -328,20 +328,8 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 # define __FUNC_NAME__ "unknown"
 #endif
 
-
-// Disabled Warnings
-#if defined(_MSC_VER)
-#pragma warning(disable:4127) // conditional expression is constant
-#endif //defined(_MSC_VER)
-
 #if defined(__GNUC__)
 # define UD_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100  + __GNUC_PATCHLEVEL__)
-# pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#endif
-
-
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )

@@ -1427,7 +1427,8 @@ struct udBMPHeader
 // Author: Dave Pevreal, August 2014
 udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColorData, int pitchInBytes)
 {
-  udBMPHeader header = { 0 };
+  udBMPHeader header;
+  memset(&header, 0, sizeof(header));
   if (!pitchInBytes)
     pitchInBytes = width * 4;
 
@@ -1484,7 +1485,8 @@ error:
 udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **ppColorData)
 {
   udResult result;
-  udBMPHeader header = { 0 };
+  udBMPHeader header;
+  memset(&header, 0, sizeof(header));
   udFile *pFile = nullptr;
   uint8_t *pColors = nullptr;
   uint8_t *pLine = nullptr;
@@ -1719,19 +1721,23 @@ struct udFindDirData : public udFindDir
 udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
 {
 #if UD_32BIT
-  struct stat st = { 0 };
-  if (stat(pFilename, &st) == 0)
+# define UD_STAT_STRUCT stat
+# define UD_STAT_FUNC stat
 #elif UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   // Apple made these 64bit and deprecated the 64bit variants
-  struct stat st = { 0 };
-  if (stat(pFilename, &st) == 0)
+# define UD_STAT_STRUCT stat
+# define UD_STAT_FUNC stat
 #elif UDPLATFORM_WINDOWS
-  struct _stat64 st = { 0 };
-  if (_wstat64(udOSString(pFilename), &st) == 0)
+# define UD_STAT_STRUCT _stat64
+# define UD_STAT_FUNC _wstat64
 #else
-  struct stat64 st = { 0 };
-  if (stat64(pFilename, &st) == 0)
+# define UD_STAT_STRUCT stat64
+# define UD_STAT_FUNC stat64
 #endif
+
+  struct UD_STAT_STRUCT st;
+  memset(&st, 0, sizeof(st));
+  if (UD_STAT_FUNC(udOSString(pFilename), &st) == 0)
   {
     if (pFileLengthInBytes)
       *pFileLengthInBytes = (int64_t)st.st_size;
@@ -1741,6 +1747,9 @@ udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
   {
     return udR_ObjectNotFound;
   }
+
+#undef UD_STAT_STRUCT
+#undef UD_STAT_FUNC
 }
 
 // ****************************************************************************
