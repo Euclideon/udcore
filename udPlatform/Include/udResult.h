@@ -63,6 +63,7 @@ enum udResult
 
   udR_EventNotHandled,
   udR_DatabaseError,
+  udR_ServerError,
   udR_NotAllowed,
   udR_InvalidLicense,
 
