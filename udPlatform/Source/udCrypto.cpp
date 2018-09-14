@@ -57,7 +57,7 @@ struct udCryptoCipherContext
   mbedtls_aes_context ctx;
   uint8_t key[32];
   uint8_t iv[AES_BLOCK_SIZE];
-  int blockSize;
+  size_t blockSize;
   int keyLengthInBits;
   udCryptoCiphers cipher;
   udCryptoChainMode chainMode;
@@ -262,7 +262,8 @@ udResult udCrypto_CreateIVForCTRMode(udCryptoCipherContext *pCtx, udCryptoIV *pI
 udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *pIV, const void *pPlainText, size_t plainTextLen, void *pCipherText, size_t cipherTextLen, size_t *pPaddedCipherTextLen, udCryptoIV *pOutIV)
 {
   udResult result;
-  size_t paddedCliperTextLen;
+  size_t paddedCliperTextLen = 0;
+  const void *pPaddedPlainText = nullptr;
 
   UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
 
@@ -272,19 +273,25 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
     pCtx->ctxInit = true;
   }
 
-  paddedCliperTextLen = plainTextLen;
-  switch (pCtx->padMode)
-  {
-    case udCPM_None:
-      UD_ERROR_IF((plainTextLen % pCtx->blockSize) != 0, udR_AlignmentRequirement);
-      break;
+  if (pCtx->padMode == udCPM_None)
+    paddedCliperTextLen = plainTextLen;
+  else
+    paddedCliperTextLen = (plainTextLen + pCtx->blockSize) & ~(pCtx->blockSize - 1);
 
-    // TODO: Add a padding mode
-    default:
-      UD_ERROR_SET(udR_InvalidConfiguration);
-  }
-
+  UD_ERROR_IF((paddedCliperTextLen  & (pCtx->blockSize - 1)) != 0, udR_AlignmentRequirement);
   UD_ERROR_IF(paddedCliperTextLen > cipherTextLen, udR_BufferTooSmall);
+
+  // Trading efficiency for simplicity, just duplicate the source and add the padding bytes
+  if (paddedCliperTextLen != plainTextLen)
+  {
+    size_t padBytes = paddedCliperTextLen - plainTextLen;
+    pPaddedPlainText = udMemDup(pPlainText, plainTextLen, padBytes, udAF_None);
+    memset(udAddBytes((void*)pPaddedPlainText, plainTextLen), (int)padBytes, padBytes);
+  }
+  else
+  {
+    pPaddedPlainText = pPlainText;
+  }
 
   switch (pCtx->cipher)
   {
@@ -296,8 +303,7 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
           case udCCM_CBC:
             UD_ERROR_NULL(pIV, udR_InvalidParameter_);
             memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
-            if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, plainTextLen, pCtx->iv, (const unsigned char*)pPlainText, (unsigned char*)pCipherText) != 0)
-              UD_ERROR_SET(udR_Failure_);
+            UD_ERROR_IF(mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, paddedCliperTextLen, pCtx->iv, (const unsigned char*)pPaddedPlainText, (unsigned char*)pCipherText) != 0, udR_InternalCryptoError);
 
             // For CBC, the output IV is the last encrypted block
             if (pOutIV)
@@ -310,10 +316,7 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
             {
               size_t ncoff = 0;
               unsigned char stream_block[16];
-              if (mbedtls_aes_crypt_ctr(&pCtx->ctx, plainTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pPlainText, (unsigned char *)pCipherText) != 0)
-              {
-                UD_ERROR_SET(udR_Failure_);
-              }
+              UD_ERROR_IF(mbedtls_aes_crypt_ctr(&pCtx->ctx, paddedCliperTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pPaddedPlainText, (unsigned char *)pCipherText) != 0, udR_InternalCryptoError);
             }
             break;
 
@@ -331,6 +334,9 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   result = udR_Success;
 
 epilogue:
+  if (pPaddedPlainText != pPlainText)
+    udFreeSecure(pPaddedPlainText, paddedCliperTextLen);
+
   return result;
 }
 
@@ -340,22 +346,20 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
 {
   udResult result;
   size_t actualPlainTextLen;
+  void *pPaddedPlainText = nullptr;
 
   UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter_);
+  UD_ERROR_IF((cipherTextLen % pCtx->blockSize) != 0, udR_AlignmentRequirement);
 
-  actualPlainTextLen = cipherTextLen;
-  switch (pCtx->padMode)
+  if (cipherTextLen > plainTextLen)
   {
-    case udCPM_None:
-      UD_ERROR_IF((cipherTextLen % pCtx->blockSize) != 0, udR_AlignmentRequirement);
-      break;
-
-    // TODO: Add a padding mode
-    default:
-      UD_ERROR_SET(udR_InvalidConfiguration);
+    UD_ERROR_IF(pCtx->padMode == udCPM_None, udR_BufferTooSmall);
+    pPaddedPlainText = udAlloc(cipherTextLen);
   }
-
-  UD_ERROR_IF(actualPlainTextLen > plainTextLen, udR_BufferTooSmall);
+  else
+  {
+    pPaddedPlainText = pPlainText;
+  }
 
   switch (pCtx->cipher)
   {
@@ -372,10 +376,7 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
             pCtx->ctxInit = true;
           }
           memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
-          if (mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_DECRYPT, cipherTextLen, pCtx->iv, (const unsigned char*)pCipherText, (unsigned char *)pPlainText) != 0)
-          {
-            UD_ERROR_SET(udR_Failure_);
-          }
+          UD_ERROR_IF(mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_DECRYPT, cipherTextLen, pCtx->iv, (const unsigned char*)pCipherText, (unsigned char *)pPaddedPlainText) != 0, udR_InternalCryptoError);
           if (pOutIV)
             memcpy(pOutIV, pCtx->iv, sizeof(pCtx->iv));
           break;
@@ -391,7 +392,7 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
           {
             size_t ncoff = 0;
             unsigned char stream_block[16];
-            if (mbedtls_aes_crypt_ctr(&pCtx->ctx, cipherTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pCipherText, (unsigned char *)pPlainText) != 0)
+            if (mbedtls_aes_crypt_ctr(&pCtx->ctx, cipherTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pCipherText, (unsigned char *)pPaddedPlainText) != 0)
             {
               UD_ERROR_SET(udR_Failure_);
             }
@@ -406,12 +407,29 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   default:
     UD_ERROR_SET(udR_InvalidConfiguration);
   }
+  if (pCtx->padMode == udCPM_None)
+  {
+    actualPlainTextLen = cipherTextLen;
+  }
+  else
+  {
+    uint8_t padBytes = ((uint8_t*)pPaddedPlainText)[cipherTextLen - 1];
+    actualPlainTextLen = cipherTextLen - padBytes;
+    // Part of PKCS#7 is the padding must be verified
+    for (uint8_t i = 0; i < padBytes; ++i)
+      UD_ERROR_IF(((uint8_t*)pPaddedPlainText)[actualPlainTextLen + i] != padBytes, udR_CorruptData);
+    if (pPaddedPlainText != pPlainText)
+      memcpy(pPlainText, pPaddedPlainText, actualPlainTextLen);
+  }
 
   if (pActualPlainTextLen)
     *pActualPlainTextLen = actualPlainTextLen;
   result = udR_Success;
 
 epilogue:
+  if (pPaddedPlainText != pPlainText)
+    udFreeSecure(pPaddedPlainText, cipherTextLen);
+
   return result;
 }
 

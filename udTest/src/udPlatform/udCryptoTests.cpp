@@ -460,8 +460,37 @@ TEST(udCryptoTests, Utilities)
     EXPECT_EQ(nullptr, pTestStr);
     EXPECT_FALSE(udStrEqual(pOldPointer, pZeros));
   }
+}
 
+TEST(CryptoTests, PKCS7)
+{
+  static const udCryptoIV iv = { { 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f } };
+  static const char *pPlainText = "There are two great days in every person's life; the day we are born and the day we discover why"; // Multiple of 16 characters
+  char encryptedText[96 + 16];
+  char decryptedText[96]; // Importantly don't add 16 here so that codepaths dealing with pad overrun are tested
+  size_t encryptedTextLen, decryptedTextLen;
+  udCryptoCipherContext *pEncCtx = nullptr;
+  udCryptoCipherContext *pDecCtx = nullptr;
+  const char *pKeyBase64 = nullptr;
 
-
+  EXPECT_EQ(udR_Success, udCryptoKey_DeriveFromPassword(&pKeyBase64, udCCKL_AES128KeyLength, "password"));
+  for (udCryptoChainMode mode = udCCM_CTR; mode != udCCM_None; mode = (udCryptoChainMode)(mode - 1))
+  {
+    EXPECT_EQ(udR_Success, udCryptoCipher_Create(&pEncCtx, udCC_AES128, udCPM_PKCS7, pKeyBase64, mode));
+    EXPECT_EQ(udR_Success, udCryptoCipher_Create(&pDecCtx, udCC_AES128, udCPM_PKCS7, pKeyBase64, mode));
+    for (size_t i = 0; i <= udStrlen(pPlainText); ++i)
+    {
+      memset(encryptedText, 0, udLengthOf(encryptedText));
+      memset(decryptedText, 0, udLengthOf(decryptedText));
+      EXPECT_EQ(udR_Success, udCryptoCipher_Encrypt(pEncCtx, &iv, pPlainText, i, encryptedText, udLengthOf(encryptedText), &encryptedTextLen));
+      EXPECT_EQ((i + 16) & ~15, encryptedTextLen);
+      EXPECT_EQ(udR_Success, udCryptoCipher_Decrypt(pDecCtx, &iv, encryptedText, encryptedTextLen, decryptedText, udLengthOf(decryptedText), &decryptedTextLen));
+      EXPECT_EQ(i, decryptedTextLen);
+      EXPECT_EQ(0, memcmp(decryptedText, pPlainText, i));
+    }
+    EXPECT_EQ(udR_Success, udCryptoCipher_Destroy(&pEncCtx));
+    EXPECT_EQ(udR_Success, udCryptoCipher_Destroy(&pDecCtx));
+  }
+  udFree(pKeyBase64);
 }
 

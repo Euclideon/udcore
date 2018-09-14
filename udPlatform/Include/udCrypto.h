@@ -33,7 +33,8 @@ enum udCryptoCipherKeyLength
 
 enum udCryptoPaddingMode
 {
-  udCPM_None
+  udCPM_None,
+  udCPM_PKCS7,      // PKCS5 is identical but was only defined for 8-byte block ciphers
 };
 
 enum udCryptoChainMode
