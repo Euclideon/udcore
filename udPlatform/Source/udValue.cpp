@@ -1048,7 +1048,7 @@ udResult udValue::ToString(const char **ppStr, int indent, const char *pPre, con
         do
         {
           // NOTE: xmlEscChars are +1 in places to ignore the &apos; (single quote)
-          udStrchr(u.pStr, s_xmlEscChars+1, &strCharIndex, &escCharIndex);
+          udStrchr(p, s_xmlEscChars+1, &strCharIndex, &escCharIndex);
           if (p[strCharIndex])
           {
             newSize += udStrlen(s_pXMLEscStrings[1+escCharIndex]) - 1;
@@ -1668,7 +1668,7 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
       if (*pXML == '<' && !cData)
       {
         // An embedded tag (a subobject)
-        int lineCount;
+        int lineCount = 0;
         // Call parseXML directly because Parse would destroy the element first
         result = pElement->ParseXML(pXML, &charCount, &lineCount);
         UD_ERROR_HANDLE();

@@ -458,7 +458,9 @@ TEST(udCryptoTests, Utilities)
     const char *pOldPointer = pTestStr;
     udCrypto_FreeSecure(pTestStr);
     EXPECT_EQ(nullptr, pTestStr);
-    EXPECT_FALSE(udStrEqual(pOldPointer, pZeros));
+#if UDPLATFORM_WINDOWS
+    EXPECT_NE(0, memcmp(pOldPointer, pZeros, udStrlen(pZeros) + 1));
+#endif
   }
 }
 
