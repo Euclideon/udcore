@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 #include "udCompression.h"
 #include "udMath.h"
+#include "udFile.h"
+#include "udPlatformUtil.h"
 
 TEST(udCompressionTests, Basic)
 {
@@ -87,3 +89,31 @@ TEST(udCompressionTests, Complex)
   }
 }
 
+TEST(udCompressionTests, Zip)
+{
+  udResult result;
+  char *pTOC = nullptr;
+  char *pDOC = nullptr;
+  char *pFilenames[10];
+  int fileCount;
+  // An embedded zip containing two text files "Doc1.txt" and "Doc2.txt"
+  static const char *pRawZip =
+    "zip://raw://UEsDBBQAAAAAABZZRk00AiXKDwAAAA8AAAAIAAAARG9jMS50eHRIZWxsbyB3b3JsZCAxDQpQSwMEFAAAAAAAGFlGTW28Y8gPAA"
+    "AADwAAAAgAAABEb2MyLnR4dEhlbGxvIHdvcmxkIDINClBLAQIUABQAAAAAABZZRk00AiXKDwAAAA8AAAAIAAAAAAAAAAEAIAAAAAAAAABEb2Mx"
+    "LnR4dFBLAQIUABQAAAAAABhZRk1tvGPIDwAAAA8AAAAIAAAAAAAAAAEAIAAAADUAAABEb2MyLnR4dFBLBQYAAAAAAgACAGwAAABqAAAAAAA=";
+
+  // First up, load the table of contents (exposed as a text file)
+  result = udFile_Load(pRawZip, (void**)&pTOC);
+  EXPECT_EQ(udR_Success, result);
+  fileCount = (int)udStrTokenSplit(pTOC, "\n", pFilenames, (int)udLengthOf(pFilenames));
+  EXPECT_EQ(2, fileCount);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[0]), (void**)&pDOC);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(true, udStrEqual(pDOC, "Hello world 1\r\n"));
+  udFree(pDOC);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[1]), (void**)&pDOC);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(true, udStrEqual(pDOC, "Hello world 2\r\n"));
+  udFree(pDOC);
+  udFree(pTOC);
+}
