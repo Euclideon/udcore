@@ -80,6 +80,7 @@ TEST(udGeoZoneTests, RoundTripPrecision)
     { 28350, -70.463470357348, 119.69509496061 },
 
     { 3112, -29.013435591336, 152.46461046582 },
+    { 2230, 37.8001578, -121.2987522 },
     //{ 27700, 52.7545342, 0.2885422 }, // This test fails. See udGeoZone.OSGB below for a specific test for 27700 dataset, the InaccuracyScalar should be increased to 1.0 for this line to work
   };
 
@@ -95,53 +96,50 @@ TEST(udGeoZoneTests, RoundTripPrecision)
     udDouble3 cartesian2 = udGeoZone_ToCartesian(zone, longLat, true);
     udDouble3 longLat2 = udGeoZone_ToLatLong(zone, cartesian, true);
 
-    EXPECT_EQ(int64_t(latLong.x * testPrecision), int64_t(latLong2.x * testPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
-    EXPECT_EQ(int64_t(latLong.y * testPrecision), int64_t(latLong2.y * testPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
+    EXPECT_EQ(int64_t(udRound(latLong.x * testPrecision)), int64_t(udRound(latLong2.x * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
+    EXPECT_EQ(int64_t(udRound(latLong.y * testPrecision)), int64_t(udRound(latLong2.y * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
 
-    EXPECT_EQ(int64_t(longLat.x * testPrecision), int64_t(longLat2.x * testPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
-    EXPECT_EQ(int64_t(longLat.y * testPrecision), int64_t(longLat2.y * testPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
+    EXPECT_EQ(int64_t(udRound(longLat.x * testPrecision)), int64_t(udRound(longLat2.x * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
+    EXPECT_EQ(int64_t(udRound(longLat.y * testPrecision)), int64_t(udRound(longLat2.y * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
 
-    EXPECT_EQ(int64_t(cartesian.x * localPrecision), int64_t(cartesian2.x * localPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
-    EXPECT_EQ(int64_t(cartesian.y * localPrecision), int64_t(cartesian2.y * localPrecision)) << "PointSet:" << i << ", SRID:" << data[i].srid;
+    EXPECT_EQ(int64_t(udRound(cartesian.x * localPrecision)), int64_t(udRound(cartesian2.x * localPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
+    EXPECT_EQ(int64_t(udRound(cartesian.y * localPrecision)), int64_t(udRound(cartesian2.y * localPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
   }
 }
 
-TEST(udGeoZone, SouthernHemisphereLCC_GDA94)
+TEST(udGeoZone, LCC)
 {
-  // 3112 - GDA94
-  udGeoZone zone;
-
   const int64_t angularPrecision = 1 * 60 * 60; // 60x60 to get to arc seconds
   const int64_t localPrecision = 1; // 1m
 
-  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, 3112));
-
-  // spatialreference conversions
-  const udDouble3 expectedLatLongs[] = { //WGS84
-    udDouble3::create(-28.0386128, 153.2827519, 0), // Lake Advancement
-    udDouble3::create(-29.014848, 134.7520264, 0), // Coober Pedy
-    udDouble3::create(-22.6979855, 116.2332262, 0) // Wyloo Station
-  };
-
-  const udDouble3 expectedLocalSpaces[] = {
-    udDouble3::create(1865670.94, -3317869.21, 0.0),
-    udDouble3::create(72407.23, -3281573.42, 0.0),
-    udDouble3::create(-1802424.68, -2717219.62, 0.0)
+  struct TestInput
+  {
+    uint16_t srid;
+    udDouble3 latLon, localSpace;
+  } testInput[] =
+  {
+    { 2230, udDouble3::create(37.800158, -121.298752, 0),   udDouble3::create(5098996.58597981, 3727899.53815973, 0.0) }, // Tesla Motors California
+    { 2238, udDouble3::create(28.385233, -81.5660627, 0),   udDouble3::create(2912217.77788892, -211459.72587146, 0.0) }, // Disney World, Florida
+    { 3112, udDouble3::create(-28.0386128, 153.2827519, 0), udDouble3::create(1865670.94, -3317869.21, 0.0) },            // Lake Advancement
+    { 3112, udDouble3::create(-29.014848, 134.7520264, 0),  udDouble3::create(72407.23, -3281573.42, 0.0) },              // Coober Pedy
+    { 3112, udDouble3::create(-22.6979855, 116.2332262, 0), udDouble3::create(-1802424.68, -2717219.62, 0.0) },           // Wyloo Station
   };
 
   udDouble3 latLong, localSpace;
 
   // The ordering for the tests in this loop is important- if 27700-4277 or 4326-4277 aren't accurate the last one can't be either
-  for (size_t i = 0; i < UDARRAYSIZE(expectedLatLongs); ++i)
+  for (size_t i = 0; i < udLengthOf(testInput); ++i)
   {
-    localSpace = udGeoZone_ToCartesian(zone, expectedLatLongs[i]);
-    latLong = udGeoZone_ToLatLong(zone, expectedLocalSpaces[i]);
+    udGeoZone zone;
+    EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, testInput[i].srid));
+    localSpace = udGeoZone_ToCartesian(zone, testInput[i].latLon);
+    latLong = udGeoZone_ToLatLong(zone, testInput[i].localSpace);
 
-    EXPECT_EQ(int64_t(udRound(expectedLatLongs[i].x * angularPrecision)), int64_t(udRound(latLong.x * angularPrecision))) << "PointSet:" << i;
-    EXPECT_EQ(int64_t(udRound(expectedLatLongs[i].y * angularPrecision)), int64_t(udRound(latLong.y * angularPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(testInput[i].latLon.x * angularPrecision)), int64_t(udRound(latLong.x * angularPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(testInput[i].latLon.y * angularPrecision)), int64_t(udRound(latLong.y * angularPrecision))) << "PointSet:" << i;
 
-    EXPECT_EQ(int64_t(udRound(expectedLocalSpaces[i].x * localPrecision)), int64_t(udRound(localSpace.x * localPrecision))) << "PointSet:" << i;
-    EXPECT_EQ(int64_t(udRound(expectedLocalSpaces[i].y * localPrecision)), int64_t(udRound(localSpace.y * localPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(testInput[i].localSpace.x * localPrecision)), int64_t(udRound(localSpace.x * localPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(testInput[i].localSpace.y * localPrecision)), int64_t(udRound(localSpace.y * localPrecision))) << "PointSet:" << i;
   }
 }
 
@@ -323,6 +321,7 @@ struct
 } supportedCodes[] =
 {
   // WKT taken from PostgreSQL, with random sample cross referenced with epsg.io
+  { 2230, "PROJCS[\"NAD83 / California zone 6 (ftUS)\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",33.88333333333333],PARAMETER[\"standard_parallel_2\",32.78333333333333],PARAMETER[\"latitude_of_origin\",32.16666666666666],PARAMETER[\"central_meridian\",-116.25],PARAMETER[\"false_easting\",6561666.667],PARAMETER[\"false_northing\",1640416.667],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"2230\"]]" },
   { 2238, "PROJCS[\"NAD83 / Florida North (ftUS)\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",30.75],PARAMETER[\"standard_parallel_2\",29.58333333333333],PARAMETER[\"latitude_of_origin\",29],PARAMETER[\"central_meridian\",-84.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"2238\"]]" },
   { 2248, "PROJCS[\"NAD83 / Maryland (ftUS)\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",39.45],PARAMETER[\"standard_parallel_2\",38.3],PARAMETER[\"latitude_of_origin\",37.66666666666666],PARAMETER[\"central_meridian\",-77],PARAMETER[\"false_easting\",1312333.333],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"2248\"]]" },
   { 2250, "PROJCS[\"NAD83 / Massachusetts Island (ftUS)\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",41.48333333333333],PARAMETER[\"standard_parallel_2\",41.28333333333333],PARAMETER[\"latitude_of_origin\",41],PARAMETER[\"central_meridian\",-70.5],PARAMETER[\"false_easting\",1640416.667],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"2250\"]]" },
