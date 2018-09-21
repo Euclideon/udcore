@@ -67,6 +67,7 @@ enum udResult
   udR_NotAllowed,
   udR_InvalidLicense,
   udR_Pending,
+  udR_Cancelled,
 
   udR_Count,
 
