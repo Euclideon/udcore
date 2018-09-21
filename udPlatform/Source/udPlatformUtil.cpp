@@ -1554,7 +1554,7 @@ retry:
   int charCount = udSprintfVA(pBuf, bufferSize, pFormat, args);
   va_end(args);
 
-  if (charCount >= (int)bufferSize-1 && bufferSize < (SMALLSTRING_BUFFER_COUNT * SMALLSTRING_BUFFER_SIZE))
+  if (charCount >= (int)bufferSize && bufferSize < (SMALLSTRING_BUFFER_COUNT * SMALLSTRING_BUFFER_SIZE))
   {
     // The output buffer wasn't big enough, so look for a series of contiguous buffers
     // To keep things simple, attempt to undo the allocation done on the first line of the function

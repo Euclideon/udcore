@@ -232,6 +232,14 @@ TEST(udStrTests, udAddToStringTable)
   udFree(pStringTable);
 }
 
+static const char *s_pTestParagraph =
+"Today, historians relate that, as a general rule, buying and selling securities was very much unorganized before the year 1792. "
+"Every person who owned a security faced the problem of finding interested buyers who might consider the purchase of a debt - free investment. "
+"This meant most people were somewhat slow in investing in stocks and bonds because these securities could not readily be converted into money. "
+"We have been told that an interesting number of traders and merchants agreed to try to do something to help correct the situation. "
+"At this first crucial meeting, they decided that it was a good idea to visit regularly on a daily basis to buy and sell securities. "
+"The group of leaders, whose meeting place was under an old, tall cottonwood tree, found the needed time to plot the financial future of our nation. ";
+
 TEST(udStrTests, udTempStr)
 {
   EXPECT_STREQ("2.01m", udTempStr_HumanMeasurement(2.01));
@@ -281,5 +289,15 @@ TEST(udStrTests, udTempStr)
   // Test a string longer than all the buffers
   pLongString = udTempStr("%*s", int(udLengthOf(pBuffers) + 1) * bufferLen, "!");
   EXPECT_EQ(nullptr, udStrchr(pLongString, "!"));
+
+  // Test strings of varying lengths
+  for (size_t i = 0; i < udStrlen(s_pTestParagraph); ++i)
+  {
+    const char *pStr = udTempStr("%.*s", (int)i, s_pTestParagraph);
+    const char *pStr2 = udTempStr("%d", i); // Cause the following buffer to be overwritten
+    EXPECT_EQ(i, udStrlen(pStr));
+    EXPECT_EQ(0, memcmp(pStr, s_pTestParagraph, i));
+    EXPECT_EQ(i, udStrAtoi(pStr2));
+  }
 }
 
