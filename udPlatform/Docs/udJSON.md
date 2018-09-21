@@ -1,8 +1,9 @@
-# udValue
+# udJSON
 
-udValue itself simply defines a poly-type variable, with one of the types being an Object, which is a list of key/value pairs, allowing a tree of values to be defined.
-The internal representation is that of JSON, however it imports XML and represents most XML files without information loss. The tree of values can be exported as
-JSON or XML, and generally all combinations of export, import, export, import result in the same data.
+udJSON class itself simply defines a poly-type variable, with one of the types being an Object, which is a list of key/value pairs, allowing a tree of values to be defined.
+The internal representation is that of JSON, however it imports XML and represents many XML files without information loss, via a convention: tag attributes are treated
+as JSON members, and the content of a tag is considered to be the member "content" and is of type string.
+The tree of values can be exported as JSON or XML, and generally all combinations of export, import, export, import result in the same data.
 
 ## Basic usage
 
@@ -11,7 +12,7 @@ To load an existing JSON or XML file:
 ```cpp
   const char *pText = nullptr;
   udFile_Load("TestData.txt", &pText);
-  udValue v;
+  udJSON v;
   v.Parse(pText);
   udFree(pText);
 ```
@@ -46,10 +47,10 @@ Expression syntax for Get/Set:
   v.Set("Settings"); // Remove the Settings key and all it's children
 ```
 
-To create a udValue tree from scratch:
+To create a udJSON tree from scratch:
 
 ```cpp
-  udValue v;
+  udJSON v;
   v.Set("Settings.ProjectsPath = '%s'", "C:/Temp/"); <-- Note the use of single quotes, this is mainly for convenience to avoid having to escape double-quote characters
   v.Set("Settings.ImportAtFullScale = true"); <-- NOTE: true without quotes is boolean if it were in quotes it would be a string (but still work)
   v.Set("Settings.TerrainIndex = %d", 2);
@@ -62,12 +63,12 @@ To create a udValue tree from scratch:
 To export:
 ```cpp
   const char *pText = nullptr;
-  v.Export(pText, udVEO_JSON | udVEO_StripWhiteSpace); // StripWhiteSpace is optional
+  v.Export(pText, udJEO_JSON | udJEO_StripWhiteSpace); // StripWhiteSpace is optional
   // .. write text to a file or whatever
   udFree(pText);
 
   // Alternatively, to write XML
-  v.Export(pText, udVEO_XML);
+  v.Export(pText, udJEO_XML);
 ```
 
 To retrieve a value:
@@ -91,26 +92,26 @@ for (size_t i = 0; i < v.Get("Settings.TestArray").ArrayLength(); ++i)
 Keys are created when they are assigned to, so the following is valid:
 
 ```cpp
-udValue v;
+udJSON v;
 v.Set("array[0].person.name = 'bob'");
 v.Set("array[0].person.age = 21");
 ```
 
 ## Types
 
-Internally a udValue will be stored as one of the following types:
+Internally a udJSON will be stored as one of the following types:
 
   * T_Void (a JSON null maps to this)
   * T_Bool
   * T_Int64
   * T_Double
   * T_String (const char *)
-  * T_Array (udChunkedArray of udValues)
+  * T_Array (udChunkedArray of udJSONs)
   * T_Object (udChunkdArray of key/value pairs)
 
 ### T_Void
 
-The void type is the default type of a constructed udValue. When exported to JSON it will be "null", or to XML it will be a self-closed tag with no attributes.
+The void type is the default type of a constructed udJSON. When exported to JSON it will be "null", or to XML it will be a self-closed tag with no attributes.
 
 Get/Set syntax:
 
@@ -121,11 +122,11 @@ v.Get("key").IsVoid() == true
 
 Relevant methods:
 
-  * udValue::IsVoid() - Test is type is T_Void
-  * udValue::SetVoid() - Destroy the udValue and set to void type
-  * udValue::Destroy() - Free any memory associated with type (eg a string) and set type back to void
-  * udValue::Clear() - Initialise the type to void assuming the class is currently uninitialised
-  * udValue::ToString() - Will yield "null"
+  * udJSON::IsVoid() - Test is type is T_Void
+  * udJSON::SetVoid() - Destroy the udJSON and set to void type
+  * udJSON::Destroy() - Free any memory associated with type (eg a string) and set type back to void
+  * udJSON::Clear() - Initialise the type to void assuming the class is currently uninitialised
+  * udJSON::ToString() - Will yield "null"
 
 ### T_Bool
 
@@ -141,10 +142,10 @@ v.Get("key").AsBool() == true
 
 Relevant methods:
 
-  * udValue::Set(bool v)
-  * udValue::AsBool() - Numeric types will return true if >= 1.0, string types will return true if equal to the string
+  * udJSON::Set(bool v)
+  * udJSON::AsBool() - Numeric types will return true if >= 1.0, string types will return true if equal to the string
                         "true" (ignoring case) or the string is entirely a number >= 1.0 (eg "1.5")
-  * udValue::ToString() - Will yield "true" or "false"
+  * udJSON::ToString() - Will yield "true" or "false"
 
 ### T_Int64
 
@@ -159,10 +160,10 @@ v.Get("key").AsInt64() == -999
 
 Relevant methods:
 
-  * udValue::Set(int64_t v)
-  * udValue::AsInt() - Downcast to the int type for convenience
-  * udValue::AsInt64() - Returns the value
-  * udValue::ToString() - Will yield the equivalent of udStrItoa64
+  * udJSON::Set(int64_t v)
+  * udJSON::AsInt() - Downcast to the int type for convenience
+  * udJSON::AsInt64() - Returns the value
+  * udJSON::ToString() - Will yield the equivalent of udStrItoa64
 
 ### T_Double
 
@@ -177,17 +178,17 @@ v.Get("key").AsDouble() == 3.14159
 
 Relevant methods:
 
-  * udValue::Set(double v)
-  * udValue::AsFloat() - Downcast to the float type for convenience
-  * udValue::AsDouble() - Returns the value
-  * udValue::ToString() - Will yield the equivalent of udStrFtoa
+  * udJSON::Set(double v)
+  * udJSON::AsFloat() - Downcast to the float type for convenience
+  * udJSON::AsDouble() - Returns the value
+  * udJSON::ToString() - Will yield the equivalent of udStrFtoa
 
 ### T_String
 
 A standard C string. There is no legal API to have this string be NULL. Attempting to set the string to NULL will
-result in an error code return and the udValue being of type T_Void. When setting the string a duplicate of the passed
-string is taken, and the destructor / Destroy method of udValue will handle freeing the memory. Taking references to
-the string inside a udValue is fine so long as the caller understands it will be freed when the udValue changes.
+result in an error code return and the udJSON being of type T_Void. When setting the string a duplicate of the passed
+string is taken, and the destructor / Destroy method of udJSON will handle freeing the memory. Taking references to
+the string inside a udJSON is fine so long as the caller understands it will be freed when the udJSON changes.
 
 Get/Set syntax:
 
@@ -201,14 +202,14 @@ v.Get("key").AsFloat() == 3.14159
 
 Relevant methods:
 
-  * udValue::SetString(const char *pStr) - A copy of pStr is taken, if pStr is NULL this will fail and set to T_Void
-  * udValue::AsBool() - Returns true if the string is "true" (ignores case) or is a numeric value >= 1.0
-  * udValue::AsInt() - Returns the result of udStrAtoi
-  * udValue::AsInt64() - Returns the result of udStrAtoi64
-  * udValue::AsFloat() - Returns the result of udStrAtof
-  * udValue::AsDouble() - Returns the result of udStrAtoi64
-  * udValue::ToString() - Will yield the string, optionally providing escape character support
-  * udValue::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
+  * udJSON::SetString(const char *pStr) - A copy of pStr is taken, if pStr is NULL this will fail and set to T_Void
+  * udJSON::AsBool() - Returns true if the string is "true" (ignores case) or is a numeric value >= 1.0
+  * udJSON::AsInt() - Returns the result of udStrAtoi
+  * udJSON::AsInt64() - Returns the result of udStrAtoi64
+  * udJSON::AsFloat() - Returns the result of udStrAtof
+  * udJSON::AsDouble() - Returns the result of udStrAtoi64
+  * udJSON::ToString() - Will yield the string, optionally providing escape character support
+  * udJSON::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
 
 ### T_Array
 
@@ -231,10 +232,10 @@ v.Get("key[1]").AsString() == "first"
 
 Relevant methods:
 
-  * udValue::SetArray() - Force the udValue object to be a zero-length array
-  * udValue::AsArray() - Returns the udValueArray pointer, or NULL if not an array
-  * udValue::ArrayLength() - Returns the length of the array, zero if not an array
-  * udValue::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
+  * udJSON::SetArray() - Force the udJSON object to be a zero-length array
+  * udJSON::AsArray() - Returns the udJSONArray pointer, or NULL if not an array
+  * udJSON::ArrayLength() - Returns the length of the array, zero if not an array
+  * udJSON::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
 
 To iterate an array:
 
@@ -246,7 +247,7 @@ for (size_t i = 0; i < v.Get("key").ArrayLength(); ++i)
 
 // A more efficient way that accesses the underlying udChunkedArray methods directly:
 
-const udValueArray *pArray = v.Get("key").AsArray();
+const udJSONArray *pArray = v.Get("key").AsArray();
 for (size_t i = 0; pArray && i < pArray->length; ++i)
   printf("key[%d] = %s\n", i, pArray->GetElement()->AtString());
 ```
@@ -254,7 +255,7 @@ for (size_t i = 0; pArray && i < pArray->length; ++i)
 ### T_Object
 
 The typical JSON object. Due to the way XML arrays are parsed, a single object can also be treated as an array of length 1.
-The object is a udChunkedArray of udValueKVPair structures, which are just a key string, and a udValue. Note that in the
+The object is a udChunkedArray of udJSONKVPair structures, which are just a key string, and a udJSON. Note that in the
 Get/Set syntax members can be referenced by index as well as by name.
 
 Get/Set syntax:
@@ -280,10 +281,10 @@ v.Get("person[0].dob[0].month").AsInt() == 12;
 
 Relevant methods:
 
-  * udValue::SetObject() - Force the udValue object to be an empty object
-  * udValue::AsObject() - Returns the udValueArray pointer, or NULL if not an array
-  * udValue::MemberCount() - Returns the number of members in the object
-  * udValue::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
+  * udJSON::SetObject() - Force the udJSON object to be an empty object
+  * udJSON::AsObject() - Returns the udJSONArray pointer, or NULL if not an array
+  * udJSON::MemberCount() - Returns the number of members in the object
+  * udJSON::HasMemory() - Returns true for T_String, T_Array and T_Object (types that allocate memory)
 
 To iterate the members of an object:
 
@@ -300,10 +301,10 @@ for (size_t i = 0; i < person.MemberCount(); ++i)
 
 // A slightly more efficient way that accesses the underlying udChunkedArray methods directly:
 
-const udValueObject *pPerson = v.Get("person").AsObject();
+const udJSONObject *pPerson = v.Get("person").AsObject();
 for (size_t i = 0; pPerson && i < pPerson->length; ++i)
 {
-  udValueKVPair *pElement = pPerson->GetElement(i);
+  udJSONKVPair *pElement = pPerson->GetElement(i);
   const char *pStr = nullptr;
   pElement->value.ToString(&pStr)
   printf("person.%s = %s\n", pElement->pKey, pStr);
@@ -320,5 +321,5 @@ for (size_t i = 0; pPerson && i < pPerson->length; ++i)
 * AsDouble4x4() will return a udDouble4x4 for an array of 9, 12, or 16 doubles. Any other number returns identity.
   9 doubles will populate the inner 3x3, 12 doubles form a 3x4 and 16 forms the full 4x4.
 * CalculateHMAC is used to digitally sign the tree
-* ExtractAndVoid allows you to take ownership of a string from a udValue object, setting it to void
+* ExtractAndVoid allows you to take ownership of a string from a udJSON object, setting it to void
 

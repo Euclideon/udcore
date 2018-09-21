@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
-#include "udValue.h"
+#include "udJSON.h"
 
-// First-pass most basic tests for udValue
+// First-pass most basic tests for udJSON
 // TODO: Fix udMemoryDebugTracking to be useful and test memory leaks
 
 static const char *pJSONTest = "{\"Settings\":{\"ProjectsPath\":\"C:\\\\Temp&\\\\\",\"ImportAtFullScale\":true,\"TerrainIndex\":2,\"Inside\":{\"Count\":5},\"Outside\":{\"Count\":2,\"content\":\"windy\"},\"EmptyArray\":[],\"Nothing\":null,\"SpecialChars\":\"<>&\\\\/?[]{}'\\\"%\",\"TestArray\":[0,1,2]}}";
@@ -9,9 +9,9 @@ static const char *pXMLTest = "<Settings ProjectsPath=\"C:\\Temp&amp;\\\" Import
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-static void udValue_TestContent(udValue &v)
+static void udJSON_TestContent(udJSON &v)
 {
-  udValue *pTemp = nullptr;
+  udJSON *pTemp = nullptr;
   EXPECT_EQ(true, udStrEqual(v.Get("Settings.ProjectsPath").AsString(""), "C:\\Temp&\\"));
   EXPECT_EQ(true, udStrEqual(v.Get("Settings[,0]").AsString(""), "C:\\Temp&\\"));
 
@@ -46,9 +46,9 @@ static void udValue_TestContent(udValue &v)
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-TEST(udValueTests, CreationSimple)
+TEST(udJSONTests, CreationSimple)
 {
-  udValue v;
+  udJSON v;
 
   // Assign attributes, these are present in both JSON and XML
   EXPECT_EQ(udR_Success, v.Set("Settings.ProjectsPath = '%s'", "C:\\\\Temp&\\\\")); // Note strings need to be escaped
@@ -67,14 +67,14 @@ TEST(udValueTests, CreationSimple)
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 0")); // Append
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 1")); // Append
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[2] = 2")); // Only allowed to create directly when adding last on the array
-  udValue_TestContent(v);
+  udJSON_TestContent(v);
 }
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-TEST(udValueTests, CreationSpecial)
+TEST(udJSONTests, CreationSpecial)
 {
-  udValue v;
+  udJSON v;
 
   // Assign attributes, these are present in both JSON and XML
   EXPECT_EQ(udR_Success, v.Set("Settings['ProjectsPath'] = '%s'", "C:\\\\Temp&\\\\")); // Note strings need to be escaped
@@ -93,15 +93,15 @@ TEST(udValueTests, CreationSpecial)
   EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 0")); // Append
   EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 1")); // Append
   EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][2] = 2")); // Only allowed to create directly when adding last on the array
-  udValue_TestContent(v);
+  udJSON_TestContent(v);
 }
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2018
-TEST(udValueTests, ArrayEdgeCases)
+TEST(udJSONTests, ArrayEdgeCases)
 {
-  udValue v;
-  udValue temp;
+  udJSON v;
+  udJSON temp;
 
   temp.SetString("one");
   EXPECT_EQ(udR_Success, v.Set(&temp, "array[]"));
@@ -117,31 +117,31 @@ TEST(udValueTests, ArrayEdgeCases)
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-TEST(udValueTests, ParseAndExportJSON)
+TEST(udJSONTests, ParseAndExportJSON)
 {
-  udValue v;
+  udJSON v;
   const char *pExportText = nullptr;
 
   EXPECT_EQ(udR_Success, v.Parse(pJSONTest));
-  udValue_TestContent(v);
-  ASSERT_EQ(udR_Success, v.Export(&pExportText, udVEO_JSON | udVEO_StripWhiteSpace));
+  udJSON_TestContent(v);
+  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_JSON | udJEO_StripWhiteSpace));
   EXPECT_EQ(true, udStrEqual(pJSONTest, pExportText));
   udFree(pExportText);
-  ASSERT_EQ(udR_Success, v.Export(&pExportText, udVEO_XML | udVEO_StripWhiteSpace));
+  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_XML | udJEO_StripWhiteSpace));
   EXPECT_EQ(true, udStrEqual(pXMLTest, pExportText));
   udFree(pExportText);
 }
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-TEST(udValueTests, ParseXML)
+TEST(udJSONTests, ParseXML)
 {
-  udValue v;
+  udJSON v;
   const char *pExportText = nullptr;
 
   EXPECT_EQ(udR_Success, v.Parse(pXMLTest));
-  udValue_TestContent(v);
-  ASSERT_EQ(udR_Success, v.Export(&pExportText, udVEO_XML | udVEO_StripWhiteSpace));
+  udJSON_TestContent(v);
+  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_XML | udJEO_StripWhiteSpace));
   EXPECT_EQ(true, udStrEqual(pXMLTest, pExportText));
   udFree(pExportText);
   // We don't test that exporting back to JSON worked, because it
@@ -150,11 +150,11 @@ TEST(udValueTests, ParseXML)
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, July 2017
-TEST(udValueTests, ValueShouldNotTurnIntoObjectIfAlreadyArray)
+TEST(udJSONTests, ValueShouldNotTurnIntoObjectIfAlreadyArray)
 {
-  udValue output;
+  udJSON output;
 
-  //Output each application to the udValue.
+  //Output each application to the udJSON.
   for (uint32_t i = 0; i < 3; ++i)
   {
     EXPECT_EQ(udR_Success, output.Set("[] = { 'name': 'Room %d', 'address': '127.0.0.1', 'macAddress': '::1', 'status': 'Bad', 'applications': [] }", i));
@@ -164,15 +164,15 @@ TEST(udValueTests, ValueShouldNotTurnIntoObjectIfAlreadyArray)
 
   EXPECT_EQ(3, output.ArrayLength());
 
-  //Export the udValue as a JSON string and clean up.
+  //Export the udJSON as a JSON string and clean up.
   const char *outputTestStr;
   EXPECT_EQ(udR_Success, output.Export(&outputTestStr));
   udFree(outputTestStr);
 }
 
-TEST(udValueTests, CreateArray)
+TEST(udJSONTests, CreateArray)
 {
-  udValue json;
+  udJSON json;
   for (size_t i = 1; i < 5; ++i)
   {
     udResult result = json.Set("sequences[%d].id = %d", i - 1, i);
@@ -184,9 +184,9 @@ TEST(udValueTests, CreateArray)
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-TEST(udValueTests, RemoveKey)
+TEST(udJSONTests, RemoveKey)
 {
-  udValue v;
+  udJSON v;
 
   // Assign attributes, these are present in both JSON and XML
   EXPECT_EQ(udR_Success, v.Set("Settings.One = 1"));
@@ -203,9 +203,9 @@ TEST(udValueTests, RemoveKey)
 
 // ----------------------------------------------------------------------------
 // Author: Samuel Surtees, February 2018
-TEST(udValueTests, udMathSpecialSupport)
+TEST(udJSONTests, udMathSpecialSupport)
 {
-  udValue v;
+  udJSON v;
 
   udDouble3 vec3 = udDouble3::create(1.0, 2.0, 3.0);
   udDouble4 vec4 = udDouble4::create(1.0, 2.0, 3.0, 4.0);
@@ -330,11 +330,11 @@ static const char *pTestWKTs[] =
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2018
-TEST(udValueTests, WKT)
+TEST(udJSONTests, WKT)
 {
   for (size_t testNr = 0; testNr < UDARRAYSIZE(pTestWKTs); ++testNr)
   {
-    udValue v;
+    udJSON v;
     const char *pWKT = nullptr;
 
     udResult result = udParseWKT(&v, pTestWKTs[testNr]);
@@ -353,18 +353,18 @@ TEST(udValueTests, WKT)
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2018
-TEST(udValueTests, XMLExport)
+TEST(udJSONTests, XMLExport)
 {
   udResult result;
   const char *pXML = nullptr;
-  udValue value;
+  udJSON value;
 
   // Two child elements with no attributes
   result = value.Set("a.b[] = null");
   EXPECT_EQ(udR_Success, result);
   result = value.Set("a.b[] = null");
   EXPECT_EQ(udR_Success, result);
-  result = value.Export(&pXML, udVEO_XML | udVEO_StripWhiteSpace);
+  result = value.Export(&pXML, udJEO_XML | udJEO_StripWhiteSpace);
   EXPECT_EQ(udR_Success, result);
   EXPECT_STREQ("<a><b></b><b></b></a>", pXML);
   udFree(pXML);
@@ -373,7 +373,7 @@ TEST(udValueTests, XMLExport)
   // An attribute and no child elements
   result = value.Set("a.c = 'string'");
   EXPECT_EQ(udR_Success, result);
-  result = value.Export(&pXML, udVEO_XML | udVEO_StripWhiteSpace);
+  result = value.Export(&pXML, udJEO_XML | udJEO_StripWhiteSpace);
   EXPECT_STREQ("<a c=\"string\"/>", pXML);
   EXPECT_EQ(udR_Success, result);
   udFree(pXML);
@@ -384,7 +384,7 @@ TEST(udValueTests, XMLExport)
   EXPECT_EQ(udR_Success, result);
   result = value.Set("a.c = 'string'");
   EXPECT_EQ(udR_Success, result);
-  result = value.Export(&pXML, udVEO_XML | udVEO_StripWhiteSpace);
+  result = value.Export(&pXML, udJEO_XML | udJEO_StripWhiteSpace);
   EXPECT_STREQ("<a c=\"string\"><b></b></a>", pXML);
   EXPECT_EQ(udR_Success, result);
   udFree(pXML);

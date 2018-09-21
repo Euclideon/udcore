@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "udCrypto.h"
-#include "udValue.h"
+#include "udJSON.h"
 #include "udPlatformUtil.h"
 
 TEST(CryptoTests, AES_CBC_MonteCarlo)
@@ -392,7 +392,7 @@ TEST(CryptoTests, ECDSADigiSig)
 TEST(CryptoTests, DHM)
 {
   udResult result;
-  udValue publicA, publicB;
+  udJSON publicA, publicB;
   udCryptoDHMContext *pDHM = nullptr;
   const char *pPublicValueA = nullptr;
   const char *pPublicValueB = nullptr;

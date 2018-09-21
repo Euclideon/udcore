@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "udCrypto.h"
-#include "udValue.h"
+#include "udJSON.h"
 
 #if UDPLATFORM_WINDOWS
 #pragma warning(disable: 4267 4244)
@@ -91,8 +91,8 @@ struct udCryptoSigContext
 
 // ***************************************************************************************
 // Author: Dave Pevreal, September 2017
-// Helper to convert write an mpi to a udValue key as a base64 string
-static udResult ToValue(const mbedtls_mpi &bigNum, udValue *pValue, const char *pKey)
+// Helper to convert write an mpi to a udJSON key as a base64 string
+static udResult ToValue(const mbedtls_mpi &bigNum, udJSON *pValue, const char *pKey)
 {
   udResult result;
   unsigned char *pBuf = nullptr;
@@ -990,7 +990,7 @@ void udCryptoDHMContext::Destroy()
 udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPublicValueA, size_t keyLen)
 {
   udResult result;
-  udValue v;
+  udJSON v;
   udCryptoDHMContext *pCtx = nullptr;
 
   pCtx = udAllocType(udCryptoDHMContext, 1, udAF_Zero);
@@ -1001,7 +1001,7 @@ udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPub
   v.Set("keyLen = %d", keyLen);
   // Don't export P and G, we can assume they are from RFC5114
   UD_ERROR_CHECK(ToValue(pCtx->dhm.GX, &v, "PublicValue"));
-  UD_ERROR_CHECK(v.Export(ppPublicValueA, udVEO_JSON | udVEO_StripWhiteSpace));
+  UD_ERROR_CHECK(v.Export(ppPublicValueA, udJEO_JSON | udJEO_StripWhiteSpace));
 
   // Success, so transfer ownership of the context to caller
   *ppDHMCtx = pCtx;
@@ -1018,7 +1018,7 @@ epilogue:
 udResult udCryptoKey_DeriveFromPartyA(const char *pPublicValueA, const char **ppPublicValueB, const char **ppKey)
 {
   udResult result;
-  udValue v;
+  udJSON v;
   udCryptoDHMContext ctx;
   bool ctxInit = false;
 
@@ -1033,7 +1033,7 @@ udResult udCryptoKey_DeriveFromPartyA(const char *pPublicValueA, const char **pp
   UD_ERROR_CHECK(ctx.GenerateKey(ppKey));
   v.Destroy();
   UD_ERROR_CHECK(ToValue(ctx.dhm.GX, &v, "PublicValue"));
-  UD_ERROR_CHECK(v.Export(ppPublicValueB, udVEO_JSON | udVEO_StripWhiteSpace));
+  UD_ERROR_CHECK(v.Export(ppPublicValueB, udJEO_JSON | udJEO_StripWhiteSpace));
 
 epilogue:
   if (ctxInit)
@@ -1046,7 +1046,7 @@ epilogue:
 udResult udCryptoKey_DeriveFromPartyB(udCryptoDHMContext *pCtx, const char *pPublicValueB, const char **ppKey)
 {
   udResult result;
-  udValue v;
+  udJSON v;
 
   UD_ERROR_NULL(pCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(pPublicValueB, udR_InvalidParameter_);
@@ -1126,7 +1126,7 @@ epilogue:
 udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppKeyText, bool exportPrivate)
 {
   udResult result;
-  udValue v;
+  udJSON v;
 
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(ppKeyText, udR_InvalidParameter_);
@@ -1177,7 +1177,7 @@ epilogue:
 udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **ppSigCtx, const char *pKeyText)
 {
   udResult result;
-  udValue v;
+  udJSON v;
   udCryptoSigContext *pSigCtx = nullptr;
   const char *pTypeString = nullptr;
   bool isPrivateKey = false;
@@ -1269,7 +1269,7 @@ udResult udCryptoSig_ImportMSBlob(udCryptoSigContext **ppSigCtx, void *pBlob, si
   uint8_t *p = (uint8_t*)(pPriv+1);
 
   udResult result;
-  udValue v;
+  udJSON v;
   udCryptoSigContext *pSigCtx = nullptr;
 
   UD_ERROR_IF(pPriv->type != 6 && pPriv->type != 7, udR_InvalidParameter_); // public/private key

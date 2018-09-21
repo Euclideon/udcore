@@ -1,20 +1,20 @@
-#include "udValue.h"
+#include "udJSON.h"
 #include "udPlatform.h"
 #include "udCrypto.h"
 
 #define CONTENT_MEMBER "content"
 #define DEFAULT_DOUBLE_TOSTRING_PRECISION 6  // This is the printf default
 
-const udValue udValue::s_void;
-const size_t udValue::s_udValueTypeSize[T_Count] =
+const udJSON udJSON::s_void;
+const size_t udJSON::s_udJSONTypeSize[T_Count] =
 {
   0, // T_Void = 0,      // Guaranteed to be zero, thus a non-zero type indicates value exists
   1, // T_Bool,
   8, // T_Int64,
   8, // T_Double,
   sizeof(char*), // T_String,
-  sizeof(udValueArray*), // T_Array,
-  sizeof(udValueObject*), // T_Object,
+  sizeof(udJSONArray*), // T_Array,
+  sizeof(udJSONObject*), // T_Object,
 };
 
 // The XML escape character set. Note: apos MUST come first, it is ignored when writing strings that use double quotes
@@ -75,7 +75,7 @@ public:
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-void udValue::Destroy()
+void udJSON::Destroy()
 {
   if (type == T_String)
   {
@@ -85,7 +85,7 @@ void udValue::Destroy()
   {
     for (size_t i = 0; i < u.pObject->length; ++i)
     {
-      udValueKVPair *pItem = u.pObject->GetElement(i);
+      udJSONKVPair *pItem = u.pObject->GetElement(i);
       udFree(pItem->pKey);
       pItem->value.Destroy();
     }
@@ -96,7 +96,7 @@ void udValue::Destroy()
   {
     for (size_t i = 0; i < u.pArray->length; ++i)
     {
-      udValue *pChild = u.pArray->GetElement(i);
+      udJSON *pChild = u.pArray->GetElement(i);
       if (pChild)
         pChild->Destroy();
     }
@@ -111,7 +111,7 @@ void udValue::Destroy()
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::SetString(const char *pStr, size_t charCount)
+udResult udJSON::SetString(const char *pStr, size_t charCount)
 {
   Destroy();
   u.pStr = (charCount) ? udStrndup(pStr, charCount) : udStrdup(pStr);
@@ -125,13 +125,13 @@ udResult udValue::SetString(const char *pStr, size_t charCount)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::SetArray()
+udResult udJSON::SetArray()
 {
   udResult result;
-  udValueArray *pTempArray = nullptr;
+  udJSONArray *pTempArray = nullptr;
   Destroy();
 
-  pTempArray = udAllocType(udValueArray, 1, udAF_Zero);
+  pTempArray = udAllocType(udJSONArray, 1, udAF_Zero);
   UD_ERROR_NULL(pTempArray, udR_MemoryAllocationFailure);
   result = pTempArray->Init(32);
   UD_ERROR_HANDLE();
@@ -148,13 +148,13 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::SetObject()
+udResult udJSON::SetObject()
 {
   udResult result;
-  udValueObject *pTempObject = nullptr;
+  udJSONObject *pTempObject = nullptr;
   Destroy();
 
-  pTempObject = udAllocType(udValueObject, 1, udAF_Zero);
+  pTempObject = udAllocType(udJSONObject, 1, udAF_Zero);
   UD_ERROR_NULL(pTempObject, udR_MemoryAllocationFailure);
   result = pTempObject->Init(32);
   UD_ERROR_HANDLE();
@@ -171,14 +171,14 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udValue::Set(const udDouble3 &v)
+udResult udJSON::Set(const udDouble3 &v)
 {
   udResult result;
   Destroy();
   result = SetArray();
   UD_ERROR_HANDLE();
   for (size_t i = 0; i < v.ElementCount; ++i)
-    u.pArray->PushBack(udValue(v[i]));
+    u.pArray->PushBack(udJSON(v[i]));
 
 epilogue:
   return result;
@@ -186,14 +186,14 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udValue::Set(const udDouble4 &v)
+udResult udJSON::Set(const udDouble4 &v)
 {
   udResult result;
   Destroy();
   result = SetArray();
   UD_ERROR_HANDLE();
   for (size_t i = 0; i < v.ElementCount; ++i)
-    u.pArray->PushBack(udValue(v[i]));
+    u.pArray->PushBack(udJSON(v[i]));
 
 epilogue:
   return result;
@@ -201,14 +201,14 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udValue::Set(const udQuaternion<double> &v)
+udResult udJSON::Set(const udQuaternion<double> &v)
 {
   udResult result;
   Destroy();
   result = SetArray();
   UD_ERROR_HANDLE();
   for (size_t i = 0; i < v.ElementCount; ++i)
-    u.pArray->PushBack(udValue(v[i]));
+    u.pArray->PushBack(udJSON(v[i]));
 
 epilogue:
   return result;
@@ -216,7 +216,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udValue::Set(const udDouble4x4 &v, bool shrink)
+udResult udJSON::Set(const udDouble4x4 &v, bool shrink)
 {
   udResult result = udR_Success;
   size_t elements = 16;
@@ -241,14 +241,14 @@ udResult udValue::Set(const udDouble4x4 &v, bool shrink)
     case 12:
       for (size_t i = 0; i < elements; ++i)
       {
-        result = u.pArray->PushBack(udValue(v.a[(i / 3) * 4 + (i % 3)]));
+        result = u.pArray->PushBack(udJSON(v.a[(i / 3) * 4 + (i % 3)]));
         UD_ERROR_HANDLE();
       }
       break;
     default:
       for (size_t i = 0; i < elements; ++i)
       {
-        result = u.pArray->PushBack(udValue(v.a[i]));
+        result = u.pArray->PushBack(udJSON(v.a[i]));
         UD_ERROR_HANDLE();
       }
       break;
@@ -259,13 +259,13 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, June 2017
-const udValue *udValue::FindMember(const char *pMemberName, size_t *pIndex) const
+const udJSON *udJSON::FindMember(const char *pMemberName, size_t *pIndex) const
 {
   size_t i;
-  udValueObject *pObject = AsObject();
+  udJSONObject *pObject = AsObject();
   for (i = 0; pObject && i < pObject->length; ++i)
   {
-    const udValueKVPair *pItem = pObject->GetElement(i);
+    const udJSONKVPair *pItem = pObject->GetElement(i);
     if (udStrEqual(pItem->pKey, pMemberName))
     {
       if (pIndex)
@@ -278,7 +278,7 @@ const udValue *udValue::FindMember(const char *pMemberName, size_t *pIndex) cons
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-bool udValue::IsEqualTo(const udValue &other) const
+bool udJSON::IsEqualTo(const udJSON &other) const
 {
   // Simple case of actual complete binary equality
   if (type == other.type && u.i64Val == other.u.i64Val)
@@ -293,7 +293,7 @@ bool udValue::IsEqualTo(const udValue &other) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-bool udValue::AsBool(bool defaultValue) const
+bool udJSON::AsBool(bool defaultValue) const
 {
   switch (type)
   {
@@ -308,7 +308,7 @@ bool udValue::AsBool(bool defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-int udValue::AsInt(int defaultValue) const
+int udJSON::AsInt(int defaultValue) const
 {
   switch (type)
   {
@@ -323,7 +323,7 @@ int udValue::AsInt(int defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-int64_t udValue::AsInt64(int64_t defaultValue) const
+int64_t udJSON::AsInt64(int64_t defaultValue) const
 {
   switch (type)
   {
@@ -338,7 +338,7 @@ int64_t udValue::AsInt64(int64_t defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-float udValue::AsFloat(float defaultValue) const
+float udJSON::AsFloat(float defaultValue) const
 {
   switch (type)
   {
@@ -353,7 +353,7 @@ float udValue::AsFloat(float defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-double udValue::AsDouble(double defaultValue) const
+double udJSON::AsDouble(double defaultValue) const
 {
   switch (type)
   {
@@ -368,7 +368,7 @@ double udValue::AsDouble(double defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-const char *udValue::AsString(const char *pDefaultValue) const
+const char *udJSON::AsString(const char *pDefaultValue) const
 {
   switch (type)
   {
@@ -381,7 +381,7 @@ const char *udValue::AsString(const char *pDefaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
-udFloat3 udValue::AsFloat3(const udFloat3 &defaultValue) const
+udFloat3 udJSON::AsFloat3(const udFloat3 &defaultValue) const
 {
   udFloat3 ret = defaultValue;
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
@@ -394,7 +394,7 @@ udFloat3 udValue::AsFloat3(const udFloat3 &defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
-udFloat4 udValue::AsFloat4(const udFloat4 &defaultValue) const
+udFloat4 udJSON::AsFloat4(const udFloat4 &defaultValue) const
 {
   udFloat4 ret = defaultValue;
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
@@ -407,7 +407,7 @@ udFloat4 udValue::AsFloat4(const udFloat4 &defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udDouble3 udValue::AsDouble3(const udDouble3 &defaultValue) const
+udDouble3 udJSON::AsDouble3(const udDouble3 &defaultValue) const
 {
   udDouble3 ret = defaultValue;
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
@@ -420,7 +420,7 @@ udDouble3 udValue::AsDouble3(const udDouble3 &defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udDouble4 udValue::AsDouble4(const udDouble4 &defaultValue) const
+udDouble4 udJSON::AsDouble4(const udDouble4 &defaultValue) const
 {
   udDouble4 ret = defaultValue;
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
@@ -433,7 +433,7 @@ udDouble4 udValue::AsDouble4(const udDouble4 &defaultValue) const
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udQuaternion<double> udValue::AsQuaternion(const udQuaternion<double> &defaultValue) const
+udQuaternion<double> udJSON::AsQuaternion(const udQuaternion<double> &defaultValue) const
 {
   udQuaternion<double> ret = defaultValue;
   if (type == T_Array && u.pArray->length >= ret.ElementCount)
@@ -446,7 +446,7 @@ udQuaternion<double> udValue::AsQuaternion(const udQuaternion<double> &defaultVa
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udDouble4x4 udValue::AsDouble4x4(const udDouble4x4 &defaultValue) const
+udDouble4x4 udJSON::AsDouble4x4(const udDouble4x4 &defaultValue) const
 {
   udDouble4x4 ret = defaultValue;
   switch (ArrayLength())
@@ -467,13 +467,13 @@ udDouble4x4 udValue::AsDouble4x4(const udDouble4x4 &defaultValue) const
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-static size_t FindMatch(const udValueArray *pArray, const udValueObject *pSearchObj, int resultNumber, size_t i = 0)
+static size_t FindMatch(const udJSONArray *pArray, const udJSONObject *pSearchObj, int resultNumber, size_t i = 0)
 {
   size_t attributesMatched = 0;
   for (; i < pArray->length; ++i) // For each element in the array
   {
     attributesMatched = 0;
-    const udValueObject *pCurrent = const_cast<udValue*>(pArray->GetElement(i))->AsObject();
+    const udJSONObject *pCurrent = const_cast<udJSON*>(pArray->GetElement(i))->AsObject();
     if (!pCurrent)
       continue;
     size_t j;
@@ -501,7 +501,7 @@ static size_t FindMatch(const udValueArray *pArray, const udValueObject *pSearch
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, July 2017
-static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue **ppValue, size_t *pIndex, const char *pKey, int *pCharCount, bool createIfNotExist)
+static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **ppValue, size_t *pIndex, const char *pKey, int *pCharCount, bool createIfNotExist)
 {
   // Common code for all array operator access within expressions
   // This function handles object[0], object["memberName"], object[{memberIndex}], array[index]
@@ -509,7 +509,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
   int charCount = 0;
 
   // First parse the search expression, and the resultNumber. Both are optional.
-  udValue searchExp;
+  udJSON searchExp;
   bool resultNumberParsed = false;
   int resultNumber = 0;
   searchExp.Parse(pKey, &charCount);
@@ -526,7 +526,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
   if (searchExp.IsObject())
   {
     // Search expression is a JSON object, so we search arrays looking for the key/value pair supplied
-    const udValueArray *pArray = pRoot->AsArray();
+    const udJSONArray *pArray = pRoot->AsArray();
     UD_ERROR_NULL(pArray, udR_ObjectTypeMismatch);
     size_t i = FindMatch(pArray, searchExp.AsObject(), resultNumber);
     if (i < pArray->length)
@@ -548,15 +548,15 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
     UD_ERROR_IF(resultNumberParsed, udR_ParseError);
     if (pRoot->IsVoid() && createIfNotExist)
     {
-      result = const_cast<udValue*>(pRoot)->SetObject();
+      result = const_cast<udJSON*>(pRoot)->SetObject();
       UD_ERROR_HANDLE();
     }
     if (pRoot->IsObject())
     {
-      const udValue *pV = pRoot->FindMember(searchExp.AsString(), pIndex);
+      const udJSON *pV = pRoot->FindMember(searchExp.AsString(), pIndex);
       if (!pV && createIfNotExist)
       {
-        udValueKVPair *pKVP = pRoot->AsObject()->PushBack();
+        udJSONKVPair *pKVP = pRoot->AsObject()->PushBack();
         UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
         pKVP->pKey = searchExp.AsString();
         searchExp.Clear(); // We're taking the string memory
@@ -580,7 +580,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
       // [,n] which indicates member index
       UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
       UD_ERROR_IF(resultNumber < 0 || (size_t)resultNumber >= pRoot->AsObject()->length, udR_ObjectNotFound);
-      const udValue *pV = &pRoot->AsObject()->GetElement(resultNumber)->value;
+      const udJSON *pV = &pRoot->AsObject()->GetElement(resultNumber)->value;
       if (ppValue)
         *ppValue = pV;
       if (pIndex)
@@ -591,11 +591,11 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
       // [], which means append to the array
       if (pRoot->IsVoid() && createIfNotExist) // If the entry is void, we can safely make it an array now
       {
-        result = const_cast<udValue*>(pRoot)->SetArray();
+        result = const_cast<udJSON*>(pRoot)->SetArray();
         UD_ERROR_HANDLE();
       }
       UD_ERROR_IF(!pRoot->IsArray() || !createIfNotExist, udR_ParseError);
-      udValue *pV = pRoot->AsArray()->PushBack();
+      udJSON *pV = pRoot->AsArray()->PushBack();
       UD_ERROR_NULL(pV, udR_MemoryAllocationFailure);
       pV->Clear();
       if (ppValue)
@@ -608,7 +608,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
   {
     if (pRoot->IsVoid() && createIfNotExist) // If the entry is void, we can safely make it an array now
     {
-      result = const_cast<udValue*>(pRoot)->SetArray();
+      result = const_cast<udJSON*>(pRoot)->SetArray();
       UD_ERROR_HANDLE();
     }
     // Search expression is numeric, which is typically an array index, but we also support [0] on an object which returns itself
@@ -627,7 +627,7 @@ static udResult udValue_ProcessArrayOperator(const udValue *pRoot, const udValue
       if (searchIndex < 0)
         searchIndex += (int)pRoot->AsArray()->length;
       // TODO: Simplify this if/when udChunkedArray does range checking
-      udValue *pV = (size_t(searchIndex) < pRoot->AsArray()->length) ? pRoot->AsArray()->GetElement(searchIndex) : nullptr;
+      udJSON *pV = (size_t(searchIndex) < pRoot->AsArray()->length) ? pRoot->AsArray()->GetElement(searchIndex) : nullptr;
       if (!pV && createIfNotExist)
       {
         while (pRoot->AsArray()->length <= (size_t)searchIndex)
@@ -661,7 +661,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
-static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char *pKeyExpression, va_list ap)
+static udResult udJSON_GetVA(const udJSON *pRoot, udJSON **ppValue, const char *pKeyExpression, va_list ap)
 {
   udResult result;
   char *pDup = nullptr; // Allocated string for sprintf'd expression
@@ -693,7 +693,7 @@ static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char
         {
           int charCount;
           size_t index;
-          result = udValue_ProcessArrayOperator(pRoot, &pRoot, &index, exp.pKey, &charCount, false);
+          result = udJSON_ProcessArrayOperator(pRoot, &pRoot, &index, exp.pKey, &charCount, false);
           UD_ERROR_HANDLE();
         }
         break;
@@ -710,7 +710,7 @@ static udResult udJSON_GetVA(const udValue *pRoot, udValue **ppValue, const char
   }
 
   if (ppValue)
-    *ppValue = const_cast<udValue*>(pRoot);
+    *ppValue = const_cast<udJSON*>(pRoot);
   result = udR_Success;
 
 epilogue:
@@ -720,7 +720,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Get(udValue **ppValue, const char *pKeyExpression, ...)
+udResult udJSON::Get(udJSON **ppValue, const char *pKeyExpression, ...)
 {
   va_list ap;
   va_start(ap, pKeyExpression);
@@ -731,24 +731,24 @@ udResult udValue::Get(udValue **ppValue, const char *pKeyExpression, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-const udValue &udValue::Get(const char * pKeyExpression, ...) const
+const udJSON &udJSON::Get(const char * pKeyExpression, ...) const
 {
-  udValue *pValue = nullptr;
+  udJSON *pValue = nullptr;
   va_list ap;
   va_start(ap, pKeyExpression);
   udResult result = udJSON_GetVA(this, &pValue, pKeyExpression, ap);
   va_end(ap);
-  return (result == udR_Success) ? *pValue : udValue::s_void;
+  return (result == udR_Success) ? *pValue : udJSON::s_void;
 }
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
-static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *pKeyExpression, va_list ap)
+static udResult udJSON_SetVA(udJSON *pRoot, udJSON *pSetToValue, const char *pKeyExpression, va_list ap)
 {
   udResult result;
   char *pDup = nullptr; // Allocated string for sprintf'd expression
   udJSONExpression exp;
-  udValue setToValueFromOperator;
+  udJSON setToValueFromOperator;
 
   UD_ERROR_NULL(pRoot, udR_InvalidParameter_);
   UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter_);
@@ -789,16 +789,16 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
       case '[':
         {
           int charCount;
-          udValue *pV = nullptr;
+          udJSON *pV = nullptr;
           size_t index;
-          result = udValue_ProcessArrayOperator(pRoot, const_cast<const udValue**>(&pV), &index, exp.pKey, &charCount, pSetToValue != nullptr);
+          result = udJSON_ProcessArrayOperator(pRoot, const_cast<const udJSON**>(&pV), &index, exp.pKey, &charCount, pSetToValue != nullptr);
           if (!pSetToValue && !exp.pRemainingExpression)
           {
             UD_ERROR_NULL(pV, udR_ObjectNotFound);
             // End of the expression with no set, means remove the item
             if (pRoot->IsObject())
             {
-              udValueKVPair *pItem = pRoot->AsObject()->GetElement(index);
+              udJSONKVPair *pItem = pRoot->AsObject()->GetElement(index);
               udFree(pItem->pKey);
               pItem->value.Destroy();
               pRoot->AsObject()->RemoveAt(index);
@@ -828,14 +828,14 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
         }
         // Check that the type is an object allowing a dot dereference to be valid
         UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
-        udValueObject *pObject = pRoot->AsObject();
-        const udValue *pV = nullptr;
+        udJSONObject *pObject = pRoot->AsObject();
+        const udJSON *pV = nullptr;
         size_t index;
         pV = pRoot->FindMember(exp.pKey, &index);
         if (!pV && pSetToValue)
         {
           // A key doesn't exist, and we've got a value to set so create it here
-          udValueKVPair *pKVP = pObject->PushBack();
+          udJSONKVPair *pKVP = pObject->PushBack();
           UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
           pKVP->value.Clear();
           pKVP->pKey = udStrdup(exp.pKey);
@@ -846,13 +846,13 @@ static udResult udJSON_SetVA(udValue *pRoot, udValue *pSetToValue, const char *p
         {
           UD_ERROR_NULL(pV, udR_ObjectNotFound);
           // Found the member, and it needs to be removed
-          udValueKVPair *pKVP = pObject->GetElement(index);
+          udJSONKVPair *pKVP = pObject->GetElement(index);
           udFree(pKVP->pKey);
           pKVP->value.Destroy();
           pObject->RemoveAt(index);
           pV = nullptr;
         }
-        pRoot = const_cast<udValue *>(pV);
+        pRoot = const_cast<udJSON *>(pV);
         break;
       }
     }
@@ -874,7 +874,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Set(const char *pKeyExpression, ...)
+udResult udJSON::Set(const char *pKeyExpression, ...)
 {
   va_list ap;
   va_start(ap, pKeyExpression);
@@ -885,7 +885,7 @@ udResult udValue::Set(const char *pKeyExpression, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Set(udValue *pValue, const char *pKeyExpression, ...)
+udResult udJSON::Set(udJSON *pValue, const char *pKeyExpression, ...)
 {
   va_list ap;
   va_start(ap, pKeyExpression);
@@ -896,7 +896,7 @@ udResult udValue::Set(udValue *pValue, const char *pKeyExpression, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Parse(const char *pString, int *pCharCount, int *pLineNumber)
+udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
 {
   udResult result;
   int tempLineNumber;
@@ -1022,7 +1022,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-udResult udValue::ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, int escape) const
+udResult udJSON::ToString(const char **ppStr, int indent, const char *pPre, const char *pPost, const char *pQuote, int escape) const
 {
   udResult result;
   char *pEscaped = nullptr;
@@ -1090,7 +1090,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
-udResult udValue::ExportJSON(const char *pKey, udValue::LineList *pLines, int indent, bool strip, bool comma) const
+udResult udJSON::ExportJSON(const char *pKey, udJSON::LineList *pLines, int indent, bool strip, bool comma) const
 {
   udResult result = udR_Success;
   const char *pStr = nullptr;
@@ -1118,7 +1118,7 @@ udResult udValue::ExportJSON(const char *pKey, udValue::LineList *pLines, int in
 
     case T_Array:
       {
-        udValueArray *pArray = AsArray();
+        udJSONArray *pArray = AsArray();
         result = udSprintf(&pStr, "%*s%s%s", indent, "", pKeyText, pArray->length ? "[" : comma ? "[]," : "[]");
         UD_ERROR_HANDLE();
         result = pLines->PushBack(pStr);
@@ -1139,7 +1139,7 @@ udResult udValue::ExportJSON(const char *pKey, udValue::LineList *pLines, int in
 
     case T_Object:
       {
-        udValueObject *pObject = AsObject();
+        udJSONObject *pObject = AsObject();
         result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
         UD_ERROR_HANDLE();
         result = pLines->PushBack(pStr);
@@ -1147,7 +1147,7 @@ udResult udValue::ExportJSON(const char *pKey, udValue::LineList *pLines, int in
         pStr = nullptr;
         for (size_t i = 0; i < pObject->length; ++i)
         {
-          udValueKVPair *pItem = pObject->GetElement(i);
+          udJSONKVPair *pItem = pObject->GetElement(i);
           result = pItem->value.ExportJSON(pItem->pKey, pLines, indent + 2, strip, i < (pObject->length - 1));
           UD_ERROR_HANDLE();
         }
@@ -1176,7 +1176,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int indent, bool strip) const
+udResult udJSON::ExportXML(const char *pKey, udJSON::LineList *pLines, int indent, bool strip) const
 {
   udResult result = udR_Success;
   const char *pStr = nullptr;
@@ -1206,7 +1206,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
 
     case T_Array:
       {
-        udValueArray *pArray = AsArray();
+        udJSONArray *pArray = AsArray();
         if (pArray->length == 0)
         {
           // Export empty arrays as an empty tag
@@ -1214,7 +1214,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         }
         for (size_t i = 0; i < pArray->length; ++i)
         {
-          const udValue *pValue = pArray->GetElement(i);
+          const udJSON *pValue = pArray->GetElement(i);
           switch (pValue->type)
           {
             case T_Void:    result = udSprintf(&pStr, "%*s<%s></%s>",     indent, "", pKey, pKey); break;
@@ -1242,13 +1242,13 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
 
     case T_Object:
       {
-        udValueObject *pObject = AsObject();
+        udJSONObject *pObject = AsObject();
         int subObjectCount = 0, attributeCount = 0;
 
         // First, find out how many simple attributes are present versus subobjects (exported as children)
         for (size_t i = 0; i < pObject->length; ++i)
         {
-          const udValueKVPair *pAttribute = pObject->GetElement(i);
+          const udJSONKVPair *pAttribute = pObject->GetElement(i);
           if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void)
             ++subObjectCount;
           else if (!pContentString && udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
@@ -1265,7 +1265,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         attributeLines.Init(32);
         for (size_t i = 0; i < pObject->length && attributeCount; ++i)
         {
-          const udValueKVPair *pAttribute = pObject->GetElement(i);
+          const udJSONKVPair *pAttribute = pObject->GetElement(i);
           if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void) // Children exported after the attributes
             continue;
           else if (udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
@@ -1301,7 +1301,7 @@ udResult udValue::ExportXML(const char *pKey, udValue::LineList *pLines, int ind
         {
           for (size_t i = 0; i < pObject->length; ++i)
           {
-            const udValueKVPair *pAttribute = pObject->GetElement(i);
+            const udJSONKVPair *pAttribute = pObject->GetElement(i);
             if (pAttribute->value.type != T_Object && pAttribute->value.type != T_Array && pAttribute->value.type != T_Void) // Attributes already exported
               continue;
             result = pAttribute->value.ExportXML(pAttribute->pKey, pLines, indent + 2, strip);
@@ -1343,24 +1343,24 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-udResult udValue::Export(const char **ppText, udValueExportOption option) const
+udResult udJSON::Export(const char **ppText, udJSONExportOption option) const
 {
   udResult result;
-  udValue::LineList lines;
+  udJSON::LineList lines;
   size_t totalChars;
   char *pText = nullptr;
 
   lines.Init(32);
   UD_ERROR_NULL(ppText, udR_InvalidParameter_);
 
-  if ((option & udVEO_XML))
+  if ((option & udJEO_XML))
   {
     if (IsObject())
     {
       for (size_t i = 0; i < AsObject()->length; ++i)
       {
-        const udValueKVPair *pItem = AsObject()->GetElement(i);
-        result = pItem->value.ExportXML(pItem->pKey, &lines, 0, !!(option & udVEO_StripWhiteSpace));
+        const udJSONKVPair *pItem = AsObject()->GetElement(i);
+        result = pItem->value.ExportXML(pItem->pKey, &lines, 0, !!(option & udJEO_StripWhiteSpace));
         UD_ERROR_HANDLE();
       }
     }
@@ -1371,13 +1371,13 @@ udResult udValue::Export(const char **ppText, udValueExportOption option) const
   }
   else
   {
-    result = ExportJSON(nullptr, &lines, 0, !!(option & udVEO_StripWhiteSpace), false);
+    result = ExportJSON(nullptr, &lines, 0, !!(option & udJEO_StripWhiteSpace), false);
     UD_ERROR_HANDLE();
   }
 
   totalChars = 0;
   for (size_t i = 0; i < lines.length; ++i)
-    totalChars += udStrlen(lines[i]) + ((option & udVEO_StripWhiteSpace) ? 0 : 2);
+    totalChars += udStrlen(lines[i]) + ((option & udJEO_StripWhiteSpace) ? 0 : 2);
   pText = udAllocType(char, totalChars + 1, udAF_Zero);
   totalChars = 0;
   for (size_t i = 0; i < lines.length; ++i)
@@ -1385,7 +1385,7 @@ udResult udValue::Export(const char **ppText, udValueExportOption option) const
     size_t len = udStrlen(lines[i]);
     memcpy(pText + totalChars, lines[i], len);
     totalChars += len;
-    if (!(option & udVEO_StripWhiteSpace))
+    if (!(option & udJEO_StripWhiteSpace))
     {
       memcpy(pText + totalChars, "\r\n", 2);
       totalChars += 2;
@@ -1404,12 +1404,12 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2017
-udResult udValue::CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64) const
+udResult udJSON::CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64) const
 {
   udResult result;
   const char *pExport = nullptr;
 
-  result = Export(&pExport, udVEO_StripWhiteSpace);
+  result = Export(&pExport, udJEO_StripWhiteSpace);
   UD_ERROR_HANDLE();
   if (pKeyBase64)
     result = udCryptoHash_HMAC(udCH_SHA256, pKeyBase64, pExport, udStrlen(pExport), ppHMACBase64);
@@ -1423,7 +1423,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, April 2017
-udResult udValue::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber)
+udResult udJSON::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber)
 {
   udResult result = udR_Success;
   const char *pStartPointer = pJSON; // Just used to calculate and assign pCharCount
@@ -1441,13 +1441,13 @@ udResult udValue::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber
     pJSON = udStrSkipWhiteSpace(pJSON + 1, nullptr, pLineNumber);
     while (*pJSON != '}')
     {
-      udValueKVPair *pItem;
+      udJSONKVPair *pItem;
       result = AsObject()->PushBack(&pItem);
       UD_ERROR_HANDLE();
       pItem->pKey = nullptr;
       pItem->value.Clear();
 
-      udValue k; // Temporaries
+      udJSON k; // Temporaries
       UD_ERROR_IF(*pJSON != '"' && *pJSON != '\'', udR_ParseError);
       result = k.Parse(pJSON, &charCount); // Use parser to get the key string for convenience
       UD_ERROR_HANDLE();
@@ -1482,7 +1482,7 @@ udResult udValue::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber
     pJSON = udStrSkipWhiteSpace(pJSON + 1, nullptr, pLineNumber);
     while (*pJSON != ']')
     {
-      udValue *pNextItem;
+      udJSON *pNextItem;
       result = AsArray()->PushBack(&pNextItem);
       UD_ERROR_HANDLE();
       pNextItem->Clear();
@@ -1558,17 +1558,17 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2017
-udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
+udResult udJSON::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
 {
   udResult result = udR_Success;
   const char *pStartPointer = pXML; // Just used to calculate and assign pCharCount
   int charCount;
   size_t len;
   const char *pElementName = nullptr;
-  udValue *pElement = nullptr;
+  udJSON *pElement = nullptr;
   bool selfClosingTag;
   int tempLineNumber = 1;
-  udValue tempValue; // A temporary here so that in the event of error it will be destroyed
+  udJSON tempValue; // A temporary here so that in the event of error it will be destroyed
   if (!pLineNumber)
     pLineNumber = &tempLineNumber;
 
@@ -1598,11 +1598,11 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
   pElementName = udStrndup(pXML, len);
   pXML = udStrSkipWhiteSpace(pXML + len, nullptr, pLineNumber);
   // So here we have the name of the element, but it might already exist or not
-  pElement = const_cast<udValue*>(FindMember(pElementName));
+  pElement = const_cast<udJSON*>(FindMember(pElementName));
   if (!pElement)
   {
     // Case where the tag hasn't been encountered before, so create an object for it
-    udValueKVPair *pKVP = AsObject()->PushBack();
+    udJSONKVPair *pKVP = AsObject()->PushBack();
     UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
     pKVP->pKey = udStrdup(pElementName);
     pKVP->value.Clear();  // Initialise without prior destruction
@@ -1639,7 +1639,7 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
     if (pXML[len] == '=')
     {
       // Found an attribute
-      udValueKVPair *pAttr = pElement->AsObject()->PushBack();
+      udJSONKVPair *pAttr = pElement->AsObject()->PushBack();
       UD_ERROR_NULL(pAttr, udR_MemoryAllocationFailure);
       pAttr->pKey = udStrndup(pXML, len);
       pXML = udStrSkipWhiteSpace(pXML + len + 1, nullptr, pLineNumber);
@@ -1690,7 +1690,7 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
           while (len > 1 && (pXML[len] == ' ' || pXML[len] == '\t' || pXML[len] == '\r' || pXML[len] == '\n'))
             --len;
         }
-        udValueKVPair *pAttr = pElement->AsObject()->PushBack();
+        udJSONKVPair *pAttr = pElement->AsObject()->PushBack();
         UD_ERROR_NULL(pAttr, udR_MemoryAllocationFailure);
         pAttr->pKey = udStrdup(CONTENT_MEMBER);
         UD_ERROR_NULL(pAttr->pKey, udR_MemoryAllocationFailure);
@@ -1713,7 +1713,7 @@ udResult udValue::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
     if (pElement->MemberCount() == 1 && udStrEqual(pElement->GetMemberName(0), CONTENT_MEMBER))
     {
       // If the element ended up being only a content string with nothing else, convert it to a value
-      udValueKVPair *pItem = pElement->AsObject()->GetElement(0);
+      udJSONKVPair *pItem = pElement->AsObject()->GetElement(0);
       tempValue = pItem->value;
       pItem->value.Clear(); // Clear not destroy as memory now owned by tempValue
       pElement->Destroy();

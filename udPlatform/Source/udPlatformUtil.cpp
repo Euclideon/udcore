@@ -2,7 +2,7 @@
 #include "udPlatformUtil.h"
 #include "udFile.h"
 #include "udMath.h"
-#include "udValue.h"
+#include "udJSON.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
@@ -2101,11 +2101,11 @@ udResult udSprintf(const char **ppDest, const char *pFormat, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2018
-udResult udParseWKT(udValue *pValue, const char *pString, int *pCharCount)
+udResult udParseWKT(udJSON *pValue, const char *pString, int *pCharCount)
 {
   udResult result = udR_Success;;
   size_t idLen;
-  udValue temp;
+  udJSON temp;
   int tempCharCount = 0;
   int parameterNumber = 0;
   const char *pStartString = pString;
@@ -2163,7 +2163,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2018
-static udResult GetWKTElementStr(const char **ppOutput, const udValue &value)
+static udResult GetWKTElementStr(const char **ppOutput, const udJSON &value)
 {
   udResult result;
   const char *pElementSeperator = ""; // Changed to "," after first element is written
@@ -2185,7 +2185,7 @@ static udResult GetWKTElementStr(const char **ppOutput, const udValue &value)
   }
   for (size_t i = 0; i < valuesCount; ++i)
   {
-    const udValue &arrayValue = value.Get("values[%d]", i);
+    const udJSON &arrayValue = value.Get("values[%d]", i);
     if (arrayValue.IsObject())
       UD_ERROR_CHECK(GetWKTElementStr(&pElementStr, arrayValue));
     else if (arrayValue.IsString() && i == 0 && udStrEqual(pTypeStr, "AXIS")) // Special case for AXIS, output second string unquoted
@@ -2214,7 +2214,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2018
-udResult udExportWKT(const char **ppOutput, const udValue *pValue)
+udResult udExportWKT(const char **ppOutput, const udJSON *pValue)
 {
   udResult result;
   const char *pStr = nullptr;
