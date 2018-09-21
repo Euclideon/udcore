@@ -1001,7 +1001,7 @@ udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPub
   v.Set("keyLen = %d", keyLen);
   // Don't export P and G, we can assume they are from RFC5114
   UD_ERROR_CHECK(ToValue(pCtx->dhm.GX, &v, "PublicValue"));
-  UD_ERROR_CHECK(v.Export(ppPublicValueA, udJEO_JSON | udJEO_StripWhiteSpace));
+  UD_ERROR_CHECK(v.Export(ppPublicValueA, udJEO_JSON));
 
   // Success, so transfer ownership of the context to caller
   *ppDHMCtx = pCtx;
@@ -1033,7 +1033,7 @@ udResult udCryptoKey_DeriveFromPartyA(const char *pPublicValueA, const char **pp
   UD_ERROR_CHECK(ctx.GenerateKey(ppKey));
   v.Destroy();
   UD_ERROR_CHECK(ToValue(ctx.dhm.GX, &v, "PublicValue"));
-  UD_ERROR_CHECK(v.Export(ppPublicValueB, udJEO_JSON | udJEO_StripWhiteSpace));
+  UD_ERROR_CHECK(v.Export(ppPublicValueB, udJEO_JSON));
 
 epilogue:
   if (ctxInit)

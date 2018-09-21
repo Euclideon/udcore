@@ -63,7 +63,7 @@ To create a udJSON tree from scratch:
 To export:
 ```cpp
   const char *pText = nullptr;
-  v.Export(pText, udJEO_JSON | udJEO_StripWhiteSpace); // StripWhiteSpace is optional
+  v.Export(pText, udJEO_JSON); // Add | udJEO_FormatWhiteSpace for optional human-readable output
   // .. write text to a file or whatever
   udFree(pText);
 

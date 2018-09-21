@@ -1360,7 +1360,7 @@ udResult udJSON::Export(const char **ppText, udJSONExportOption option) const
       for (size_t i = 0; i < AsObject()->length; ++i)
       {
         const udJSONKVPair *pItem = AsObject()->GetElement(i);
-        result = pItem->value.ExportXML(pItem->pKey, &lines, 0, !!(option & udJEO_StripWhiteSpace));
+        result = pItem->value.ExportXML(pItem->pKey, &lines, 0, !(option & udJEO_FormatWhiteSpace));
         UD_ERROR_HANDLE();
       }
     }
@@ -1371,13 +1371,13 @@ udResult udJSON::Export(const char **ppText, udJSONExportOption option) const
   }
   else
   {
-    result = ExportJSON(nullptr, &lines, 0, !!(option & udJEO_StripWhiteSpace), false);
+    result = ExportJSON(nullptr, &lines, 0, !(option & udJEO_FormatWhiteSpace), false);
     UD_ERROR_HANDLE();
   }
 
   totalChars = 0;
   for (size_t i = 0; i < lines.length; ++i)
-    totalChars += udStrlen(lines[i]) + ((option & udJEO_StripWhiteSpace) ? 0 : 2);
+    totalChars += udStrlen(lines[i]) + ((option & udJEO_FormatWhiteSpace) ? 2 : 0);
   pText = udAllocType(char, totalChars + 1, udAF_Zero);
   totalChars = 0;
   for (size_t i = 0; i < lines.length; ++i)
@@ -1385,7 +1385,7 @@ udResult udJSON::Export(const char **ppText, udJSONExportOption option) const
     size_t len = udStrlen(lines[i]);
     memcpy(pText + totalChars, lines[i], len);
     totalChars += len;
-    if (!(option & udJEO_StripWhiteSpace))
+    if (option & udJEO_FormatWhiteSpace)
     {
       memcpy(pText + totalChars, "\r\n", 2);
       totalChars += 2;
@@ -1409,7 +1409,7 @@ udResult udJSON::CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64
   udResult result;
   const char *pExport = nullptr;
 
-  result = Export(&pExport, udJEO_StripWhiteSpace);
+  result = Export(&pExport);
   UD_ERROR_HANDLE();
   if (pKeyBase64)
     result = udCryptoHash_HMAC(udCH_SHA256, pKeyBase64, pExport, udStrlen(pExport), ppHMACBase64);

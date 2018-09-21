@@ -11,7 +11,7 @@
 #define udValueExportOption udJSONExportOption
 #define udVEO_JSON udJEO_JSON
 #define udVEO_XML udJEO_XML
-#define udVEO_StripWhiteSpace udJEO_StripWhiteSpace
+#define udVEO_StripWhiteSpace 0
 #define udValueKVPair udJSONKVPair
 #define udValueArray udJSONArray
 #define udValueObject udJSONObject
@@ -70,13 +70,13 @@
  *
  * Export:
  * const char *pExportString = nullptr;
- * v.Export(&pExportString, udJEO_JSON | udJEO_StripWhiteSpace); // or udJEO_XML
+ * v.Export(&pExportString, udJEO_JSON); // or udJEO_XML
  * .. write string or whatever ..
  * udFree(pExportString);
  * v.Destroy(); // To destroy object before waiting to go out of scope
  */
 
-enum udJSONExportOption { udJEO_JSON = 0, udJEO_XML = 1, udJEO_StripWhiteSpace = 2 };
+enum udJSONExportOption { udJEO_JSON = 0, udJEO_XML = 1, udJEO_FormatWhiteSpace = 2 };
 static inline udJSONExportOption operator|(udJSONExportOption a, udJSONExportOption b) { return (udJSONExportOption)(int(a) | int(b)); }
 
 class udJSON;

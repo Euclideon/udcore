@@ -124,10 +124,10 @@ TEST(udJSONTests, ParseAndExportJSON)
 
   EXPECT_EQ(udR_Success, v.Parse(pJSONTest));
   udJSON_TestContent(v);
-  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_JSON | udJEO_StripWhiteSpace));
+  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_JSON));
   EXPECT_EQ(true, udStrEqual(pJSONTest, pExportText));
   udFree(pExportText);
-  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_XML | udJEO_StripWhiteSpace));
+  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_XML));
   EXPECT_EQ(true, udStrEqual(pXMLTest, pExportText));
   udFree(pExportText);
 }
@@ -141,7 +141,7 @@ TEST(udJSONTests, ParseXML)
 
   EXPECT_EQ(udR_Success, v.Parse(pXMLTest));
   udJSON_TestContent(v);
-  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_XML | udJEO_StripWhiteSpace));
+  ASSERT_EQ(udR_Success, v.Export(&pExportText, udJEO_XML));
   EXPECT_EQ(true, udStrEqual(pXMLTest, pExportText));
   udFree(pExportText);
   // We don't test that exporting back to JSON worked, because it
@@ -364,7 +364,7 @@ TEST(udJSONTests, XMLExport)
   EXPECT_EQ(udR_Success, result);
   result = value.Set("a.b[] = null");
   EXPECT_EQ(udR_Success, result);
-  result = value.Export(&pXML, udJEO_XML | udJEO_StripWhiteSpace);
+  result = value.Export(&pXML, udJEO_XML);
   EXPECT_EQ(udR_Success, result);
   EXPECT_STREQ("<a><b></b><b></b></a>", pXML);
   udFree(pXML);
@@ -373,7 +373,7 @@ TEST(udJSONTests, XMLExport)
   // An attribute and no child elements
   result = value.Set("a.c = 'string'");
   EXPECT_EQ(udR_Success, result);
-  result = value.Export(&pXML, udJEO_XML | udJEO_StripWhiteSpace);
+  result = value.Export(&pXML, udJEO_XML);
   EXPECT_STREQ("<a c=\"string\"/>", pXML);
   EXPECT_EQ(udR_Success, result);
   udFree(pXML);
@@ -384,7 +384,7 @@ TEST(udJSONTests, XMLExport)
   EXPECT_EQ(udR_Success, result);
   result = value.Set("a.c = 'string'");
   EXPECT_EQ(udR_Success, result);
-  result = value.Export(&pXML, udJEO_XML | udJEO_StripWhiteSpace);
+  result = value.Export(&pXML, udJEO_XML);
   EXPECT_STREQ("<a c=\"string\"><b></b></a>", pXML);
   EXPECT_EQ(udR_Success, result);
   udFree(pXML);
