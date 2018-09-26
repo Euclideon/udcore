@@ -114,3 +114,33 @@ TEST(udChunkedArrayTests, Basic)
 
   array.Deinit();
 }
+
+TEST(udChunkedArrayTests, FullChunkInsert)
+{
+  // Test to insert at all positions with the chunk being completely full
+  udChunkedArray<int> array;
+
+  for (size_t insertPos = 0; insertPos <= 8; ++insertPos)
+  {
+    array.Init(8);
+    // Fill the first chunk with values 1..8
+    for (int i = 0; i < 8; ++i)
+      array.PushBack(i);
+    for (int i = 0; i < 8; ++i)
+      EXPECT_EQ(i, array[i]);
+    // Now insert
+    int temp = -1;
+    array.Insert(insertPos, &temp);
+    for (int i = 0; i < 9; ++i)
+    {
+      if (i < insertPos)
+        EXPECT_EQ(i, array[i]);
+      else if (i == insertPos)
+        EXPECT_EQ(-1, array[i]);
+      else
+        EXPECT_EQ(i - 1, array[i]);
+    }
+    array.Deinit();
+  }
+}
+
