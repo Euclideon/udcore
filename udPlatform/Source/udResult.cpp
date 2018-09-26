@@ -65,6 +65,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_InvalidLicense),
   RESULTINFO(udR_Pending),
   RESULTINFO(udR_Cancelled),
+  RESULTINFO(udR_OutOfSync),
 };
 
 UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), "Result code not entered in strings table");
