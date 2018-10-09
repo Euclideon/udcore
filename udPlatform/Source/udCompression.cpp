@@ -242,6 +242,7 @@ epilogue:
 # pragma warning(disable:4334)
 #else
 # pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
 # if __GNUC__ >= 6 && !defined(__clang_major__)
 #  pragma GCC diagnostic ignored "-Wmisleading-indentation"
 # endif
