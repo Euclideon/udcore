@@ -165,7 +165,7 @@ void udCrypto_Obscure(const char *pBase64String)
 {
   size_t len = udStrlen(pBase64String);
   for (size_t i = 0; i < len; ++i)
-    const_cast<char*>(pBase64String)[i] ^= 1; // For now simple xor obscure
+    const_cast<char*>(pBase64String)[i] ^= (i & 5) + 1; // For now simple xor obscure
 }
 
 // ***************************************************************************************

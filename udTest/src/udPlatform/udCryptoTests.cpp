@@ -3,7 +3,7 @@
 #include "udJSON.h"
 #include "udPlatformUtil.h"
 
-TEST(CryptoTests, AES_CBC_MonteCarlo)
+TEST(udCryptoTests, AES_CBC_MonteCarlo)
 {
   // Do the first only monte carlo tests for CBC mode (400 tests in official monte carlo)
   static const unsigned char aes_test_cbc_dec[2][16] =
@@ -64,7 +64,7 @@ TEST(CryptoTests, AES_CBC_MonteCarlo)
   }
 }
 
-TEST(CryptoTests, AES_CTR_MonteCarlo)
+TEST(udCryptoTests, AES_CTR_MonteCarlo)
 {
   // Do the first only monte carlo tests for CTR mode (400 tests in official monte carlo)
   static const char *aes_test_ctr_key[3] =
@@ -136,7 +136,7 @@ TEST(CryptoTests, AES_CTR_MonteCarlo)
   }
 }
 
-TEST(CryptoTests, CipherErrorCodes)
+TEST(udCryptoTests, CipherErrorCodes)
 {
   udResult result;
   udCryptoCipherContext *pCtx = nullptr;
@@ -184,7 +184,7 @@ TEST(CryptoTests, CipherErrorCodes)
 }
 
 
-TEST(CryptoTests, SHA)
+TEST(udCryptoTests, SHA)
 {
   /*
   * FIPS-180-1 test vectors. See https://www.di-mgt.com.au/sha_testvectors.html
@@ -239,7 +239,7 @@ TEST(CryptoTests, SHA)
   }
 }
 
-TEST(CryptoTests, Self)
+TEST(udCryptoTests, Self)
 {
   EXPECT_EQ(udR_Success, udCryptoCipher_SelfTest(udCC_AES128));
   EXPECT_EQ(udR_Success, udCryptoCipher_SelfTest(udCC_AES256));
@@ -249,7 +249,7 @@ TEST(CryptoTests, Self)
   EXPECT_EQ(udR_Success, udCryptoHash_SelfTest(udCH_MD5));
 }
 
-TEST(CryptoTests, RSACreateSig)
+TEST(udCryptoTests, RSACreateSig)
 {
   static const char *pPrivateKeyText =
     "{\n"
@@ -322,7 +322,7 @@ TEST(CryptoTests, RSACreateSig)
   udFree(pSignature);
 }
 
-TEST(CryptoTests, ECDSADigiSig)
+TEST(udCryptoTests, ECDSADigiSig)
 {
   udCryptoSigContext *pPrivCtx = nullptr;
   udCryptoSigContext *pPubCtx = nullptr;
@@ -389,7 +389,7 @@ TEST(CryptoTests, ECDSADigiSig)
   udFree(pSignature);
 }
 
-TEST(CryptoTests, DHM)
+TEST(udCryptoTests, DHM)
 {
   udResult result;
   udJSON publicA, publicB;
@@ -464,7 +464,7 @@ TEST(udCryptoTests, Utilities)
   }
 }
 
-TEST(CryptoTests, PKCS7)
+TEST(udCryptoTests, PKCS7)
 {
   static const udCryptoIV iv = { { 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f } };
   static const char *pPlainText = "There are two great days in every person's life; the day we are born and the day we discover why"; // Multiple of 16 characters
@@ -496,3 +496,21 @@ TEST(CryptoTests, PKCS7)
   udFree(pKeyBase64);
 }
 
+TEST(udCryptoTests, Obscure)
+{
+  static const char *pAllBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=ABCDEFGH";
+
+  // Loop so that each character is xor'd with each combination of index
+  for (size_t i = 0; i < 8; ++i)
+  {
+    const char *pStr = udStrdup(pAllBase64 + i);
+    size_t len = udStrlen(pStr);
+    udCrypto_Obscure(pStr);
+    EXPECT_EQ(len, udStrlen(pStr));
+    EXPECT_STRCASENE(pAllBase64 + i, pStr);
+    udCrypto_Obscure(pStr);
+    EXPECT_EQ(len, udStrlen(pStr));
+    EXPECT_STRCASEEQ(pAllBase64 + i, pStr);
+    udFree(pStr);
+  }
+}
