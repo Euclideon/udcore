@@ -3,7 +3,7 @@
 
 #include "udMath.h"
 
-//This module is based heavily on the one from lorCore, http://github.com/LORgames/lorcore/
+// This module is based heavily on the one from lorCore, http://github.com/LORgames/lorcore/
 
 struct udSocket;
 struct udSocketSet;
@@ -16,21 +16,21 @@ enum udSocketConnectionFlags
 };
 inline udSocketConnectionFlags operator |(udSocketConnectionFlags a, udSocketConnectionFlags b) { return (udSocketConnectionFlags)(((int)a) | ((int)b)); }
 
-//API for entire system
-bool udSocket_InitSystem();
-bool udSocket_DeinitSystem();
+// Initialisation
+udResult udSocket_InitSystem();
+void udSocket_DeinitSystem();
 
-//API for each socket
-bool udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udSocketConnectionFlags flags = udSCFNone, const char *pPrivateKey = nullptr, const char *pPublicCertificate = nullptr);
-bool udSocket_Close(udSocket **ppSocket);
+// API for each socket
+udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udSocketConnectionFlags flags = udSCFNone, const char *pPrivateKey = nullptr, const char *pPublicCertificate = nullptr);
+void udSocket_Close(udSocket **ppSocket);
 bool udSocket_IsValidSocket(udSocket *pSocket);
 
-int64_t udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t totalBytes);
-int64_t udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t bufferSize);
+udResult udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t totalBytes, int64_t *pActualSent = nullptr);
+udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t bufferSize, int64_t *pActualReceived = nullptr);
 
 bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSocket, uint32_t *pIPv4Address = nullptr);
 
-//API for wrapping select
+// API for wrapping select
 void udSocketSet_Create(udSocketSet **ppSocketSet);
 void udSocketSet_Destroy(udSocketSet **ppSocketSet);
 void udSocketSet_EmptySet(udSocketSet *pSocketSet);

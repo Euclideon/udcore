@@ -11,37 +11,38 @@
 #include "mbedtls/error.h"
 
 #if UDPLATFORM_WINDOWS
-#include <windows.h>
-#include <Wincrypt.h>
-#include <winsock2.h>
-#include <Ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "Crypt32.lib")
+# include <windows.h>
+# include <Wincrypt.h>
+# include <winsock2.h>
+# include <Ws2tcpip.h>
+# pragma comment(lib, "ws2_32.lib")
+# pragma comment(lib, "Crypt32.lib")
 #else
 /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
-#include <sys/errno.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
-#include <unistd.h> /* Needed for close() */
+# include <sys/errno.h>
+# include <sys/socket.h>
+# include <arpa/inet.h>
+# include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
+# include <unistd.h> /* Needed for close() */
 #endif
 
 #if UDPLATFORM_OSX
-#include <Security/Security.h>
+# include <Security/Security.h>
 #endif
 
 #ifndef INVALID_SOCKET //Some platforms don't have these defined
-typedef int SOCKET;
-#define INVALID_SOCKET  (SOCKET)(~0)
-#define SOCKET_ERROR            (-1)
+  typedef int SOCKET;
+# define INVALID_SOCKET  (SOCKET)(~0)
+# define SOCKET_ERROR            (-1)
 #endif //INVALID_SOCKET
 
 static struct
 {
-  int loadCount = 0; //ref count for loaded certs; must be zero
+  volatile int32_t loadCount = 0; // ref count for loaded certs; must be zero
+  volatile int32_t initialised = 0; // set to 1 once initialisation is complete
   mbedtls_entropy_context entropy;
   mbedtls_x509_crt certificateChain;
-} g_sharedSocketData;
+} g_udSocketSharedData;
 
 struct udSocket
 {
@@ -68,147 +69,162 @@ struct udSocketSet
   SOCKET highestSocketHandle;
 };
 
-bool udSocket_LoadCACerts()
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+udResult udSocket_LoadCACerts()
 {
-  mbedtls_entropy_init(&g_sharedSocketData.entropy);
-  mbedtls_x509_crt_init(&g_sharedSocketData.certificateChain);
+  udResult result;
+  bool certParsed = false;
 
-  bool wasLoaded = false;
+  mbedtls_entropy_init(&g_udSocketSharedData.entropy);
+  mbedtls_x509_crt_init(&g_udSocketSharedData.certificateChain);
 
-#if UDPLATFORM_WINDOWS
-  HCERTSTORE store = CertOpenSystemStoreA(0, "Root");
-  PCCERT_CONTEXT cert = nullptr;
-
-  if (store != nullptr)
+  // Open a scope to prevent various initialisation warnings
   {
-    wasLoaded = true;
-
-    cert = CertEnumCertificatesInStore(store, cert);
-    while (cert != nullptr)
+#if UDPLATFORM_WINDOWS
+    HCERTSTORE store = CertOpenSystemStoreA(0, "Root");
+    UD_ERROR_NULL(store, udR_Failure_);
+    for (PCCERT_CONTEXT cert = CertEnumCertificatesInStore(store, nullptr); cert; cert = CertEnumCertificatesInStore(store, cert))
     {
-      mbedtls_x509_crt_parse_der(&g_sharedSocketData.certificateChain, (unsigned char *)cert->pbCertEncoded, cert->cbCertEncoded);
-      cert = CertEnumCertificatesInStore(store, cert);
+      if (mbedtls_x509_crt_parse_der(&g_udSocketSharedData.certificateChain, (unsigned char *)cert->pbCertEncoded, cert->cbCertEncoded) == 0)
+        certParsed = true;
     }
     CertCloseStore(store, 0);
-  }
 #elif UDPLATFORM_OSX
-  CFMutableDictionaryRef search;
-  CFArrayRef result;
-  SecKeychainRef keychain;
-  SecCertificateRef item;
-  CFDataRef dat;
+    CFMutableDictionaryRef search;
+    CFArrayRef cfResult;
+    SecKeychainRef keychain;
+    SecCertificateRef item;
+    CFDataRef dat;
 
-  // Load keychain
-  if (SecKeychainOpen("/System/Library/Keychains/SystemRootCertificates.keychain", &keychain) != errSecSuccess)
-    return false;
+    // Load keychain
+    UD_ERROR_IF(SecKeychainOpen("/System/Library/Keychains/SystemRootCertificates.keychain", &keychain) != errSecSuccess, udR_Failure_);
 
-  // Search for certificates
-  search = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
-  CFDictionarySetValue(search, kSecClass, kSecClassCertificate);
-  CFDictionarySetValue(search, kSecMatchLimit, kSecMatchLimitAll);
-  CFDictionarySetValue(search, kSecReturnRef, kCFBooleanTrue);
-  CFDictionarySetValue(search, kSecMatchSearchList, CFArrayCreate(NULL, (const void **)&keychain, 1, NULL));
+    // Search for certificates
+    search = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
+    CFDictionarySetValue(search, kSecClass, kSecClassCertificate);
+    CFDictionarySetValue(search, kSecMatchLimit, kSecMatchLimitAll);
+    CFDictionarySetValue(search, kSecReturnRef, kCFBooleanTrue);
+    CFDictionarySetValue(search, kSecMatchSearchList, CFArrayCreate(NULL, (const void **)&keychain, 1, NULL));
 
-  if (SecItemCopyMatching(search, (CFTypeRef*)&result) == errSecSuccess)
-  {
-    CFIndex n = CFArrayGetCount(result);
-    for (CFIndex i = 0; i < n; i++)
+    if (SecItemCopyMatching(search, (CFTypeRef*)&cfResult) == errSecSuccess)
     {
-      item = (SecCertificateRef)CFArrayGetValueAtIndex(result, i);
-
-      // Get certificate in DER format
-      dat = SecCertificateCopyData(item);
-      if (dat)
+      CFIndex n = CFArrayGetCount(cfResult);
+      for (CFIndex i = 0; i < n; i++)
       {
-        mbedtls_x509_crt_parse_der(&g_sharedSocketData.certificateChain, (unsigned char*)CFDataGetBytePtr(dat), CFDataGetLength(dat));
-        CFRelease(dat);
+        item = (SecCertificateRef)CFArrayGetValueAtIndex(cfResult, i);
+
+        // Get certificate in DER format
+        dat = SecCertificateCopyData(item);
+        if (dat)
+        {
+          if (mbedtls_x509_crt_parse_der(&g_udSocketSharedData.certificateChain, (unsigned char*)CFDataGetBytePtr(dat), CFDataGetLength(dat)) == 0)
+            certParsed = true;
+          CFRelease(dat);
+        }
       }
     }
 
-    wasLoaded = true;
-  }
-
-  CFRelease(keychain);
+    CFRelease(keychain);
 #else
-  //These are the recommended places from the Go-Lang documentation
-  const char *certFiles[] = {
-    "/etc/ssl/certs/ca-certificates.crt",                // Debian/Ubuntu/Gentoo etc.
-    "/etc/pki/tls/certs/ca-bundle.crt",                  // Fedora/RHEL 6
-    "/etc/ssl/ca-bundle.pem",                            // OpenSUSE
-    "/etc/pki/tls/cacert.pem",                           // OpenELEC
-    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", // CentOS/RHEL 7
-  };
+    //These are the recommended places from the Go-Lang documentation
+    const char *certFiles[] = {
+      "/etc/ssl/certs/ca-certificates.crt",                // Debian/Ubuntu/Gentoo etc.
+      "/etc/pki/tls/certs/ca-bundle.crt",                  // Fedora/RHEL 6
+      "/etc/ssl/ca-bundle.pem",                            // OpenSUSE
+      "/etc/pki/tls/cacert.pem",                           // OpenELEC
+      "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", // CentOS/RHEL 7
+    };
 
-  const char *certFolders[] = {
-    "/etc/ssl/certs",               // SLES10/SLES11
-    "/system/etc/security/cacerts", // Android
-    "/usr/local/share/certs",       // FreeBSD
-    "/etc/pki/tls/certs",           // Fedora/RHEL
-    "/etc/openssl/certs",           // NetBSD
-  };
+    const char *certFolders[] = {
+      "/etc/ssl/certs",               // SLES10/SLES11
+      "/system/etc/security/cacerts", // Android
+      "/usr/local/share/certs",       // FreeBSD
+      "/etc/pki/tls/certs",           // Fedora/RHEL
+      "/etc/openssl/certs",           // NetBSD
+    };
 
-  for (size_t i = 0; i < UDARRAYSIZE(certFiles) && !wasLoaded; ++i)
-  {
-    if (udFileExists(certFiles[i]) == udR_Success)
+    for (size_t i = 0; i < UDARRAYSIZE(certFiles) && !certParsed; ++i)
     {
-      mbedtls_x509_crt_parse_file(&g_sharedSocketData.certificateChain, certFiles[i]);
-      wasLoaded = true;
+      if (udFileExists(certFiles[i]) == udR_Success)
+      {
+        if (mbedtls_x509_crt_parse_file(&g_udSocketSharedData.certificateChain, certFiles[i]) == 0)
+          certParsed = true;
+      }
     }
-  }
 
-  udFindDir *pDir = nullptr;
-  for (size_t i = 0; i < UDARRAYSIZE(certFolders) && !wasLoaded; ++i)
-  {
-    if (udOpenDir(&pDir, certFolders[i]) == udR_Success)
-      continue;
-
-    do
+    udFindDir *pDir = nullptr;
+    for (size_t i = 0; i < UDARRAYSIZE(certFolders) && !certParsed; ++i)
     {
-      mbedtls_x509_crt_parse_file(&g_sharedSocketData.certificateChain, certFiles[i]);
-      wasLoaded = true;
-    } while (udReadDir(pDir) == udR_Success);
+      if (udOpenDir(&pDir, certFolders[i]) == udR_Success)
+        continue;
 
-    udCloseDir(&pDir);
-  }
+      do
+      {
+        if (mbedtls_x509_crt_parse_file(&g_udSocketSharedData.certificateChain, certFiles[i]) == 0)
+          certParsed = true;
+      } while (udReadDir(pDir) == udR_Success);
+
+      udCloseDir(&pDir);
+    }
 #endif
+  }
+  UD_ERROR_IF(!certParsed, udR_Success); // TODO: Consider if NothingToDo is more appropriate
+  result = udR_Success;
 
-  return wasLoaded;
+epilogue:
+  return result;
 }
 
-bool udSocket_InitSystem()
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+udResult udSocket_InitSystem()
 {
-  //LOAD CA CERTIFICATES
-  if (g_sharedSocketData.loadCount == 0)
+  udResult result;
+
+  // LOAD CA CERTIFICATES
+  if (udInterlockedPostIncrement(&g_udSocketSharedData.loadCount) == 0)
   {
-    if (!udSocket_LoadCACerts())
-      return false;
+    UD_ERROR_CHECK(udSocket_LoadCACerts());
 
 #if UDPLATFORM_WINDOWS
     WSADATA wsa_data;
     WSAStartup(MAKEWORD(1, 1), &wsa_data);
 #endif
+    udInterlockedExchange(&g_udSocketSharedData.initialised, 1);
   }
-  ++g_sharedSocketData.loadCount; //Increase refcount
+  else
+  {
+    // If another thread has begun initialisation, wait for it to complete
+    while (!g_udSocketSharedData.initialised)
+      udSleep(1);
+  }
 
-  return true;
+  result = udR_Success;
+epilogue:
+
+  return result;
 }
 
-bool udSocket_DeinitSystem()
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+void udSocket_DeinitSystem()
 {
-  --g_sharedSocketData.loadCount;
-  if (g_sharedSocketData.loadCount == 0)
+  if (udInterlockedPreDecrement(&g_udSocketSharedData.loadCount) == 0)
   {
-    mbedtls_entropy_free(&g_sharedSocketData.entropy);
-    mbedtls_x509_crt_free(&g_sharedSocketData.certificateChain);
+    while (!g_udSocketSharedData.initialised)
+      udSleep(1);
+    mbedtls_entropy_free(&g_udSocketSharedData.entropy);
+    mbedtls_x509_crt_free(&g_udSocketSharedData.certificateChain);
 
 #if UDPLATFORM_WINDOWS
-    return (WSACleanup() == 0);
+    WSACleanup();
 #endif
   }
-
-  return true;
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 int udSocket_GetErrorCode()
 {
 #if UDPLATFORM_WINDOWS
@@ -218,39 +234,44 @@ int udSocket_GetErrorCode()
 #endif
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 bool udSocket_IsValidSocket(udSocket *pSocket)
 {
-  if (pSocket->isSecure)
+  if (!pSocket)
+    return false;
+  else if (pSocket->isSecure)
     return (pSocket->tlsClient.socketContext.fd != INVALID_SOCKET && pSocket->tlsClient.socketContext.fd != 0);
   else
     return (pSocket->basicSocket != INVALID_SOCKET);
 }
 
 
-static void udSocketMBEDDebug(void * /*pUserData*/, int /*level*/, const char *file, int line, const char *str)
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+static void udSocketmbedDebug(void * /*pUserData*/, int /*level*/, const char *file, int line, const char *str)
 {
   udDebugPrintf("%s:%04d: %s\n", file, line, str);
 }
 
-bool udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udSocketConnectionFlags flags, const char *pPrivateKey /*= nullptr*/, const char *pPublicCertificate /*= nullptr*/)
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udSocketConnectionFlags flags, const char *pPrivateKey /*= nullptr*/, const char *pPublicCertificate /*= nullptr*/)
 {
-  if (ppSocket == nullptr)
-    return false;
-
-  udDebugPrintf("Socket init (%s:%d) flags=%d", pAddress, port, flags);
-  bool openSuccess = false;
+  udResult result;
+  udSocket *pSocket = nullptr;
+  addrinfo *pOutAddr = nullptr;
   int retVal;
 
-  udSocket *pSocket = udAllocType(udSocket, 1, udAF_Zero);
-  addrinfo *pOutAddr = nullptr;
+  udDebugPrintf("Socket init (%s:%d) flags=%d", pAddress, port, flags);
+  UD_ERROR_NULL(ppSocket, udR_InvalidParameter_);
+  pSocket = udAllocType(udSocket, 1, udAF_Zero);
+  UD_ERROR_NULL(pSocket, udR_MemoryAllocationFailure);
 
-  bool isServer = (flags & udSCFIsServer) > 0;
-  bool isSecure = (flags & udSCFUseTLS) > 0;
+  pSocket->isServer = (flags & udSCFIsServer) > 0;
+  pSocket->isSecure = (flags & udSCFUseTLS) > 0;
 
-  pSocket->isServer = isServer;
-  pSocket->isSecure = isSecure;
-
-  if (isSecure)
+  if (pSocket->isSecure)
   {
     //Init everything
     mbedtls_net_init(&pSocket->tlsClient.socketContext);
@@ -260,109 +281,109 @@ bool udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udS
     mbedtls_x509_crt_init(&pSocket->tlsClient.certificateServer);
 
     //Set up encryption things
-    retVal = mbedtls_ctr_drbg_seed(&pSocket->tlsClient.ctr_drbg, mbedtls_entropy_func, &g_sharedSocketData.entropy, nullptr, 0);
+    retVal = mbedtls_ctr_drbg_seed(&pSocket->tlsClient.ctr_drbg, mbedtls_entropy_func, &g_udSocketSharedData.entropy, nullptr, 0);
     if (retVal != 0)
     {
       udDebugPrintf(" failed! mbedtls_ctr_drbg_seed returned %d\n", retVal);
-      goto epilogue;
+      UD_ERROR_SET(udR_InternalCryptoError);
     }
 
-    //Setup the port string
+    // Setup the port string
     char portStr[6];
     udSprintf(portStr, 6, "%d", port);
 
-    //Branch for server/client differences
-    if (isServer)
+    // Branch for server/client differences
+    if (pSocket->isServer)
     {
       if (pPrivateKey == nullptr || pPublicCertificate == nullptr)
       {
         udDebugPrintf(" failed! Certificate and private key cannot be null if running a secure server!\n");
-        goto epilogue;
-      }
+        UD_ERROR_SET(udR_InvalidConfiguration);
+     }
 
-      //Set up server certificate
+      // Set up server certificate
       retVal = mbedtls_x509_crt_parse(&pSocket->tlsClient.certificateServer, (const unsigned char *)pPublicCertificate, udStrlen(pPublicCertificate)+1);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_x509_crt_parse returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      //Set up public key
+      // Set up public key
       mbedtls_pk_init(&pSocket->tlsClient.publicKey);
       retVal = mbedtls_pk_parse_key(&pSocket->tlsClient.publicKey, (const unsigned char *)pPrivateKey, udStrlen(pPrivateKey)+1, NULL, 0);
       if (retVal != 0)
       {
-        udDebugPrintf(" failed!  mbedtls_pk_parse_key returned %d\n", retVal);
-        goto epilogue;
+        udDebugPrintf(" failed! mbedtls_pk_parse_key returned %d\n", retVal);
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      //Bind
+      // Bind
       udDebugPrintf(" TLS Socket Bind on %s:%s", pAddress, portStr);
       retVal = mbedtls_net_bind(&pSocket->tlsClient.socketContext, pAddress, portStr, MBEDTLS_NET_PROTO_TCP);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_net_bind returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      //Set up config stuff for server
+      // Set up config stuff for server
       retVal = mbedtls_ssl_config_defaults(&pSocket->tlsClient.conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_ssl_config_defaults returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      //Link certificate chains
-      mbedtls_ssl_conf_ca_chain(&pSocket->tlsClient.conf, &g_sharedSocketData.certificateChain, NULL);
+      // Link certificate chains
+      mbedtls_ssl_conf_ca_chain(&pSocket->tlsClient.conf, &g_udSocketSharedData.certificateChain, NULL);
       retVal = mbedtls_ssl_conf_own_cert(&pSocket->tlsClient.conf, &pSocket->tlsClient.certificateServer, &pSocket->tlsClient.publicKey);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_ssl_conf_own_cert returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
     }
-    else //Is Client
+    else // Is Client
     {
-      //Connect
+      // Connect
       retVal = mbedtls_net_connect(&pSocket->tlsClient.socketContext, pAddress, portStr, MBEDTLS_NET_PROTO_TCP);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_net_connect returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      //Config stuff
+      // Config stuff
       retVal = mbedtls_ssl_config_defaults(&pSocket->tlsClient.conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_ssl_config_defaults returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      //TODO: Has to be removed before we ship...
+      // TODO: Has to be removed before we ship...
       mbedtls_ssl_conf_authmode(&pSocket->tlsClient.conf, MBEDTLS_SSL_VERIFY_NONE);
     }
 
     //Required
     mbedtls_ssl_conf_rng(&pSocket->tlsClient.conf, mbedtls_ctr_drbg_random, &pSocket->tlsClient.ctr_drbg);
-    mbedtls_ssl_conf_dbg(&pSocket->tlsClient.conf, udSocketMBEDDebug, stdout);
+    mbedtls_ssl_conf_dbg(&pSocket->tlsClient.conf, udSocketmbedDebug, stdout);
 
     retVal = mbedtls_ssl_setup(&pSocket->tlsClient.ssl, &pSocket->tlsClient.conf);
     if (retVal != 0)
     {
       udDebugPrintf(" failed! mbedtls_ssl_setup returned %d\n", retVal);
-      goto epilogue;
+      UD_ERROR_SET(udR_InternalCryptoError);
     }
 
-    if (!isServer)
+    if (!pSocket->isServer)
     {
       retVal = mbedtls_ssl_set_hostname(&pSocket->tlsClient.ssl, pAddress);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_ssl_set_hostname returned %d\n", retVal);
-        goto epilogue;
+        UD_ERROR_SET(udR_InternalCryptoError);
       }
 
       mbedtls_ssl_set_bio(&pSocket->tlsClient.ssl, &pSocket->tlsClient.socketContext, mbedtls_net_send, mbedtls_net_recv, NULL);
@@ -376,7 +397,7 @@ bool udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udS
         if (retVal != MBEDTLS_ERR_SSL_WANT_READ && retVal != MBEDTLS_ERR_SSL_WANT_WRITE)
         {
           udDebugPrintf(" failed! mbedtls_ssl_handshake returned -0x%x\n", -retVal);
-          goto epilogue;
+          UD_ERROR_SET(udR_InternalCryptoError);
         }
       } while (retVal != 0);
     }
@@ -393,15 +414,12 @@ bool udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udS
     char buffer[6];
     udSprintf(buffer, sizeof(buffer), "%d", port);
     retVal = getaddrinfo(pAddress, buffer, &hints, &pOutAddr);
-    if (retVal != 0)
-      goto epilogue;
+    UD_ERROR_IF(retVal != 0, udR_SocketError);
 
     pSocket->basicSocket = socket(pOutAddr->ai_family, pOutAddr->ai_socktype, pOutAddr->ai_protocol);
+    UD_ERROR_IF(!udSocket_IsValidSocket(pSocket), udR_SocketError);
 
-    if (!udSocket_IsValidSocket(pSocket))
-      goto epilogue;
-
-    if (isServer)
+    if (pSocket->isServer)
     {
 #if !UDPLATFORM_WINDOWS
       // Allow SOCKET to reuse an address that *was* bound and is *not* currently in use.
@@ -411,106 +429,126 @@ bool udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udS
       {
         int enable = 1;
         retVal = setsockopt(pSocket->basicSocket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
-        if (retVal == SOCKET_ERROR)
-          goto epilogue;
+        UD_ERROR_IF(retVal == SOCKET_ERROR, udR_SocketError);
       }
 #endif
-
-      pSocket->isServer = true;
-
       retVal = bind(pSocket->basicSocket, pOutAddr->ai_addr, (int)pOutAddr->ai_addrlen);
-      if (retVal == SOCKET_ERROR)
-        goto epilogue;
+      UD_ERROR_IF(retVal == SOCKET_ERROR, udR_SocketError);
 
       retVal = listen(pSocket->basicSocket, SOMAXCONN);
-      if (retVal == SOCKET_ERROR)
-        goto epilogue;
+      UD_ERROR_IF(retVal == SOCKET_ERROR, udR_SocketError);
     }
     else
     {
       retVal = connect(pSocket->basicSocket, pOutAddr->ai_addr, (int)pOutAddr->ai_addrlen);
-      if (retVal == SOCKET_ERROR)
-        goto epilogue;
+      UD_ERROR_IF(retVal == SOCKET_ERROR, udR_SocketError);
     }
   }
 
-  openSuccess = true;
+  *ppSocket = pSocket;
+  pSocket = nullptr;
+  result = udR_Success;
 
 epilogue:
   if (pOutAddr != nullptr)
     freeaddrinfo(pOutAddr);
-
-  if (!openSuccess)
+  if (pSocket)
     udSocket_Close(&pSocket);
 
-  *ppSocket = pSocket;
-
-  udDebugPrintf("\t...Connection %s!\n", openSuccess ? "Success" : "Failed");
-  return openSuccess;
+  udDebugPrintf("\t...Connection %s!\n", udResultAsString(result));
+  return result;
 }
 
-bool udSocket_Close(udSocket **ppSocket)
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+void udSocket_Close(udSocket **ppSocket)
 {
-  if (*ppSocket == nullptr)
-    return true;
-
-  if ((*ppSocket)->isSecure)
+  if (*ppSocket)
   {
     udSocket *pSocket = *ppSocket;
-    mbedtls_net_free(&pSocket->tlsClient.socketContext);
-    mbedtls_ssl_free(&pSocket->tlsClient.ssl);
-    mbedtls_ssl_config_free(&pSocket->tlsClient.conf);
-    mbedtls_ctr_drbg_free(&pSocket->tlsClient.ctr_drbg);
+    *ppSocket = nullptr;
 
-    mbedtls_x509_crt_free(&pSocket->tlsClient.certificateServer);
-    mbedtls_pk_free(&pSocket->tlsClient.publicKey);
-  }
-  else
-  {
+    if (pSocket->isSecure)
+    {
+      mbedtls_net_free(&pSocket->tlsClient.socketContext);
+      mbedtls_ssl_free(&pSocket->tlsClient.ssl);
+      mbedtls_ssl_config_free(&pSocket->tlsClient.conf);
+      mbedtls_ctr_drbg_free(&pSocket->tlsClient.ctr_drbg);
+
+      mbedtls_x509_crt_free(&pSocket->tlsClient.certificateServer);
+      mbedtls_pk_free(&pSocket->tlsClient.publicKey);
+    }
+    else
+    {
 #if UDPLATFORM_WINDOWS
-    closesocket((*ppSocket)->basicSocket);
+      closesocket(pSocket->basicSocket);
 #else
-    close((*ppSocket)->basicSocket);
+      close(pSocket->basicSocket);
 #endif
+    }
+    udFree(pSocket);
   }
-
-  udFree(*ppSocket);
-  *ppSocket = nullptr;
-
-  return true;
 }
 
-int64_t udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t totalBytes)
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+udResult udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t totalBytes, int64_t *pActualSent)
 {
-  if (pSocket == nullptr || pBytes == nullptr || totalBytes == 0)
-    return false;
+  udResult result;
+  UD_ERROR_NULL(pSocket, udR_InvalidParameter_);
+  UD_ERROR_NULL(pBytes, udR_InvalidParameter_);
+  UD_ERROR_IF(totalBytes == 0, udR_Success); // Quietly succeed at doing nothing
 
   if (pSocket->isSecure)
   {
     int status = mbedtls_ssl_write(&pSocket->tlsClient.ssl, pBytes, totalBytes);
-
-    if (status < 0)
-      return -1; //TODO: this is really important to close socket somehow
-
-    return totalBytes;
+    UD_ERROR_IF(status < 0, udR_SocketError); //TODO: this is really important to close socket somehow
+    if (pActualSent)
+      *pActualSent = totalBytes;
   }
   else
   {
-    return send(pSocket->basicSocket, (const char*)pBytes, (int)totalBytes, 0);
+    int actual = send(pSocket->basicSocket, (const char*)pBytes, (int)totalBytes, 0);
+    if (pActualSent)
+      *pActualSent = (int64_t)actual;
+    UD_ERROR_IF(actual < 0, udR_SocketError);
+    UD_ERROR_IF(!pActualSent && int64_t(actual) != totalBytes, udR_SocketError);
   }
+  result = udR_Success;
+
+epilogue:
+  return result;
 }
 
-int64_t udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t bufferSize)
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t bufferSize, int64_t *pActualReceived)
 {
-  if (pSocket == nullptr || pBytes == nullptr || bufferSize == 0 || pSocket->isServer)
-    return 0;
+  udResult result;
+  int64_t actualReceived;
+
+  UD_ERROR_NULL(pSocket, udR_InvalidParameter_);
+  UD_ERROR_NULL(pBytes, udR_InvalidParameter_);
+  UD_ERROR_IF(pSocket->isServer, udR_InvalidConfiguration);
+  UD_ERROR_IF(bufferSize == 0, udR_Success); // Quietly succeed at doing nothing
 
   if (pSocket->isSecure)
-    return mbedtls_ssl_read(&pSocket->tlsClient.ssl, pBytes, bufferSize);
+    actualReceived = mbedtls_ssl_read(&pSocket->tlsClient.ssl, pBytes, bufferSize);
   else
-    return recv(pSocket->basicSocket, (char*)pBytes, (int)bufferSize, 0);
+    actualReceived = recv(pSocket->basicSocket, (char*)pBytes, (int)bufferSize, 0);
+
+  UD_ERROR_IF(actualReceived < 0, udR_SocketError);
+  UD_ERROR_IF(!pActualReceived && actualReceived != bufferSize, udR_SocketError);
+  if (pActualReceived)
+    *pActualReceived = actualReceived;
+  result = udR_Success;
+
+epilogue:
+  return result;
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSocket, uint32_t *pIPv4Address /*= nullptr*/)
 {
   if (ppClientSocket == nullptr || pServerSocket == nullptr || !pServerSocket->isServer)
@@ -554,7 +592,7 @@ bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSoc
     retVal = mbedtls_ssl_setup(&pClientSocket->tlsClient.ssl, &pServerSocket->tlsClient.conf);
     if (retVal != 0)
     {
-      udDebugPrintf("  failed! mbedtls_ssl_setup returned -0x%04x\n", -retVal);
+      udDebugPrintf(" failed! mbedtls_ssl_setup returned -0x%04x\n", -retVal);
       goto sslfail;
     }
 
@@ -608,7 +646,8 @@ bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSoc
   return false;
 }
 
-//SELECT API
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 void udSocketSet_Create(udSocketSet **ppSocketSet)
 {
   if (ppSocketSet == nullptr)
@@ -618,12 +657,16 @@ void udSocketSet_Create(udSocketSet **ppSocketSet)
   udSocketSet_EmptySet(*ppSocketSet);
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 void udSocketSet_Destroy(udSocketSet **ppSocketSet)
 {
   if (ppSocketSet != nullptr && *ppSocketSet != nullptr)
     udFree(*ppSocketSet);
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 void udSocketSet_EmptySet(udSocketSet *pSocketSet)
 {
   if (pSocketSet == nullptr)
@@ -633,6 +676,8 @@ void udSocketSet_EmptySet(udSocketSet *pSocketSet)
   pSocketSet->highestSocketHandle = 0;
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 void udSocketSet_AddSocket(udSocketSet *pSocketSet, udSocket *pSocket)
 {
   if (pSocket == nullptr || pSocketSet == nullptr)
@@ -644,6 +689,8 @@ void udSocketSet_AddSocket(udSocketSet *pSocketSet, udSocket *pSocket)
   FD_SET(socketHandle, &pSocketSet->set);
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 bool udSocketSet_IsInSet(udSocketSet *pSocketSet, udSocket *pSocket)
 {
   if (pSocketSet == nullptr || pSocket == nullptr)
@@ -657,6 +704,8 @@ bool udSocketSet_IsInSet(udSocketSet *pSocketSet, udSocket *pSocket)
   return (FD_ISSET(socketHandle, &pSocketSet->set) != 0);
 }
 
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
 int udSocketSet_Select(size_t timeoutMilliseconds, udSocketSet *pReadSocketSet, udSocketSet *pWriteSocketSet, udSocketSet *pExceptSocketSet)
 {
   struct timeval tv;
