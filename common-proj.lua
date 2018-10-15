@@ -88,6 +88,7 @@ filter { "system:windows", "platforms:x64", "configurations:Debug" }
 	flags { "NoIncrementalLink" }
 
 filter { "options:coverage" }
+	location "."
 	buildoptions { "-fprofile-arcs", "-ftest-coverage" }
 	linkoptions { "-fprofile-arcs" }
 	optimize "Off"
