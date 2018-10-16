@@ -395,6 +395,33 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     pFile->index = mz_zip_reader_locate_file(&pFile->mz, pSubFileName, nullptr, 0);
     UD_ERROR_IF(pFile->index < 0, udR_OpenFailure);
     UD_ERROR_IF(!mz_zip_reader_file_stat(&pFile->mz, pFile->index, &stat), udR_OpenFailure);
+    if (stat.m_method == 0)
+    {
+      // *** SPECIAL CASE ***
+      // The file in the zip is just stored, so instead of going through the extraction
+      // machinery, we can just apply an offset to the underlying zip file, and free
+      // the file we were in the process of building
+
+      int64_t seekBase = (int64_t)stat.m_local_header_ofs;
+      uint8_t localDirHeader[MZ_ZIP_LOCAL_DIR_HEADER_SIZE];
+      UD_ERROR_CHECK(udFile_Read(pFile->pZipFile, localDirHeader, sizeof(localDirHeader), seekBase, udFSW_SeekSet));
+      uint32_t sig;
+      uint16_t filenameLen;
+      uint16_t extraLen;
+      memcpy(&sig, localDirHeader + 0, sizeof(sig));
+      memcpy(&filenameLen, localDirHeader + MZ_ZIP_LDH_FILENAME_LEN_OFS, sizeof(filenameLen));
+      memcpy(&extraLen, localDirHeader + MZ_ZIP_LDH_EXTRA_LEN_OFS, sizeof(extraLen));
+      UD_ERROR_IF(sig != MZ_ZIP_LOCAL_DIR_HEADER_SIG, udR_CorruptData);
+      seekBase += MZ_ZIP_LOCAL_DIR_HEADER_SIZE + filenameLen + extraLen;
+
+      pFile->pZipFile->seekBase = seekBase;
+      pFile->pZipFile->filePos = seekBase; // In case first read is relative to expected zero position
+      pFile->pZipFile->fileLength = (int64_t)stat.m_uncomp_size;
+      *ppFile = pFile->pZipFile;
+      pFile->pZipFile = nullptr;
+      UD_ERROR_SET(udR_Success); // Avoid the rest of the function, but have it clean up pFile which is no longer needed
+    }
+
     pFile->fileLength = stat.m_uncomp_size;
     pFile->pFileData = udAllocType(uint8_t, (size_t)stat.m_uncomp_size, udAF_None);
     UD_ERROR_NULL(pFile->pFileData, udR_MemoryAllocationFailure);
