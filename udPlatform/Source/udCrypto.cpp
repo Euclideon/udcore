@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "udCrypto.h"
 #include "udJSON.h"
+#include "udThread.h"
 
 #if UDPLATFORM_WINDOWS
 #pragma warning(disable: 4267 4244)
@@ -27,6 +28,7 @@
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
+#include "mbedtls/threading_alt.h"
 
 enum
 {
@@ -77,6 +79,11 @@ struct udCryptoSigContext
   };
 };
 
+static struct
+{
+  volatile int32_t loadCount = 0;
+  volatile int32_t initialised = 0;
+} g_udCryptoSharedData;
 
 // ***************************************************************************************
 // Author: Dave Pevreal, September 2017
@@ -178,6 +185,72 @@ epilogue:
   mbedtls_ctr_drbg_free(&ctr_drbg);
   mbedtls_entropy_free(&entropy);
   return result;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2018
+void udCrypto_ThreadingMutexInit(mbedtls_threading_mutex_t *pMutexCtx)
+{
+  pMutexCtx->pMutex = udCreateMutex();
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2018
+void udCrypto_ThreadingMutexFree(mbedtls_threading_mutex_t *pMutexCtx)
+{
+  udDestroyMutex((udMutex**)&pMutexCtx->pMutex);
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2018
+int udCrypto_ThreadingMutexLock(mbedtls_threading_mutex_t *pMutexCtx)
+{
+  if (pMutexCtx == nullptr || pMutexCtx->pMutex == nullptr)
+    return -1;
+
+  udLockMutex((udMutex*)pMutexCtx->pMutex);
+  return 0;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2018
+int udCrypto_ThreadingMutexUnlock(mbedtls_threading_mutex_t *pMutexCtx)
+{
+  if (pMutexCtx == nullptr || pMutexCtx->pMutex == nullptr)
+    return -1;
+
+  udReleaseMutex((udMutex*)pMutexCtx->pMutex);
+  return 0;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2018
+udResult udCrypto_Init()
+{
+  if (udInterlockedPostIncrement(&g_udCryptoSharedData.loadCount) == 0)
+  {
+    mbedtls_threading_set_alt(udCrypto_ThreadingMutexInit, udCrypto_ThreadingMutexFree, udCrypto_ThreadingMutexLock, udCrypto_ThreadingMutexUnlock);
+    udInterlockedExchange(&g_udCryptoSharedData.initialised, 1);
+  }
+  else
+  {
+    // If another thread has begun initialisation, wait for it to complete
+    while (!g_udCryptoSharedData.initialised)
+      udSleep(1);
+  }
+
+  return udR_Success;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2018
+void udCrypto_Deinit()
+{
+  if (udInterlockedPreDecrement(&g_udCryptoSharedData.loadCount) == 0)
+  {
+    g_udCryptoSharedData.initialised = 0;
+    mbedtls_threading_free_alt();
+  }
 }
 
 // ***************************************************************************************

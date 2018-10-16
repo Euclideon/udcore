@@ -1,5 +1,6 @@
 #include "udSocket.h"
 #include "udPlatformUtil.h"
+#include "udCrypto.h"
 
 #include "mbedtls/net.h"
 #include "mbedtls/ssl.h"
@@ -185,6 +186,7 @@ udResult udSocket_InitSystem()
   // LOAD CA CERTIFICATES
   if (udInterlockedPostIncrement(&g_udSocketSharedData.loadCount) == 0)
   {
+    UD_ERROR_CHECK(udCrypto_Init());
     UD_ERROR_CHECK(udSocket_LoadCACerts());
 
 #if UDPLATFORM_WINDOWS
@@ -212,10 +214,10 @@ void udSocket_DeinitSystem()
 {
   if (udInterlockedPreDecrement(&g_udSocketSharedData.loadCount) == 0)
   {
-    while (!g_udSocketSharedData.initialised)
-      udSleep(1);
+    g_udSocketSharedData.initialised = 0;
     mbedtls_entropy_free(&g_udSocketSharedData.entropy);
     mbedtls_x509_crt_free(&g_udSocketSharedData.certificateChain);
+    udCrypto_Deinit();
 
 #if UDPLATFORM_WINDOWS
     WSACleanup();
@@ -549,7 +551,7 @@ epilogue:
 
 // --------------------------------------------------------------------------
 // Author: Paul Fox, October 2018
-bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSocket, uint32_t *pIPv4Address /*= nullptr*/)
+bool udSocket_ServerAcceptClientPartA(udSocket *pServerSocket, udSocket **ppClientSocket, uint32_t *pIPv4Address /*= nullptr*/)
 {
   if (ppClientSocket == nullptr || pServerSocket == nullptr || !pServerSocket->isServer)
     return false;
@@ -566,14 +568,10 @@ bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSoc
     mbedtls_net_context clientContext;
 
     //Accept the client
-    int retVal = mbedtls_net_accept(&pServerSocket->tlsClient.socketContext, &clientContext, clientIP, sizeof(clientIP), &clientBytesReturned);
-    if (retVal != 0)
-    {
-      udDebugPrintf("Failed somehow to accept tls client?\n");
+    if (mbedtls_net_accept(&pServerSocket->tlsClient.socketContext, &clientContext, clientIP, sizeof(clientIP), &clientBytesReturned) != 0)
       return false;
-    }
 
-    if(pIPv4Address != nullptr && clientBytesReturned == 4)
+    if (pIPv4Address != nullptr && clientBytesReturned == 4)
       *pIPv4Address = (clientIP[0] << 24) | (clientIP[1] << 16) | (clientIP[2] << 8) | (clientIP[3]);
 
     (*ppClientSocket) = udAllocType(udSocket, 1, udAF_Zero);
@@ -586,40 +584,7 @@ bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSoc
     /* Make sure memory references are valid */
     mbedtls_ssl_init(&pClientSocket->tlsClient.ssl);
 
-    udDebugPrintf("  Setting up SSL/TLS data");
-
-    //Copy the config?
-    retVal = mbedtls_ssl_setup(&pClientSocket->tlsClient.ssl, &pServerSocket->tlsClient.conf);
-    if (retVal != 0)
-    {
-      udDebugPrintf(" failed! mbedtls_ssl_setup returned -0x%04x\n", -retVal);
-      goto sslfail;
-    }
-
-    mbedtls_ssl_set_bio(&pClientSocket->tlsClient.ssl, &pClientSocket->tlsClient.socketContext, mbedtls_net_send, mbedtls_net_recv, NULL);
-
-    //Handshake
-
-    do
-    {
-      retVal = mbedtls_ssl_handshake(&pClientSocket->tlsClient.ssl);
-      if (retVal == 0)
-        break;
-
-      if (retVal != MBEDTLS_ERR_SSL_WANT_READ && retVal != MBEDTLS_ERR_SSL_WANT_WRITE)
-      {
-        udDebugPrintf(" failed! mbedtls_ssl_handshake returned -0x%x\n", -retVal);
-        goto sslfail;
-      }
-    } while (retVal != 0);
-
-    udDebugPrintf("  Client accepted and secured\n");
-    return true;
-
-  sslfail:
-    //Cleanup
-
-    return false;
+    return (mbedtls_ssl_setup(&pClientSocket->tlsClient.ssl, &pServerSocket->tlsClient.conf) == 0);
   }
   else
   {
@@ -644,6 +609,45 @@ bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSoc
   }
 
   return false;
+}
+
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+bool udSocket_ServerAcceptClientPartB(udSocket *pClientSocket)
+{
+  if (!pClientSocket->isServer && pClientSocket->isSecure)
+  {
+    int retVal = 0;
+    mbedtls_ssl_set_bio(&pClientSocket->tlsClient.ssl, &pClientSocket->tlsClient.socketContext, mbedtls_net_send, mbedtls_net_recv, NULL);
+
+    //Handshake
+    do
+    {
+      retVal = mbedtls_ssl_handshake(&pClientSocket->tlsClient.ssl);
+      if (retVal == 0)
+        break;
+
+      if (retVal != MBEDTLS_ERR_SSL_WANT_READ && retVal != MBEDTLS_ERR_SSL_WANT_WRITE)
+      {
+        udDebugPrintf("udSocket_ServerAcceptClientPartB Failed- mbedtls_ssl_handshake returned -0x%x\n", -retVal);
+        return false;
+      }
+    } while (retVal != 0);
+  }
+
+  return true;
+}
+
+// --------------------------------------------------------------------------
+// Author: Paul Fox, October 2018
+bool udSocket_ServerAcceptClient(udSocket *pServerSocket, udSocket **ppClientSocket, uint32_t *pIPv4Address /*= nullptr*/)
+{
+  bool result = udSocket_ServerAcceptClientPartA(pServerSocket, ppClientSocket, pIPv4Address);
+
+  if (result)
+    result = udSocket_ServerAcceptClientPartB(*ppClientSocket);
+
+  return result;
 }
 
 // --------------------------------------------------------------------------

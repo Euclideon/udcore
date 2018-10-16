@@ -14,6 +14,11 @@ void udCrypto_Obscure(const char *pBase64String);
 // Get some cryptographic random data
 udResult udCrypto_Random(void *pMem, size_t len);
 
+// **** System Init and cleanup ****
+
+udResult udCrypto_Init();
+void udCrypto_Deinit();
+
 // **** Symmetric cipher algorithms ****
 
 enum udCryptoCiphers

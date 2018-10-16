@@ -281,6 +281,7 @@ TEST(udCryptoTests, RSACreateSig)
   const char *pHash = nullptr;
   const char *pSignature = nullptr;
 
+  EXPECT_EQ(udR_Success, udCrypto_Init());
   EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), &pHash));
 
 #if 0 // Enable to generate a new key
@@ -320,6 +321,8 @@ TEST(udCryptoTests, RSACreateSig)
   udCryptoSig_Destroy(&pPubCtx);
   udFree(pHash);
   udFree(pSignature);
+
+  udCrypto_Deinit();
 }
 
 TEST(udCryptoTests, ECDSADigiSig)
@@ -349,6 +352,7 @@ TEST(udCryptoTests, ECDSADigiSig)
   "Z": "AQ=="
 })key";
 
+  EXPECT_EQ(udR_Success, udCrypto_Init());
   EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, pMessage, udStrlen(pMessage), &pHash));
 
 #if 0 // Enable to generate a new key
@@ -387,6 +391,7 @@ TEST(udCryptoTests, ECDSADigiSig)
   udCryptoSig_Destroy(&pPubCtx);
   udFree(pHash);
   udFree(pSignature);
+  udCrypto_Deinit();
 }
 
 TEST(udCryptoTests, DHM)
@@ -399,6 +404,8 @@ TEST(udCryptoTests, DHM)
   const char *pSecretA;
   const char *pSecretB;
   const size_t keyLen = 64; // Maximum length secret
+
+  EXPECT_EQ(udR_Success, udCrypto_Init());
 
   result = udCryptoKey_CreateDHM(&pDHM, &pPublicValueA, keyLen);
   EXPECT_EQ(udR_Success, result);
@@ -434,6 +441,8 @@ TEST(udCryptoTests, DHM)
   EXPECT_NE(true, udStrEqual(pSecretA, pSecretB));
   udFree(pSecretA);
   udFree(pSecretB);
+
+  udCrypto_Deinit();
 }
 
 TEST(udCryptoTests, Utilities)
