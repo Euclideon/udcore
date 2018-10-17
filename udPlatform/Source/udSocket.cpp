@@ -270,8 +270,8 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
   pSocket = udAllocType(udSocket, 1, udAF_Zero);
   UD_ERROR_NULL(pSocket, udR_MemoryAllocationFailure);
 
-  pSocket->isServer = (flags & udSCFIsServer) > 0;
-  pSocket->isSecure = (flags & udSCFUseTLS) > 0;
+  pSocket->isServer = (flags & udSCF_IsServer) > 0;
+  pSocket->isSecure = (flags & udSCF_UseTLS) > 0;
 
   if (pSocket->isSecure)
   {

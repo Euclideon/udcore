@@ -1,5 +1,5 @@
-#ifndef udSocket_h__
-#define udSocket_h__
+#ifndef UDSOCKET_H
+#define UDSOCKET_H
 
 #include "udMath.h"
 
@@ -10,9 +10,9 @@ struct udSocketSet;
 
 enum udSocketConnectionFlags
 {
-  udSCFNone = 0,
-  udSCFIsServer = 1 << 0,
-  udSCFUseTLS = 1 << 1
+  udSCF_None = 0,
+  udSCF_IsServer = 1 << 0,
+  udSCF_UseTLS = 1 << 1
 };
 inline udSocketConnectionFlags operator |(udSocketConnectionFlags a, udSocketConnectionFlags b) { return (udSocketConnectionFlags)(((int)a) | ((int)b)); }
 
@@ -21,7 +21,7 @@ udResult udSocket_InitSystem();
 void udSocket_DeinitSystem();
 
 // API for each socket
-udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udSocketConnectionFlags flags = udSCFNone, const char *pPrivateKey = nullptr, const char *pPublicCertificate = nullptr);
+udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port, udSocketConnectionFlags flags = udSCF_None, const char *pPrivateKey = nullptr, const char *pPublicCertificate = nullptr);
 void udSocket_Close(udSocket **ppSocket);
 bool udSocket_IsValidSocket(udSocket *pSocket);
 
@@ -43,4 +43,4 @@ void udSocketSet_AddSocket(udSocketSet *pSocketSet, udSocket *pSocket);
 bool udSocketSet_IsInSet(udSocketSet *pSocketSet, udSocket *pSocket);
 int udSocketSet_Select(size_t timeoutMilliseconds, udSocketSet *pReadSocketSet, udSocketSet *pWriteSocketSet = nullptr, udSocketSet *pExceptionSocketSet = nullptr);
 
-#endif // udSocket_h__
+#endif // UDSOCKET_H

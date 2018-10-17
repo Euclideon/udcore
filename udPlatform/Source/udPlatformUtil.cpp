@@ -1397,8 +1397,8 @@ udResult udURL::SetURL(const char *pURL)
     }
     else
     {
-      // Otherwise let's assume port 80. TODO: Default port should be based on the scheme
-      port = 80;
+      // Otherwise assume port 443 for https, or 80 for anything else (should be http)
+      port = udStrEqual(pScheme, "https") ? 443 : 80;
       // Because no colon character exists to terminate the domain, move it forward by 1 byte
       if (p[i] != 0)
       {

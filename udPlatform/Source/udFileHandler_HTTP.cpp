@@ -7,24 +7,11 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "udPlatform.h"
-
-#if !UDPLATFORM_NACL
+#include "udSocket.h"
 
 #include "udPlatformUtil.h"
 #include "udFileHandler.h"
 #include "udMath.h"
-#if UDPLATFORM_WINDOWS
-# include <winsock2.h>
-#define snprintf _snprintf
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <netinet/in.h>
-# include <arpa/inet.h>
-# include <netdb.h>
-# define INVALID_SOCKET -1
-# define SOCKET_ERROR -1
-#endif
 #include <stdio.h>
 
 static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
@@ -35,7 +22,10 @@ static udFile_CloseHandlerFunc                    udFileHandler_HTTPClose;
 // Register the HTTP handler (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP()
 {
-  return udFile_RegisterHandler(udFileHandler_HTTPOpen, "http:");
+  udResult result = udFile_RegisterHandler(udFileHandler_HTTPOpen, "http:");
+  if (result == udR_Success)
+    result = udFile_RegisterHandler(udFileHandler_HTTPOpen, "https:");
+  return result;
 }
 
 
@@ -43,20 +33,14 @@ static char s_HTTPHeaderString[] = "HEAD %s HTTP/1.1\r\nHost: %s\r\nConnection: 
 static char s_HTTPGetString[] = "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Euclideon udSDK/2.0\r\nConnection: Keep-Alive\r\nRange: bytes=%lld-%lld\r\n\r\n";
 
 
-// The udFile derivative for supporting HTTP
+// The udFile derivative for supporting HTTP/S
 struct udFile_HTTP : public udFile
 {
   udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
   udURL url;
   bool wsInitialised;
   char recvBuffer[1024];
-  struct sockaddr_in server;
-#if UDPLATFORM_WINDOWS
-  WSADATA wsaData;
-  SOCKET sock;
-#else
-  int sock;
-#endif
+  udSocket *pSocket;
   int sockID; // Each time a socket it created we increment this number, this way pipelined requests from a dead socket can be identified as dead
 };
 
@@ -68,22 +52,20 @@ static udResult udFileHandler_HTTPOpenSocket(udFile_HTTP *pFile)
 {
   udResult result;
 
-  if (pFile->sock == INVALID_SOCKET)
+  if (!pFile->pSocket || !udSocket_IsValidSocket(pFile->pSocket))
   {
-    pFile->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    UD_ERROR_IF(pFile->sock == INVALID_SOCKET, udR_SocketError);
-
-    UD_ERROR_IF(connect(pFile->sock, (struct sockaddr*)&pFile->server, sizeof(pFile->server)) == SOCKET_ERROR, udR_SocketError);
+    if (pFile->pSocket)
+      udSocket_Close(&pFile->pSocket);
+    result = udSocket_Open(&pFile->pSocket, pFile->url.GetDomain(), pFile->url.GetPort(), udStrEqual(pFile->url.GetScheme(), "https") ? udSCF_UseTLS : udSCF_None);
+  }
+  else
+  {
+    // Valid socket already opened
+    result = udR_Success;
   }
 
-  // TODO: TCP_NODELAY disables the Nagle algorithm.
-  //       SO_KEEPALIVE enables periodic 'liveness' pings, if supported by the OS.
-
-  result = udR_Success;
-
-epilogue:
   if (result != udR_Success)
-    udDebugPrintf("Error opening socket\n");
+    udDebugPrintf("Error %s opening socket\n", udResultAsString(result));
   return result;
 }
 
@@ -93,15 +75,7 @@ epilogue:
 // Author: Dave Pevreal, March 2014
 static void udFileHandler_HTTPCloseSocket(udFile_HTTP *pFile)
 {
-  if (pFile->sock != INVALID_SOCKET)
-  {
-#if UDPLATFORM_WINDOWS
-    shutdown(pFile->sock, SD_BOTH);
-#else
-    close(pFile->sock);
-#endif
-    pFile->sock = INVALID_SOCKET;
-  }
+  udSocket_Close(&pFile->pSocket);
   ++pFile->sockID;
 }
 
@@ -114,23 +88,18 @@ static udResult udFileHandler_HTTPSendRequest(udFile_HTTP *pFile, int len)
   udResult result;
 
   UD_ERROR_CHECK(udFileHandler_HTTPOpenSocket(pFile));
-  if (send(pFile->sock, pFile->recvBuffer, len, 0) == SOCKET_ERROR)
+  result = udSocket_SendData(pFile->pSocket, (const uint8_t*)pFile->recvBuffer, (int64_t)len);
+  if (result == udR_SocketError)
   {
     // On error, first try closing and re-opening the socket before giving up
     udFileHandler_HTTPCloseSocket(pFile);
     udFileHandler_HTTPOpenSocket(pFile);
-    if (send(pFile->sock, pFile->recvBuffer, len, 0) == SOCKET_ERROR)
-    {
-      udDebugPrintf("http send returned socket error\n");
-      UD_ERROR_SET(udR_SocketError);
-    }
+    result = udSocket_SendData(pFile->pSocket, (const uint8_t*)pFile->recvBuffer, (int64_t)len);
   }
-
-  result = udR_Success;
 
 epilogue:
   if (result != udR_Success)
-    udDebugPrintf("Error sending request:\n%s\n--end--\n", pFile->recvBuffer);
+    udDebugPrintf("Error %s sending request:\n%s\n--end--\n", udResultAsString(result), pFile->recvBuffer);
   return result;
 }
 
@@ -148,36 +117,27 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   const char *s;
   bool closeConnection = false;
   int64_t contentLength;
-  int recvCode;
+  int64_t actualReceived;
 
   result = udFileHandler_HTTPOpenSocket(pFile);
   if (result != udR_Success)
     udDebugPrintf("Unable to open socket\n");
   UD_ERROR_HANDLE();
 
-  recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
-  if (recvCode == SOCKET_ERROR)
+  result = udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pFile->recvBuffer, (int64_t)sizeof(pFile->recvBuffer), &actualReceived);
+  if (result == udR_SocketError)
   {
+    // Close and re-open the socket on error
     udFileHandler_HTTPCloseSocket(pFile);
-    if (udFileHandler_HTTPOpenSocket(pFile) == udR_Success)
-      recvCode = recv(pFile->sock, pFile->recvBuffer, sizeof(pFile->recvBuffer), 0);
-    if (recvCode == SOCKET_ERROR)
-    {
-      udDebugPrintf("recv returned SOCKET_ERROR\n");
-      UD_ERROR_SET(udR_SocketError);
-    }
+    UD_ERROR_CHECK(udFileHandler_HTTPOpenSocket(pFile));
+    UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pFile->recvBuffer, (int64_t)sizeof(pFile->recvBuffer), &actualReceived));
   }
-  bytesReceived += recvCode;
+  bytesReceived += (size_t)actualReceived;
 
   while (udStrstr(pFile->recvBuffer, bytesReceived, "\r\n\r\n", &headerLength) == nullptr && (size_t)bytesReceived < sizeof(pFile->recvBuffer))
   {
-    recvCode = recv(pFile->sock, pFile->recvBuffer + bytesReceived, (int)(sizeof(pFile->recvBuffer) - bytesReceived), 0);
-    if (recvCode == SOCKET_ERROR)
-    {
-      udDebugPrintf("recv returned SOCKET_ERROR\n");
-      UD_ERROR_SET(udR_SocketError);
-    }
-    bytesReceived += recvCode;
+    UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pFile->recvBuffer + bytesReceived, (int64_t)sizeof(pFile->recvBuffer) - bytesReceived, &actualReceived));
+    bytesReceived += (size_t)actualReceived;
   }
 
   // First, check the top line for HTTP version and error code
@@ -226,10 +186,8 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
 
     while (bytesReceived < (size_t)contentLength)
     {
-      recvCode = recv(pFile->sock, ((char*)pBuffer) + bytesReceived, udMin(int(bufferLength - bytesReceived), int(contentLength - bytesReceived)), 0);
-      if (recvCode == SOCKET_ERROR)
-        UD_ERROR_SET(udR_SocketError);
-      bytesReceived += recvCode;
+      UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pBuffer + bytesReceived, (int64_t)bufferLength - bytesReceived, &actualReceived));
+      bytesReceived += (size_t)actualReceived;
     }
     if (pActualRead)
       *pActualRead = bytesReceived;
@@ -238,7 +196,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   result = udR_Success;
 
 epilogue:
-  //if (result != udR_Success || closeConnection)
+  if (result != udR_Success || closeConnection)
     udFileHandler_HTTPCloseSocket(pFile);
   if (result != udR_Success)
     udDebugPrintf("Error receiving request:\n%s\n--end--\n", pFile->recvBuffer);
@@ -254,8 +212,6 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
 {
   udResult result;
   udFile_HTTP *pFile = nullptr;
-  struct hostent *hp;
-
   int actualHeaderLen;
 
   // Automatically fail if trying to write to files on http
@@ -273,35 +229,12 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
 
   pFile->url.Construct();
   pFile->wsInitialised = false;
-  pFile->sock = INVALID_SOCKET;
 
   UD_ERROR_CHECK(pFile->url.SetURL(pFilename));
-
-  UD_ERROR_IF(!udStrEqual(pFile->url.GetScheme(), "http"), udR_OpenFailure);
-
-#if UDPLATFORM_WINDOWS
-  // TODO: Only do this once and reference count
-  if (WSAStartup(MAKEWORD(2, 2), &pFile->wsaData))
-  {
-    udDebugPrintf("WSAStartup failed\n");
-    UD_ERROR_SET(udR_SocketError);
-  }
+  UD_ERROR_IF(!udStrEqual(pFile->url.GetScheme(), "http") && !udStrEqual(pFile->url.GetScheme(), "https"), udR_OpenFailure);
+  UD_ERROR_CHECK(udSocket_InitSystem());
   pFile->wsInitialised = true;
-#endif
 
-  //udDebugPrintf("Resolving %s to ip address...", pFile->url.GetDomain());
-  hp = gethostbyname(pFile->url.GetDomain());
-  if (!hp)
-  {
-    udDebugPrintf("gethostbyname failed to resolve url domain\n");
-    UD_ERROR_SET(udR_SocketError);
-  }
-  pFile->server.sin_addr.s_addr = *((unsigned long*)hp->h_addr); // TODO: This is bad. use h_addr_list instead
-  pFile->server.sin_family = AF_INET;
-  pFile->server.sin_port = htons((u_short) pFile->url.GetPort());
-
-  // TODO: Support for udFOF_FastOpen
-  result = udR_Failure_;
   actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPHeaderString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain());
   UD_ERROR_IF(actualHeaderLen < 0, udR_Failure_);
 
@@ -411,13 +344,11 @@ static udResult udFileHandler_HTTPClose(udFile **ppFile)
     if (pFile)
     {
       udFileHandler_HTTPCloseSocket(pFile);
-#if UDPLATFORM_WINDOWS
       if (pFile->wsInitialised)
       {
-        WSACleanup();
+        udSocket_DeinitSystem();
         pFile->wsInitialised = false;
       }
-#endif
       if (pFile->pMutex)
         udDestroyMutex(&pFile->pMutex);
       pFile->url.~udURL();
@@ -427,5 +358,3 @@ static udResult udFileHandler_HTTPClose(udFile **ppFile)
 
   return udR_Success;
 }
-
-#endif // !UDPLATFORM_NACL

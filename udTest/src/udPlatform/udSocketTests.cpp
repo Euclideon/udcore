@@ -152,7 +152,7 @@ TEST(udSocket, ValidationTests)
 
   udSocket *sockets[2];
   udThread *pServerThread;
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCFIsServer));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCF_IsServer));
   EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsServerThread, sockets[0]));
 
   EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404));
@@ -180,10 +180,10 @@ TEST(udSocket, SecureValidationTests)
 
   udSocket *sockets[2];
   udThread *pServerThread;
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCFUseTLS | udSCFIsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCF_UseTLS | udSCF_IsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
   EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsServerThread, sockets[0]));
 
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCFUseTLS));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCF_UseTLS));
   EXPECT_EQ(udR_Success, udSocket_SendData(sockets[1], clientSend, sizeof(clientSend)));
 
   uint8_t recv[UDARRAYSIZE(serverSend)];
@@ -208,7 +208,7 @@ TEST(udSocket, SocketSetValidationTests)
 
   udSocket *sockets[2];
   udThread *pServerThread;
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCFIsServer));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCF_IsServer));
   EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsSocketSetServerThread, sockets[0]));
 
   EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404));
@@ -236,10 +236,10 @@ TEST(udSocket, SecureSocketSetValidationTests)
 
   udSocket *sockets[2];
   udThread *pServerThread;
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCFUseTLS | udSCFIsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCF_UseTLS | udSCF_IsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
   EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsSocketSetServerThread, sockets[0]));
 
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCFUseTLS));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCF_UseTLS));
   EXPECT_EQ(udR_Success, udSocket_SendData(sockets[1], clientSend, sizeof(clientSend)));
 
   uint8_t recv[UDARRAYSIZE(serverSend)];
@@ -263,7 +263,7 @@ TEST(udSocket, EuclideonExchangeTest)
   EXPECT_EQ(udR_Success, udSocket_InitSystem());
 
   udSocket *pSockets = nullptr;
-  EXPECT_EQ(udR_Success, udSocket_Open(&pSockets, "exchange.euclideon.com", 443, udSCFUseTLS));
+  EXPECT_EQ(udR_Success, udSocket_Open(&pSockets, "exchange.euclideon.com", 443, udSCF_UseTLS));
 
   const char *pRequest = "GET /owa HTTP/1.1\r\nHost: exchange.euclideon.com\r\nUser-Agent: HTTPTestAgent\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-us,en;q=0.5\r\nPragma: no-cache\r\nCache-Control: no-cache\r\n\r\n";
 
