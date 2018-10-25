@@ -239,7 +239,30 @@ TEST(udThreadTests, MultipleIncrements)
 {
   udSemaphore *pSemaphore = udCreateSemaphore();
   EXPECT_NE(nullptr, pSemaphore);
-  udIncrementSemaphore(pSemaphore, 10);
-  EXPECT_EQ(0, udWaitSemaphore(pSemaphore));
+
+  const int IncrCount = 10;
+
+  // Batch Increment with timeouts
+  udIncrementSemaphore(pSemaphore, IncrCount);
+  for (int i = 0; i < IncrCount; ++i)
+    EXPECT_EQ(0, udWaitSemaphore(pSemaphore, 100)) << "Batch Timeout Loop: " << i;
+
+  // Batch Increment with no timeouts
+  udIncrementSemaphore(pSemaphore, IncrCount);
+  for (int i = 0; i < IncrCount; ++i)
+    EXPECT_EQ(0, udWaitSemaphore(pSemaphore)) << "Batch NoTimeout Loop: " << i;
+
+  // Individual Increment with timeouts
+  for (int i = 0; i < IncrCount; ++i)
+    udIncrementSemaphore(pSemaphore);
+  for (int i = 0; i < IncrCount; ++i)
+    EXPECT_EQ(0, udWaitSemaphore(pSemaphore, 100)) << "Single Timeout Loop: " << i;
+
+  // Individual Increment with no timeouts
+  for (int i = 0; i < IncrCount; ++i)
+    udIncrementSemaphore(pSemaphore);
+  for (int i = 0; i < IncrCount; ++i)
+    EXPECT_EQ(0, udWaitSemaphore(pSemaphore)) << "Single NoTimeout Loop: " << i;
+
   udDestroySemaphore(&pSemaphore);
 }
