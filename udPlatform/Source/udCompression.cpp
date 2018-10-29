@@ -275,27 +275,28 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
   UDTRACE();
   udResult result;
   udFile_Zip *pZip = static_cast<udFile_Zip *>(pFile);
-  size_t actualRead;
+  size_t actualRead = 0;
 
   UD_ERROR_IF(seekOffset < 0 || seekOffset >= pZip->fileLength, udR_InvalidParameter_);
-  actualRead = udMin(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
+  bufferLength = udMin(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
 
   // Passive wait for the read to complete
-  while (!pZip->readComplete && pZip->lengthRead < int32_t(seekOffset + actualRead))
+  while (!pZip->readComplete && pZip->lengthRead < int32_t(seekOffset + bufferLength))
   {
     if (pZip->abortRead)
       UD_ERROR_SET_NO_BREAK(udR_ReadFailure);
     udSleep(1);
   }
-  UD_ERROR_IF(pZip->lengthRead < int32_t(seekOffset + actualRead), udR_ReadFailure);
+  UD_ERROR_IF(int64_t(pZip->lengthRead) < seekOffset, udR_ReadFailure);
 
+  actualRead = udMin(bufferLength, pZip->lengthRead - (size_t)seekOffset);
   memcpy(pBuffer, pZip->pFileData + seekOffset, actualRead);
-  if (pActualRead)
-    *pActualRead = actualRead;
 
   result = udR_Success;
 
 epilogue:
+  if (pActualRead)
+    *pActualRead = actualRead;
   return result;
 }
 

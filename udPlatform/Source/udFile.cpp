@@ -244,7 +244,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
 {
   UDTRACE();
   udResult result;
-  size_t actualRead;
+  size_t actualRead = 0;
   int64_t offset;
   void *pCipherText = nullptr;
 
