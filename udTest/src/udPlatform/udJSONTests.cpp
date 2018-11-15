@@ -390,3 +390,48 @@ TEST(udJSONTests, XMLExport)
   udFree(pXML);
   value.Destroy();
 }
+
+// ----------------------------------------------------------------------------
+// Author: Paul Fox, November 2018
+TEST(udJSONTests, SpecialCharacterCompliance)
+{
+  udJSON in, out, temp;
+  const char *pExportText = nullptr;
+  const char validStr[] = R"str({"quotationMark":"\"","reverseSolidus":"\\","backspace":"\b","formFeed":"\f","lineFeed":"\n","carriageReturn":"\r","tabulation":"\t"})str";
+
+  temp.SetString("\"");
+  in.Set(&temp, "quotationMark");
+
+  temp.SetString("\\");
+  in.Set(&temp, "reverseSolidus");
+
+  temp.SetString("\b");
+  in.Set(&temp, "backspace");
+
+  temp.SetString("\f");
+  in.Set(&temp, "formFeed");
+
+  temp.SetString("\n");
+  in.Set(&temp, "lineFeed");
+
+  temp.SetString("\r");
+  in.Set(&temp, "carriageReturn");
+
+  temp.SetString("\t");
+  in.Set(&temp, "tabulation");
+
+  ASSERT_EQ(udR_Success, in.Export(&pExportText));
+  EXPECT_TRUE(udStrEqual(validStr, pExportText));
+
+  EXPECT_EQ(udR_Success, out.Parse(pExportText));
+
+  EXPECT_STREQ("\"", out.Get("quotationMark").AsString());
+  EXPECT_STREQ("\\", out.Get("reverseSolidus").AsString());
+  EXPECT_STREQ("\b", out.Get("backspace").AsString());
+  EXPECT_STREQ("\f", out.Get("formFeed").AsString());
+  EXPECT_STREQ("\n", out.Get("lineFeed").AsString());
+  EXPECT_STREQ("\r", out.Get("carriageReturn").AsString());
+  EXPECT_STREQ("\t", out.Get("tabulation").AsString());
+
+  udFree(pExportText);
+}
