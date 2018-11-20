@@ -69,6 +69,7 @@ enum udResult
   udR_Pending,
   udR_Cancelled,
   udR_OutOfSync,
+  udR_SessionExpired,
 
   udR_Count,
 
