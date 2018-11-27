@@ -2,7 +2,7 @@
 
 ECHO Select the type of project you would like to create:
 ECHO 1. Visual Studio 2015 Solution
-ECHO 2. Visual Studio 2013 Solution
+ECHO 2. Visual Studio 2015 Solution (Emscripten)
 ECHO 3. Visual Studio 2010 Solution
 ECHO 4. CodeLite (Linux)
 ECHO 5. GNU Makefile (Linux)
@@ -30,7 +30,7 @@ GOTO END
  GOTO END
 :TWO
  ECHO Creating VS2013 Project...
- bin\premake-bin\premake5.exe vs2013
+ bin\premake-bin\premake5.exe vs2015 --os=emscripten
  GOTO END
 :ONE
  ECHO Creating VS2015 Project...

@@ -3,6 +3,8 @@
 #include "udSocket.h"
 #include "udPlatformUtil.h"
 
+// Emscripten requires more work for sockets
+#if !UDPLATFORM_EMSCRIPTEN
 uint8_t clientSend[] = "ClientSendData";
 uint8_t serverSend[] = "ServerSendData";
 
@@ -285,3 +287,4 @@ TEST(udSocket, EuclideonExchangeTest)
 
   udSocket_DeinitSystem();
 }
+#endif

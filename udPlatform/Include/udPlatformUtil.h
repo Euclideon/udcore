@@ -26,6 +26,16 @@ inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { ret
 template <typename T>
 T *udAddBytes(T *ptr, ptrdiff_t bytes) { return (T*)(bytes + (char*)ptr); }
 
+template <typename T, typename P>
+inline void udAssignUnaligned(P *ptr, T value)
+{
+#if UDPLATFORM_EMSCRIPTEN
+  memcpy(ptr, &value, sizeof(value));
+#else
+  *(T*)ptr = value;
+#endif
+}
+
 // Template to read from a pointer, does a hard cast to allow reading into const char arrays
 template <typename T, typename P>
 inline udResult udReadFromPointer(T *pDest, P *&pSrc, int *pBytesRemaining = nullptr, int arrayCount = 1)

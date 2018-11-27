@@ -25,6 +25,9 @@
 # include <arpa/inet.h>
 # include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
 # include <unistd.h> /* Needed for close() */
+# if UDPLATFORM_EMSCRIPTEN
+#  include <sys/select.h>
+# endif
 #endif
 
 #if UDPLATFORM_OSX

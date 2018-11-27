@@ -130,7 +130,9 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
 
   // TODO: Figure out how to only do this for the FILE handler requires that
   //       pFilenameCopy isn't set to `udStrdup(pFilename)`
+#if !UDPLATFORM_EMSCRIPTEN
   if (udFile_TranslatePath(&pNewFilename, pFilename) != udR_Success)
+#endif
   {
     pNewFilename = udStrdup(pFilename);
     UD_ERROR_NULL(pNewFilename, udR_MemoryAllocationFailure);

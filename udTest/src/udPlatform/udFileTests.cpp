@@ -184,6 +184,8 @@ TEST(udFileTests, CustomFileHandler)
   EXPECT_NE(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Write));
 }
 
+// Emscripten does not have a "home" directory concept
+#if !UDPLATFORM_EMSCRIPTEN
 TEST(udFileTests, TranslatingPaths)
 {
   const char *pNewPath = nullptr;
@@ -227,6 +229,7 @@ TEST(udFileTests, TranslatingPaths)
   EXPECT_NE(udR_Success, udFile_TranslatePath(&pNewPath, nullptr));
   EXPECT_NE(udR_Success, udFile_TranslatePath(nullptr, nullptr));
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, August 2018

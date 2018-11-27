@@ -87,4 +87,7 @@ filter { "system:windows", "configurations:Release" }
 filter { "system:windows", "platforms:x64", "configurations:Debug" }
 	flags { "NoIncrementalLink" }
 
+filter { "system:emscripten" }
+	removeflags { "FatalWarnings" }
+
 filter {}

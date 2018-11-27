@@ -1191,11 +1191,11 @@ int udGetHardwareThreadCount()
     }
     return hardwareThreadCount;
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
-  return sysconf(_SC_NPROCESSORS_ONLN);
-#endif
 
   return 1;
+#else
+  return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
 }
 
 // *********************************************************************
@@ -1726,7 +1726,7 @@ struct udFindDirData : public udFindDir
     pFilename = utf8Filename;
     isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
   DIR *pDir;
   struct dirent *pDirent;
 
@@ -1804,7 +1804,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     UD_ERROR_IF(pFindData->hFind == INVALID_HANDLE_VALUE, udR_OpenFailure);
     pFindData->SetMembers();
   }
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
   pFindData->pDir = opendir(pFolder);
   UD_ERROR_NULL(pFindData->pDir, udR_OpenFailure);
   pFindData->pDirent = readdir(pFindData->pDir);
@@ -1840,7 +1840,7 @@ udResult udReadDir(udFindDir *pFindDir)
   if (!FindNextFileW(pFindData->hFind, &pFindData->findFileData))
     return udR_ObjectNotFound;
   pFindData->SetMembers();
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   pFindData->pDirent = readdir(pFindData->pDir);
   if (!pFindData->pDirent)
@@ -1865,7 +1865,7 @@ udResult udCloseDir(udFindDir **ppFindDir)
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->hFind != INVALID_HANDLE_VALUE)
     FindClose(pFindData->hFind);
-#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->pDir)
     closedir(pFindData->pDir);
