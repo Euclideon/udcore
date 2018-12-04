@@ -1,6 +1,5 @@
 -- clear global state
 filter {}
-configuration {}
 
 -- common stuff that we want to be common among all projects
 warnings "Extra"
