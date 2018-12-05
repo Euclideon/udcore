@@ -294,7 +294,7 @@ TEST(udStrTests, udTempStr)
   for (size_t i = 0; i < udStrlen(s_pTestParagraph); ++i)
   {
     const char *pStr = udTempStr("%.*s", (int)i, s_pTestParagraph);
-    const char *pStr2 = udTempStr("%d", i); // Cause the following buffer to be overwritten
+    const char *pStr2 = udTempStr("%d", (int)i); // Cause the following buffer to be overwritten
     EXPECT_EQ(i, udStrlen(pStr));
     EXPECT_EQ(0, memcmp(pStr, s_pTestParagraph, i));
     EXPECT_EQ(i, udStrAtoi(pStr2));

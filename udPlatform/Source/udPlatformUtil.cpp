@@ -2160,15 +2160,15 @@ udResult udParseWKT(udJSON *pValue, const char *pString, int *pCharCount)
       udStrchr(pString, "[],", &idLen);
       if (pString[idLen] == '[')
       {
-        temp.Set("type = '%.*s'", idLen, pString);
+        temp.Set("type = '%.*s'", (int)idLen, pString);
         result = udParseWKT(&temp, pString + idLen + 1, &tempCharCount);
         UD_ERROR_HANDLE();
-        pValue->Set(&temp, "values[]", idLen, pString);
+        pValue->Set(&temp, "values[]");
         pString += idLen + 1 + tempCharCount;
       }
       else // Any non-parsable is now considered a string, eg AXIS["Easting",EAST] parses as AXIS["Easting","EAST"]
       {
-        pValue->Set("values[] = '%.*s'", idLen, pString);
+        pValue->Set("values[] = '%.*s'", (int)idLen, pString);
         ++parameterNumber;
         pString += idLen;
       }
@@ -2211,7 +2211,7 @@ static udResult GetWKTElementStr(const char **ppOutput, const udJSON &value)
   }
   for (size_t i = 0; i < valuesCount; ++i)
   {
-    const udJSON &arrayValue = value.Get("values[%d]", i);
+    const udJSON &arrayValue = value.Get("values[%d]", (int)i);
     if (arrayValue.IsObject())
       UD_ERROR_CHECK(GetWKTElementStr(&pElementStr, arrayValue));
     else if (arrayValue.IsString() && i == 0 && udStrEqual(pTypeStr, "AXIS")) // Special case for AXIS, output second string unquoted
@@ -2254,7 +2254,7 @@ udResult udExportWKT(const char **ppOutput, const udJSON *pValue)
   elemCount = pValue->Get("values").ArrayLength();
   for (size_t i = 0; i < elemCount; ++i)
   {
-    UD_ERROR_CHECK(GetWKTElementStr(&pElementStr, pValue->Get("values[%d]", i)));
+    UD_ERROR_CHECK(GetWKTElementStr(&pElementStr, pValue->Get("values[%d]", (int)i)));
     if (!pStr)
     {
       pStr = pElementStr;

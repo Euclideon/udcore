@@ -384,7 +384,7 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
 // *********************************************************************
 
 // Create a temporary small string using one of a number of cycling static buffers
-const char *udTempStr(const char *pFormat, ...);
+UD_PRINTF_FORMAT_FUNC(1) const char *udTempStr(const char *pFormat, ...);
 
 // Give back pretty version (ie with commas) of an int using one of a number of cycling static buffers
 const char *udTempStr_CommaInt(int64_t n);
@@ -431,10 +431,10 @@ udResult udCreateDir(const char *pFolder);
 udResult udRemoveDir(const char *pFolder);
 
 // Write a formatted string to the buffer
-int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
+UD_PRINTF_FORMAT_FUNC(3) int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
 int udSprintfVA(char *pDest, size_t destlength, const char *pFormat, va_list args);
 // Create an allocated string to fit the output, *ppDest will be freed if non-null, and may be an argument to the string
-udResult udSprintf(const char **ppDest, const char *pFormat, ...);
+UD_PRINTF_FORMAT_FUNC(2) udResult udSprintf(const char **ppDest, const char *pFormat, ...);
 
 // *********************************************************************
 // Geospatial helper functions

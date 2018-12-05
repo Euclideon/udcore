@@ -5,6 +5,8 @@
 
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <stdlib.h>
 
 #if defined(_WIN64) || defined(__amd64__) || defined (__arm64__) || defined (__aarch64__)
@@ -351,6 +353,12 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 # if UD_GCC_VERSION < 50000
 #  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 # endif
+#endif
+
+#if defined(__GNUC__)
+# define UD_PRINTF_FORMAT_FUNC(fmtIndex) __attribute((format(printf, fmtIndex, fmtIndex + 1)))
+#else
+# define UD_PRINTF_FORMAT_FUNC(fmtIndex)
 #endif
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )

@@ -178,7 +178,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     // Parsing response to a GET
     if (contentLength > (int64_t)bufferLength)
     {
-      udDebugPrintf("contentLength=%lld bufferLength=%lld\n", contentLength, bufferLength);
+      udDebugPrintf("contentLength=%" PRId64 " bufferLength=%zu\n", contentLength, bufferLength);
       UD_ERROR_SET(udR_SocketError);
     }
 

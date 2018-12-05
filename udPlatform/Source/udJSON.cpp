@@ -1034,7 +1034,7 @@ udResult udJSON::ToString(const char **ppStr, int indent, const char *pPre, cons
   {
     case T_Void:    result = udSprintf(ppStr, "%*s%snull%s",     indent, "", pPre, pPost); break;
     case T_Bool:    result = udSprintf(ppStr, "%*s%s%s%s%s%s",   indent, "", pPre, pQuote, u.bVal ? "true" : "false", pQuote, pPost); break;
-    case T_Int64:   result = udSprintf(ppStr, "%*s%s%s%lld%s%s", indent, "", pPre, pQuote, u.i64Val, pQuote, pPost); break;
+    case T_Int64:   result = udSprintf(ppStr, "%*s%s%s%" PRId64 "%s%s", indent, "", pPre, pQuote, u.i64Val, pQuote, pPost); break;
     case T_Double:  result = udSprintf(ppStr, "%*s%s%s%.*lf%s%s",  indent, "", pPre, pQuote, dPrec ? dPrec : DEFAULT_DOUBLE_TOSTRING_PRECISION, u.dVal, pQuote, pPost); break;
     case T_String:
       if (escape == 1 || escape == 2) // JSON or XML escape
@@ -1229,7 +1229,7 @@ udResult udJSON::ExportXML(const char *pKey, udJSON::LineList *pLines, int inden
           {
             case T_Void:    result = udSprintf(&pStr, "%*s<%s></%s>",     indent, "", pKey, pKey); break;
             case T_Bool:    result = udSprintf(&pStr, "%*s<%s>%s</%s>",   indent, "", pKey, pValue->u.bVal ? "true" : "false", pKey); break;
-            case T_Int64:   result = udSprintf(&pStr, "%*s<%s>%lld</%s>", indent, "", pKey, pValue->u.i64Val, pKey); break;
+            case T_Int64:   result = udSprintf(&pStr, "%*s<%s>%" PRId64 "</%s>", indent, "", pKey, pValue->u.i64Val, pKey); break;
             case T_Double:  result = udSprintf(&pStr, "%*s<%s>%lf</%s>",  indent, "", pKey, pValue->u.dVal, pKey); break;
             case T_String:  result = udSprintf(&pStr, "%*s<%s>%s</%s>", indent, "", pKey, pValue->u.pStr, pKey); break;
             case T_Array:

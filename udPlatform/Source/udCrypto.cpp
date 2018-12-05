@@ -1060,7 +1060,7 @@ udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPub
   UD_ERROR_CHECK(pCtx->Init(keyLen));
 
   // Now export the important bits to JSON
-  v.Set("keyLen = %d", keyLen);
+  v.Set("keyLen = %d", (int)keyLen);
   // Don't export P and G, we can assume they are from RFC5114
   UD_ERROR_CHECK(ToValue(pCtx->dhm.GX, &v, "PublicValue"));
   UD_ERROR_CHECK(v.Export(ppPublicValueA, udJEO_JSON));

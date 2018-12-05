@@ -173,7 +173,7 @@ TEST(udJSONTests, ValueShouldNotTurnIntoObjectIfAlreadyArray)
 TEST(udJSONTests, CreateArray)
 {
   udJSON json;
-  for (size_t i = 1; i < 5; ++i)
+  for (int i = 1; i < 5; ++i)
   {
     udResult result = json.Set("sequences[%d].id = %d", i - 1, i);
     EXPECT_EQ(0, result);
@@ -245,7 +245,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   EXPECT_EQ(udR_Success, v.Set(vec3));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(3, v.ArrayLength());
-  for (size_t i = 0; i < vec3.ElementCount; i++)
+  for (int i = 0; i < (int)vec3.ElementCount; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
@@ -255,7 +255,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   EXPECT_EQ(udR_Success, v.Set(vec4));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(4, v.ArrayLength());
-  for (size_t i = 0; i < vec4.ElementCount; i++)
+  for (int i = 0; i < (int)vec4.ElementCount; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
@@ -265,7 +265,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   EXPECT_EQ(udR_Success, v.Set(quat));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(4, v.ArrayLength());
-  for (size_t i = 0; i < quat.ElementCount; i++)
+  for (int i = 0; i < (int)quat.ElementCount; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
@@ -275,7 +275,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   EXPECT_EQ(udR_Success, v.Set(mat3, true));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(9, v.ArrayLength());
-  for (size_t i = 0; i < 9; i++)
+  for (int i = 0; i < 9; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
@@ -285,7 +285,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   EXPECT_EQ(udR_Success, v.Set(mat3, false));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(16, v.ArrayLength());
-  for (size_t i = 0; i < 9; i++)
+  for (int i = 0; i < 9; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", (i / 3) * 4 + (i % 3)).AsDouble());
   }
@@ -295,7 +295,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   EXPECT_EQ(udR_Success, v.Set(mat4));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(16, v.ArrayLength());
-  for (size_t i = 0; i < 16; i++)
+  for (int i = 0; i < 16; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }

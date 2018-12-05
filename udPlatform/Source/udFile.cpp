@@ -520,15 +520,15 @@ void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompres
 
   size_t len = udStrlen(pBase64);
   if (ct != udCT_None)
-    udSprintf(&pDeclare, "raw://compression=%s,size=%d@", udCompressionTypeAsString(ct), bufferLen);
+    udSprintf(&pDeclare, "raw://compression=%s,size=%d@", udCompressionTypeAsString(ct), (int)bufferLen);
   else
     udSprintf(&pDeclare, "raw://");
   size_t i = udStrlen(pDeclare);
   charsPerLine = udMax(charsPerLine, i);
-  udDebugPrintf("\"%s%.*s\"\n", pDeclare, charsPerLine - i, pBase64);
+  udDebugPrintf("\"%s%.*s\"\n", pDeclare, (int)(charsPerLine - i), pBase64);
   i = charsPerLine - i;
   for (; i < len; i += charsPerLine)
-    udDebugPrintf("\"%.*s\"\n", charsPerLine, pBase64 + i);
+    udDebugPrintf("\"%.*s\"\n", (int)charsPerLine, pBase64 + i);
 
   udFree(pBase64);
   udFree(pDeclare);
