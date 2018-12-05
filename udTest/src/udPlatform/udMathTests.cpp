@@ -1,5 +1,6 @@
 #include "udMath.h"
 #include "gtest/gtest.h"
+#include "udPlatform.h"
 
 // Due to IEEE-754 supporting two different ways to specify 8.f and 2.f, the next three EXPECT_* calls are different
 // This appears to only occur when using Clang in Release, and only for udFloat4 - SIMD optimizations perhaps?

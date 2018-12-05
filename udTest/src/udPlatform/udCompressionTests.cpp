@@ -2,6 +2,7 @@
 #include "udCompression.h"
 #include "udMath.h"
 #include "udFile.h"
+#include "udPlatform.h"
 #include "udPlatformUtil.h"
 
 TEST(udCompressionTests, Basic)

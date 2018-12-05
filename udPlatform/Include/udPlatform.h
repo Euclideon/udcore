@@ -179,6 +179,12 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 #else
 #error Unknown platform
 #endif
+
+#ifndef UDUTIL_H
+template <typename T> T udMax(T a, T b) { return (a > b) ? a : b; }
+template <typename T> T udMin(T a, T b) { return (a < b) ? a : b; }
+#endif // !UDUTIL_H
+
 // Helpers to perform various interlocked functions based on the platform-wrapped primitives
 inline int32_t udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
 inline ptrdiff_t udInterlockedAddPtrDiff(volatile ptrdiff_t *p, ptrdiff_t amount) { ptrdiff_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchangePointer((void*volatile*)p, (void*)after, (void*)prev) != (void*)prev); return after; }
