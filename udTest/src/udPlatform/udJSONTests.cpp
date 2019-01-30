@@ -435,3 +435,13 @@ TEST(udJSONTests, SpecialCharacterCompliance)
 
   udFree(pExportText);
 }
+
+TEST(udJSONTests, XMLEncoding)
+{
+  udJSON v;
+
+  v.Parse("<root tag=\"tag:&quot;&#xE3;&#x81;&#x99;&apos;\">content:&lt;&#xE3;&#x81;&#x99;&gt;</root>");
+  EXPECT_STREQ("tag:\"\xE3\x81\x99\'", v.Get("root.tag").AsString());
+  EXPECT_STREQ("content:<\xE3\x81\x99>", v.Get("root.content").AsString());
+}
+
