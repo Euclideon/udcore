@@ -476,8 +476,10 @@ struct udMatrix4x4
   static udMatrix4x4<T> scaleNonUniform(T x, T y, T z, const udVector3<T> &t = udVector3<T>::zero());
   static udMatrix4x4<T> scaleNonUniform(const udVector3<T> &s, const udVector3<T> &t = udVector3<T>::zero()) { return scaleNonUniform(s.x, s.y, s.z, t); }
 
-  static udMatrix4x4<T> perspective(T fovY, T aspectRatio, T znear, T zfar);
-  static udMatrix4x4<T> ortho(T left, T right, T bottom, T top, T znear = T(0), T zfar = T(1));
+  static udMatrix4x4<T> perspectiveZO(T fovY, T aspectRatio, T znear, T zfar); // Clip-Z is [0, 1]. Compatiable with DirectX coordinate system. Previously `perspective()`.
+  static udMatrix4x4<T> perspectiveNO(T fovY, T aspectRatio, T znear, T zfar); // Clip-Z is [-1, 1]. Comptaible with OpenGL coordinate system.
+  static udMatrix4x4<T> orthoZO(T left, T right, T bottom, T top, T znear = T(0), T zfar = T(1)); // Clip-Z is [0, 1]. Compatiable with DirectX coordinate system.
+  static udMatrix4x4<T> orthoNO(T left, T right, T bottom, T top, T znear = T(0), T zfar = T(1)); // Clip-Z is [-1, 1]. Comptaible with OpenGL coordinate system. Previously `ortho()`.
   static udMatrix4x4<T> orthoForScreen(T width, T height, T znear = T(0), T zfar = T(1));
 
   static udMatrix4x4<T> lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up = udVector3<T>::create(T(0), T(0), T(1)));
