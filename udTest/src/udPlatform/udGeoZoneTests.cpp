@@ -552,6 +552,57 @@ struct
   { 32760, "PROJCS[\"WGS 84 / UTM zone 60S\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",177],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"32760\"]]" },
 };
 
+TEST(udGeoZoneTests, SetFromWKT)
+{
+  udGeoZone wktZone;
+  udGeoZone sridZone;
+  const char *pWKT = nullptr;
+  udResult result;
+#ifdef _DEBUG
+  int errorCount = 0;
+#endif
+
+  for (size_t i = 0; i < udLengthOf(supportedCodes); ++i)
+  {
+    result = udGeoZone_SetFromWKT(&wktZone, supportedCodes[i].pWKT);
+    EXPECT_EQ(udR_Success, result);
+    result = udGeoZone_SetFromSRID(&sridZone, supportedCodes[i].srid);
+    EXPECT_EQ(udR_Success, result);
+
+    result = udGeoZone_GetWellKnownText(&pWKT, wktZone);
+    EXPECT_EQ(udR_Success, result);
+    EXPECT_STRCASEEQ(supportedCodes[i].pWKT, pWKT);
+
+#ifdef _DEBUG
+    if (!udStrEqual(supportedCodes[i].pWKT, pWKT))
+    {
+      if (!errorCount)
+        udDebugPrintf("%d perfect matches so far\n", (int)i);
+
+      size_t matched = 0;
+      while (supportedCodes[i].pWKT[matched] == pWKT[matched])
+        ++matched;
+      if (matched > 20) matched -= 20;
+      udDebugPrintf("Error on code %d [first %d characters matched]\nThem: %s\nus:   %s\n", supportedCodes[i].srid, (int)matched, supportedCodes[i].pWKT + matched, pWKT + matched);
+      ++errorCount;
+    }
+#endif
+
+    // These vars can't be extracted from WKT, ignore for tests
+    sridZone.latLongBoundMax = udDouble2::zero();
+    sridZone.latLongBoundMin = udDouble2::zero();
+    sridZone.zone = 0;
+    // Handle precision issues with meridian
+    wktZone.meridian = int64_t(1000 * wktZone.meridian) / 1000.0;
+    sridZone.meridian = int64_t(1000 * wktZone.meridian) / 1000.0;
+
+    EXPECT_EQ(0, memcmp(&wktZone, &sridZone, sizeof(udGeoZone)));
+
+    udFree(pWKT);
+  }
+
+}
+
 TEST(udGeoZoneTests, WKT)
 {
   udGeoZone zone;
