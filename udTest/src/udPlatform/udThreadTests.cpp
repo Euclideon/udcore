@@ -9,6 +9,23 @@ TEST(udThreadTests, Mutex)
   udDestroyMutex(&pMutex);
 }
 
+TEST(udThreadTests, MutexLock)
+{
+  udMutex *pMutex = udCreateMutex();
+  EXPECT_NE(nullptr, pMutex);
+
+  udMutex *pLocked = udLockMutex(pMutex);
+  EXPECT_EQ(pMutex, pLocked); // Ensure udLockMutex is returning the mutex on success
+
+  // Lock a second time and release to ensure locking works recursively
+  udLockMutex(pMutex);
+  udReleaseMutex(pMutex);
+
+  udReleaseMutex(pLocked);
+
+  udDestroyMutex(&pMutex);
+}
+
 TEST(udThreadTests, ConditionVariable)
 {
   udConditionVariable *pCondition = udCreateConditionVariable();
