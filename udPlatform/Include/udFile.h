@@ -93,6 +93,9 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath);
 udResult udFile_RegisterHTTP();
 
 // Helper function to output a raw filename for a given buffer to the debug output
-void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompressionType ct = udCT_None, size_t charsPerLine = 64);
+void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompressionType ct = udCT_None, const char *pFilename = nullptr, size_t charsPerLine = 64);
+
+// Helper to return the base 64 text offset from a Raw filename, plus optionally the original filename (caller to free) and size/compression info if present in filename string
+udResult udFile_IsRaw(const char *pFilename, size_t *pOffsetToBase64 = nullptr, const char **ppOriginalFilename = nullptr, size_t *pSize = nullptr, udCompressionType *pCompressionType = nullptr);
 
 #endif // UDFILE_H

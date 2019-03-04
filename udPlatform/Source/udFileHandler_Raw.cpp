@@ -22,51 +22,95 @@ struct udFile_Raw : public udFile
 };
 
 
-// ----------------------------------------------------------------------------
-// Author: Dave Pevreal, March 2014
-// Implementation of OpenHandler to access the crt Raw i/o functions
-udResult udFileHandler_RawOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags /*flags*/)
+// ****************************************************************************
+// Author: Dave Pevreal, August 2018
+void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompressionType ct, const char *pFilename, size_t charsPerLine)
 {
-  UDTRACE();
-  udFile_Raw *pRaw = nullptr;
+  const char *pBase64 = nullptr;
+  const char *pDeclare = nullptr;
+  if (ct != udCT_None)
+  {
+    void *pCompressed = nullptr;
+    size_t compressedLen;
+    udCompression_Deflate(&pCompressed, &compressedLen, pBuffer, bufferLen, ct);
+    udBase64Encode(&pBase64, pCompressed, compressedLen);
+    udFree(pCompressed);
+  }
+  else
+  {
+    udBase64Encode(&pBase64, pBuffer, bufferLen);
+  }
+
+  size_t len = udStrlen(pBase64);
+  if (pFilename)
+  {
+    if (ct != udCT_None)
+      udSprintf(&pDeclare, "raw://filename=\\\"%s\\\",compression=%s,size=%d@", pFilename, udCompressionTypeAsString(ct), (int)bufferLen);
+    else
+      udSprintf(&pDeclare, "raw://filename=\"%s\"@", pFilename);
+  }
+  else
+  {
+    if (ct != udCT_None)
+      udSprintf(&pDeclare, "raw://compression=%s,size=%d@", udCompressionTypeAsString(ct), (int)bufferLen);
+    else
+      udSprintf(&pDeclare, "raw://");
+  }
+  size_t i = udStrlen(pDeclare);
+  charsPerLine = udMax(charsPerLine, i);
+  udDebugPrintf("\"%s%.*s\"\n", pDeclare, (int)(charsPerLine - i), pBase64);
+  i = charsPerLine - i;
+  for (; i < len; i += charsPerLine)
+    udDebugPrintf("\"%.*s\"\n", (int)charsPerLine, pBase64 + i);
+
+  udFree(pBase64);
+  udFree(pDeclare);
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2019
+udResult udFile_IsRaw(const char *pFilename, size_t *pOffsetToBase64, const char **ppOriginalFilename, size_t *pSize, udCompressionType *pCompressionType)
+{
   udResult result;
   size_t dataStart = 6; // length of raw://
-  udCompressionType compressionType = udCT_None;
-  uint8_t *pCompressed = nullptr;
-  size_t compressedLen = 0;
-  size_t size = 0;
 
-  pRaw = udAllocType(udFile_Raw, 1, udAF_Zero);
-  UD_ERROR_NULL(pRaw, udR_MemoryAllocationFailure);
-
-  pRaw->fpRead = udFileHandler_RawSeekRead;
-  pRaw->fpWrite = udFileHandler_RawSeekWrite;
-  pRaw->fpClose = udFileHandler_RawClose;
+  UD_ERROR_IF(!udStrBeginsWithi(pFilename, "raw://"), udR_ParseError);
 
   if (udStrchr(pFilename + dataStart, "@") != nullptr)
   {
     while (pFilename[dataStart] != '@')
     {
-      if (udStrBeginsWithi(pFilename + dataStart, "compression="))
+      if (udStrBeginsWithi(pFilename + dataStart, "filename=\""))
+      {
+        size_t filenameLen = udStrMatchBrace(pFilename + dataStart + 9, '\\');
+        if (ppOriginalFilename)
+          *ppOriginalFilename = udStrndup(pFilename + dataStart + 10, filenameLen - 2);
+        dataStart += 9 + filenameLen;
+      }
+      else if (udStrBeginsWithi(pFilename + dataStart, "compression="))
       {
         dataStart += udStrlen("compression=");
-        for (udCompressionType ct = (udCompressionType)(udCT_None + 1); ct < udCT_Count; ct = (udCompressionType)(ct + 1))
+        udCompressionType ct;
+        for (ct = (udCompressionType)(udCT_None + 1); ct < udCT_Count; ct = (udCompressionType)(ct + 1))
         {
           if (udStrBeginsWithi(pFilename + dataStart, udCompressionTypeAsString(ct)))
           {
             size_t ctLen = udStrlen(udCompressionTypeAsString(ct));
-            compressionType = ct;
+            if (pCompressionType)
+              *pCompressionType = ct;
             dataStart += ctLen;
             break;
           }
         }
-        UD_ERROR_IF(compressionType == udCT_None, udR_ParseError);
+        UD_ERROR_IF(ct == udCT_Count, udR_ParseError);
       }
       else if (udStrBeginsWithi(pFilename + dataStart, "size="))
       {
         dataStart += udStrlen("size=");
         int charCount = 0;
-        size = udStrAtou(pFilename + dataStart, &charCount);
+        size_t size = udStrAtou(pFilename + dataStart, &charCount);
+        if (pSize)
+          *pSize = size;
         dataStart += charCount;
       }
       else
@@ -80,10 +124,40 @@ udResult udFileHandler_RawOpen(udFile **ppFile, const char *pFilename, udFileOpe
     ++dataStart;
   }
 
+  if (pOffsetToBase64)
+    *pOffsetToBase64 = dataStart;
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, March 2014
+// Implementation of OpenHandler to access the crt Raw i/o functions
+udResult udFileHandler_RawOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags /*flags*/)
+{
+  UDTRACE();
+  udFile_Raw *pRaw = nullptr;
+  udResult result;
+  size_t offsetToBase64;
+  udCompressionType compressionType = udCT_None;
+  uint8_t *pCompressed = nullptr;
+  size_t compressedLen = 0;
+  size_t size = 0;
+
+  UD_ERROR_CHECK(udFile_IsRaw(pFilename, &offsetToBase64, nullptr, &size, &compressionType));
+  pRaw = udAllocType(udFile_Raw, 1, udAF_Zero);
+  UD_ERROR_NULL(pRaw, udR_MemoryAllocationFailure);
+
+  pRaw->fpRead = udFileHandler_RawSeekRead;
+  pRaw->fpWrite = udFileHandler_RawSeekWrite;
+  pRaw->fpClose = udFileHandler_RawClose;
+
   if (compressionType != udCT_None)
   {
     UD_ERROR_IF(size == 0, udR_InvalidConfiguration); // Need size specified
-    UD_ERROR_CHECK(udBase64Decode(&pCompressed, &compressedLen, pFilename + dataStart));
+    UD_ERROR_CHECK(udBase64Decode(&pCompressed, &compressedLen, pFilename + offsetToBase64));
     pRaw->pData = udAllocType(uint8_t, size, udAF_None);
     pRaw->dataLen = size;
     UD_ERROR_NULL(pRaw->pData, udR_MemoryAllocationFailure);
@@ -91,7 +165,7 @@ udResult udFileHandler_RawOpen(udFile **ppFile, const char *pFilename, udFileOpe
   }
   else
   {
-    UD_ERROR_CHECK(udBase64Decode(&pRaw->pData, &pRaw->dataLen, pFilename + dataStart));
+    UD_ERROR_CHECK(udBase64Decode(&pRaw->pData, &pRaw->dataLen, pFilename + offsetToBase64));
   }
 
   pRaw->fileLength = (int64_t)pRaw->dataLen;
