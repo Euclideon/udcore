@@ -324,19 +324,17 @@ bool udQuaternion_Slerp2DegOverZero()
 
 TEST(MathTests, MathCPPSuite)
 {
-  udFloat4 x;
-  udFloat4x4 m;
+  udFloat4 x = udFloat4::create(0, 1, 2, 3);
+  udFloat4x4 m = udFloat4x4::create(x, x, x, x);
 
-  udFloat3 v;
-  udFloat4 v4;
+  udFloat3 v = udFloat3::create(4, 5, 6);
+  udFloat4 v4 = udFloat4::create(7, 8, 9, 10);
 
   float f = udDot3(v, v);
   udPow(f, (float)UD_PI);
 
   v = 2.f*v;
   v = v*v + v;
-
-  m = udFloat4x4::create(x, x, x, x);
 
   m.transpose();
   m.determinant();
