@@ -108,7 +108,7 @@ TEST(udThreadTests, ThreadSemaphore)
     udSemaphore *pSemaphore;
     udSemaphore *pModified;
     udSemaphore *p500;
-    volatile int value;
+    volatile int32_t value;
   };
   udThread *pThread1, *pThread2, *pThread3;
   TestStruct data;
@@ -124,7 +124,7 @@ TEST(udThreadTests, ThreadSemaphore)
     {
       //printf("1: pData->pSemaphore wait: %d\n", udWaitSemaphore(pData->pSemaphore));
       udWaitSemaphore(pData->pSemaphore);
-      pData->value++;
+      udInterlockedPreIncrement(&pData->value);
       if (pData->value > 1000)
         running = false;
 
@@ -145,7 +145,7 @@ TEST(udThreadTests, ThreadSemaphore)
     {
       //printf("2: pData->pSemaphore wait: %d\n", udWaitSemaphore(pData->pSemaphore));
       udWaitSemaphore(pData->pSemaphore);
-      pData->value++;
+      udInterlockedPreIncrement(&pData->value);
       if (pData->value > 2000)
         running = false;
 
@@ -170,7 +170,7 @@ TEST(udThreadTests, ThreadSemaphore)
     {
       //printf("3: pData->pSemaphore wait: %d\n", udWaitSemaphore(pData->pSemaphore));
       udWaitSemaphore(pData->pSemaphore);
-      pData->value++;
+      udInterlockedPreIncrement(&pData->value);
       if (pData->value > 3000)
         running = false;
 
@@ -193,14 +193,14 @@ TEST(udThreadTests, ThreadSemaphore)
   for (int i = 0; i < 3; i++)
     udIncrementSemaphore(data.pSemaphore);
 
-  EXPECT_GE(data.value, 3000);
-
   result = udThread_Join(pThread1);
   EXPECT_EQ(udR_Success, result);
   result = udThread_Join(pThread2);
   EXPECT_EQ(udR_Success, result);
   result = udThread_Join(pThread3);
   EXPECT_EQ(udR_Success, result);
+
+  EXPECT_GE(data.value, 3000);
 
   udDestroySemaphore(&data.pSemaphore);
   udDestroySemaphore(&data.pModified);

@@ -410,13 +410,16 @@ void udDestroySemaphore_Internal(udSemaphore *pSemaphore)
 
 #if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
 # if UDPLATFORM_WINDOWS
+  LeaveCriticalSection(&pSemaphore->criticalSection);
   DeleteCriticalSection(&pSemaphore->criticalSection);
   // CONDITION_VARIABLE doesn't have a delete/destroy function
 # else
+  pthread_mutex_unlock(&pSemaphore->mutex);
   pthread_mutex_destroy(&pSemaphore->mutex);
   pthread_cond_destroy(&pSemaphore->condition);
 # endif
 #else
+  udReleaseMutex(pSemaphore->pMutex);
   udDestroyMutex(&pSemaphore->pMutex);
   udDestroyConditionVariable(&pSemaphore->pCondition);
 #endif
