@@ -143,15 +143,15 @@ inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return (int32_t
 inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return (int32_t)_InterlockedExchange((volatile long*)dest, exchange); }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return (int32_t)_InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
 # if UD_32BIT
-template <typename T>
-inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return (void*)_InterlockedExchange((volatile long*)dest, (long)exchange); }
-template <typename T>
-inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return (void*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
+template <typename T, typename U>
+inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return (T*)_InterlockedExchange((volatile long*)dest, (long)exchange); }
+template <typename T, typename U>
+inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U *comparand) { return (T*)_InterlockedCompareExchange((volatile long *)dest, (long)exchange, (long)comparand); }
 # else // UD_32BIT
-template <typename T>
-inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return _InterlockedExchangePointer((volatile PVOID*)dest, exchange); }
-template <typename T>
-inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer((volatile PVOID*)dest, exchange, comparand); }
+template <typename T, typename U>
+inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return (T*)_InterlockedExchangePointer((volatile PVOID*)dest, (PVOID)exchange); }
+template <typename T, typename U>
+inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U *comparand) { return (T*)_InterlockedCompareExchangePointer((volatile PVOID*)dest, (PVOID)exchange, (PVOID)comparand); }
 # endif // UD_32BIT
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
@@ -160,16 +160,25 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 #elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
 #include <unistd.h>
 #include <sched.h>
+#include <cstddef> // Required for std::nullptr_t below
 inline int32_t udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
 inline int32_t udInterlockedPostIncrement(volatile int32_t *p) { return __sync_fetch_and_add(p, 1); }
 inline int32_t udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_sub_and_fetch(p, 1); }
 inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetch_and_sub(p, 1); }
 inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return __sync_lock_test_and_set(dest, exchange); }
 inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
-template <typename T>
-inline void *udInterlockedExchangePointer(T * volatile* dest, void *exchange) { return __sync_lock_test_and_set((void * volatile*)dest, exchange); }
-template <typename T>
-inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap((void * volatile*)dest, comparand, exchange); }
+#if UDPLATFORM_LINUX && !defined(__clang__) && __GNUC__ < 5
+// We're just trying to ignore pedantic warnings on CentOS7 GCC due to function pointers being used in this function below
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-pedantic"
+#endif
+template <typename T, typename U>
+inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return (T*)__sync_lock_test_and_set((void * volatile*)dest, (void*)exchange); }
+#if UDPLATFORM_LINUX && !defined(__clang__) && __GNUC__ < 5
+# pragma GCC diagnostic pop
+#endif
+template <typename T, typename U>
+inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U *comparand) { return (T*)__sync_val_compare_and_swap((void * volatile*)dest, (void*)comparand, (void*)exchange); }
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
 # if defined(__INTELLISENSE__)
@@ -181,6 +190,11 @@ inline void *udInterlockedCompareExchangePointer(T * volatile* dest, void *excha
 #else
 #error Unknown platform
 #endif
+
+// nullptr helpers
+template <typename T> inline T *udInterlockedExchangePointer(T * volatile* dest, std::nullptr_t) { return udInterlockedExchangePointer(dest, (T*)nullptr); }
+template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, std::nullptr_t, U *comparand) { return udInterlockedCompareExchangePointer(dest, (U*)nullptr, comparand); }
+template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, std::nullptr_t) { return udInterlockedCompareExchangePointer(dest, exchange, (U*)nullptr); }
 
 #ifndef UDUTIL_H
 template <typename T> T udMax(T a, T b) { return (a > b) ? a : b; }
@@ -290,7 +304,7 @@ template <typename T>
 void _udFree(T *&pMemory, const char *pFile, int line)
 {
   void *pActualPtr = (void*)pMemory;
-  if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, nullptr, pActualPtr) == pActualPtr)
   {
     _udFreeInternal((void*)pActualPtr, pFile, line);
   }
@@ -303,7 +317,7 @@ template <typename T>
 void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 {
   void *pActualPtr = (void*)pMemory;
-  if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, NULL, pActualPtr) == pActualPtr)
+  if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, nullptr, pActualPtr) == pActualPtr)
   {
     // Use a simple random value just to avoid filling sensitive memory with a constant
     // that can be used to identify the locations in memory where sensitive data was stored
