@@ -259,12 +259,13 @@ epilogue:
 struct udFile_Zip : public udFile
 {
   mz_zip_archive mz;
-  udFile *pZipFile;
+  udFile * volatile pZipFile;
   uint8_t *pFileData;
   int index; // Index within the zip of the current file
   volatile int32_t lengthRead;
-  volatile bool readComplete;
-  volatile bool abortRead; // Set to true and wait for readComplete
+  udInterlockedBool readComplete;
+  udInterlockedBool abortRead; // Set to true and wait for readComplete
+  udRWLock *pRWLock;
 };
 
 // ----------------------------------------------------------------------------
@@ -290,7 +291,9 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
   UD_ERROR_IF(int64_t(pZip->lengthRead) < seekOffset, udR_ReadFailure);
 
   actualRead = udMin(bufferLength, pZip->lengthRead - (size_t)seekOffset);
+  udReadLockRWLock(pZip->pRWLock);
   memcpy(pBuffer, pZip->pFileData + seekOffset, actualRead);
+  udReadUnlockRWLock(pZip->pRWLock);
 
   result = udR_Success;
 
@@ -316,8 +319,10 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
       pZip->abortRead = true;
       udSleep(1);
     }
-    mz_zip_reader_end(&pZip->mz);
-    udFile_Close(&pZip->pZipFile);
+    udFile *pZipFile = pZip->pZipFile;
+    if (pZipFile && udInterlockedCompareExchangePointer((void**)&pZip->pZipFile, nullptr, pZipFile) == pZipFile)
+      udFile_Close(&pZipFile);
+    udDestroyRWLock(&pZip->pRWLock);
     udFree(pZip->pFileData);
     udFree(pZip->pFilenameCopy);
     udFree(pZip);
@@ -345,7 +350,9 @@ static size_t udMiniZ_ReadFileFromZipCallback(void *pOpaque, mz_uint64 file_ofs,
   // Detect an overrun
   if ((file_ofs + n) > (mz_uint64)pFile->fileLength)
     return 0;
+  udWriteLockRWLock(pFile->pRWLock);
   memcpy(pFile->pFileData + file_ofs, pBuf, n);
+  udWriteUnlockRWLock(pFile->pRWLock);
   udInterlockedAdd(&pFile->lengthRead, (int32_t)n);
   return n;
 }
@@ -386,7 +393,7 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     *pSubFileName++ = 0; // Skip and null the colon
 
   // Now open the underlying zip file
-  UD_ERROR_CHECK(udFile_Open(&pFile->pZipFile, pZipName, udFOF_Read, &zipLen));
+  UD_ERROR_CHECK(udFile_Open((udFile**)&pFile->pZipFile, pZipName, udFOF_Read, &zipLen));
 
   // And initialise the zip reader
   UD_ERROR_IF(!mz_zip_reader_init(&pFile->mz, (mz_uint64)zipLen, 0), udR_OpenFailure);
@@ -431,10 +438,12 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     {
       udFile_Zip *pFile = (udFile_Zip *)pOpaque;
       mz_zip_reader_extract_to_callback(&pFile->mz, pFile->index, udMiniZ_ReadFileFromZipCallback, pOpaque, 0);
+      mz_zip_reader_end(&pFile->mz);
       pFile->readComplete = true; // If an error occured, lengthRead won't equal fileLength
       return 0;
     };
     pFile->readComplete = false;
+    pFile->pRWLock = udCreateRWLock();
     udThread_Create(nullptr, pStartFunc, pFile);
   }
   else
@@ -468,6 +477,7 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     }
     pFile->pFileData[tocSize++] = '\0';
     pFile->lengthRead = (int32_t)pFile->fileLength;
+    mz_zip_reader_end(&pFile->mz);
   }
 
   result = udR_Success;
@@ -476,7 +486,10 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
 
 epilogue:
   if (pFile)
+  {
+    mz_zip_reader_end(&pFile->mz);
     udFileHandler_MiniZClose((udFile**)&pFile);
+  }
   udFree(pZipName);
   return result;
 }
