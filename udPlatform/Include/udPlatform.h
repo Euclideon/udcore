@@ -231,6 +231,15 @@ protected:
   volatile int32_t m_value;
 };
 
+class udInterlockedBool
+{
+public:
+  operator bool() { return udInterlockedCompareExchange(&m_value, 0, 0) == 1; }
+  udInterlockedBool &operator=(bool v) { udInterlockedExchange(&m_value, v ? 1 : 0); return *this; }
+protected:
+  volatile int32_t m_value;
+};
+
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
