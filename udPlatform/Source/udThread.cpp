@@ -759,6 +759,111 @@ int udWaitConditionVariable(udConditionVariable *pConditionVariable, udMutex *pM
 }
 
 // ****************************************************************************
+// Author: Samuel Surtees, March 2019
+udRWLock *udCreateRWLock()
+{
+#if UDPLATFORM_WINDOWS
+  SRWLOCK *pRWLock = udAllocType(SRWLOCK, 1, udAF_None);
+  if (pRWLock)
+    InitializeSRWLock(pRWLock);
+  return (udRWLock*)pRWLock;
+#else
+  pthread_rwlock_t *pRWLock = (pthread_rwlock_t *)udAlloc(sizeof(pthread_rwlock_t));
+  if (pRWLock)
+    pthread_rwlock_init(pRWLock, NULL);
+  return (udRWLock*)pRWLock;
+#endif
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, March 2019
+void udDestroyRWLock(udRWLock **ppRWLock)
+{
+  if (ppRWLock && *ppRWLock)
+  {
+#if UDPLATFORM_WINDOWS
+    // Windows doesn't have a clean-up function
+    udFree(*ppRWLock);
+#else
+    pthread_rwlock_t *pRWLock = (pthread_rwlock_t *)(*ppRWLock);
+    if (udInterlockedCompareExchangePointer(ppRWLock, nullptr, pRWLock) == (udRWLock*)pRWLock)
+    {
+      pthread_rwlock_destroy(pRWLock);
+      udFree(pRWLock);
+    }
+#endif
+  }
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, March 2019
+int udReadLockRWLock(udRWLock *pRWLock)
+{
+  if (pRWLock)
+  {
+#if UDPLATFORM_WINDOWS
+    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    AcquireSRWLockShared(pLock);
+    return 0; // Can't fail
+#else
+    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    return pthread_rwlock_rdlock(pLock);
+#endif
+  }
+  return 0;
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, March 2019
+int udWriteLockRWLock(udRWLock *pRWLock)
+{
+  if (pRWLock)
+  {
+#if UDPLATFORM_WINDOWS
+    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    AcquireSRWLockExclusive(pLock);
+    return 0; // Can't fail
+#else
+    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    return pthread_rwlock_wrlock(pLock);
+#endif
+  }
+  return 0;
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, March 2019
+void udReadUnlockRWLock(udRWLock *pRWLock)
+{
+  if (pRWLock)
+  {
+#if UDPLATFORM_WINDOWS
+    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    ReleaseSRWLockShared(pLock);
+#else
+    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    pthread_rwlock_unlock(pLock);
+#endif
+  }
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, March 2019
+void udWriteUnlockRWLock(udRWLock *pRWLock)
+{
+  if (pRWLock)
+  {
+#if UDPLATFORM_WINDOWS
+    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    ReleaseSRWLockExclusive(pLock);
+#else
+    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    pthread_rwlock_unlock(pLock);
+#endif
+  }
+}
+
+// ****************************************************************************
 udMutex *udCreateMutex()
 {
 #if UDPLATFORM_WINDOWS

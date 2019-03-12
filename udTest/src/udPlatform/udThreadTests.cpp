@@ -283,3 +283,16 @@ TEST(udThreadTests, MultipleIncrements)
 
   udDestroySemaphore(&pSemaphore);
 }
+
+TEST(udThreadTests, RWLock)
+{
+  udRWLock *pLock = udCreateRWLock();
+
+  udReadLockRWLock(pLock);
+  udReadUnlockRWLock(pLock);
+
+  udWriteLockRWLock(pLock);
+  udWriteUnlockRWLock(pLock);
+
+  udDestroyRWLock(&pLock);
+}
