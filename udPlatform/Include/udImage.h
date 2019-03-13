@@ -15,6 +15,7 @@ enum udImageSampleFlags
   udISF_None = 0,
   udISF_Filter = 1,
   udISF_Clamp = 2,
+  udISG_ABGR = 4, // By default, colors are returned in ARGB (blue least significant byte), this option returns in ABGR (red least significant byte)
 };
 inline udImageSampleFlags operator|(udImageSampleFlags a, udImageSampleFlags b) { return (udImageSampleFlags)(int(a) | int(b)); }
 

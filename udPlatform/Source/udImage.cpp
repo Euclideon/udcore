@@ -94,15 +94,23 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
     uint32_t c2 = (pImage->pImageData[x0 + y1 * pImage->width]);
     uint32_t c3 = (pImage->pImageData[x1 + y1 * pImage->width]);
 
-    uint32_t bfR = 0x00ff0000 & (((c0 >> 16)      * a) + ((c1 >> 16)      * b) + ((c2 >> 16)      * c) + ((c3 >> 16)      * d));
+    uint32_t bfB = 0x00ff0000 & (((c0 >> 16)      * a) + ((c1 >> 16)      * b) + ((c2 >> 16)      * c) + ((c3 >> 16)      * d));
     uint32_t bfG = 0xff000000 & (((c0 & 0x00ff00) * a) + ((c1 & 0x00ff00) * b) + ((c2 & 0x00ff00) * c) + ((c3 & 0x00ff00) * d));
-    uint32_t bfB = 0x00ff0000 & (((c0 & 0x0000ff) * a) + ((c1 & 0x0000ff) * b) + ((c2 & 0x0000ff) * c) + ((c3 & 0x0000ff) * d));
+    uint32_t bfR = 0x00ff0000 & (((c0 & 0x0000ff) * a) + ((c1 & 0x0000ff) * b) + ((c2 & 0x0000ff) * c) + ((c3 & 0x0000ff) * d));
 
-    return 0xff000000 | bfR | ((bfG | bfB) >> 16);
+    if (flags & udISG_ABGR)
+      return 0xff000000 | bfB | ((bfG | bfR) >> 16);
+    else
+      return 0xff000000 | bfR | ((bfG | bfB) >> 16);
   }
   else
   {
-    return (pImage->pImageData[x + y * pImage->width]);
+    uint32_t c = (pImage->pImageData[x + y * pImage->width]); // STBI returns colors as ABGR
+
+    if (flags & udISG_ABGR)
+      return c;
+    else
+      return (c & 0xff00ff00) | ((c & 0xff) << 16) | ((c >> 16) & 0xff);
   }
 }
 
