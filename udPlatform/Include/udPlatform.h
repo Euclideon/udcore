@@ -5,8 +5,6 @@
 
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 #include <stdlib.h>
 
 #if defined(_WIN64) || defined(__amd64__) || defined (__arm64__) || defined (__aarch64__)

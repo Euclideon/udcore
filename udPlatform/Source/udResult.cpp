@@ -1,5 +1,6 @@
 #include "udResult.h"
 #include "udDebug.h"
+#include "udPlatformUtil.h"
 
 #define RESULTINFO(x) { #x+4, x }
 #define RESULTINFO_CUSTOM(x,str) { str, x }
@@ -7,6 +8,7 @@
 const char *g_udLastErrorFilename = nullptr;
 int g_udLastErrorLine = 0;
 bool g_udBreakOnError = true;
+unsigned g_udLastErrorHelpCode;
 
 struct udResultInfo
 {
@@ -94,3 +96,4 @@ const char *udResultAsString(udResult result)
   }
   return udResultInfoArray[result].pString;
 }
+

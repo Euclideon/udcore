@@ -1801,7 +1801,8 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
     fn.SetFolder(pFolder);
     fn.SetFilenameWithExt("*.*");
     pFindData->hFind = FindFirstFileW(udOSString(fn.GetPath()), &pFindData->findFileData);
-    UD_ERROR_IF(pFindData->hFind == INVALID_HANDLE_VALUE, udR_OpenFailure);
+    if (pFindData->hFind == INVALID_HANDLE_VALUE)
+      UD_ERROR_SET_NO_BREAK(udR_OpenFailure);
     pFindData->SetMembers();
   }
 #elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN

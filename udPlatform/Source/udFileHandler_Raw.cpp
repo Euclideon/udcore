@@ -74,7 +74,8 @@ udResult udFile_IsRaw(const char *pFilename, size_t *pOffsetToBase64, const char
   udResult result;
   size_t dataStart = 6; // length of raw://
 
-  UD_ERROR_IF(!udStrBeginsWithi(pFilename, "raw://"), udR_ParseError);
+  if (!udStrBeginsWithi(pFilename, "raw://"))
+    UD_ERROR_SET_NO_BREAK(udR_ParseError);
 
   if (udStrchr(pFilename + dataStart, "@") != nullptr)
   {
