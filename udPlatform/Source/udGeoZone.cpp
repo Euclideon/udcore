@@ -428,7 +428,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_JGD2000;
       pZone->zone = sridCode - 2443;
     }
-    else if (sridCode >= 6669 && sridCode <= 6687) // JDG2011 
+    else if (sridCode >= 6669 && sridCode <= 6687) // JDG2011
     {
       pZone->datum = udGZGD_JGD2011;
       pZone->zone = sridCode - 6669;

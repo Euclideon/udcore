@@ -75,6 +75,7 @@ enum udResult
   udR_OutOfSync,
   udR_SessionExpired,
   udR_ProxyError,
+  udR_ProxyAuthRequired,
 
   udR_Count,
 
