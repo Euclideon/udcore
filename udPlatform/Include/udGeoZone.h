@@ -81,6 +81,20 @@ struct udGeoZone
   char zoneName[64]; // Only 33 characters required for longest known name "Japan Plane Rectangular CS XVIII"
 };
 
+// Stored as g_udGZ_GeodeticDatumDescriptors
+struct udGeoZoneGeodeticDatumDescriptor
+{
+  const char *pFullName;
+  const char *pShortName;
+  const char *pDatumName;
+  udGeoZoneEllipsoid ellipsoid;
+  double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
+  int32_t epsg; // epsg code for the datum
+  int32_t authority; // authority for this datum
+};
+
+extern const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
+
 // Find an appropriate SRID code for a given lat/long within UTM/WGS84 (for example as a default value)
 udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
 

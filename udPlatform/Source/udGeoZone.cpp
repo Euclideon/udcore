@@ -2,18 +2,6 @@
 #include "udPlatformUtil.h"
 #include "udJSON.h"
 
-// Stored as g_udGZ_StdTransforms FROM WGS84 to the given datum
-struct udGeoZoneGeodeticDatumDescriptor
-{
-  const char *pFullName;
-  const char *pShortName;
-  const char *pDatumName;
-  udGeoZoneEllipsoid ellipsoid;
-  double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
-  int32_t epsg; // epsg code for the datum
-  int32_t authority; // authority for this datum
-};
-
 struct udGeoZoneEllipsoidInfo
 {
   const char *pName;
