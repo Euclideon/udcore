@@ -10,9 +10,8 @@
 #include "udSocket.h"
 
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include "udFileHandler.h"
-#include "udMath.h"
-#include <stdio.h>
 
 static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
 static udFile_SeekReadHandlerFunc                 udFileHandler_HTTPSeekRead;

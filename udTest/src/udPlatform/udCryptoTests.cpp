@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "udCrypto.h"
 #include "udJSON.h"
-#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 TEST(udCryptoTests, AES_CBC_MonteCarlo)
 {

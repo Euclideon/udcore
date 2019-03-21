@@ -1,5 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include "udCompression.h"
 #include "udFileHandler.h"
 #include "udMath.h"

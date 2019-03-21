@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "udGeoZone.h"
-#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 // Don't forget to read this PDF!- http://www.epsg.org/Portals/0/373-07-2.pdf
 

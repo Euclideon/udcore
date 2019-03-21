@@ -5,6 +5,8 @@
 #include "udCrypto.h"
 #include "udJSON.h"
 #include "udThread.h"
+#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 #if UDPLATFORM_WINDOWS
 #pragma warning(disable: 4267 4244)

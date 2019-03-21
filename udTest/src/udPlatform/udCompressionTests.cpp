@@ -3,7 +3,7 @@
 #include "udMath.h"
 #include "udFile.h"
 #include "udPlatform.h"
-#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 TEST(udCompressionTests, Basic)
 {

@@ -1,8 +1,7 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "udDebug.h"
-#include "udPlatformUtil.h"
+#include "udStringUtil.h"
+
 #include <stdio.h>
-#include <stdarg.h>
 
 void (*gpudDebugPrintfOutputCallback)(const char *pString) = nullptr;
 

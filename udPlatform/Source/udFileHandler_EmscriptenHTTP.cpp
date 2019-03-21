@@ -10,6 +10,7 @@
 //  Access-Control-Allow-Methods: HEAD, GET, POST, OPTIONS
 
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include "udFileHandler.h"
 #include "udMath.h"
 #include <emscripten/fetch.h>

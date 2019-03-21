@@ -1,5 +1,6 @@
 #include "udSocket.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include "udCrypto.h"
 
 #include "mbedtls/net.h"

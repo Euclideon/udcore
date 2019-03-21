@@ -1,5 +1,6 @@
 #include "udJSON.h"
 #include "udPlatform.h"
+#include "udStringUtil.h"
 #include "udCrypto.h"
 
 #define CONTENT_MEMBER "content"

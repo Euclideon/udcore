@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "udThread.h"
 #include "udSocket.h"
-#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 // Emscripten requires more work for sockets
 #if !UDPLATFORM_EMSCRIPTEN

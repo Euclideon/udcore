@@ -1,5 +1,6 @@
 #include "udGeoZone.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include "udJSON.h"
 
 struct udGeoZoneEllipsoidInfo

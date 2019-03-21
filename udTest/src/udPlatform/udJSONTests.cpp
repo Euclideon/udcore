@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 #include "udJSON.h"
+#include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 // First-pass most basic tests for udJSON
 // TODO: Fix udMemoryDebugTracking to be useful and test memory leaks

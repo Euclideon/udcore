@@ -2,7 +2,6 @@
 #define UDJSON_H
 
 #include "udPlatform.h"
-#include "udPlatformUtil.h"
 #include "udChunkedArray.h"
 #include "udMath.h"
 

@@ -3,6 +3,7 @@
 #include "udFileHandler.h"
 #include "udCrypto.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, July 2017

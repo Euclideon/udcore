@@ -1,6 +1,7 @@
 #include "udFile.h"
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include "udCompression.h"
 #include "udMath.h"
 
