@@ -103,6 +103,12 @@ size_t udStrncpy(char *pDest, size_t destLen, const char *pSrc, size_t maxChars)
 size_t udStrcat(char *pDest, size_t destLen, const char *pSrc);
 size_t udStrlen(const char *pStr);
 
+// *********************************************************************
+// Helper functions for fixed size strings
+// *********************************************************************
+template <size_t N> inline size_t udStrcpy(char (&dest)[N], const char *pSrc) { return udStrcpy(dest, N, pSrc); }
+template <size_t N> inline size_t udStrncpy(char(&dest)[N], const char *pSrc, size_t maxChars) { return udStrncpy(dest, N, pSrc, maxChars); }
+template <size_t N> inline size_t udStrcat(char(&dest)[N], const char *pSrc) { return udStrcat(dest, N, pSrc); }
 
 // *********************************************************************
 // String maniplulation functions, NULL-safe

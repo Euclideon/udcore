@@ -28,7 +28,7 @@ static udResult udFileHandler_EmscriptenHTTPSeekRead(udFile *pFile, void *pBuffe
   UD_ERROR_IF(bufferLength == 0, udR_Success);
 
   emscripten_fetch_attr_init(&attr);
-  udStrcpy(attr.requestMethod, udLengthOf(attr.requestMethod), "GET");
+  udStrcpy(attr.requestMethod, "GET");
   attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_WAITABLE;
   attr.requestHeaders = pHeaders;
   pFetch = emscripten_fetch(&attr, pFile->pFilenameCopy);
@@ -76,7 +76,7 @@ udResult udFileHandler_EmscriptenHTTPOpen(udFile **ppFile, const char *pFilename
   UD_ERROR_NULL(pFile, udR_MemoryAllocationFailure);
 
   //emscripten_fetch_attr_init(&attr);
-  //udStrcpy(attr.requestMethod, udLengthOf(attr.requestMethod), "GET");
+  //udStrcpy(attr.requestMethod, "GET");
   //attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_WAITABLE;
   //pFetch = emscripten_fetch(&attr, pFilename);
   //{

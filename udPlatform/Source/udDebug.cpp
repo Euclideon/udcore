@@ -159,7 +159,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line)
   if (pName)
     udTrace::Message("Dump of memory for %s (%d bytes at %p, line #%d)", pName, length, pMem, line);
   unsigned char p[16];
-  udStrcpy(format, sizeof(format), "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x");
+  udStrcpy(format, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x");
   while (length > 0)
   {
     int n = (length > 16) ? 16 : length;

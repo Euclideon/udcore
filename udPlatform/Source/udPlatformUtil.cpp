@@ -1222,7 +1222,7 @@ bool udFilename::SetFromFullPath(const char *pFormat, ...)
 bool udFilename::SetFolder(const char *pFolder)
 {
   char newPath[MaxPath];
-  size_t i = udStrcpy(newPath, sizeof(path), pFolder);
+  size_t i = udStrcpy(newPath, pFolder);
   if (!i)
     return false;
 
@@ -1234,21 +1234,21 @@ bool udFilename::SetFolder(const char *pFolder)
     {
       if (newPath[i-1] == '\\' || newPath[i-1] == ':')
       {
-        udStrcat(newPath, sizeof(newPath), "\\");
+        udStrcat(newPath, "\\");
         break;
       }
       if (newPath[i-1] == '/')
       {
-        udStrcat(newPath, sizeof(newPath), "/");
+        udStrcat(newPath, "/");
         break;
       }
     }
     // Nothing was found so add a /. TODO: Get correct separator from system
     if (i == 0)
-      udStrcat(newPath, sizeof(newPath), "/");
+      udStrcat(newPath, "/");
   }
 
-  if (!udStrcat(newPath, sizeof(newPath), GetFilenameWithExt()))
+  if (!udStrcat(newPath, GetFilenameWithExt()))
     return false;
   return SetFromFullPath(newPath);
 }
@@ -1260,9 +1260,9 @@ bool udFilename::SetFilenameNoExt(const char *pFilenameOnlyComponent)
   char newPath[MaxPath];
 
   ExtractFolder(newPath, sizeof(newPath));
-  if (!udStrcat(newPath, sizeof(newPath), pFilenameOnlyComponent))
+  if (!udStrcat(newPath, pFilenameOnlyComponent))
     return false;
-  if (!udStrcat(newPath, sizeof(newPath), GetExt()))
+  if (!udStrcat(newPath, GetExt()))
     return false;
   return SetFromFullPath(newPath);
 }
@@ -1274,7 +1274,7 @@ bool udFilename::SetFilenameWithExt(const char *pFilenameWithExtension)
   char newPath[MaxPath];
 
   ExtractFolder(newPath, sizeof(newPath));
-  if (!udStrcat(newPath, sizeof(newPath), pFilenameWithExtension))
+  if (!udStrcat(newPath, pFilenameWithExtension))
     return false;
   return SetFromFullPath(newPath);
 }
@@ -1285,10 +1285,10 @@ bool udFilename::SetExtension(const char *pExtComponent)
 {
   char newPath[MaxPath];
 
-  if (!udStrcpy(newPath, sizeof(newPath), path))
+  if (!udStrcpy(newPath, path))
     return false;
   newPath[extensionIndex] = 0; // Truncate the extension
-  if (!udStrcat(newPath, sizeof(newPath), pExtComponent))
+  if (!udStrcat(newPath, pExtComponent))
     return false;
   return SetFromFullPath(newPath);
 }
@@ -1722,7 +1722,7 @@ struct udFindDirData : public udFindDir
   void SetMembers()
   {
     // Take a copy of the filename after translation from wide-char to utf8
-    udStrcpy(utf8Filename, sizeof(utf8Filename), udOSString(findFileData.cFileName));
+    udStrcpy(utf8Filename, udOSString(findFileData.cFileName));
     pFilename = utf8Filename;
     isDirectory = !!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
   }
@@ -2023,7 +2023,7 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
             break;
           case 'x':
           case 'X':
-            udStrcpy(numericBuffer, sizeof(numericBuffer), isupper(*pFormat) ? "0X" : "0x");
+            udStrcpy(numericBuffer, isupper(*pFormat) ? "0X" : "0x");
             if (longSpec)
               udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
             else

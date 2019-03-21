@@ -460,7 +460,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
       pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "California zone 6 (ftUS)");
+      udStrcpy(pZone->zoneName, "California zone 6 (ftUS)");
       pZone->meridian = -116.25;
       pZone->parallel = 32.0 + 1.0 / 6.0;
       pZone->firstParallel = 33.0 + 53.0 / 60.0;
@@ -476,7 +476,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
       pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "Florida North (ftUS)");
+      udStrcpy(pZone->zoneName, "Florida North (ftUS)");
       pZone->meridian = -84.5;
       pZone->parallel = 29.0;
       pZone->firstParallel = 30.75;
@@ -492,7 +492,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
       pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "Maryland (ftUS)");
+      udStrcpy(pZone->zoneName, "Maryland (ftUS)");
       pZone->meridian = -77.0;
       pZone->parallel = 37.0 + 2.0 / 3.0;
       pZone->firstParallel = 39.45;
@@ -508,7 +508,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
       pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "Massachusetts Island (ftUS)");
+      udStrcpy(pZone->zoneName, "Massachusetts Island (ftUS)");
       pZone->meridian = -70.5;
       pZone->parallel = 41.0;
       pZone->firstParallel = 41.0 + 145.0 / 300.0;
@@ -524,7 +524,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
       pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "Washington North (ftUS)");
+      udStrcpy(pZone->zoneName, "Washington North (ftUS)");
       pZone->meridian = -120 - 25.0 / 30.0;
       pZone->parallel = 47.0;
       pZone->firstParallel = 48.0 + 22.0 / 30.0;;
@@ -539,7 +539,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     case 2771: // NAD83(HARN) / California zone 6
       pZone->datum = udGZGD_NAD83_HARN;
       pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "California zone 6");
+      udStrcpy(pZone->zoneName, "California zone 6");
       pZone->meridian = -116.25;
       pZone->parallel = 32.0 + 1.0 / 6.0;
       pZone->firstParallel = 33.0 + 265.0 / 300.0;
@@ -554,7 +554,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     case 3112: // GDA94 / Geoscience Australia Lambert
       pZone->datum = udGZGD_GDA94;
       pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "Geoscience Australia Lambert");
+      udStrcpy(pZone->zoneName, "Geoscience Australia Lambert");
       pZone->meridian = 134;
       pZone->parallel = 0;
       pZone->firstParallel = -18;
@@ -569,7 +569,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     case 27700: // OSGB 1936 / British National Grid
       pZone->datum = udGZGD_OSGB36;
       pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), "British National Grid");
+      udStrcpy(pZone->zoneName, "British National Grid");
       pZone->meridian = -2;
       pZone->parallel = 49.0;
       pZone->falseNorthing = -100000;
@@ -584,8 +584,8 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     }
   }
   pZone->srid = sridCode;
-  udStrcpy(pZone->datumName, udLengthOf(pZone->datumName), g_udGZ_GeodeticDatumDescriptors[pZone->datum].pDatumName);
-  udStrcpy(pZone->datumShortName, udLengthOf(pZone->datumShortName), g_udGZ_GeodeticDatumDescriptors[pZone->datum].pShortName);
+  udStrcpy(pZone->datumName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pDatumName);
+  udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pShortName);
 
   return udR_Success;
 }
@@ -660,11 +660,11 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       if (pNameStr != nullptr)
       {
         pNameStr += 2; // ...if so, ignore the '/' and the space following it, focus only on 'longname'
-        udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), pNameStr);
+        udStrcpy(pZone->zoneName, pNameStr);
       }
       else
       {
-        udStrcpy(pZone->zoneName, udLengthOf(pZone->zoneName), pName);
+        udStrcpy(pZone->zoneName, pName);
       }
 
       udSprintf(&pVal, "%s.values", pElem);
@@ -685,14 +685,14 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (udStrEqual(g_udGZ_GeodeticDatumDescriptors[j].pFullName, pName))
         {
           pZone->datum = (udGeoZoneGeodeticDatum)j; // enum ordering corresponds to GDD dataset ordering
-          udStrcpy(pZone->datumShortName, udLengthOf(pZone->datumShortName), g_udGZ_GeodeticDatumDescriptors[j].pShortName);
+          udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[j].pShortName);
           break;
         }
       }
     }
     else if (udStrEqual(pType, "DATUM"))
     {
-      udStrcpy(pZone->datumName, udLengthOf(pZone->datumName), pName);
+      udStrcpy(pZone->datumName, pName);
     }
     else if (udStrEqual(pType, "PROJECTION"))
     {

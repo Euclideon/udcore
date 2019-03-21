@@ -991,7 +991,7 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
           if (recurCount >= 6)
           {
             char tmp[64];
-            udStrncpy(tmp, sizeof(tmp), pString, charCount);
+            udStrncpy(tmp, pString, charCount);
             tmp[charCount] = tmp[charCount + 1] = tmp[charCount + 2] = tmp[charCount + 3] = lastDigit;
             tmp[charCount + 4] = 0;
             u.dVal = udStrAtof64(tmp);

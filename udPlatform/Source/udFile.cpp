@@ -474,7 +474,7 @@ udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *p
   if (s_handlersCount >= MAX_HANDLERS)
     return udR_CountExceeded;
   s_handlers[s_handlersCount].fpOpen = fpHandler;
-  udStrcpy(s_handlers[s_handlersCount].prefix, sizeof(s_handlers[s_handlersCount].prefix), pPrefix);
+  udStrcpy(s_handlers[s_handlersCount].prefix, pPrefix);
   ++s_handlersCount;
   return udR_Success;
 }
