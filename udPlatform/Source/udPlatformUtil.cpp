@@ -669,7 +669,7 @@ uint64_t udStrAtou64(const char *pStr, int *pCharCount, int radix)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2017
-int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix, int minChars)
+size_t udStrUtoa(char *pStr, size_t strLen, uint64_t value, int radix, size_t minChars)
 {
   int upperCase = (radix < 0) ? 36 : 0;
   radix = udAbs(radix);
@@ -677,7 +677,7 @@ int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix, int minChars)
     return 0;
   static const char *pLetters = "0123456789abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   char buf[65]; // Accomodate the largest string which would be 64 binary characters (largest decimal is 20 characters: 18446744073709551615)
-  int i = 0;
+  size_t i = 0;
   while (value || (i < minChars))
   {
     buf[i++] = pLetters[value % radix + upperCase];
@@ -685,7 +685,7 @@ int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix, int minChars)
   }
   if (pStr)
   {
-    int j;
+    size_t j;
     for (j = 0; j < strLen-1 && j < i; ++j)
     {
       pStr[j] = buf[i-j-1];
@@ -697,7 +697,7 @@ int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix, int minChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2017
-int udStrItoa(char *pStr, int strLen, int32_t value, int radix, int minChars)
+size_t udStrItoa(char *pStr, size_t strLen, int32_t value, int radix, size_t minChars)
 {
   if (!pStr || strLen < 2 || (radix < 2 || radix > 36))
     return 0;
@@ -713,7 +713,7 @@ int udStrItoa(char *pStr, int strLen, int32_t value, int radix, int minChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2017
-int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
+size_t udStrItoa64(char *pStr, size_t strLen, int64_t value, int radix, size_t minChars)
 {
   if (!pStr || strLen < 2 || (radix < 2 || radix > 36))
     return 0;
@@ -729,7 +729,7 @@ int udStrItoa64(char *pStr, int strLen, int64_t value, int radix, int minChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2017
-int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars)
+size_t udStrFtoa(char *pStr, size_t strLen, double value, int precision, size_t minChars)
 {
   int64_t temp;
   memcpy(&temp, &value, sizeof(value));
@@ -740,10 +740,10 @@ int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars)
   double whole = negative ? -ceil(value) : floor(value);
   double frac = negative ? -(value + whole) : value - whole;
 
-  int charCount = 0;
+  size_t charCount = 0;
   if (charCount < (strLen - 1) && negative)
     pStr[charCount++] = '-';
-  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole, 10, udMax(1, minChars - charCount - (precision ? precision + 1 : 0)));
+  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole, 10, (size_t)udMax(1, int(minChars) - int(charCount) - (precision ? precision + 1 : 0)));
   if (charCount < (strLen-1) && precision > 0)
   {
     pStr[charCount++] = '.';
@@ -1697,7 +1697,7 @@ const char *udTempStr_HumanMeasurement(double measurement)
 
   // Generate float scale to 6 decimal places
   char temp[32];
-  int charCount = udStrFtoa(temp, sizeof(temp), measurement * suffixMult[suffixIndex], 6);
+  size_t charCount = udStrFtoa(temp, measurement * suffixMult[suffixIndex], 6);
 
   // Trim unnecessary trailing zeros or decimal point for human friendly number
   while (charCount > 1)
@@ -2007,17 +2007,17 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
           case 'd':
           case 'i':
             if (longSpec)
-              udStrItoa64(numericBuffer, sizeof(numericBuffer), va_arg(args, int64_t), 10, precision);
+              udStrItoa64(numericBuffer, va_arg(args, int64_t), 10, precision);
             else
-              udStrItoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), 10, precision);
+              udStrItoa(numericBuffer, va_arg(args, uint32_t), 10, precision);
             pInjectStr = numericBuffer;
             injectLen = udStrlen(pInjectStr);
             break;
           case 'u':
             if (longSpec)
-              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint64_t), 10, precision);
+              udStrUtoa(numericBuffer, va_arg(args, uint64_t), 10, precision);
             else
-              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), 10, precision);
+              udStrUtoa(numericBuffer, va_arg(args, uint32_t), 10, precision);
             pInjectStr = numericBuffer;
             injectLen = udStrlen(pInjectStr);
             break;
@@ -2033,23 +2033,23 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
             break;
           case 'b':
             if (longSpec)
-              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint64_t), 2, precision);
+              udStrUtoa(numericBuffer, va_arg(args, uint64_t), 2, precision);
             else
-              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), 2, precision);
+              udStrUtoa(numericBuffer, va_arg(args, uint32_t), 2, precision);
             pInjectStr = numericBuffer;
             injectLen = udStrlen(pInjectStr);
             break;
           case 'p':
           case 'P':
             if (sizeof(pInjectStr) == 8)
-              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
+              udStrUtoa(numericBuffer, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
             else
-              udStrUtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
+              udStrUtoa(numericBuffer, va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
             pInjectStr = numericBuffer;
             injectLen = udStrlen(pInjectStr);
             break;
           case 'f':
-            udStrFtoa(numericBuffer, sizeof(numericBuffer), va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : udMax((int)width, 1));
+            udStrFtoa(numericBuffer, va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : udMax((int)width, 1));
             pInjectStr = numericBuffer;
             injectLen = udStrlen(pInjectStr);
             break;

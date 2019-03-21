@@ -138,10 +138,15 @@ uint64_t udStrAtou64(const char *pStr, int *pCharCount = nullptr, int radix = 10
 float udStrAtof(const char *pStr, int *pCharCount = nullptr);
 double udStrAtof64(const char *pStr, int *pCharCount = nullptr);
 // udStr*toa convert numbers to ascii, returning the number of characters required
-int udStrUtoa(char *pStr, int strLen, uint64_t value, int radix = 10, int minChars = 1);
-int udStrItoa(char *pStr, int strLen, int32_t value, int radix = 10, int minChars = 1);
-int udStrItoa64(char *pStr, int strLen, int64_t value, int radix = 10, int minChars = 1);
-int udStrFtoa(char *pStr, int strLen, double value, int precision, int minChars = 1);
+size_t udStrUtoa(char *pStr, size_t strLen, uint64_t value, int radix = 10, size_t minChars = 1);
+size_t udStrItoa(char *pStr, size_t strLen, int32_t value, int radix = 10, size_t minChars = 1);
+size_t udStrItoa64(char *pStr, size_t strLen, int64_t value, int radix = 10, size_t minChars = 1);
+size_t udStrFtoa(char *pStr, size_t strLen, double value, int precision, size_t minChars = 1);
+// udStr*toa helpers for fixed size strings
+template <size_t N> inline size_t udStrUtoa(char (&str)[N], uint64_t value, int radix = 10, size_t minChars = 1) { return udStrUtoa(str, N, value, radix, minChars); }
+template <size_t N> inline size_t udStrItoa(char (&str)[N], int32_t value, int radix = 10, size_t minChars = 1) { return udStrItoa(str, N, value, radix, minChars); }
+template <size_t N> inline size_t udStrItoa64(char (&str)[N], int64_t value, int radix = 10, size_t minChars = 1) { return udStrItoa64(str, N, value, radix, minChars); }
+template <size_t N> inline size_t udStrFtoa(char (&str)[N], double value, int precision, size_t minChars = 1) { return udStrFtoa(str, N, value, precision, minChars); }
 
 // Split a line into an array of tokens
 int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens);
