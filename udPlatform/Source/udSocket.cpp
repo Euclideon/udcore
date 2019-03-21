@@ -295,7 +295,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
 
     // Setup the port string
     char portStr[6];
-    udSprintf(portStr, 6, "%d", port);
+    udSprintf(portStr, "%d", port);
 
     // Branch for server/client differences
     if (pSocket->isServer)
@@ -417,7 +417,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
     hints.ai_protocol = IPPROTO_TCP;
 
     char buffer[6];
-    udSprintf(buffer, sizeof(buffer), "%d", port);
+    udSprintf(buffer, "%d", port);
     retVal = getaddrinfo(pAddress, buffer, &hints, &pOutAddr);
     UD_ERROR_IF(retVal != 0, udR_SocketError);
 

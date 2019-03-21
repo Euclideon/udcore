@@ -188,7 +188,7 @@ int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr)
     testTm.tm_mday += maxDays;
     time_t expireTime = mktime(&testTm);
     testTm = *localtime(&expireTime);
-    udSprintf(str, sizeof(str), "%04d-%02d-%02d", testTm.tm_year + 1900, testTm.tm_mon + 1, testTm.tm_mday);
+    udSprintf(str, "%04d-%02d-%02d", testTm.tm_year + 1900, testTm.tm_mon + 1, testTm.tm_mday);
     *ppExpireDateStr = str;
   }
 
@@ -1208,7 +1208,7 @@ bool udFilename::SetFromFullPath(const char *pFormat, ...)
   {
     va_list args;
     va_start(args, pFormat);
-    int len = udSprintfVA(path, sizeof(path), pFormat, args);
+    int len = udSprintfVA(path, pFormat, args);
     va_end(args);
     CalculateIndices();
     if (len > (int)sizeof(path))

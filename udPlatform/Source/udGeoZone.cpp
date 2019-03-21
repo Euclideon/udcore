@@ -274,7 +274,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_WGS84;
     pZone->projection = udGZPT_TransverseMercator;
     pZone->zone = sridCode - 32600;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "UTM zone %dN", pZone->zone);
+    udSprintf(pZone->zoneName, "UTM zone %dN", pZone->zone);
     pZone->meridian = pZone->zone * 6 - 183;
     pZone->parallel = 0.0;
     pZone->falseNorthing = 0;
@@ -289,7 +289,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_WGS84;
     pZone->projection = udGZPT_TransverseMercator;
     pZone->zone = sridCode - 32700;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "UTM zone %dS", pZone->zone);
+    udSprintf(pZone->zoneName, "UTM zone %dS", pZone->zone);
     pZone->meridian = pZone->zone * 6 - 183;
     pZone->parallel = 0.0;
     pZone->falseNorthing = 10000000;
@@ -328,7 +328,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_CGCS2000;
     pZone->projection = udGZPT_TransverseMercator;
     pZone->zone = sridCode - 4534;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "3-degree Gauss-Kruger CM %dE", 75 + (pZone->zone * 3));
+    udSprintf(pZone->zoneName, "3-degree Gauss-Kruger CM %dE", 75 + (pZone->zone * 3));
     pZone->meridian = 75 + (pZone->zone * 3);
     pZone->parallel = 0.0;
     pZone->falseNorthing = 0;
@@ -344,7 +344,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_NAD83;
     pZone->projection = udGZPT_TransverseMercator;
     pZone->zone = sridCode - 26900;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "UTM zone %dN", pZone->zone);
+    udSprintf(pZone->zoneName, "UTM zone %dN", pZone->zone);
     pZone->meridian = pZone->zone * 6 - 183;
     pZone->parallel = 0.0;
     pZone->falseNorthing = 0;
@@ -359,7 +359,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_ETRS89;
     pZone->projection = udGZPT_TransverseMercator;
     pZone->zone = sridCode - 25800;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "UTM zone %dN%s", pZone->zone, ((sridCode == 25838) ? " (deprecated)" : ""));
+    udSprintf(pZone->zoneName, "UTM zone %dN%s", pZone->zone, ((sridCode == 25838) ? " (deprecated)" : ""));
     pZone->meridian = pZone->zone * 6 - 183;
     pZone->parallel = 0.0;
     pZone->falseNorthing = 0;
@@ -374,7 +374,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_GDA94;
     pZone->projection = udGZPT_TransverseMercator;
     pZone->zone = sridCode - 28300;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "MGA zone %d", pZone->zone);
+    udSprintf(pZone->zoneName, "MGA zone %d", pZone->zone);
     pZone->meridian = pZone->zone * 6 - 183;
     pZone->parallel = 0.0;
     pZone->falseNorthing = 10000000;
@@ -425,7 +425,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->projection = udGZPT_TransverseMercator;
     if (pZone->zone > (int)udLengthOf(pRomanNumerals))
       return udR_InternalError;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "Japan Plane Rectangular CS %s", pRomanNumerals[pZone->zone]);
+    udSprintf(pZone->zoneName, "Japan Plane Rectangular CS %s", pRomanNumerals[pZone->zone]);
     pZone->meridian = jprcsRegions[pZone->zone].x;
     pZone->parallel = jprcsRegions[pZone->zone].y;
     pZone->falseNorthing = 0;
@@ -440,7 +440,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->datum = udGZGD_RGF93;
     pZone->projection = udGZPT_LambertConformalConic2SP;
     pZone->zone = sridCode - 3942;
-    udSprintf(pZone->zoneName, udLengthOf(pZone->zoneName), "CC%d", sridCode - 3900);
+    udSprintf(pZone->zoneName, "CC%d", sridCode - 3900);
     pZone->meridian = 3.0;
     pZone->parallel = 42.0 + pZone->zone;
     pZone->firstParallel = pZone->parallel - 0.75;

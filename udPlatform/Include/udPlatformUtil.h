@@ -446,6 +446,9 @@ UD_PRINTF_FORMAT_FUNC(3) int udSprintf(char *pDest, size_t destlength, const cha
 int udSprintfVA(char *pDest, size_t destlength, const char *pFormat, va_list args);
 // Create an allocated string to fit the output, *ppDest will be freed if non-null, and may be an argument to the string
 UD_PRINTF_FORMAT_FUNC(2) udResult udSprintf(const char **ppDest, const char *pFormat, ...);
+// Helper functions for fixed size arrays
+template <size_t N> UD_PRINTF_FORMAT_FUNC(2) inline int udSprintf(char(&dest)[N], const char *pFormat, ...) { va_list args; va_start(args, pFormat); int length = udSprintfVA(dest, N, pFormat, args); va_end(args); return length; }
+template <size_t N> inline int udSprintfVA(char(&dest)[N], const char *pFormat, va_list args) { return udSprintfVA(dest, N, pFormat, args); }
 
 // *********************************************************************
 // Geospatial helper functions

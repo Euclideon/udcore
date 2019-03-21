@@ -121,7 +121,7 @@ void udTrace::Message(const char *pFormat, ...)
   char buffer[300];
 
   va_start(args, pFormat);
-  udSprintfVA(buffer, sizeof(buffer), pFormat, args);
+  udSprintfVA(buffer, pFormat, args);
   if (head && !head->entryPrinted)
   {
     const char *pParent0 = "";
