@@ -65,6 +65,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_EventNotHandled),
   RESULTINFO(udR_DatabaseError),
   RESULTINFO(udR_ServerError),
+  RESULTINFO(udR_AuthError),
   RESULTINFO(udR_NotAllowed),
   RESULTINFO(udR_InvalidLicense),
   RESULTINFO(udR_Pending),
