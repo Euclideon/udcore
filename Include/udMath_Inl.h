@@ -111,8 +111,8 @@ template <typename T> udVector3<T> udClamp(const udVector3<T> &v, const udVector
 template <typename T> udVector4<T> udClamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max) { udVector4<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y), v.z<_min.z?_min.z:(v.z>_max.z?_max.z:v.z), v.w<_min.w?_min.w:(v.w>_max.w?_max.w:v.w) }; return r; }
 
 template <typename T> T            udSaturate(const T &v) { return udClamp(v, (T)0, (T)1); }
-template <typename T> udVector4<T> udSaturate(const udVector2<T> &v) { return udClamp(v, udVector2<T>::zero(), udVector2<T>::one()); }
-template <typename T> udVector4<T> udSaturate(const udVector3<T> &v) { return udClamp(v, udVector3<T>::zero(), udVector3<T>::one()); }
+template <typename T> udVector2<T> udSaturate(const udVector2<T> &v) { return udClamp(v, udVector2<T>::zero(), udVector2<T>::one()); }
+template <typename T> udVector3<T> udSaturate(const udVector3<T> &v) { return udClamp(v, udVector3<T>::zero(), udVector3<T>::one()); }
 template <typename T> udVector4<T> udSaturate(const udVector4<T> &v) { return udClamp(v, udVector4<T>::zero(), udVector4<T>::one()); }
 
 template <typename V, typename T> bool udIsUnitLength(const V &v, T epsilon) { return udAbs(typename V::ElementType(1) - udMag(v)) < typename V::ElementType(epsilon); }

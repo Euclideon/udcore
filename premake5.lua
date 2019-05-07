@@ -68,7 +68,7 @@ function premake.modules.emscripten.emcc.getrunpathdirs(cfg, dirs)
 	return premake.tools.clang.getrunpathdirs(cfg, dirs)
 end
 
-solution "ud"
+solution "udCore"
 
 	-- This hack just makes the VS project and also the makefile output their configurations in the idiomatic order
 	if (_ACTION == "gmake" or _ACTION == "gmake2") and os.target() == premake.LINUX then
@@ -127,7 +127,7 @@ solution "ud"
 
 	group ""
 
-	dofile "udPlatform/project.lua"
+	dofile "project.lua"
 
 	if os.target() ~= premake.IOS and os.target() ~= premake.ANDROID then
 		dofile "udTest/project.lua"

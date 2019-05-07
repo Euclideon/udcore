@@ -12,7 +12,7 @@ else
 		bin/premake-bin/premake5.exe vs2015
 		if [ $? -ne 0 ]; then exit 4; fi
 
-		"C:/Program Files (x86)/MSBuild/14.0/Bin/amd64/MSBuild.exe" ud.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
+		"C:/Program Files (x86)/MSBuild/14.0/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
 		if [ $? -ne 0 ]; then exit 5; fi
 
 		Output/bin/${1}_${2}/udTest.exe
@@ -31,10 +31,10 @@ else
 		if [ $? -ne 0 ]; then exit 4; fi
 
 		if [ $2 == "x86_64" ]; then # Simulator
-			xcodebuild -project udPlatform/udPlatform.xcodeproj -configuration $1 -arch $2 -sdk iphonesimulator
+			xcodebuild -project udCore.xcodeproj -configuration $1 -arch $2 -sdk iphonesimulator
 			if [ $? -ne 0 ]; then exit 5; fi
 		else
-			xcodebuild -project udPlatform/udPlatform.xcodeproj -configuration $1 -arch $2
+			xcodebuild -project udCore.xcodeproj -configuration $1 -arch $2
 			if [ $? -ne 0 ]; then exit 5; fi
 		fi
 	elif ([ $2 == "Emscripten" ]); then # Emscripten

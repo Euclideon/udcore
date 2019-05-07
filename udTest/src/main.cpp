@@ -18,10 +18,8 @@ int main(int argc, char **argv)
   testing::InitGoogleTest(&argc, argv);
 
   udFile_RegisterHTTP();
-  udOctree_Init(nullptr); // Initialise with defaults
   int testResult = 0;
   emscripten_set_main_loop_arg([](void *pArg) { int *pTestResult = (int*)pArg; *pTestResult = RUN_ALL_TESTS(); emscripten_cancel_main_loop(); }, &testResult, 60, 1);
-  udOctree_Deinit();
   udThread_DestroyCached(); // Destroy cached threads to prevent reporting of memory leak
 
   return testResult;

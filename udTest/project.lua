@@ -7,12 +7,12 @@ project ("udTest" .. (projectSuffix or ""))
 	includedirs { "../3rdParty" }
 	includedirs { "../3rdParty/googletest/" .. googletestPath .. "/include" }
 
-	includedirs { "../udPlatform/Include" }
+	includedirs { "../Include" }
 
 	files { "src/**.cpp", "src/**.h" }
 	files { "project.lua" }
 
-	links { "udPlatform" }
+	links { "udCore" .. (projectSuffix or "") }
 	links { googletestPath }
 
 	filter { }
