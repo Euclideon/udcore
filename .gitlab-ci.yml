@@ -1,0 +1,276 @@
+stages:
+  - build
+  - coverage
+  - valgrind
+
+windows_debug_x64:
+  stage: build
+  script: "build.sh Debug x64"
+  tags:
+    - windows
+    - vs2015
+
+windows_release_x64:
+  stage: build
+  script: "build.sh Release x64"
+  tags:
+    - windows
+    - vs2015
+
+linux_release_x64_gcc_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-xenial:v6
+  stage: build
+  script: "./build.sh Release x64"
+  tags:
+    - linux
+    - docker
+
+linux_debug_x64_gcc_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-xenial:v6
+  stage: build
+  script: "./build.sh Debug x64"
+  tags:
+    - linux
+    - docker
+
+linux_release_x64_clang_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-xenial:v6
+  stage: build
+  script: "./build.sh ReleaseClang x64"
+  tags:
+    - linux
+    - docker
+
+linux_debug_x64_clang_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-xenial:v6
+  stage: build
+  script: "./build.sh DebugClang x64"
+  tags:
+    - linux
+    - docker
+
+bionic_release_x64_gcc_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
+  stage: build
+  script: "./build.sh Release x64"
+  tags:
+    - linux
+    - docker
+  except:
+    - tags
+
+bionic_debug_x64_gcc_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
+  stage: build
+  script: "./build.sh Debug x64"
+  tags:
+    - linux
+    - docker
+  except:
+    - tags
+
+bionic_release_x64_clang_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
+  stage: build
+  script: "./build.sh ReleaseClang x64"
+  tags:
+    - linux
+    - docker
+  except:
+    - tags
+
+bionic_debug_x64_clang_deb:
+  image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
+  stage: build
+  script: "./build.sh DebugClang x64"
+  tags:
+    - linux
+    - docker
+  except:
+    - tags
+
+linux_release_x64_gcc_rpm:
+  image: gitlab.euclideon.com:4567/docker-images/dev-centos7:v4
+  stage: build
+  script: "./build.sh Release x64"
+  tags:
+    - linux
+    - docker
+
+linux_debug_x64_gcc_rpm:
+  image: gitlab.euclideon.com:4567/docker-images/dev-centos7:v4
+  stage: build
+  script: "./build.sh Debug x64"
+  tags:
+    - linux
+    - docker
+
+linux_release_x64_clang_rpm:
+  image: gitlab.euclideon.com:4567/docker-images/dev-centos7:v4
+  stage: build
+  script: "./build.sh ReleaseClang x64"
+  tags:
+    - linux
+    - docker
+
+linux_debug_x64_clang_rpm:
+  image: gitlab.euclideon.com:4567/docker-images/dev-centos7:v4
+  stage: build
+  script: "./build.sh DebugClang x64"
+  tags:
+    - linux
+    - docker
+
+macosx_release_x64_clang:
+  stage: build
+  script: "./build.sh Release x64"
+  tags:
+    - osx
+
+macosx_debug_x64_clang:
+  stage: build
+  script: "./build.sh Debug x64"
+  tags:
+    - osx
+
+macosx_xcode_release_x64_clang:
+  stage: build
+  script: "./build.sh Release x86_64 xcode"
+  tags:
+    - osx
+
+macosx_xcode_debug_x64_clang:
+  stage: build
+  script: "./build.sh Debug x86_64 xcode"
+  tags:
+    - osx
+
+ios_release_arm64_clang:
+  stage: build
+  script: "./build.sh Release arm64 ios"
+  tags:
+    - osx
+
+ios_debug_arm64_clang:
+  stage: build
+  script: "./build.sh Debug arm64 ios"
+  tags:
+    - osx
+
+ios_release_x86_64_clang:
+  stage: build
+  script: "./build.sh Release x64 ios"
+  tags:
+    - osx
+
+ios_debug_x86_64_clang:
+  stage: build
+  script: "./build.sh Debug x64 ios"
+  tags:
+    - osx
+
+ios_xcode_release_arm64_clang:
+  stage: build
+  script: "./build.sh Release arm64 ios xcode"
+  tags:
+    - osx
+
+ios_xcode_debug_arm64_clang:
+  stage: build
+  script: "./build.sh Debug arm64 ios xcode"
+  tags:
+    - osx
+
+ios_xcode_release_x86_64_clang:
+  stage: build
+  script: "./build.sh Release x86_64 ios xcode"
+  tags:
+    - osx
+
+ios_xcode_debug_x86_64_clang:
+  stage: build
+  script: "./build.sh Debug x86_64 ios xcode"
+  tags:
+    - osx
+
+android_debug_arm64_gcc:
+  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
+  stage: build
+  script: "./build.sh Debug arm64 android"
+  tags:
+    - linux
+    - docker
+
+android_release_arm64_gcc:
+  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
+  stage: build
+  script: "./build.sh Release arm64 android"
+  tags:
+    - linux
+    - docker
+
+android_debug_x86_64_gcc:
+  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
+  stage: build
+  script: "./build.sh Debug x64 android"
+  tags:
+    - linux
+    - docker
+
+android_release_x86_64_gcc:
+  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
+  stage: build
+  script: "./build.sh Release x64 android"
+  tags:
+    - linux
+    - docker
+
+emscripten_release_js_emcc:
+  image: gitlab.euclideon.com:4567/docker-images/emscripten-bionic:v1
+  stage: build
+  script: "./build.sh Release Emscripten"
+  tags:
+    - linux
+    - docker
+  except:
+    - tags
+
+emscripten_debug_js_emcc:
+  image: gitlab.euclideon.com:4567/docker-images/emscripten-bionic:v1
+  stage: build
+  script: "./build.sh Debug Emscripten"
+  tags:
+    - linux
+    - docker
+  except:
+    - tags
+
+test_coverage:
+  image: gitlab.euclideon.com:4567/docker-images/dev-xenial:v6
+  stage: coverage
+  script: "./build.sh Release x64 Coverage"
+  tags:
+    - linux
+    - docker
+
+valgrind_memcheck:
+  image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
+  stage: valgrind
+  script: "./build.sh Debug x64 memcheck"
+  tags:
+    - linux
+    - docker
+  only:
+    - master
+    - merge_requests
+
+valgrind_helgrind:
+  image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
+  stage: valgrind
+  script: "./build.sh Debug x64 helgrind"
+  tags:
+    - linux
+    - docker
+  only:
+    - master
+    - merge_requests
