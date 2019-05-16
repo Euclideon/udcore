@@ -1,5 +1,12 @@
 #ifndef UDSOCKET_H
 #define UDSOCKET_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Paul Fox, October 2018
+//
+// TCP and TLS socket implementation
+//
 
 #include "udMath.h"
 

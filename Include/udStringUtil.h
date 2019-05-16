@@ -1,5 +1,12 @@
 #ifndef UDSTRINGUTIL_H
 #define UDSTRINGUTIL_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, September 2013
+//
+// C-String helpers
+//
 
 #include "udPlatform.h"
 #include <stdarg.h>

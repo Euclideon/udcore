@@ -1,5 +1,12 @@
 #ifndef UDPLATFORM_H
 #define UDPLATFORM_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, August 2013
+//
+// Platform and architecture specific definitions
+//
 
 #include "udResult.h"
 

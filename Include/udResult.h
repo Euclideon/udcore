@@ -1,5 +1,12 @@
 #ifndef UDRESULT_H
 #define UDRESULT_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, February 2014
+//
+// udResult enum and associated helpers
+//
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

@@ -1,5 +1,13 @@
 #ifndef UDCOMPRESSION_H
 #define UDCOMPRESSION_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, November 2017
+//
+// This module wraps zlib/miniz/gzip etc
+//
+
 #include "udPlatform.h"
 
 enum udCompressionType

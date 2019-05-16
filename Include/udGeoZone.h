@@ -1,5 +1,12 @@
 #ifndef UDGEOZONE_H
 #define UDGEOZONE_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, June 2018
+//
+// Module for dealing with geolocation and transformation between geodetic and cartesian coordinates
+//
 
 #include "udMath.h"
 

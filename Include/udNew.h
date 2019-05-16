@@ -1,5 +1,12 @@
 #ifndef UDNEW_H
 #define UDNEW_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, November 2015
+//
+// Wrap up C++ new operator to us udAlloc internally
+//
 
 #include <new>
 #include "udPlatform.h"

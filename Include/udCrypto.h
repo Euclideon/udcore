@@ -1,5 +1,13 @@
 #ifndef UDCRYPTO_H
 #define UDCRYPTO_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, December 2014
+//
+// Module for exposing common cryptographic functionality
+//
+
 #include "udPlatform.h"
 
 // **** Utility functions ****

@@ -1,5 +1,12 @@
 #ifndef UDJSON_H
 #define UDJSON_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, March 2014
+//
+// Module for loading and saving JSON (JavaScript Object Notation), with additional limited support for XML
+//
 
 #include "udPlatform.h"
 #include "udChunkedArray.h"

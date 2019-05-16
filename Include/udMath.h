@@ -1,6 +1,12 @@
-#pragma once
-#if !defined(UDMATH_H)
+#ifndef UDMATH_H
 #define UDMATH_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Manu Evans, February 2015
+//
+// Math functionality
+//
 
 #include "udPlatform.h"
 

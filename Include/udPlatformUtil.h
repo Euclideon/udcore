@@ -1,5 +1,12 @@
 #ifndef UDPLATFORM_UTIL_H
 #define UDPLATFORM_UTIL_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, September 2013
+//
+// Utility functions and helpers
+//
 
 #include "udPlatform.h"
 #include <stdio.h>

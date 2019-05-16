@@ -1,5 +1,12 @@
 #ifndef UDIMAGE_H
 #define UDIMAGE_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, February 2019
+//
+// Module for loading and sampling images, wrapping stb_image internally
+//
 
 #include "udPlatform.h"
 

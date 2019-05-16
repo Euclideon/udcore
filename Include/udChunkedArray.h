@@ -1,5 +1,13 @@
 #ifndef UDCHUNKEDARRAY_H
 #define UDCHUNKEDARRAY_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: David Ely, May 2015
+//
+// A simple container for keeping potentially large arrays without large contiguous allocations
+//
+
 #include "udPlatform.h"
 #include "udResult.h"
 

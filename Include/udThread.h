@@ -1,5 +1,13 @@
 #ifndef UDTHREAD_H
 #define UDTHREAD_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, November 2016
+//
+// Very simple thread/synchronisation API wrapping the various platform implementations
+//
+
 #include "udPlatform.h"
 
 // Minimalist MOST BASIC cross-platform thread support

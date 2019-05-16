@@ -1,5 +1,13 @@
 #ifndef UDASYNCJOB_H
 #define UDASYNCJOB_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, March 2018
+//
+// This module provides a simple and convenient way to have a function-call execute on another thread,
+// with the caller able to either poll or wait for completion at a later time
+//
 
 #include "udResult.h"
 #include "udThread.h"

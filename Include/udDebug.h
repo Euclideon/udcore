@@ -1,5 +1,12 @@
 #ifndef UDDEBUG_H
 #define UDDEBUG_H
+//
+// Copyright (c) Euclideon Pty Ltd
+//
+// Creator: Dave Pevreal, September 2013
+//
+// Module for various debugging helpers and functionality
+//
 
 #include "udPlatform.h"
 #include "udResult.h"
