@@ -347,7 +347,7 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 }
 #define udFreeSecure(pMemory, size) _udFreeSecure(pMemory, size, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-// Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat today
+// Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat warning
 #define udAllocStack(type, count, flags)   ((flags & udAF_Zero) ? (type*)udSetZero(alloca(sizeof(type) * count), sizeof(type) * count) : (type*)alloca(sizeof(type) * count))
 #define udFreeStack(pMemory)
 

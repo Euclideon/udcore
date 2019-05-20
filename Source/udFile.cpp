@@ -146,9 +146,11 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
       result = pHandler->fpOpen(ppFile, pNewFilename, flags);
       if (result == udR_Success)
       {
-        udFree((*ppFile)->pFilenameCopy); // In rare circumstances this can already be assigned, so free to prevent a leak
-        (*ppFile)->pFilenameCopy = pNewFilename;
-        pNewFilename = nullptr;
+        if (!(*ppFile)->pFilenameCopy) // In rare circumstances this can already be assigned
+        {
+          (*ppFile)->pFilenameCopy = pNewFilename;
+          pNewFilename = nullptr;
+        }
         (*ppFile)->flagsCopy = flags;
         if (pFileLengthInBytes)
           *pFileLengthInBytes = (*ppFile)->fileLength;
