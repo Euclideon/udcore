@@ -5,6 +5,8 @@
 
 #if UDPLATFORM_WINDOWS
 # include <crtdbg.h>
+#elif UDPLATFORM_OSX
+# include <sys/sysctl.h>
 #endif
 
 #define __BREAK_ON_MEMORY_ALLOCATION_FAILURE 0
@@ -170,6 +172,9 @@ void _udFreeInternal(void * pMemory, const char *pFile, int line)
 // Author: David Ely
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 {
+  if (pTotalMemory == nullptr)
+    return udR_InvalidParameter_;
+
 #if UDPLATFORM_WINDOWS
   MEMORYSTATUSEX memorySatusEx;
   memorySatusEx.dwLength = sizeof(memorySatusEx);
@@ -180,27 +185,27 @@ udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
     return udR_Success;
   }
 
+#elif UDPLATFORM_LINUX
+  // see http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system for
+  // explanation.
+
+# if defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+    *pTotalMemory = (uint64_t)sysconf(_SC_PHYS_PAGES) * (uint64_t)sysconf(_SC_PAGESIZE);
+    return udR_Success;
+# endif
+
+#elif UDPLATFORM_OSX
+  int mib[2];
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+
+  size_t len = sizeof(*pTotalMemory);
+  if (sysctl(mib, 2, pTotalMemory, &len, NULL, 0) == 0)
+    return udR_Success;
+
+#endif
+
+  // All platforms that fail or don't support the function exit here
   *pTotalMemory = 0;
   return udR_Failure_;
-
-#elif UDPLATFORM_LINUX
-
-// see http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system for
-// explanation.
-
-#if !defined(_SC_PHYS_PAGES)
-#error "_SC_PHYS_PAGES is not defined"
-#endif
-
-#if !defined(_SC_PAGESIZE)
-#error "_SC_PAGESIZE is not defined"
-#endif
-
-  *pTotalMemory = (uint64_t)sysconf(_SC_PHYS_PAGES) * (uint64_t)sysconf(_SC_PAGESIZE);
-  return udR_Success;
-
-#else
-  *pTotalMemory = 0;
-  return udR_Success;
-#endif
 }
