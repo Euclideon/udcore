@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "udPlatform.h"
+#include "udStringUtil.h"
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, January 2019
@@ -18,4 +19,15 @@ TEST(udMemoryTests, Validate)
   void *pNumbersMemory = udMemDup(numbers, sizeof(numbers)-1, 10, udAF_Zero); //-1 to strip the \0
   EXPECT_EQ(0, memcmp(pNumbersMemory, expectedNumbers, sizeof(expectedNumbers)));
   udFree(pNumbersMemory);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2019
+TEST(udMemoryTests, GetTotalPhysicalMemory)
+{
+  uint64_t mem;
+
+  udGetTotalPhysicalMemory(&mem);
+  printf("Total memory reported: %sMB\n", udTempStr_CommaInt(mem / 1048576));
+  EXPECT_NE(0, mem);
 }
