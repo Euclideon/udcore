@@ -143,20 +143,18 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
     udFileHandler *pHandler = s_handlers + i;
     if (udStrBeginsWith(pNewFilename, pHandler->prefix))
     {
-      result = pHandler->fpOpen(ppFile, pNewFilename, flags);
-      if (result == udR_Success)
+      UD_ERROR_CHECK(pHandler->fpOpen(ppFile, pNewFilename, flags));
+
+      if (!(*ppFile)->pFilenameCopy) // In rare circumstances this can already be assigned
       {
-        if (!(*ppFile)->pFilenameCopy) // In rare circumstances this can already be assigned
-        {
-          (*ppFile)->pFilenameCopy = pNewFilename;
-          pNewFilename = nullptr;
-        }
-        (*ppFile)->flagsCopy = flags;
-        if (pFileLengthInBytes)
-          *pFileLengthInBytes = (*ppFile)->fileLength;
-        // Successfully opened
-        UD_ERROR_SET(udR_Success);
+        (*ppFile)->pFilenameCopy = pNewFilename;
+        pNewFilename = nullptr;
       }
+      (*ppFile)->flagsCopy = flags;
+      if (pFileLengthInBytes)
+        *pFileLengthInBytes = (*ppFile)->fileLength;
+      // Successfully opened
+      UD_ERROR_SET(udR_Success);
     }
   }
   // Getting here indicates no handler succeeded
