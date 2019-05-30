@@ -16,6 +16,7 @@ inline void udJSON::Set(double v)  { Destroy(); type = T_Double; u.dVal   = v; }
 // Accessors
 inline udJSON::Type udJSON::GetType() const { return type; }
 inline bool udJSON::IsVoid()           const { return (type == T_Void); }
+inline bool udJSON::IsBool()           const { return (type == T_Bool); }
 inline bool udJSON::IsNumeric()        const { return (type >= T_Int64 && type <= T_Double); }
 inline bool udJSON::IsIntegral()       const { return (type >= T_Int64 && type <= T_Int64); }
 inline bool udJSON::IsString()         const { return (type == T_String); }

@@ -134,6 +134,7 @@ public:
   // Accessors
   inline Type GetType() const;
   inline bool IsVoid() const;
+  inline bool IsBool() const;
   inline bool IsNumeric() const;
   inline bool IsIntegral() const;
   inline bool IsString() const;
