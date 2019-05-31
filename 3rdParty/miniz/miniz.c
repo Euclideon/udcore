@@ -3699,11 +3699,12 @@ static mz_bool mz_zip_reader_read_central_dir(mz_zip_archive *pZip, mz_uint flag
             if ((disk_index == MZ_UINT16_MAX) || ((disk_index != num_this_disk) && (disk_index != 1)))
                 return mz_zip_set_error(pZip, MZ_ZIP_UNSUPPORTED_MULTIDISK);
 
-            if (comp_size != MZ_UINT32_MAX)
-            {
-                if (((mz_uint64)MZ_READ_LE32(p + MZ_ZIP_CDH_LOCAL_HEADER_OFS) + MZ_ZIP_LOCAL_DIR_HEADER_SIZE + comp_size) > pZip->m_archive_size)
-                    return mz_zip_set_error(pZip, MZ_ZIP_INVALID_HEADER_OR_CORRUPTED);
-            }
+            // Dave Pevreal 31/5/2019: Commented this out as it appears to fail on valid zip files
+            //if (comp_size != MZ_UINT32_MAX)
+            //{
+            //    if (((mz_uint64)MZ_READ_LE32(p + MZ_ZIP_CDH_LOCAL_HEADER_OFS) + MZ_ZIP_LOCAL_DIR_HEADER_SIZE + comp_size) > pZip->m_archive_size)
+            //        return mz_zip_set_error(pZip, MZ_ZIP_INVALID_HEADER_OR_CORRUPTED);
+            //}
 
             bit_flags = MZ_READ_LE16(p + MZ_ZIP_CDH_BIT_FLAG_OFS);
             if (bit_flags & MZ_ZIP_GENERAL_PURPOSE_BIT_FLAG_LOCAL_DIR_IS_MASKED)
