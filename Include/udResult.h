@@ -36,8 +36,8 @@ constexpr unsigned udResultCalcHelpCode(const char filename[], const int line, u
 
 #define UD_ERROR_IF(cond, code)     do { if (cond)           { result = code; if (result) { UD_ERROR_SETLAST(__FILE__,__LINE__); constexpr unsigned _c = udResultCalcHelpCode(__FILE__,__LINE__); g_udLastErrorHelpCode = _c; if (g_udBreakOnError && UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } } goto epilogue; } } while(0)
 #define UD_ERROR_NULL(ptr, code)    do { if (ptr == nullptr) { result = code; if (result) { UD_ERROR_SETLAST(__FILE__,__LINE__); constexpr unsigned _c = udResultCalcHelpCode(__FILE__,__LINE__); g_udLastErrorHelpCode = _c; if (g_udBreakOnError && UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } } goto epilogue; } } while(0)
-#define UD_ERROR_HANDLE()           do {                                      if (result) { UD_ERROR_SETLAST(__FILE__,__LINE__); constexpr unsigned _c = udResultCalcHelpCode(__FILE__,__LINE__); g_udLastErrorHelpCode = _c; if (g_udBreakOnError && UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); }   goto epilogue; } } while(0)
 #define UD_ERROR_SET(code)          do { result = code;                       if (result) { UD_ERROR_SETLAST(__FILE__,__LINE__); constexpr unsigned _c = udResultCalcHelpCode(__FILE__,__LINE__); g_udLastErrorHelpCode = _c; if (g_udBreakOnError && UD_ERROR_BREAK_ON_ERROR) { __debugbreak(); } } goto epilogue;   } while(0)
+#define UD_ERROR_HANDLE()           do {                    if (result) goto epilogue; } while(0)
 #define UD_ERROR_CHECK(funcCall)    do { result = funcCall; if (result) goto epilogue; } while(0)
 #define UD_ERROR_SET_NO_BREAK(code) do { result = code;                 goto epilogue; } while(0)
 
