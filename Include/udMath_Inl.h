@@ -26,26 +26,28 @@ UDFORCE_INLINE float udSin(float f) { return sinf(f); }
 UDFORCE_INLINE double udSin(double d) { return sin(d); }
 UDFORCE_INLINE float udCos(float f) { return cosf(f); }
 UDFORCE_INLINE double udCos(double d) { return cos(d); }
+UDFORCE_INLINE float udTan(float f) { return tanf(f); }
+UDFORCE_INLINE double udTan(double d) { return tan(d); }
 UDFORCE_INLINE float udSinh(float f) { return sinhf(f); }
 UDFORCE_INLINE double udSinh(double d) { return sinh(d); }
 UDFORCE_INLINE float udCosh(float f) { return coshf(f); }
 UDFORCE_INLINE double udCosh(double d) { return cosh(d); }
-UDFORCE_INLINE float udTan(float f) { return tanf(f); }
-UDFORCE_INLINE double udTan(double d) { return tan(d); }
+UDFORCE_INLINE float udTanh(float f) { return tanhf(f); }
+UDFORCE_INLINE double udTanh(double d) { return tanh(d); }
 UDFORCE_INLINE float udASin(float f) { return asinf(f); }
 UDFORCE_INLINE double udASin(double d) { return asin(d); }
 UDFORCE_INLINE float udACos(float f) { return acosf(f); }
 UDFORCE_INLINE double udACos(double d) { return acos(d); }
-UDFORCE_INLINE float udASinh(float f) { return asinhf(f); }
-UDFORCE_INLINE double udASinh(double d) { return asinh(d); }
-UDFORCE_INLINE float udACosh(float f) { return acosf(f); }
-UDFORCE_INLINE double udACosh(double d) { return acosh(d); }
 UDFORCE_INLINE float udATan(float f) { return atanf(f); }
 UDFORCE_INLINE double udATan(double d) { return atan(d); }
-UDFORCE_INLINE float udATanh(float f) { return atanhf(f); }
-UDFORCE_INLINE double udATanh(double d) { return atanh(d); }
 UDFORCE_INLINE float udATan2(float y, float x) { return atan2f(y, x); }
 UDFORCE_INLINE double udATan2(double y, double x) { return atan2(y, x); }
+UDFORCE_INLINE float udASinh(float f) { return asinhf(f); }
+UDFORCE_INLINE double udASinh(double d) { return asinh(d); }
+UDFORCE_INLINE float udACosh(float f) { return acoshf(f); }
+UDFORCE_INLINE double udACosh(double d) { return acosh(d); }
+UDFORCE_INLINE float udATanh(float f) { return atanhf(f); }
+UDFORCE_INLINE double udATanh(double d) { return atanh(d); }
 
 UDFORCE_INLINE float udRound(float f) { return f >= 0.0f ? floorf(f + 0.5f) : ceilf(f - 0.5f); }
 UDFORCE_INLINE double udRound(double d) { return d >= 0.0 ? floor(d + 0.5) : ceil(d - 0.5); }
