@@ -991,3 +991,40 @@ TEST(MathTests, BasicMatrixFunctions)
     EXPECT_FLOAT_EQ(rotZ[i], ret.a[i]);
   }
 }
+
+TEST(MathTests, MatrixExtraction)
+{
+  const udDouble3 euler = udDouble3::create(UD_PI / 4.0, UD_PI / 6.0, 0);
+
+  const udDouble3 position = udDouble3::create(-23.7f, 0, 40.5f);
+  const udDoubleQuat orientation = udDoubleQuat::create(euler);
+  const udDouble3 scaleFactor = udDouble3::create(2, 4, 1);
+
+  const udDouble4x4 matrix = udDouble4x4::rotationQuat(orientation, position) * udDouble4x4::scaleNonUniform(scaleFactor);
+
+  udDouble3 outPosition;
+  udDoubleQuat outOrientation;
+  udDouble3 outScale;
+
+  matrix.extractTransforms(outPosition, outScale, outOrientation);
+
+  EXPECT_DOUBLE_EQ(position.x, outPosition.x);
+  EXPECT_DOUBLE_EQ(position.y, outPosition.y);
+  EXPECT_DOUBLE_EQ(position.z, outPosition.z);
+
+  EXPECT_DOUBLE_EQ(scaleFactor.x, outScale.x);
+  EXPECT_DOUBLE_EQ(scaleFactor.y, outScale.y);
+  EXPECT_DOUBLE_EQ(scaleFactor.z, outScale.z);
+
+  EXPECT_DOUBLE_EQ(orientation.x, outOrientation.x);
+  EXPECT_DOUBLE_EQ(orientation.y, outOrientation.y);
+  EXPECT_DOUBLE_EQ(orientation.z, outOrientation.z);
+  EXPECT_DOUBLE_EQ(orientation.w, outOrientation.w);
+
+  udDouble3 outMatYPR = matrix.extractYPR();
+  udDouble3 outQuatYPR = outOrientation.eulerAngles();
+
+  EXPECT_DOUBLE_EQ(outQuatYPR.x, outMatYPR.x);
+  EXPECT_DOUBLE_EQ(outQuatYPR.y, outMatYPR.y);
+  EXPECT_DOUBLE_EQ(outQuatYPR.z, outMatYPR.z);
+}

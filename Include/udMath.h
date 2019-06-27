@@ -414,6 +414,35 @@ template <typename T, typename U>
 udQuaternion<T> operator *(U f, const udQuaternion<T> &q) { return q * f; }
 
 template <typename T>
+struct udRay
+{
+  udVector3<T> position;
+  udVector3<T> direction;
+
+  // static members
+  static udRay<T> create(const udVector3<T> &position, const udVector3<T> &direction) { udRay<T> r = { position, direction }; return r; }
+
+  template <typename U>
+  static udRay<T> create(const udRay<U> &_v) { udRay<T> r = { udVector3<T>::create(_v.position), udVector3<T>::create(_v.direction) }; return r; }
+
+  static udRay<T> rotationAround(const udRay<T> &ray, const udVector3<T> &center, const udVector3<T> &axis, const T &angle);
+};
+
+template <typename T>
+struct udPlane
+{
+  udVector3<T> point;
+  udVector3<T> normal;
+
+  bool intersects(const udRay<T> &ray, udVector3<T> *pIntersectionPoint, T *pIntersectionDistance) const;
+
+  // static members
+  static udPlane<T> create(const udVector3<T> &position, const udVector3<T> &normal) { udPlane<T> r = { position, normal }; return r; }
+  template <typename U>
+  static udPlane<T> create(const udPlane<U> &_v) { udPlane<T> r = { udVector3<T>::create(_v.point), udVector3<T>::create(_v.normal) }; return r; }
+};
+
+template <typename T>
 struct udMatrix4x4
 {
   enum { ElementCount = 16 };
@@ -457,6 +486,8 @@ struct udMatrix4x4
   udMatrix4x4<T>& inverse();
 
   udVector3<T> extractYPR() const;
+  udQuaternion<T> extractQuaternion() const;
+  void extractTransforms(udVector3<T> &position, udVector3<T> &scale, udQuaternion<T> &orientation) const;
 
   // static members
   static udMatrix4x4<T> identity();

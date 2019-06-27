@@ -486,6 +486,48 @@ udQuaternion<T> udConjugate(const udQuaternion<T> &q)
   return r;
 }
 
+// udRay members
+template <typename T>
+udRay<T> udRay<T>::rotationAround(const udRay<T> &ray, const udVector3<T> &center, const udVector3<T> &axis, const T &angle)
+{
+  udRay<T> r;
+
+  udQuaternion<T> rotation = udQuaternion<T>::create(axis, angle);
+
+  udVector3<T> direction = ray.position - center; // find current direction relative to center
+  r.position = center + rotation.apply(direction); // define new position
+  r.direction = udMath_DirFromYPR((rotation * udQuaternion<T>::create(udMath_DirToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
+
+  return r;
+}
+
+// udPlane members
+template <typename T>
+bool udPlane<T>::intersects(const udRay<T> &ray, udVector3<T> *pIntersectionPoint, T *pIntersectionDistance) const
+{
+  udVector3<T> rayDir = ray.direction;
+  udVector3<T> planeRay = point - ray.position;
+
+  T denom = udDot(normal, rayDir);
+  T distance = T(0);
+
+  if (denom == T(0))
+    return false; // Plane is parallel to the ray
+
+  distance = udDot(planeRay, normal) / denom;
+
+  if (distance < T(0))
+    return false; // Behind the ray
+
+  if (pIntersectionPoint)
+    *pIntersectionPoint = ray.position + rayDir * distance;
+
+  if (pIntersectionDistance)
+    *pIntersectionDistance = distance;
+
+  return true;
+}
+
 // udMatrix4x4 members
 template <typename T>
 udMatrix4x4<T>& udMatrix4x4<T>::transpose()
@@ -567,6 +609,67 @@ udVector3<T> udMatrix4x4<T>::extractYPR() const
   return udVector3<T>::create(y < T(0) ? y + T(UD_2PI) : y, p < T(0) ? p + T(UD_2PI) : p, r < T(0) ? r + T(UD_2PI) : r);
 }
 
+template <typename T>
+udQuaternion<T> udMatrix4x4<T>::extractQuaternion() const
+{
+  udQuaternion<T> retVal;
+
+  // Matrix to Quat code from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+  T tr = m._00 + m._11 + m._22;
+
+  if (tr > T(0))
+  {
+    T S = (T)(udSqrt(tr + T(1)) * T(2)); // S=4*qw
+    retVal.w = T(0.25) * S;
+    retVal.x = (m._21 - m._12) / S;
+    retVal.y = (m._02 - m._20) / S;
+    retVal.z = (m._10 - m._01) / S;
+  }
+  else if ((m._00 > m._11) & (m._00 > m._22))
+  {
+    T S = udSqrt(T(1) + m._00 - m._11 - m._22) * T(2); // S=4*qx
+    retVal.w = (m._21 - m._12) / S;
+    retVal.x = T(0.25) * S;
+    retVal.y = (m._01 + m._10) / S;
+    retVal.z = (m._02 + m._20) / S;
+  }
+  else if (m._11 > m._22)
+  {
+    T S = udSqrt(T(1) + m._11 - m._00 - m._22) * T(2); // S=4*qy
+    retVal.w = (m._02 - m._20) / S;
+    retVal.x = (m._01 + m._10) / S;
+    retVal.y = T(0.25) * S;
+    retVal.z = (m._12 + m._21) / S;
+  }
+  else
+  {
+    T S = udSqrt(T(1) + m._22 - m._00 - m._11) * T(2); // S=4*qz
+    retVal.w = (m._10 - m._01) / S;
+    retVal.x = (m._02 + m._20) / S;
+    retVal.y = (m._12 + m._21) / S;
+    retVal.z = T(0.25) * S;
+  }
+
+  return udNormalize(retVal);
+}
+
+template<typename T>
+void udMatrix4x4<T>::extractTransforms(udVector3<T> &position, udVector3<T> &scale, udQuaternion<T> &orientation) const
+{
+  udMatrix4x4<T> mat = *this; //Copy it so we can make changes
+
+  //Extract position
+  position = mat.axis.t.toVector3();
+
+  //Extract scales
+  scale = udVector3<T>::create(udMag3(mat.axis.x), udMag3(mat.axis.y), udMag3(mat.axis.z));
+  mat.axis.x /= scale.x;
+  mat.axis.y /= scale.y;
+  mat.axis.z /= scale.z;
+
+  //Extract rotation
+  orientation = mat.extractQuaternion();
+}
 
 // udQuaternion members
 template <typename T>
@@ -658,7 +761,7 @@ udMatrix4x4<T> udMatrix4x4<T>::create(const udVector4<T> &xColumn, const udVecto
 }
 
 template <typename T>
-template <typename U> // OMG, nested templates... I didn't even know this was a thing!
+template <typename U>
 udMatrix4x4<T> udMatrix4x4<T>::create(const udMatrix4x4<U> &_m)
 {
   udMatrix4x4<T> r = {{{ T(_m.m._00), T(_m.m._10), T(_m.m._20), T(_m.m._30),

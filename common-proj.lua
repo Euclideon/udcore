@@ -9,7 +9,6 @@ targetname "%{prj.name}"
 flags { "NoMinimalRebuild", "NoPCH" }
 exceptionhandling "Off"
 rtti "Off"
-floatingpoint "Fast"
 editandcontinue "Off"
 
 -- TODO: the original project files had some options that premake can't express, we should add them to premake?
