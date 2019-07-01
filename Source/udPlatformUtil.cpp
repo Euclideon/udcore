@@ -9,6 +9,7 @@
 
 #include <sys/stat.h>
 #include <time.h>
+#include <chrono>
 
 #if UDPLATFORM_WINDOWS
 #include <io.h>
@@ -189,6 +190,34 @@ int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr)
   }
 
   return maxDays - daysSince;
+}
+
+// ****************************************************************************
+// Author: Paul Fox, July 2019
+int64_t udGetEpochSecsUTCd()
+{
+  return std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
+}
+
+// ****************************************************************************
+// Author: Paul Fox, July 2019
+double udGetEpochSecsUTCf()
+{
+  return 1.0 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
+}
+
+// ****************************************************************************
+// Author: Paul Fox, July 2019
+int64_t udGetEpochMilliSecsUTCd()
+{
+  return 1000 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
+}
+
+// ****************************************************************************
+// Author: Paul Fox, July 2019
+double udGetEpochMilliSecsUTCf()
+{
+  return 1000.0 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
 }
 
 #if UDPLATFORM_WINDOWS
@@ -801,21 +830,31 @@ struct udFindDirData : public udFindDir
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2014
-udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
+udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes, int64_t *pModifiedTime)
 {
 #if UD_32BIT
 # define UD_STAT_STRUCT stat
 # define UD_STAT_FUNC stat
+# define UD_STAT_MODTIME (int64_t)st.st_mtime
 #elif UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
   // Apple made these 64bit and deprecated the 64bit variants
 # define UD_STAT_STRUCT stat
 # define UD_STAT_FUNC stat
+# define UD_STAT_MODTIME (int64_t)st.st_mtime
 #elif UDPLATFORM_WINDOWS
 # define UD_STAT_STRUCT _stat64
 # define UD_STAT_FUNC _wstat64
-#else
+# define UD_STAT_MODTIME (int64_t)st.st_mtime
+#elif UDPLATFORM_LINUX
 # define UD_STAT_STRUCT stat64
 # define UD_STAT_FUNC stat64
+# define UD_STAT_MODTIME (int64_t)st.st_mtim.tv_sec
+#elif UDPLATFORM_ANDROID
+# define UD_STAT_STRUCT stat64
+# define UD_STAT_FUNC stat64
+# define UD_STAT_MODTIME (int64_t)st.st_mtime
+#else
+# error "Unsupported Platform"
 #endif
 
   struct UD_STAT_STRUCT st;
@@ -824,6 +863,10 @@ udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes)
   {
     if (pFileLengthInBytes)
       *pFileLengthInBytes = (int64_t)st.st_size;
+
+    if (pModifiedTime)
+      *pModifiedTime = UD_STAT_MODTIME;
+
     return udR_Success;
   }
   else

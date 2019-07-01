@@ -4,6 +4,7 @@
 #include "udCrypto.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
+#include "udMath.h"
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, July 2017
@@ -12,13 +13,25 @@ TEST(udFileTests, GeneralFileTests)
   const char *pFileName = "._donotcommit";
   EXPECT_NE(udR_Success, udFileExists(pFileName));
 
+  int64_t currentTime = udGetEpochSecsUTCd();
+
   udFile *pFile;
   if (udFile_Open(&pFile, pFileName, udFOF_Write) == udR_Success)
+  {
+    udFile_Write(pFile, "TEST", 4);
     udFile_Close(&pFile);
+  }
 
-  EXPECT_EQ(udR_Success, udFileExists(pFileName));
+  int64_t size = 0;
+  int64_t modifyTime = 0;
+
+  EXPECT_EQ(udR_Success, udFileExists(pFileName, &size, &modifyTime));
+
+  EXPECT_EQ(4, size);
+  EXPECT_GT(2, udAbs(currentTime - modifyTime));
+
   EXPECT_EQ(udR_Success, udFileDelete(pFileName));
-  EXPECT_NE(udR_Success, udFileExists(pFileName));
+  EXPECT_EQ(udR_ObjectNotFound, udFileExists(pFileName));
 }
 
 TEST(udFileTests, GeneralDirectoryTests)
@@ -81,13 +94,15 @@ TEST(udFileTests, BasicReadWriteLoadFILE)
 
 TEST(udFileTests, EncryptedReadWriteFILE)
 {
+  udCrypto_Init();
+
   const char *pFileName = "._donotcommit_EncryptedFILEtest";
   const char writeBuffer[] = "Testing!asdfasdfasdfasdfasdfasd";
   char cipherBuffer[UDARRAYSIZE(writeBuffer)];
   uint8_t *pKey = nullptr;
   size_t keyLen = 0;
   const char *pKeyBase64 = nullptr;
-  udCryptoKey_DeriveFromRandom(&pKeyBase64, udCCKL_AES256KeyLength);
+  ASSERT_EQ(udR_Success, udCryptoKey_DeriveFromRandom(&pKeyBase64, udCCKL_AES256KeyLength));
   EXPECT_EQ(udR_Success, udBase64Decode(&pKey, &keyLen, pKeyBase64));
   EXPECT_NE(udR_Success, udFileExists(pFileName));
 
@@ -117,6 +132,8 @@ TEST(udFileTests, EncryptedReadWriteFILE)
   EXPECT_EQ(udR_Success, udFileExists(pFileName));
   EXPECT_EQ(udR_Success, udFileDelete(pFileName));
   EXPECT_NE(udR_Success, udFileExists(pFileName));
+
+  udCrypto_Deinit();
 }
 
 static char s_customFileHandler_buffer[32];

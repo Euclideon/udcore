@@ -95,6 +95,11 @@ float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end = 0); // Get e
 float udPerfCounterSeconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
 int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr); // Return the number of days until the build expires
 
+int64_t udGetEpochSecsUTCd();
+double udGetEpochSecsUTCf();
+int64_t udGetEpochMilliSecsUTCd();
+double udGetEpochMilliSecsUTCf();
+
 #if UDPLATFORM_WINDOWS
 // *********************************************************************
 // Helper to convert a UTF8 string to wide char for Windows OS calls
@@ -307,7 +312,7 @@ struct udFindDir
 };
 
 // Test for existence of a file, on OS FILESYSTEM only (not registered file handlers)
-udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes = nullptr);
+udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes = nullptr, int64_t *pModifiedTime = nullptr);
 
 // Delete a file, on OS FILESYSTEM only (not registered file handlers)
 udResult udFileDelete(const char *pFilename);
