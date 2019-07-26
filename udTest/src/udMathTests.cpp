@@ -994,7 +994,7 @@ TEST(MathTests, BasicMatrixFunctions)
 
 TEST(MathTests, MatrixExtraction)
 {
-  const udDouble3 euler = udDouble3::create(UD_PI / 4.0, UD_PI / 6.0, 0);
+  const udDouble3 euler = udDouble3::create(UD_PI / 4.0, UD_PI / 6.0, UD_PI / 8.0);
 
   const udDouble3 position = udDouble3::create(-23.7f, 0, 40.5f);
   const udDoubleQuat orientation = udDoubleQuat::create(euler);
