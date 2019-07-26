@@ -87,6 +87,10 @@ TEST(udFileTests, BasicReadWriteLoadFILE)
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
+  EXPECT_EQ(udR_Success, udFile_Load(pFileName, &pLoadBuffer));
+  EXPECT_STREQ(writeBuffer, pLoadBuffer);
+  udFree(pLoadBuffer);
+
   EXPECT_EQ(udR_Success, udFileExists(pFileName));
   EXPECT_EQ(udR_Success, udFileDelete(pFileName));
   EXPECT_NE(udR_Success, udFileExists(pFileName));

@@ -52,6 +52,9 @@ struct udFilePerformance
 // Load an entire file, appending a nul terminator. Calls Open/Read/Close internally.
 udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes = nullptr);
 
+template<typename T>
+inline udResult udFile_Load(const char *pFilename, T **ppMemory, int64_t *pFileLengthInBytes = nullptr) { return udFile_Load(pFilename, (void**)ppMemory, pFileLengthInBytes); }
+
 // Save an entire file, Calls Open/Write/Close internally.
 udResult udFile_Save(const char *pFilename, void *pBuffer, size_t length);
 
