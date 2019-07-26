@@ -227,31 +227,6 @@ TEST(udThreadTests, TimeSemaphore)
   udDestroySemaphore(&pSemaphore);
 }
 
-TEST(udThreadTests, DeletedSemaphore)
-{
-  // Need this so that the pointer is also zeroed in the thread
-  // this is closer to the expected use-case when deleting an
-  // object that's being used everywhere.
-  struct TestStruct
-  {
-    udSemaphore *pSemaphore;
-  };
-
-  TestStruct data;
-  data.pSemaphore = udCreateSemaphore();
-
-  udThread *pThread;
-  udThread_Create(&pThread, [](void *pData) -> unsigned int { TestStruct *pTestData = (TestStruct*)pData; EXPECT_NE(0, udWaitSemaphore(pTestData->pSemaphore)); return 0; }, &data);
-
-  // Sleep for 2 seconds
-  udSleep(2000);
-
-  udDestroySemaphore(&data.pSemaphore);
-
-  udThread_Join(pThread);
-  udThread_Destroy(&pThread);
-}
-
 TEST(udThreadTests, MultipleIncrements)
 {
   udSemaphore *pSemaphore = udCreateSemaphore();

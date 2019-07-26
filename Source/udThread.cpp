@@ -354,7 +354,6 @@ struct udSemaphore
 # endif
 
   volatile int count;
-  volatile int refCount;
 #endif
 };
 
@@ -389,7 +388,6 @@ udSemaphore *udCreateSemaphore()
 # endif
 
   pSemaphore->count = 0;
-  pSemaphore->refCount = 1;
 #endif
 
   result = udR_Success;
@@ -511,28 +509,7 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
 # else
   udLockMutex(pSemaphore->pMutex);
 # endif
-  if (udInterlockedPreDecrement(&pSemaphore->refCount) == 0)
-  {
-    udDestroySemaphore_Internal(pSemaphore);
-  }
-  else
-  {
-    int refCount = pSemaphore->refCount;
-    for (int i = 0; i < refCount; ++i)
-    {
-      ++(pSemaphore->count);
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-      udWakeSemaphore_Internal(pSemaphore);
-# else
-      udSignalConditionVariable(pSemaphore->pCondition);
-# endif
-    }
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-    udUnlockSemaphore_Internal(pSemaphore);
-# else
-    udReleaseMutex(pSemaphore->pMutex);
-# endif
-  }
+  udDestroySemaphore_Internal(pSemaphore);
 #endif
 }
 
@@ -540,10 +517,10 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
 // Author: Samuel Surtees, August 2017
 void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
 {
-#if UD_USE_PLATFORM_SEMAPHORE
   if (pSemaphore == nullptr)
     return;
 
+#if UD_USE_PLATFORM_SEMAPHORE
 # if UDPLATFORM_WINDOWS
   ReleaseSemaphore(pSemaphore->handle, count, nullptr);
 # elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
@@ -553,11 +530,6 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
     sem_post(&pSemaphore->handle);
 # endif
 #else
-  // Exit the function if the refCount is 0 - It's being destroyed!
-  if (pSemaphore == nullptr || pSemaphore->refCount == 0)
-    return;
-
-  udInterlockedPreIncrement(&pSemaphore->refCount);
   while (count-- > 0)
   {
 # if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
@@ -572,7 +544,6 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
     udReleaseMutex(pSemaphore->pMutex);
 # endif
   }
-  udInterlockedPreDecrement(&pSemaphore->refCount);
 #endif
 }
 
@@ -580,10 +551,10 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
 // Author: Samuel Surtees, August 2017
 int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 {
-#if UD_USE_PLATFORM_SEMAPHORE
   if (pSemaphore == nullptr)
     return -1;
 
+#if UD_USE_PLATFORM_SEMAPHORE
 # if UDPLATFORM_WINDOWS
   return WaitForSingleObject(pSemaphore->handle, waitMs);
 # elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
@@ -609,11 +580,6 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
   }
 # endif
 #else
-  // Exit the function if the refCount is 0 - It's being destroyed!
-  if (pSemaphore == nullptr || pSemaphore->refCount == 0)
-    return -1;
-
-  udInterlockedPreIncrement(&pSemaphore->refCount);
 # if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
   udLockSemaphore_Internal(pSemaphore);
 # else
@@ -665,22 +631,14 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
     }
   }
 
-  if (udInterlockedPreDecrement(&pSemaphore->refCount) == 0)
-  {
-    udDestroySemaphore_Internal(pSemaphore);
-    return -1;
-  }
-  else
-  {
 # if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-    udUnlockSemaphore_Internal(pSemaphore);
+  udUnlockSemaphore_Internal(pSemaphore);
 # else
-    udReleaseMutex(pSemaphore->pMutex);
+  udReleaseMutex(pSemaphore->pMutex);
 # endif
 
-    // 0 is success, not 0 is failure
-    return !retVal;
-  }
+  // 0 is success, not 0 is failure
+  return !retVal;
 #endif
 }
 
