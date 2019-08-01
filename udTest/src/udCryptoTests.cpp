@@ -469,6 +469,8 @@ TEST(udCryptoTests, Utilities)
     EXPECT_EQ(nullptr, pTestStr);
 #if UDPLATFORM_WINDOWS
     EXPECT_NE(0, memcmp(pOldPointer, pZeros, udStrlen(pZeros) + 1));
+#else
+    udUnused(pOldPointer);
 #endif
   }
 }

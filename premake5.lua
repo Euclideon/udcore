@@ -106,6 +106,7 @@ solution "udCore"
 	editorintegration "on"
 	cppdialect "C++11"
 	xcodebuildsettings { ["CLANG_CXX_LANGUAGE_STANDARD"] = "c++0x" } -- XCode doesn't support c++11, needs to be c++0x
+	editandcontinue "Off"
 
 	startproject "udTest"
 

@@ -16,7 +16,7 @@ project ("udCore" .. (projectSuffix or ""))
 	includedirs { "Include" }
 
 	-- include common stuff
-	dofile "common-proj.lua"
+	dofile "bin/premake-bin/common-proj.lua"
 
 	files { "3rdParty/mbedtls/library/*.c", "3rdParty/mbedtls/include/mbedtls/*.h" }
 
@@ -38,9 +38,5 @@ project ("udCore" .. (projectSuffix or ""))
 	filter { "system:Windows" }
 		targetdir "Lib/%{cfg.system}_%{cfg.shortname}"
 		symbolspath "$(TargetDir)/$(ProjectName).pdb"
-
-	-- for nacl, make the output name and location identical to that of udbin
-	filter { "system:nacl" }
-		targetdir "Lib/windows_%{cfg.shortname}"
 
 	filter {}

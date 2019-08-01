@@ -933,6 +933,7 @@ TEST(MathTests, BasicMatrixFunctions)
     EXPECT_FLOAT_EQ(float(i + 1), b.a[i]);
     EXPECT_FLOAT_EQ(float(i + 1), c.a[i]);
     EXPECT_FLOAT_EQ(float(i + 1), d.a[i]);
+    EXPECT_FLOAT_EQ(float(i + 1), constD.a[i]);
   }
 
   udFloat4x4 ret = a + b;

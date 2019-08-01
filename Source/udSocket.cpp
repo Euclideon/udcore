@@ -21,13 +21,15 @@
 # pragma comment(lib, "Crypt32.lib")
 #else
 /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
-# include <sys/errno.h>
 # include <sys/socket.h>
 # include <arpa/inet.h>
 # include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
 # include <unistd.h> /* Needed for close() */
 # if UDPLATFORM_EMSCRIPTEN
 #  include <sys/select.h>
+#  include <errno.h>
+# else
+#  include <sys/errno.h>
 # endif
 #endif
 

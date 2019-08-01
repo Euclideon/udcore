@@ -13,12 +13,12 @@
 #include "udStringUtil.h"
 #include "udFileHandler.h"
 
+#if !UDPLATFORM_EMSCRIPTEN
 static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
 static udFile_SeekReadHandlerFunc                 udFileHandler_HTTPSeekRead;
 static udFile_BlockForPipelinedRequestHandlerFunc udFileHandler_HTTPBlockForPipelinedRequest;
 static udFile_CloseHandlerFunc                    udFileHandler_HTTPClose;
 
-#if !UDPLATFORM_EMSCRIPTEN
 // Register the HTTP handler (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP()
 {
@@ -27,7 +27,6 @@ udResult udFile_RegisterHTTP()
     result = udFile_RegisterHandler(udFileHandler_HTTPOpen, "https:");
   return result;
 }
-#endif
 
 
 static char s_HTTPHeaderString[] = "HEAD %s HTTP/1.1\r\nHost: %s\r\nConnection: Keep-Alive\r\nUser-Agent: Euclideon udSDK/2.0\r\n\r\n";
@@ -359,3 +358,4 @@ static udResult udFileHandler_HTTPClose(udFile **ppFile)
 
   return udR_Success;
 }
+#endif //!UDPLATFORM_EMSCRIPTEN

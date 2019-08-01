@@ -17,7 +17,7 @@
 
 // ----------------------------------------------------------------------------
 // Author: Samuel Surtees, November 2018
-static udResult udFileHandler_EmscriptenHTTPSeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest)
+static udResult udFileHandler_EmscriptenHTTPSeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   UDTRACE();
   udResult result = udR_Success;
@@ -65,7 +65,7 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Samuel Surtees, November 2018
-udResult udFileHandler_EmscriptenHTTPOpen(udFile **ppFile, const char *pFilename, udFileOpenFlags flags)
+udResult udFileHandler_EmscriptenHTTPOpen(udFile **ppFile, const char * /*pFilename*/, udFileOpenFlags /*flags*/)
 {
   UDTRACE();
   udResult result;

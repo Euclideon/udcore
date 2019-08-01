@@ -15,7 +15,7 @@ project(googletestPath)
 	files { "project.lua" }
 
 	-- include common stuff
-	dofile "../../common-proj.lua"
+	dofile "../../bin/premake-bin/common-proj.lua"
 
 	-- we use exceptions
 	exceptionhandling "Default"

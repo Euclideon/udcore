@@ -29,7 +29,7 @@ project ("udTest" .. (projectSuffix or ""))
 		links { "Foundation.framework", "Security.framework" }
 
 	-- include common stuff
-	dofile "../common-proj.lua"
+	dofile "../bin/premake-bin/common-proj.lua"
 	exceptionhandling "Default"
 
 	debugdir "../"
