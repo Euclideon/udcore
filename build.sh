@@ -4,19 +4,30 @@ if [ $# -eq 0 ]; then
 	./build.sh Debug x64;
 	./build.sh Release x64;
 else
-	git submodule sync --recursive
-	git submodule update --init --recursive
+	git submodule sync
+	if [ $? -ne 0 ]; then exit 3; fi
+	git submodule update --init
+	if [ $? -ne 0 ]; then exit 3; fi
+	git submodule foreach --recursive "git submodule sync && git submodule update --init"
 	if [ $? -ne 0 ]; then exit 3; fi
 
 	if [ $OSTYPE == "msys" ]; then # Windows, MingW
-		bin/premake-bin/premake5.exe vs2015
-		if [ $? -ne 0 ]; then exit 4; fi
+		if [ $# -gt 2]; then
+			bin/premake-bin/premake5.exe vs2019 --os=$3
+			if [ $? -ne 0 ]; then exit 4; fi
 
-		"C:/Program Files (x86)/MSBuild/14.0/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
-		if [ $? -ne 0 ]; then exit 5; fi
+			"C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
+			if [ $? -ne 0 ]; then exit 5; fi
+		else
+			bin/premake-bin/premake5.exe vs2015
+			if [ $? -ne 0 ]; then exit 4; fi
 
-		Output/bin/${1}_${2}/udTest.exe
-		if [ $? -ne 0 ]; then exit 1; fi
+			"C:/Program Files (x86)/MSBuild/14.0/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
+			if [ $? -ne 0 ]; then exit 5; fi
+
+			Output/bin/${1}_${2}/udTest.exe
+			if [ $? -ne 0 ]; then exit 1; fi
+		fi
 	elif ([[ $OSTYPE == "darwin"* ]] && [ $# -ge 3 ] && [ $3 == "xcode" ]); then # macOS XCode build (only used to ensure project builds in xcode)
 		bin/premake-bin/premake5-osx xcode4 $PREMAKEOPTIONS
 		if [ $? -ne 0 ]; then exit 4; fi

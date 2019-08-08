@@ -1,5 +1,3 @@
-require "ios"
-require "android"
 require "vstudio"
 require "emscripten"
 
@@ -33,35 +31,15 @@ filter { "system:ios", "action:xcode4" }
 		['DEVELOPMENT_TEAM'] = "452P989JPT",
 		['ENABLE_BITCODE'] = "NO",
 	}
-filter {}
-
+	
 -- Android stuff (This should be handled much better)
 filter { "system:android" }
-  toolchainversion "4.9"
-  systemversion "21"
-  defines { "_LARGEFILE_SOURCE" }
-  buildoptions {
-    "-ffast-math",
-    "-pthread",
-    "-fexcess-precision=fast"
-  }
+	--toolset "clang" --Premake is complaining if this is explictly set- works correctly not being set though
+	toolchainversion "5.0"
+	stl "libc++"
+	defines { "_LARGEFILE_SOURCE" }
+	
 filter {}
-
--- TODO: Remove this when moving to a more updated version than alpha12
-premake.override(premake.vstudio.vc2010.elements, "clCompile", function(oldfn, cfg)
-	local calls = oldfn(cfg)
-
-	-- Inject programDatabaseFileName support back in
-	if cfg.kind == premake.STATICLIB then
-		table.insert(calls, function (cfg)
-			if cfg.symbolspath and cfg.symbols ~= premake.OFF and cfg.debugformat ~= "c7" then
-				premake.vstudio.vc2010.element("ProgramDataBaseFileName", nil, premake.project.getrelative(cfg.project, cfg.symbolspath))
-			end
-		end)
-	end
-
-	return calls
-end)
 
 -- TODO: Move this into the emscripten module
 function premake.modules.emscripten.emcc.getrunpathdirs(cfg, dirs)

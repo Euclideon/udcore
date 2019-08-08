@@ -2,7 +2,7 @@ project ("udTest" .. (projectSuffix or ""))
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++11"
-	flags { "StaticRuntime" }
+	staticruntime "On"
 
 	includedirs { "../3rdParty" }
 	includedirs { "../3rdParty/googletest/" .. googletestPath .. "/include" }

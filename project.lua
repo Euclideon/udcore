@@ -2,7 +2,8 @@ project ("udCore" .. (projectSuffix or ""))
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++11"
-	flags { "StaticRuntime", "OmitDefaultLibrary", "FatalWarnings" }
+	staticruntime "On"
+	flags { "OmitDefaultLibrary", "FatalWarnings" }
 
 	files { "Source/**", "Include/**", "Docs/**" }
 

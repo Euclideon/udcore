@@ -183,38 +183,34 @@ ios_xcode_debug_x86_64_clang:
   script: "./build.sh Debug x86_64 ios xcode"
   tags:
     - osx
-
-android_debug_arm64_gcc:
-  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
-  stage: build
-  script: "./build.sh Debug arm64 android"
-  tags:
-    - linux
-    - docker
-
-android_release_arm64_gcc:
-  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
-  stage: build
-  script: "./build.sh Release arm64 android"
-  tags:
-    - linux
-    - docker
-
-android_debug_x86_64_gcc:
-  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
-  stage: build
-  script: "./build.sh Debug x64 android"
-  tags:
-    - linux
-    - docker
-
-android_release_x86_64_gcc:
-  image: gitlab.euclideon.com:4567/docker-images/android-xenial:v1
-  stage: build
-  script: "./build.sh Release x64 android"
-  tags:
-    - linux
-    - docker
+    
+##android_debug_arm64:
+##  stage: build
+##  script: "./build.sh Debug arm64 android"
+##  tags:
+##    - windows
+##    - vs2019
+##
+##android_release_arm64:
+##  stage: build
+##  script: "./build.sh Release arm64 android"
+##  tags:
+##    - windows
+##    - vs2019
+##
+##android_debug_x64:
+##  stage: build
+##  script: "./build.sh Debug x64 android"
+##  tags:
+##    - windows
+##    - vs2019
+##
+##android_release_x64:
+##  stage: build
+##  script: "./build.sh Release x64 android"
+##  tags:
+##    - windows
+##    - vs2019
 
 emscripten_release_js_emcc:
   image: gitlab.euclideon.com:4567/docker-images/emscripten-bionic:v1

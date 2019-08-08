@@ -1,6 +1,3 @@
-[submodule "legacy"]
-	path = legacy
-	url = ../../rnd/legacy.git
 [submodule "bin/premake-bin"]
 	path = bin/premake-bin
-	url = ../../external/premake-bin.git
+	url = ../../Euclideon/premake-bin.git
