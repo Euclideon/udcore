@@ -700,12 +700,12 @@ float udStrAtof(const char *pStr, int *pCharCount)
     ++charCount;
   }
 
-  float result = (float)udStrAtoi(pStr + charCount, &tmpCharCount);
+  float result = (float)udStrAtoi64(pStr + charCount, &tmpCharCount);
   charCount += tmpCharCount;
   if (pStr[charCount] == '.')
   {
     ++charCount;
-    int32_t fraction = udStrAtoi(pStr + charCount, &tmpCharCount);
+    int64_t fraction = udStrAtoi64(pStr + charCount, &tmpCharCount);
     charCount += tmpCharCount;
     if (result >= 0.f)
       result += fraction / powf(10.f, (float)tmpCharCount);

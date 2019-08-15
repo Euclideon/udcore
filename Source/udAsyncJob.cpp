@@ -1,14 +1,14 @@
 #include "udAsyncJob.h"
 #include "udThread.h"
 
-#define RESULT_SENTINAL ((udResult)-1) // A sentinal value used to determine when valid result has been written
-#define RESULT_PENDING ((udResult)-2) // A sentinal value used to determine when async call has been made and not returned
+#define RESULT_SENTINAL -1 // A sentinal value used to determine when valid result has been written
+#define RESULT_PENDING  -2 // A sentinal value used to determine when async call has been made and not returned
 
 struct udAsyncJob
 {
   udSemaphore *pSemaphore;
-  volatile udResult returnResult;
-  volatile bool pending;
+  volatile int32_t returnResult;
+  volatile int32_t pending; // Actually a bool but need interlocked support
 };
 
 // ****************************************************************************
@@ -22,8 +22,8 @@ udResult udAsyncJob_Create(udAsyncJob **ppJobHandle)
   UD_ERROR_NULL(pJob, udR_MemoryAllocationFailure);
   pJob->pSemaphore = udCreateSemaphore();
   UD_ERROR_NULL(pJob->pSemaphore, udR_MemoryAllocationFailure);
-  pJob->returnResult = RESULT_SENTINAL;
-  pJob->pending = false;
+  udInterlockedExchange(&pJob->returnResult, RESULT_SENTINAL);
+  udInterlockedExchange(&pJob->pending, 0);
   *ppJobHandle = pJob;
   pJob = nullptr;
   result = udR_Success;
@@ -40,7 +40,7 @@ void udAsyncJob_SetResult(udAsyncJob *pJobHandle, udResult returnResult)
 {
   if (pJobHandle)
   {
-    pJobHandle->returnResult = returnResult;
+    udInterlockedExchange(&pJobHandle->returnResult, returnResult);
     udIncrementSemaphore(pJobHandle->pSemaphore);
   }
 }
@@ -54,9 +54,8 @@ udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle)
     if (pJobHandle->pending)
     {
       udWaitSemaphore(pJobHandle->pSemaphore);
-      udResult result = pJobHandle->returnResult;
-      pJobHandle->returnResult = RESULT_SENTINAL;
-      pJobHandle->pending = false;
+      udResult result = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
+      udInterlockedExchange(&pJobHandle->pending, 0);
       return result;
     }
     else
@@ -76,9 +75,8 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
     udWaitSemaphore(pJobHandle->pSemaphore, timeoutMs);
     if (pJobHandle->returnResult != RESULT_SENTINAL)
     {
-      *pResult = pJobHandle->returnResult;
-      pJobHandle->returnResult = RESULT_SENTINAL;
-      pJobHandle->pending = false;
+      *pResult = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
+      udInterlockedExchange(&pJobHandle->pending, 0);
       return true;
     }
   }
@@ -90,14 +88,15 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
 void udAsyncJob_SetPending(udAsyncJob *pJobHandle)
 {
   if (pJobHandle)
-    pJobHandle->pending = true;
+    udInterlockedExchange(&pJobHandle->pending, 1);
 }
 
 // ****************************************************************************
 // Author: Dave Pevreal, June 2018
 bool udAsyncJob_IsPending(udAsyncJob *pJobHandle)
 {
-  return (pJobHandle) ? pJobHandle->pending : false;
+  udMemoryBarrier();
+  return (pJobHandle && pJobHandle->pending) ? true : false;
 }
 
 // ****************************************************************************
