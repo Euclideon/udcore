@@ -8,7 +8,7 @@ struct udAsyncJob
 {
   udSemaphore *pSemaphore;
   volatile int32_t returnResult;
-  volatile int32_t pending; // Actually a bool but need interlocked support
+  udInterlockedBool pending;
 };
 
 // ****************************************************************************
@@ -23,7 +23,7 @@ udResult udAsyncJob_Create(udAsyncJob **ppJobHandle)
   pJob->pSemaphore = udCreateSemaphore();
   UD_ERROR_NULL(pJob->pSemaphore, udR_MemoryAllocationFailure);
   udInterlockedExchange(&pJob->returnResult, RESULT_SENTINAL);
-  udInterlockedExchange(&pJob->pending, 0);
+  pJob->pending = false;
   *ppJobHandle = pJob;
   pJob = nullptr;
   result = udR_Success;
@@ -55,7 +55,7 @@ udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle)
     {
       udWaitSemaphore(pJobHandle->pSemaphore);
       udResult result = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
-      udInterlockedExchange(&pJobHandle->pending, 0);
+      pJobHandle->pending = false;
       return result;
     }
     else
@@ -76,7 +76,7 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
     if (pJobHandle->returnResult != RESULT_SENTINAL)
     {
       *pResult = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
-      udInterlockedExchange(&pJobHandle->pending, 0);
+      pJobHandle->pending = false;
       return true;
     }
   }
@@ -88,7 +88,7 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
 void udAsyncJob_SetPending(udAsyncJob *pJobHandle)
 {
   if (pJobHandle)
-    udInterlockedExchange(&pJobHandle->pending, 1);
+    pJobHandle->pending = true;
 }
 
 // ****************************************************************************
@@ -96,7 +96,7 @@ void udAsyncJob_SetPending(udAsyncJob *pJobHandle)
 bool udAsyncJob_IsPending(udAsyncJob *pJobHandle)
 {
   udMemoryBarrier();
-  return (pJobHandle && pJobHandle->pending) ? true : false;
+  return (pJobHandle) ? pJobHandle->pending : false;
 }
 
 // ****************************************************************************
