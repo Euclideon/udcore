@@ -1,7 +1,6 @@
 stages:
   - build
-  - coverage
-  - valgrind
+  - testing
 
 windows_debug_x64:
   stage: build
@@ -56,8 +55,6 @@ bionic_release_x64_gcc_deb:
   tags:
     - linux
     - docker
-  except:
-    - tags
 
 bionic_debug_x64_gcc_deb:
   image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
@@ -66,8 +63,6 @@ bionic_debug_x64_gcc_deb:
   tags:
     - linux
     - docker
-  except:
-    - tags
 
 bionic_release_x64_clang_deb:
   image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
@@ -76,8 +71,6 @@ bionic_release_x64_clang_deb:
   tags:
     - linux
     - docker
-  except:
-    - tags
 
 bionic_debug_x64_clang_deb:
   image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
@@ -86,8 +79,6 @@ bionic_debug_x64_clang_deb:
   tags:
     - linux
     - docker
-  except:
-    - tags
 
 linux_release_x64_gcc_rpm:
   image: gitlab.euclideon.com:4567/docker-images/dev-centos7:v4
@@ -232,8 +223,6 @@ emscripten_release_js_emcc:
   tags:
     - linux
     - docker
-  except:
-    - tags
 
 emscripten_debug_js_emcc:
   image: gitlab.euclideon.com:4567/docker-images/emscripten-bionic:v1
@@ -242,12 +231,10 @@ emscripten_debug_js_emcc:
   tags:
     - linux
     - docker
-  except:
-    - tags
 
 test_coverage:
   image: gitlab.euclideon.com:4567/docker-images/dev-xenial:v6
-  stage: coverage
+  stage: testing
   script: "./build.sh Release x64 Coverage"
   tags:
     - linux
@@ -255,22 +242,16 @@ test_coverage:
 
 valgrind_memcheck:
   image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
-  stage: valgrind
+  stage: testing
   script: "./build.sh Debug x64 memcheck"
   tags:
     - linux
     - docker
-  only:
-    - master
-    - merge_requests
 
 valgrind_helgrind:
   image: gitlab.euclideon.com:4567/docker-images/dev-bionic:v2
-  stage: valgrind
+  stage: testing
   script: "./build.sh Debug x64 helgrind"
   tags:
     - linux
     - docker
-  only:
-    - master
-    - merge_requests
