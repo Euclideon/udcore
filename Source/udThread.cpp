@@ -327,7 +327,6 @@ udResult udThread_Join(udThread *pThread, int waitMs)
 # define UD_USE_PLATFORM_SEMAPHORE 0
 # define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 0
 #endif
-#define UD_GENERIC_SEMAPHORE_DUPLICATE_CODE 1
 
 struct udSemaphore
 {
@@ -340,19 +339,8 @@ struct udSemaphore
   sem_t handle;
 # endif
 #else
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-#  if UDPLATFORM_WINDOWS
-  CRITICAL_SECTION criticalSection;
-  CONDITION_VARIABLE condition;
-#  else
-  pthread_mutex_t mutex;
-  pthread_cond_t condition;
-#  endif
-# else
   udMutex *pMutex;
   udConditionVariable *pCondition;
-# endif
-
   volatile int count;
 #endif
 };
@@ -374,19 +362,8 @@ udSemaphore *udCreateSemaphore()
   UD_ERROR_IF(sem_init(&pSemaphore->handle, 0, 0) == -1, udR_Failure_);
 # endif
 #else
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-#  if UDPLATFORM_WINDOWS
-  InitializeCriticalSection(&pSemaphore->criticalSection);
-  InitializeConditionVariable(&pSemaphore->condition);
-#  else
-  pthread_mutex_init(&(pSemaphore->mutex), NULL);
-  pthread_cond_init(&(pSemaphore->condition), NULL);
-#  endif
-# else
   pSemaphore->pMutex = udCreateMutex();
   pSemaphore->pCondition = udCreateConditionVariable();
-# endif
-
   pSemaphore->count = 0;
 #endif
 
@@ -404,83 +381,12 @@ void udDestroySemaphore_Internal(udSemaphore *pSemaphore)
   if (pSemaphore == nullptr)
     return;
 
-#if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-# if UDPLATFORM_WINDOWS
-  LeaveCriticalSection(&pSemaphore->criticalSection);
-  DeleteCriticalSection(&pSemaphore->criticalSection);
-  // CONDITION_VARIABLE doesn't have a delete/destroy function
-# else
-  pthread_mutex_unlock(&pSemaphore->mutex);
-  pthread_mutex_destroy(&pSemaphore->mutex);
-  pthread_cond_destroy(&pSemaphore->condition);
-# endif
-#else
   udReleaseMutex(pSemaphore->pMutex);
   udDestroyMutex(&pSemaphore->pMutex);
   udDestroyConditionVariable(&pSemaphore->pCondition);
-#endif
 
   udFree(pSemaphore);
 }
-
-#if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-// ----------------------------------------------------------------------------
-// Author: Samuel Surtees, August 2017
-void udLockSemaphore_Internal(udSemaphore *pSemaphore)
-{
-#if UDPLATFORM_WINDOWS
-  EnterCriticalSection(&pSemaphore->criticalSection);
-#else
-  pthread_mutex_lock(&pSemaphore->mutex);
-#endif
-}
-
-// ----------------------------------------------------------------------------
-// Author: Samuel Surtees, August 2017
-void udUnlockSemaphore_Internal(udSemaphore *pSemaphore)
-{
-#if UDPLATFORM_WINDOWS
-  LeaveCriticalSection(&pSemaphore->criticalSection);
-#else
-  pthread_mutex_unlock(&pSemaphore->mutex);
-#endif
-}
-
-// ----------------------------------------------------------------------------
-// Author: Samuel Surtees, August 2017
-void udWakeSemaphore_Internal(udSemaphore *pSemaphore)
-{
-#if UDPLATFORM_WINDOWS
-  WakeConditionVariable(&pSemaphore->condition);
-#else
-  pthread_cond_signal(&pSemaphore->condition);
-#endif
-}
-
-// ----------------------------------------------------------------------------
-// Author: Samuel Surtees, August 2017
-bool udSleepSemaphore_Internal(udSemaphore *pSemaphore, int waitMs)
-{
-#if UDPLATFORM_WINDOWS
-  BOOL retVal = SleepConditionVariableCS(&pSemaphore->condition, &pSemaphore->criticalSection, (waitMs == UDTHREAD_WAIT_INFINITE ? INFINITE : waitMs));
-  return (retVal == TRUE);
-#else
-  int retVal = 0;
-  if (waitMs == UDTHREAD_WAIT_INFINITE)
-  {
-    retVal = pthread_cond_wait(&(pSemaphore->condition), &(pSemaphore->mutex));
-  }
-  else
-  {
-    struct timespec ts;
-    udThread_MsToTimespec(&ts, waitMs);
-    retVal = pthread_cond_timedwait(&(pSemaphore->condition), &(pSemaphore->mutex), &ts);
-  }
-
-  return (retVal == 0);
-#endif
-}
-#endif // UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
 #endif // !UD_USE_PLATFORM_SEMAPHORE
 
 // ****************************************************************************
@@ -504,11 +410,7 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
 # endif
   udFree(pSemaphore);
 #else
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-  udLockSemaphore_Internal(pSemaphore);
-# else
   udLockMutex(pSemaphore->pMutex);
-# endif
   udDestroySemaphore_Internal(pSemaphore);
 #endif
 }
@@ -532,17 +434,10 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
 #else
   while (count-- > 0)
   {
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-    udLockSemaphore_Internal(pSemaphore);
-    ++(pSemaphore->count);
-    udWakeSemaphore_Internal(pSemaphore);
-    udUnlockSemaphore_Internal(pSemaphore);
-# else
     udLockMutex(pSemaphore->pMutex);
     ++(pSemaphore->count);
     udSignalConditionVariable(pSemaphore->pCondition);
     udReleaseMutex(pSemaphore->pMutex);
-# endif
   }
 #endif
 }
@@ -580,11 +475,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
   }
 # endif
 #else
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-  udLockSemaphore_Internal(pSemaphore);
-# else
   udLockMutex(pSemaphore->pMutex);
-# endif
   bool retVal;
   if (pSemaphore->count > 0)
   {
@@ -598,11 +489,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
       retVal = true;
       while (pSemaphore->count == 0)
       {
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-        retVal = udSleepSemaphore_Internal(pSemaphore, waitMs);
-# else
         retVal = (udWaitConditionVariable(pSemaphore->pCondition, pSemaphore->pMutex, waitMs) == 0);
-# endif
 
         // If something went wrong, exit the loop
         if (!retVal)
@@ -614,11 +501,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
     }
     else
     {
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-      retVal = udSleepSemaphore_Internal(pSemaphore, waitMs);
-# else
       retVal = (udWaitConditionVariable(pSemaphore->pCondition, pSemaphore->pMutex, waitMs) == 0);
-# endif
 
       if (retVal)
       {
@@ -631,11 +514,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
     }
   }
 
-# if UD_GENERIC_SEMAPHORE_DUPLICATE_CODE
-  udUnlockSemaphore_Internal(pSemaphore);
-# else
   udReleaseMutex(pSemaphore->pMutex);
-# endif
 
   // 0 is success, not 0 is failure
   return !retVal;
