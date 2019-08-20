@@ -101,16 +101,18 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, May 2018
-udResult udFile_Save(const char *pFilename, void *pBuffer, size_t length)
+udResult udFile_Save(const char *pFilename, const void *pBuffer, size_t length)
 {
   udResult result;
   udFile *pFile = nullptr;
 
   UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Create|udFOF_Write));
   UD_ERROR_CHECK(udFile_Write(pFile, pBuffer, (size_t)length));
+  UD_ERROR_CHECK(udFile_Close(&pFile)); // Close errors are important when writing
 
 epilogue:
-  udFile_Close(&pFile);
+  if (pFile)
+    udFile_Close(&pFile);
   return result;
 }
 
@@ -120,7 +122,6 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
 {
   UDTRACE();
   udResult result;
-  const char *pNewFilename = nullptr;
   UD_ERROR_NULL(ppFile, udR_InvalidParameter_);
   UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
 
@@ -128,31 +129,25 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
   if (pFileLengthInBytes)
     *pFileLengthInBytes = 0;
 
-  // TODO: Figure out how to only do this for the FILE handler requires that
-  //       pFilenameCopy isn't set to `udStrdup(pFilename)`
-#if !UDPLATFORM_EMSCRIPTEN
-  if (udFile_TranslatePath(&pNewFilename, pFilename) != udR_Success)
-#endif
-  {
-    pNewFilename = udStrdup(pFilename);
-    UD_ERROR_NULL(pNewFilename, udR_MemoryAllocationFailure);
-  }
-
   for (int i = s_handlersCount - 1; i >= 0; --i)
   {
     udFileHandler *pHandler = s_handlers + i;
-    if (udStrBeginsWith(pNewFilename, pHandler->prefix))
+    if (udStrBeginsWith(pFilename, pHandler->prefix))
     {
-      UD_ERROR_CHECK(pHandler->fpOpen(ppFile, pNewFilename, flags));
+      UD_ERROR_CHECK(pHandler->fpOpen(ppFile, pFilename, flags));
 
-      if (!(*ppFile)->pFilenameCopy) // In rare circumstances this can already be assigned
+      // Assign a copy if the handler hasn't already done so
+      // This gives handlers the opportunity to alter or reference the copy
+      if (!(*ppFile)->pFilenameCopy)
       {
-        (*ppFile)->pFilenameCopy = pNewFilename;
-        pNewFilename = nullptr;
+        (*ppFile)->filenameCopyRequiresFree = true;
+        (*ppFile)->pFilenameCopy = udStrdup(pFilename);
       }
+
       (*ppFile)->flagsCopy = flags;
       if (pFileLengthInBytes)
         *pFileLengthInBytes = (*ppFile)->fileLength;
+
       // Successfully opened
       UD_ERROR_SET(udR_Success);
     }
@@ -161,7 +156,6 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
   result = udR_OpenFailure;
 
 epilogue:
-  udFree(pNewFilename);
   return result;
 }
 
@@ -407,17 +401,16 @@ udResult udFile_Close(udFile **ppFile)
   if (ppFile == nullptr)
     return udR_InvalidParameter_;
 
-  if (*ppFile != nullptr && (*ppFile)->fpClose != nullptr)
+  udFile *pFile = *ppFile;
+  if (pFile)
   {
-    udFree((*ppFile)->pFilenameCopy);
-    if ((*ppFile)->pCipherCtx)
-      udCryptoCipher_Destroy(&(*ppFile)->pCipherCtx);
-    return (*ppFile)->fpClose(ppFile);
+    if (pFile->filenameCopyRequiresFree)
+      udFree(pFile->pFilenameCopy);
+    if (pFile->pCipherCtx)
+      udCryptoCipher_Destroy(&pFile->pCipherCtx);
+    return pFile->fpClose(ppFile);
   }
-  else
-  {
-    return udR_CloseFailure;
-  }
+  return udR_Success; // Already closed, no error condition
 }
 
 

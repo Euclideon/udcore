@@ -305,7 +305,7 @@ epilogue:
 
 // *********************************************************************
 // Author: Dave Pevreal, September 2017
-udResult udBase64Decode(uint8_t **ppOutput, size_t *pOutputLength, const char * pString)
+udResult udBase64Decode(uint8_t **ppOutput, size_t *pOutputLength, const char *pString)
 {
   udResult result;
   uint8_t *pOutput = nullptr;
@@ -347,7 +347,7 @@ udResult udBase64Encode(const void *pBinary, size_t binaryLength, char *pString,
   }
 
   UD_ERROR_NULL(pString, udR_InvalidParameter_);
-  UD_ERROR_NULL(pBinary, udR_InvalidParameter_);
+  UD_ERROR_IF(!pBinary && binaryLength, udR_InvalidParameter_);
 
   for (size_t inputIndex = 0; inputIndex < binaryLength; ++inputIndex)
   {

@@ -56,7 +56,7 @@ template<typename T>
 inline udResult udFile_Load(const char *pFilename, T **ppMemory, int64_t *pFileLengthInBytes = nullptr) { return udFile_Load(pFilename, (void**)ppMemory, pFileLengthInBytes); }
 
 // Save an entire file, Calls Open/Write/Close internally.
-udResult udFile_Save(const char *pFilename, void *pBuffer, size_t length);
+udResult udFile_Save(const char *pFilename, const void *pBuffer, size_t length);
 
 // Open a file. The filename contains a prefix such as http: to access registered file handlers (see udFileHandler.h)
 udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags flags, int64_t *pFileLengthInBytes = nullptr);
@@ -95,10 +95,10 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath);
 // Optional handlers (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP();
 
-// Helper function to output a raw filename for a given buffer to the debug output
-void udFile_GenerateRawFilename(const void *pBuffer, size_t bufferLen, udCompressionType ct = udCT_None, const char *pFilename = nullptr, size_t charsPerLine = 64);
+// Helper function to output a raw filename for a given buffer to ppResultFilename, or debug output if ppResultFilename is null (line-breaking at charsPerLine characters)
+udResult udFile_GenerateRawFilename(const char **ppResultFilename, const void *pBuffer, size_t bufferLen, udCompressionType ct = udCT_None, const char *pOriginalFilename = nullptr, size_t allocationSize = 0, uint32_t charsPerLine = 64);
 
 // Helper to return the base 64 text offset from a Raw filename, plus optionally the original filename (caller to free) and size/compression info if present in filename string
-udResult udFile_IsRaw(const char *pFilename, size_t *pOffsetToBase64 = nullptr, const char **ppOriginalFilename = nullptr, size_t *pSize = nullptr, udCompressionType *pCompressionType = nullptr);
+bool udFile_IsRaw(const char *pFilename, size_t *pOffsetToBase64 = nullptr, const char **ppOriginalFilename = nullptr, size_t *pSize = nullptr, udCompressionType *pCompressionType = nullptr, size_t *pAllocationSize = nullptr);
 
 #endif // UDFILE_H

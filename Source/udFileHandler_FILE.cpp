@@ -26,6 +26,7 @@
 #include "udFile.h"
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -102,7 +103,16 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
   UD_ERROR_NULL(pFile, udR_MemoryAllocationFailure);
 
-  result = udFileExists(pFilename, &pFile->fileLength);
+#if !UDPLATFORM_EMSCRIPTEN
+  if (udFile_TranslatePath(&pFile->pFilenameCopy, pFilename) != udR_Success)
+#endif
+  {
+    pFile->pFilenameCopy = udStrdup(pFilename);
+    UD_ERROR_NULL(pFile->pFilenameCopy, udR_MemoryAllocationFailure);
+  }
+  pFile->filenameCopyRequiresFree = true; // Let the system free the duplicate filename
+
+  result = udFileExists(pFile->pFilenameCopy, &pFile->fileLength);
   if (result != udR_Success)
   {
     existsFailed = true;
@@ -116,7 +126,7 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
 
   if (!(flags & udFOF_FastOpen)) // With FastOpen flag, just don't open the file, let the first read do that
   {
-    pFile->pCrtFile = OpenWithFlags(pFilename, flags);
+    pFile->pCrtFile = OpenWithFlags(pFile->pFilenameCopy, flags);
     // File open failures shouldn't trigger breakpoints with BREAK_ON_ERROR defined.
     if (!pFile->pCrtFile)
       UD_ERROR_SET_NO_BREAK(udR_OpenFailure);
@@ -146,6 +156,7 @@ epilogue:
       fclose(pFile->pCrtFile);
       udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
     }
+    udFree(pFile->pFilenameCopy);
     udFree(pFile);
   }
   return result;

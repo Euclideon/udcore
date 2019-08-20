@@ -323,7 +323,6 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
       udFile_Close(&pZipFile);
     udDestroyRWLock(&pZip->pRWLock);
     udFree(pZip->pFileData);
-    udFree(pZip->pFilenameCopy);
     udFree(pZip);
   }
   return udR_Success;

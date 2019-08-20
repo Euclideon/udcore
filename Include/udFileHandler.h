@@ -37,7 +37,7 @@ typedef udResult udFile_CloseHandlerFunc(udFile **ppFile);
 // The base file structure, file handlers are expected to zero this structure and extend the to include custom data to manage state.
 struct udFile
 {
-  const char *pFilenameCopy;              // Set by udFile, not handlers. A copy of the filename used to open the file
+  const char *pFilenameCopy;              // If assigned by a handler, set filenameCopyRequiresFree, or handler is responsible for free
   udFileOpenFlags flagsCopy;              // Set by udFile, not handlers. A copy of the flags used to open the file
   udFile_SeekReadHandlerFunc *fpRead;
   udFile_SeekWriteHandlerFunc *fpWrite;
@@ -53,6 +53,7 @@ struct udFile
   uint32_t requestsInFlight;
   uint64_t totalBytes;
   float mbPerSec;
+  bool filenameCopyRequiresFree;          // Set if the filename copy was allocated, will be freed prior to calling handler close function
 };
 
 // Register a file handler

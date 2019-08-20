@@ -6,6 +6,13 @@
 #include "udStringUtil.h"
 #include "udMath.h"
 
+static const size_t s_QBF_Len = 43; // Not including NUL character
+static const char *s_pQBF_Text = "The quick brown fox jumps over the lazy dog";
+static const char *s_pQBF_Uncomp  = "raw://VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
+static const char *s_pQBF_RawDef  = "raw://compression=RawDeflate,size=43@C8lIVSgszUzOVkgqyi/PU0jLr1DIKs0tKFbIL0stUigBSuckVlUqpOSnAwA=";
+static const char *s_pQBF_GzipDef = "raw://compression=GzipDeflate,size=43@H4sIAAAAAAAA/wvJSFUoLM1MzlZIKsovz1NIy69QyCrNLShWyC9LLVIoAUrnJFZVKqTkpwMAOaNPQSsAAAA=";
+static const char *s_pQBF_ZlibDef = "raw://compression=ZlibDeflate,size=43@eJwLyUhVKCzNTM5WSCrKL89TSMuvUMgqzS0oVsgvSy1SKAFK5yRWVSqk5KcDAFvcD9o=";
+
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, July 2017
 TEST(udFileTests, GeneralFileTests)
@@ -255,7 +262,7 @@ TEST(udFileTests, TranslatingPaths)
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, August 2018
-TEST(udFileTests, raw)
+TEST(udFileTests, RawLoad)
 {
   udResult result;
   void *pMemory = nullptr;
@@ -267,22 +274,64 @@ TEST(udFileTests, raw)
   EXPECT_STREQ("Hello World", (char*)pMemory); // Can do strcmp here because udFile_Load always adds a nul
   udFree(pMemory);
 
-  udFile_Load("raw://VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==", &pMemory, &len);
-  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFile_Load(s_pQBF_Uncomp, &pMemory, &len);
+  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 
-  udFile_Load("raw://compression=RawDeflate,size=43@C8lIVSgszUzOVkgqyi/PU0jLr1D"
-              "IKs0tKFbIL0stUigBSuckVlUqpOSnAwA=", &pMemory, &len);
-  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFile_Load(s_pQBF_RawDef, &pMemory, &len);
+  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 
-  udFile_Load("raw://compression=GzipDeflate,size=43@H4sIAAAAAAAA/wvJSFUoLM1Mzl"
-              "ZIKsovz1NIy69QyCrNLShWyC9LLVIoAUrnJFZVKqTkpwMAOaNPQSsAAAA=", &pMemory, &len);
-  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFile_Load(s_pQBF_GzipDef, &pMemory, &len);
+  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 
-  udFile_Load("raw://compression=ZlibDeflate,size=43@eJwLyUhVKCzNTM5WSCrKL89TSM"
-              "uvUMgqzS0oVsgvSy1SKAFK5yRWVSqk5KcDAFvcD9o=", &pMemory, &len);
-  EXPECT_STREQ("The quick brown fox jumps over the lazy dog", (char*)pMemory);
+  udFile_Load(s_pQBF_ZlibDef, &pMemory, &len);
+  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, August 2019
+TEST(udFileTests, RawWrite)
+{
+  udFile *pFile = nullptr;
+  const char *pRawFilename = nullptr;
+  int64_t length;
+  size_t actualWritten;
+  void *pReload = nullptr;
+
+  // Files not specifically set up for writing should fail when opened for write
+  ASSERT_EQ(udR_OpenFailure, udFile_Open(&pFile, s_pQBF_Uncomp, udFOF_Write));
+
+  // Simple test writing in all compression modes
+  for (udCompressionType ct = udCT_None; ct < udCT_Count; ct = (udCompressionType)(ct + 1))
+  {
+    ASSERT_EQ(udR_Success, udFile_GenerateRawFilename(&pRawFilename, nullptr, 0, ct, "QBF Test", 200)); // 200 chars big enough for all compression modes
+    ASSERT_EQ(udR_Success, udFile_Open(&pFile, pRawFilename, udFOF_Write, &length));
+    EXPECT_STREQ(pRawFilename, udFile_GetFilename(pFile));
+    EXPECT_EQ(0, length);
+    EXPECT_EQ(udR_Success, udFile_Write(pFile, s_pQBF_Text, s_QBF_Len, 0, udFSW_SeekSet, &actualWritten));
+    EXPECT_EQ(s_QBF_Len, actualWritten);
+    EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+    EXPECT_EQ(udR_Success, udFile_Load(pRawFilename, &pReload, &length));
+    EXPECT_EQ(s_QBF_Len, length);
+    EXPECT_EQ(0, memcmp(pReload, s_pQBF_Text, s_QBF_Len));
+    udFree(pRawFilename);
+    udFree(pReload);
+  }
+
+  // Test writing to a known-too-small buffer
+  ASSERT_EQ(udR_Success, udFile_GenerateRawFilename(&pRawFilename, nullptr, 0, udCT_ZlibDeflate, "Buffer too small test", 158));
+  EXPECT_EQ(udR_BufferTooSmall, udFile_Save(pRawFilename, s_pQBF_Text, s_QBF_Len));
+  udFree(pRawFilename);
+
+  // Test writing to a knownexact size buffer
+  ASSERT_EQ(udR_Success, udFile_GenerateRawFilename(&pRawFilename, nullptr, 0, udCT_ZlibDeflate, "Buffer too small test", 159));
+  EXPECT_EQ(udR_Success, udFile_Save(pRawFilename, s_pQBF_Text, s_QBF_Len));
+  udFree(pRawFilename);
 }
