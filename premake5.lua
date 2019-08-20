@@ -41,11 +41,6 @@ filter { "system:android" }
 	
 filter {}
 
--- TODO: Move this into the emscripten module
-function premake.modules.emscripten.emcc.getrunpathdirs(cfg, dirs)
-	return premake.tools.clang.getrunpathdirs(cfg, dirs)
-end
-
 solution "udCore"
 
 	-- This hack just makes the VS project and also the makefile output their configurations in the idiomatic order
