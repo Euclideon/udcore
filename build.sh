@@ -23,7 +23,7 @@ else
 		"C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
 		if [ $? -ne 0 ]; then exit 5; fi
 
-		if [ $# -eq 2]; then
+		if [ $# -eq 2 ]; then
 			Output/bin/${1}_${2}/udTest.exe
 			if [ $? -ne 0 ]; then exit 1; fi
 		fi
@@ -36,7 +36,7 @@ else
 
 		Output/bin/${1}_x64/udTest
 		if [ $? -ne 0 ]; then exit 1; fi
-	elif ([[ $OSTYPE == "darwin"* ]] && [ $# -ge 4 ] && [ $3 == "ios" ] && [ $4 == "xcode" ]); then # iOS XCode build (only used to ensure project builds in xcode)
+	elif ([[ $OSTYPE == "darwin"* ]] && [ $# -ge 3 ] && [ $3 == "ios" ]); then # iOS XCode build (only used to ensure project builds in xcode)
 		bin/premake-bin/premake5-osx xcode4 --os=ios
 		if [ $? -ne 0 ]; then exit 4; fi
 
@@ -60,39 +60,26 @@ else
 
 		# TODO: Figure out how to run unit tests in a headless browser
 	else
-		if [ $# -ge 3 ]; then
-			if [ $3 == "ios" ]; then
-				export PREMAKEOPTIONS="--os=ios"
-			elif [ $3 == "android" ]; then
-				export NDKROOT="/android-ndk-r13b"
-				export PREMAKEOPTIONS="--os=android"
-			elif [ $3 == "Coverage" ]; then
-				export PREMAKEOPTIONS="--coverage"
-			fi
+		if ([ $# -ge 3 ] && [ $3 == "Coverage" ]); then
+			export PREMAKEOPTIONS="--coverage"
 		fi
 
-		if [[ $OSTYPE == "darwin"* ]]; then # OSX, Sierra
-			bin/premake-bin/premake5-osx gmake2 $PREMAKEOPTIONS
-		else
-			# Allow core dumps to be saved for non-packaged binaries
-			mkdir -p /tmp/cores
+		# Allow core dumps to be saved for non-packaged binaries
+		mkdir -p /tmp/cores
 
-			bin/premake-bin/premake5 gmake2 $PREMAKEOPTIONS
-		fi
+		bin/premake-bin/premake5 gmake2 $PREMAKEOPTIONS
 		if [ $? -ne 0 ]; then exit 4; fi
 
 		make config=$(echo ${1}_${2} | tr [:upper:] [:lower:]) -j4
 		if [ $? -ne 0 ]; then exit 5; fi
 
-		if [ $# -eq 2 ] || ([ $3 != "ios" ] && [ $3 != "android" ]); then
-			if [ $3 == "memcheck" ]; then
-				valgrind --tool=memcheck --error-exitcode=1 Output/bin/${1}_${2}/udTest
-			elif [ $3 == "helgrind" ]; then
-				# We should look into using `--free-is-write=yes`
-				valgrind --tool=helgrind --error-exitcode=1 Output/bin/${1}_${2}/udTest
-			else
-				Output/bin/${1}_${2}/udTest
-			fi
+		if ([ $# -ge 3 ] && [ $3 == "memcheck" ]); then
+			valgrind --tool=memcheck --error-exitcode=1 Output/bin/${1}_${2}/udTest
+		elif ([ $# -ge 3 ] && [ $3 == "helgrind" ]); then
+			# We should look into using `--free-is-write=yes`
+			valgrind --tool=helgrind --error-exitcode=1 Output/bin/${1}_${2}/udTest
+		else
+			Output/bin/${1}_${2}/udTest
 		fi
 
 		if [ $# -ge 3 ] && [ $3 == "Coverage" ]; then

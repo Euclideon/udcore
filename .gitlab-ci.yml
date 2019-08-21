@@ -114,23 +114,11 @@ linux_debug_x64_clang_rpm:
 
 macosx_release_x64_clang:
   stage: build
-  script: "./build.sh Release x64"
-  tags:
-    - osx
-
-macosx_debug_x64_clang:
-  stage: build
-  script: "./build.sh Debug x64"
-  tags:
-    - osx
-
-macosx_xcode_release_x64_clang:
-  stage: build
   script: "./build.sh Release x86_64 xcode"
   tags:
     - osx
 
-macosx_xcode_debug_x64_clang:
+macosx_debug_x64_clang:
   stage: build
   script: "./build.sh Debug x86_64 xcode"
   tags:
@@ -150,37 +138,13 @@ ios_debug_arm64_clang:
 
 ios_release_x86_64_clang:
   stage: build
-  script: "./build.sh Release x64 ios"
+  script: "./build.sh Release x86_64 ios"
   tags:
     - osx
 
 ios_debug_x86_64_clang:
   stage: build
-  script: "./build.sh Debug x64 ios"
-  tags:
-    - osx
-
-ios_xcode_release_arm64_clang:
-  stage: build
-  script: "./build.sh Release arm64 ios xcode"
-  tags:
-    - osx
-
-ios_xcode_debug_arm64_clang:
-  stage: build
-  script: "./build.sh Debug arm64 ios xcode"
-  tags:
-    - osx
-
-ios_xcode_release_x86_64_clang:
-  stage: build
-  script: "./build.sh Release x86_64 ios xcode"
-  tags:
-    - osx
-
-ios_xcode_debug_x86_64_clang:
-  stage: build
-  script: "./build.sh Debug x86_64 ios xcode"
+  script: "./build.sh Debug x86_64 ios"
   tags:
     - osx
     
