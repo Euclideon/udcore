@@ -31,14 +31,7 @@ filter { "system:ios", "action:xcode4" }
 		['DEVELOPMENT_TEAM'] = "452P989JPT",
 		['ENABLE_BITCODE'] = "NO",
 	}
-	
--- Android stuff (This should be handled much better)
-filter { "system:android" }
-	--toolset "clang" --Premake is complaining if this is explictly set- works correctly not being set though
-	toolchainversion "5.0"
-	stl "libc++"
-	defines { "_LARGEFILE_SOURCE" }
-	
+
 filter {}
 
 solution "udCore"
