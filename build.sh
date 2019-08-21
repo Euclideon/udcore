@@ -18,11 +18,11 @@ else
 		else
 			bin/premake-bin/premake5.exe vs2019
 			if [ $? -ne 0 ]; then exit 4; fi
-    fi
+		fi
 
-			"C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
+		"C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe" udCore.sln //p:Configuration=$1 //p:Platform=$2 //v:m //m
 		if [ $? -ne 0 ]; then exit 5; fi
-    
+
 		if [ $# -eq 2]; then
 			Output/bin/${1}_${2}/udTest.exe
 			if [ $? -ne 0 ]; then exit 1; fi
