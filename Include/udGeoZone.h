@@ -42,6 +42,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_JGD2000,    //EPSG:4612
   udGZGD_JGD2011,    //EPSG:6668
   udGZGD_GDA94,      //EPSG:4283
+  udGZGD_GDA2020,    //EPSG:7844
   udGZGD_RGF93,      //EPSG:4171
   udGZGD_NAD83_HARN, //EPSG:4152
   udGZGD_CGCS2000,   //EPSG:4490
@@ -99,6 +100,8 @@ struct udGeoZoneGeodeticDatumDescriptor
   double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
   int32_t epsg; // epsg code for the datum
   int32_t authority; // authority for this datum
+  bool exportAxisInfo;
+  bool exportToWGS84;
 };
 
 extern const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
