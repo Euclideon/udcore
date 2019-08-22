@@ -133,28 +133,28 @@ TEST(udStrTests, udStrAto)
   EXPECT_DOUBLE_EQ(52.5, udStrAtof64("52.5"));
   EXPECT_EQ(52, udStrAtoi("52"));
   EXPECT_EQ(52, udStrAtoi64("52"));
-  EXPECT_EQ(52, udStrAtou("52"));
-  EXPECT_EQ(52, udStrAtou64("52"));
+  EXPECT_EQ(52U, udStrAtou("52"));
+  EXPECT_EQ(52U, udStrAtou64("52"));
 
   // Negative
   EXPECT_FLOAT_EQ(-52.5f, udStrAtof("-52.5"));
   EXPECT_DOUBLE_EQ(-52.5, udStrAtof64("-52.5"));
   EXPECT_EQ(-52, udStrAtoi("-52"));
   EXPECT_EQ(-52, udStrAtoi64("-52"));
-  EXPECT_EQ(0, udStrAtou("-52"));
-  EXPECT_EQ(0, udStrAtou64("-52"));
+  EXPECT_EQ(0U, udStrAtou("-52"));
+  EXPECT_EQ(0U, udStrAtou64("-52"));
 
   // Radix-16 - Uppercase
   EXPECT_EQ(164, udStrAtoi("A4", nullptr, 16));
   EXPECT_EQ(163, udStrAtoi64("A3", nullptr, 16));
-  EXPECT_EQ(162, udStrAtou("A2", nullptr, 16));
-  EXPECT_EQ(161, udStrAtou64("A1", nullptr, 16));
+  EXPECT_EQ(162U, udStrAtou("A2", nullptr, 16));
+  EXPECT_EQ(161U, udStrAtou64("A1", nullptr, 16));
 
   // Radix-16 - Lowercase
   EXPECT_EQ(164, udStrAtoi("a4", nullptr, 16));
   EXPECT_EQ(163, udStrAtoi64("a3", nullptr, 16));
-  EXPECT_EQ(162, udStrAtou("a2", nullptr, 16));
-  EXPECT_EQ(161, udStrAtou64("a1", nullptr, 16));
+  EXPECT_EQ(162U, udStrAtou("a2", nullptr, 16));
+  EXPECT_EQ(161U, udStrAtou64("a1", nullptr, 16));
 }
 
 TEST(udStrTests, udStrtoa)

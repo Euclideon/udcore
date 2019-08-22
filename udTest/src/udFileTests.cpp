@@ -275,22 +275,22 @@ TEST(udFileTests, RawLoad)
   udFree(pMemory);
 
   udFile_Load(s_pQBF_Uncomp, &pMemory, &len);
-  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_EQ(s_QBF_Len, (size_t)len);
   EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 
   udFile_Load(s_pQBF_RawDef, &pMemory, &len);
-  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_EQ(s_QBF_Len, (size_t)len);
   EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 
   udFile_Load(s_pQBF_GzipDef, &pMemory, &len);
-  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_EQ(s_QBF_Len, (size_t)len);
   EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 
   udFile_Load(s_pQBF_ZlibDef, &pMemory, &len);
-  EXPECT_EQ(s_QBF_Len, len);
+  EXPECT_EQ(s_QBF_Len, (size_t)len);
   EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
   udFree(pMemory);
 }
@@ -319,7 +319,7 @@ TEST(udFileTests, RawWrite)
     EXPECT_EQ(s_QBF_Len, actualWritten);
     EXPECT_EQ(udR_Success, udFile_Close(&pFile));
     EXPECT_EQ(udR_Success, udFile_Load(pRawFilename, &pReload, &length));
-    EXPECT_EQ(s_QBF_Len, length);
+    EXPECT_EQ(s_QBF_Len, (size_t)length);
     EXPECT_EQ(0, memcmp(pReload, s_pQBF_Text, s_QBF_Len));
     udFree(pRawFilename);
     udFree(pReload);
