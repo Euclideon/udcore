@@ -26,8 +26,12 @@ TEST(udMemoryTests, Validate)
 TEST(udMemoryTests, GetTotalPhysicalMemory)
 {
   uint64_t mem;
+  udResult result;
 
-  udGetTotalPhysicalMemory(&mem);
-  printf("Total memory reported: %sMB\n", udTempStr_CommaInt(mem / 1048576));
-  EXPECT_NE(0, mem);
+  result = udGetTotalPhysicalMemory(&mem);
+  printf("Total memory reported: %sMB (%s)\n", udTempStr_CommaInt(mem / 1048576), udResultAsString(result));
+  if (result == udR_Success)
+    EXPECT_NE(0, mem);
+  else
+    EXPECT_EQ(0, mem);
 }
