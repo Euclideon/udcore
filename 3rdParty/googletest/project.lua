@@ -1,18 +1,15 @@
-googletestPath = "googletest-1.8.1"
-
-project(googletestPath)
+project "googletest"
 	kind "StaticLib"
 	language "C++"
 	staticruntime "On"
 	flags { "OmitDefaultLibrary" }
 
 	--  defines { "GTEST_HAS_PTHREAD=0" }
+	includedirs { "." }
+	includedirs { "include" }
 
-	includedirs { googletestPath }
-	includedirs { googletestPath .. "/include" }
-
-	files { googletestPath .. "/src/gtest-all.cc" }
-	files { googletestPath .. "/include/gtest/*.h" }
+	files { "src/gtest-all.cc" }
+	files { "include/gtest/*.h" }
 	files { "project.lua" }
 
 	-- include common stuff

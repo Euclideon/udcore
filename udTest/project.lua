@@ -5,7 +5,7 @@ project ("udTest" .. (projectSuffix or ""))
 	staticruntime "On"
 
 	includedirs { "../3rdParty" }
-	includedirs { "../3rdParty/googletest/" .. googletestPath .. "/include" }
+	includedirs { "../3rdParty/googletest/include" }
 
 	includedirs { "../Include" }
 
@@ -13,7 +13,7 @@ project ("udTest" .. (projectSuffix or ""))
 	files { "project.lua" }
 
 	links { "udCore" .. (projectSuffix or "") }
-	links { googletestPath }
+	links { "googletest" }
 
 	filter { }
 
