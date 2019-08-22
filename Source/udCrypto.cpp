@@ -176,6 +176,8 @@ udResult udCrypto_Random(void *pMem, size_t len)
 
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized_);
+
   // Seed the random number generator
   UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
   // Generate some random data
@@ -987,14 +989,14 @@ struct udCryptoDHMContext
 
 // ---------------------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2017
-udResult udCryptoDHMContext::Init(size_t _keyLen)
+udResult udCryptoDHMContext::Init(size_t keyLength)
 {
   udResult result;
   int mbErr;
   unsigned char tempBuf[2048 / 8 * 3 + 16]; // A temporary buffer to export params, I don't use it but there's no choice
   size_t tempoutlen;
 
-  keyLen = _keyLen;
+  keyLen = keyLength;
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
 
@@ -1057,6 +1059,7 @@ udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPub
   udJSON v;
   udCryptoDHMContext *pCtx = nullptr;
 
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized_);
   pCtx = udAllocType(udCryptoDHMContext, 1, udAF_Zero);
   UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
   UD_ERROR_CHECK(pCtx->Init(keyLen));
@@ -1147,6 +1150,8 @@ udResult udCryptoSig_CreateKeyPair(udCryptoSigContext **ppSigCtx, udCryptoSigTyp
 
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized_);
+
   pSigCtx = udAllocType(udCryptoSigContext, 1, udAF_Zero);
   UD_ERROR_NULL(pSigCtx, udR_MemoryAllocationFailure);
   pSigCtx->type = type;
@@ -1262,7 +1267,7 @@ udResult udCryptoSig_ImportKeyPair(udCryptoSigContext **ppSigCtx, const char *pK
   }
   else if (udStrEqual(pTypeString, TYPESTRING_RSA))
   {
-  pSigCtx->type = (udCryptoSigType)v.Get("Size").AsInt();
+    pSigCtx->type = (udCryptoSigType)v.Get("Size").AsInt();
   }
   else
   {
@@ -1385,6 +1390,7 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter_);
   UD_ERROR_NULL(ppSignatureBase64, udR_InvalidParameter_);
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized_);
 
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
@@ -1427,6 +1433,7 @@ udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter_);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter_);
   UD_ERROR_NULL(pSignatureBase64, udR_InvalidParameter_);
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized_);
 
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 

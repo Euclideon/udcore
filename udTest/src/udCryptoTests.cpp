@@ -290,7 +290,7 @@ TEST(udCryptoTests, RSACreateSig)
   udDebugPrintf("Private key:\n%s\n", pPrivateKeyText);
   EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pPublicKeyText, false));
   udDebugPrintf("Public key:\n%s\n", pPublicKeyText);
-  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, hash, sizeof(hash), &pExpectedSignature));
+  EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pExpectedSignature, udCH_SHA1));
   udDebugPrintf("Expected signature:\n%s\n", pExpectedSignature);
 #else
   EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPrivCtx, pPrivateKeyText));
@@ -301,7 +301,7 @@ TEST(udCryptoTests, RSACreateSig)
   // Sign a message using the private key
   EXPECT_EQ(udR_Success, udCryptoSig_Sign(pPrivCtx, pHash, &pSignature, udCH_SHA1));
 
-  udDebugPrintf("Current Sig: \n%s\n", pSignature);
+  //udDebugPrintf("Current Sig: \n%s\n", pSignature);
 
   // Verify it's the expected signature (only works with PKCS_15)
   EXPECT_EQ(0, udStrcmp(pSignature, pExpectedSignature));
@@ -451,9 +451,11 @@ TEST(udCryptoTests, Utilities)
   uint64_t rand1, rand2;
   const char *pTestStr = udStrdup(pZeros);
 
+  udCrypto_Init();
   EXPECT_EQ(udR_Success, udCrypto_Random(&rand1, sizeof(rand1)));
   EXPECT_EQ(udR_Success, udCrypto_Random(&rand2, sizeof(rand2)));
   EXPECT_TRUE(rand1 != rand2);
+  udCrypto_Deinit();
 
   EXPECT_NE(nullptr, pTestStr);
   if (pTestStr)
@@ -524,4 +526,57 @@ TEST(udCryptoTests, Obscure)
     EXPECT_STRCASEEQ(pAllBase64 + i, pStr);
     udFree(pStr);
   }
+}
+
+// Test the returns of functions having not called udCrypto_Init()
+TEST(udCryptoTests, Uninitialised)
+{
+  const char *pHash = nullptr;
+  const char *pTempString = nullptr;
+  udCryptoDHMContext *pDHMCtx = nullptr;
+  udCryptoSigContext *pPrivCtx = nullptr;
+  udCryptoCipherContext *pCipherCtx = nullptr;
+  static const char *pPrivateKeyText =
+    "{\n"
+    "  'Type': 'RSA',\n"
+    "  'Private': true,\n"
+    "  'Size': 2048,\n"
+    "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
+    "  'E': 'AQAB',\n"
+    "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
+    "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
+    "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
+    "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
+    "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
+    "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
+    "}\n";
+  static const char *pExpectedSignature = "jZzErtTWtEjEIDJsf0HRPJA/9z2MLu2tCvd/OgOojinZ9y+hbQSADgnFVN/cGV965Z6x6burvYVWPT8TjF00+9aXIGY3vFncrdRYhM2ynq+cisOxzIacC1AraDcuQgMvyxv9NKjCNWvLJL1GaP6PzKJmuDT5HDiEz9DqNhya5U43dIFoXu3AlTZlT8uuUuSwbxk4G+rkfG2Jm6cj6l8BhvpMhxA7GYmuiA9ByQ7tcU8/G/zi1xY/zIHTOlzGc7h+BfXXkpNH+NdyMOW0NnQg1jfy5VuK3eYeDfP2xSDlvOivvXwwFR9lQCizx4kzSuSpoIg7pW0HvmjgXXcMC29kqg==";
+  udCryptoIV iv;
+
+  // Hash and cipher functions work uninitialised
+  EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA1, "Message", 7, &pHash));
+  EXPECT_EQ(udR_Success, udCryptoHash_HMAC(udCH_SHA1, "SmVmZQ==", "Message", 7, &pTempString));
+  udFree(pTempString);
+  EXPECT_EQ(udR_Success, udCryptoKey_DeriveFromPassword(&pTempString, 16, "Password123"));
+  udFree(pTempString);
+
+  memset(&iv, 0xaa, sizeof(iv));
+  EXPECT_EQ(udR_Success, udCryptoCipher_Create(&pCipherCtx, udCC_AES128, udCPM_None, "AAAAAAAAAAAAAAAAAAAAAA==", udCCM_CTR));
+  EXPECT_EQ(udR_Success, udCryptoCipher_Encrypt(pCipherCtx, &iv, iv.iv, sizeof(iv.iv), iv.iv, sizeof(iv.iv)));
+  udCryptoCipher_Destroy(&pCipherCtx);
+
+  // Random (and therefore) most signature functions don't work, other than importing and exporting
+  EXPECT_EQ(udR_NotInitialized_, udCrypto_Random(iv.iv, sizeof(iv.iv)));
+  EXPECT_EQ(udR_NotInitialized_, udCryptoSig_CreateKeyPair(&pPrivCtx, udCST_RSA2048));
+  EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPrivCtx, pPrivateKeyText));
+  EXPECT_EQ(udR_NotInitialized_, udCryptoSig_Sign(pPrivCtx, pHash, &pTempString, udCH_SHA1));
+  EXPECT_EQ(udR_NotInitialized_, udCryptoSig_Verify(pPrivCtx, pHash, pExpectedSignature, udCH_SHA1));
+  EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pTempString, false));
+  udFree(pTempString);
+  udCryptoSig_Destroy(&pPrivCtx);
+
+  // Diffie-Hellman requires initialisation
+  EXPECT_EQ(udR_NotInitialized_, udCryptoKey_CreateDHM(&pDHMCtx, &pTempString, 64));
+
+  udFree(pHash);
 }
