@@ -1,4 +1,4 @@
-googletestPath = "googletest-1.7.0"
+googletestPath = "googletest-1.8.1"
 
 project(googletestPath)
 	kind "StaticLib"
