@@ -48,6 +48,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "NAD83(HARN)",                           "NAD83(HARN)",     "NAD83_High_Accuracy_Reference_Network",      udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4152, 6152, true,     true  },
   { "China Geodetic Coordinate System 2000", "CGCS2000",        "China_2000",                                 udGZE_CGCS2000,      { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4490, 1043, false,    false },
   { "Hong Kong 1980",                        "Hong Kong 1980",  "Hong_Kong_1980",                             udGZE_Intl1924,      { -162.619,-276.959,-161.764,0.067753,-2.24365,-1.15883,-1.09425 }, 4611, 6611, false,    true  },
+  { "SVY21",                                 "SVY21",           "SVY21",                                      udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4757, 6757, false,    false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -598,6 +599,20 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       udGeoZone_SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
       pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
+      break;
+    case 3414: // Singapore TM
+      pZone->datum = udGZGD_SVY21;
+      pZone->projection = udGZPT_TransverseMercator;
+      pZone->zone = 0;
+      udStrcpy(pZone->zoneName, "Singapore TM");
+      pZone->meridian = 103 + (5.0 / 6.0);
+      pZone->parallel = 1 + (11.0 / 30.0);
+      pZone->falseNorthing = 38744.572;
+      pZone->falseEasting = 28001.642;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(1.1200, 103.6200);
+      pZone->latLongBoundMax = udDouble2::create(1.4600, 104.1600);
       break;
     case 7845: // GDA2020 / Geoscience Australia Lambert
       pZone->datum = udGZGD_GDA2020;
