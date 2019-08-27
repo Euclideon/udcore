@@ -862,9 +862,10 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
 
   if (zone.projection == udGZPT_TransverseMercator)
   {
+    int parallelPrecision = (zone.srid == 3414) ? 15 : 14; // For some reason the SVY21 zone needs an additional decimal place
     udSprintf(&pWKTProjection, "PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],"
                                "PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
-                               udTempStr_TrimDouble(zone.parallel, 14), udTempStr_TrimDouble(zone.meridian, 13), udTempStr_TrimDouble(zone.scaleFactor, 10),
+                               udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, 13), udTempStr_TrimDouble(zone.scaleFactor, 10),
                                udTempStr_TrimDouble(zone.falseEasting, 3), udTempStr_TrimDouble(zone.falseNorthing, 3), pWKTUnit);
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)

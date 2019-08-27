@@ -358,7 +358,7 @@ struct
 
   { 3112, "PROJCS[\"GDA94 / Geoscience Australia Lambert\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",-18],PARAMETER[\"standard_parallel_2\",-36],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",134],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3112\"]]" },
 
-  { 3414, R"wkt(PROJCS["SVY21 / Singapore TM",GEOGCS["SVY21",DATUM["SVY21",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6757"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4757"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",1.36666666666667],PARAMETER["central_meridian",103.8333333333333],PARAMETER["scale_factor",1],PARAMETER["false_easting",28001.642],PARAMETER["false_northing",38744.572],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","3414"]])wkt" },
+  { 3414, R"wkt(PROJCS["SVY21 / Singapore TM",GEOGCS["SVY21",DATUM["SVY21",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6757"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4757"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",1.366666666666667],PARAMETER["central_meridian",103.8333333333333],PARAMETER["scale_factor",1],PARAMETER["false_easting",28001.642],PARAMETER["false_northing",38744.572],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","3414"]])wkt" },
 
   { 3942, "PROJCS[\"RGF93 / CC42\",GEOGCS[\"RGF93\",DATUM[\"Reseau_Geodesique_Francais_1993\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6171\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4171\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",41.25],PARAMETER[\"standard_parallel_2\",42.75],PARAMETER[\"latitude_of_origin\",42],PARAMETER[\"central_meridian\",3],PARAMETER[\"false_easting\",1700000],PARAMETER[\"false_northing\",1200000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"3942\"]]" },
   { 3943, "PROJCS[\"RGF93 / CC43\",GEOGCS[\"RGF93\",DATUM[\"Reseau_Geodesique_Francais_1993\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6171\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4171\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",42.25],PARAMETER[\"standard_parallel_2\",43.75],PARAMETER[\"latitude_of_origin\",43],PARAMETER[\"central_meridian\",3],PARAMETER[\"false_easting\",1700000],PARAMETER[\"false_northing\",2200000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"3943\"]]" },
@@ -643,12 +643,20 @@ TEST(udGeoZoneTests, SetFromWKT)
     sridZone.latLongBoundMax = udDouble2::zero();
     sridZone.latLongBoundMin = udDouble2::zero();
     sridZone.zone = 0;
-    // Handle precision issues with meridian
-    wktZone.meridian = int64_t(1000 * wktZone.meridian) / 1000.0;
-    sridZone.meridian = int64_t(1000 * wktZone.meridian) / 1000.0;
 
-    if (supportedCodes[i].srid != 3414)
-      EXPECT_EQ(0, memcmp(&wktZone, &sridZone, sizeof(udGeoZone))) << "Failed on Iteration: " << i << ", SRID: " << supportedCodes[i].srid;
+    // Handle precision issues with meridian
+    const int64_t meridianPrecision = 1000000000000LL;
+    wktZone.meridian = int64_t(meridianPrecision * wktZone.meridian) / (double)meridianPrecision;
+    sridZone.meridian = int64_t(meridianPrecision * sridZone.meridian) / (double)meridianPrecision;
+
+    // Handle precision issues with parallel
+    const int64_t parallelPrecision = 100000000LL;
+    wktZone.parallel = int64_t(parallelPrecision * wktZone.parallel) / (double)parallelPrecision;
+    sridZone.parallel = int64_t(parallelPrecision * sridZone.parallel) / (double)parallelPrecision;
+    wktZone.firstParallel = int64_t(parallelPrecision * wktZone.firstParallel) / (double)parallelPrecision;
+    sridZone.firstParallel = int64_t(parallelPrecision * sridZone.firstParallel) / (double)parallelPrecision;
+
+    EXPECT_EQ(0, memcmp(&wktZone, &sridZone, sizeof(udGeoZone))) << "Failed on Iteration: " << i << ", SRID: " << supportedCodes[i].srid;
 
     udFree(pWKT);
   }
@@ -690,7 +698,7 @@ TEST(udGeoZoneTests, WKT)
     udFree(pWKT);
   }
 #ifdef _DEBUG
-  printf("%d / %d srid's have errors\n", errorCount, (int)udLengthOf(supportedCodes));
+  udDebugPrintf("%d / %d srid's have errors\n", errorCount, (int)udLengthOf(supportedCodes));
 #endif
 
   // Now test every code to ensure we have a test WKT for everything we support
