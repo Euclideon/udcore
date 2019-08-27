@@ -39,6 +39,11 @@ TEST(udFileTests, GeneralFileTests)
 
   EXPECT_EQ(udR_Success, udFileDelete(pFileName));
   EXPECT_EQ(udR_ObjectNotFound, udFileExists(pFileName));
+
+  // Additional destructions of non-existent objects
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+  EXPECT_EQ(udR_InvalidParameter_, udFile_Close(nullptr));
+
 }
 
 TEST(udFileTests, GeneralDirectoryTests)

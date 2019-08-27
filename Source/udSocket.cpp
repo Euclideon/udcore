@@ -471,7 +471,7 @@ epilogue:
 // Author: Paul Fox, October 2018
 void udSocket_Close(udSocket **ppSocket)
 {
-  if (*ppSocket)
+  if (ppSocket && *ppSocket)
   {
     udSocket *pSocket = *ppSocket;
     *ppSocket = nullptr;

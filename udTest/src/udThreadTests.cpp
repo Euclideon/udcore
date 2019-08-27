@@ -55,6 +55,11 @@ TEST(udThreadTests, Thread)
   EXPECT_EQ(1, value);
 
   udThread_Destroy(&pThread);
+  EXPECT_EQ(nullptr, pThread);
+
+  // Additional destruction of non-existent objects
+  udThread_Destroy(&pThread);
+  udThread_Destroy(nullptr);
 }
 
 TEST(udThreadTests, ThreadConditionVariable)

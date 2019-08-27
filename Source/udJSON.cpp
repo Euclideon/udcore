@@ -1424,6 +1424,7 @@ udResult udJSON::Export(const char **ppText, udJSONExportOption option) const
   result = udR_Success;
 
 epilogue:
+  udFree(pText);
   for (size_t i = 0; i < lines.length; ++i)
     udFree(lines[i]);
   lines.Deinit();

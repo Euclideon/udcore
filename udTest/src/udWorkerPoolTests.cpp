@@ -111,4 +111,8 @@ TEST(udWorkerPoolTests, Validate)
   udDestroySemaphore(&data.pSema);
 
   EXPECT_EQ(nullptr, pPool);
+
+  // Additional destruction of non-existent objects
+  udWorkerPool_Destroy(&pPool);
+  udWorkerPool_Destroy(nullptr);
 }

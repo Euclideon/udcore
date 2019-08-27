@@ -181,6 +181,12 @@ TEST(udCryptoTests, CipherErrorCodes)
 
   result = udCryptoCipher_Destroy(&pCtx);
   EXPECT_EQ(udR_Success, result);
+
+  // Additional destructions of non-existent objects
+  result = udCryptoCipher_Destroy(&pCtx);
+  EXPECT_EQ(udR_InvalidParameter_, result);
+  result = udCryptoCipher_Destroy(nullptr);
+  EXPECT_EQ(udR_InvalidParameter_, result);
 }
 
 
@@ -389,6 +395,9 @@ TEST(udCryptoTests, ECDSADigiSig)
 
   udCryptoSig_Destroy(&pPrivCtx);
   udCryptoSig_Destroy(&pPubCtx);
+  // Additional destructions of non-existent objects
+  udCryptoSig_Destroy(&pPubCtx);
+  udCryptoSig_Destroy(nullptr);
   udFree(pHash);
   udFree(pSignature);
   udCrypto_Deinit();
@@ -441,6 +450,10 @@ TEST(udCryptoTests, DHM)
   EXPECT_NE(true, udStrEqual(pSecretA, pSecretB));
   udFree(pSecretA);
   udFree(pSecretB);
+
+  // Additional destructions of non-existent objects
+  udCryptoKey_DestroyDHM(&pDHM);
+  udCryptoKey_DestroyDHM(nullptr);
 
   udCrypto_Deinit();
 }

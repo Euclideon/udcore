@@ -145,6 +145,10 @@ uint32_t udSocketTestsSocketSetServerThread(void *data)
   udSocket_Close(&pSocket);
   EXPECT_EQ(nullptr, pSocket);
 
+  // Additional destruction of non-existent objects
+  udSocket_Close(&pSocket);
+  udSocket_Close(nullptr);
+
   return 0;
 }
 

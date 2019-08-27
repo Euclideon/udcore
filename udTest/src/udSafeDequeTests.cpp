@@ -38,6 +38,9 @@ TEST(udSafeDequeTests, ValidationTests)
   EXPECT_EQ(9, result); // This should not have changed
 
   udSafeDeque_Destroy(&pQueue);
-
   EXPECT_EQ(nullptr, pQueue);
+
+  // Additional destruction of non-existent objects
+  udSafeDeque_Destroy(&pQueue);
+  udSafeDeque_Destroy((udSafeDeque<int> **)nullptr);
 }
