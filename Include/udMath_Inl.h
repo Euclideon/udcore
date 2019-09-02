@@ -213,6 +213,32 @@ inline T udNormaliseRotation(T rad, T absRange)
   return rad;
 }
 
+template <typename T>
+udVector3<T> udDirectionFromYPR(const udVector3<T> &ypr)
+{
+  udVector3<T> r;
+
+  r.x = -udSin(ypr.x) * udCos(ypr.y);
+  r.y = udCos(ypr.x) * udCos(ypr.y);
+  r.z = udSin(ypr.y);
+
+  return r;
+}
+
+template <typename T>
+udVector3<T> udDirectionToYPR(const udVector3<T> &direction)
+{
+  udVector3<T> r;
+
+  udVector3<T> dir = udNormalize(direction);
+
+  r.x = -udATan2(dir.x, dir.y);
+  r.y = udASin(dir.z);
+  r.z = 0; // No Roll
+
+  return r;
+}
+
 // many kinds of mul...
 template <typename T, typename U>
 udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, U f)
@@ -496,7 +522,7 @@ udRay<T> udRay<T>::rotationAround(const udRay<T> &ray, const udVector3<T> &cente
 
   udVector3<T> direction = ray.position - center; // find current direction relative to center
   r.position = center + rotation.apply(direction); // define new position
-  r.direction = udMath_DirFromYPR((rotation * udQuaternion<T>::create(udMath_DirToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
+  r.direction = udDirectionFromYPR((rotation * udQuaternion<T>::create(udDirectionToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
 
   return r;
 }
@@ -583,7 +609,7 @@ udVector3<T> udMatrix4x4<T>::extractYPR() const
   }
   else
   {
-    // if Cp = 0 and Sp = ±1 (pitch straight up or down), the above matrix becomes:
+    // if Cp = 0 and Sp = Â±1 (pitch straight up or down), the above matrix becomes:
     // [ CyCr-SySr,  0,  CySr+CrSySp ] ** Remember, axiis are columns!
     // [ CrSy+CySr,  0,  SySr-CyCrSp ]
     // [     0,      Sp,     0       ]

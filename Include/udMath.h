@@ -222,6 +222,9 @@ template <typename T> udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const u
 
 template <typename V> bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilon = UD_EPSILON);
 
+template <typename T> udVector3<T> udDirectionFromYPR(const udVector3<T> &ypr);
+template <typename T> udVector3<T> udDirectionToYPR(const udVector3<T> &direction);
+
 // types
 template <typename T>
 struct udVector2
