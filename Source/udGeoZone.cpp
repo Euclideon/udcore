@@ -61,7 +61,7 @@ udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllips
   return udDouble3::create(x, y, z);
 }
 
-udDouble3 udGeoZone_LatLongFromGeocentric(udDouble3 geoCentric, const udGeoZoneEllipsoidInfo &ellipsoid)
+udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEllipsoidInfo &ellipsoid)
 {
   double semiMinorAxis = ellipsoid.semiMajorAxis * (1 - ellipsoid.flattening);
 
@@ -141,7 +141,7 @@ udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum curre
   // Chain functions and get result
   udDouble3 geocentric = udGeoZone_LatLongToGeocentric(oldLatLon, g_udGZ_StdEllipsoids[pTransform->ellipsoid]);
   udDouble3 transformed = udGeoZone_ApplyTransform(geocentric, *pTransform);
-  udDouble3 newLatLong = udGeoZone_LatLongFromGeocentric(transformed, g_udGZ_StdEllipsoids[pTransform->ellipsoid]);
+  udDouble3 newLatLong = udGeoZone_GeocentricToLatLong(transformed, g_udGZ_StdEllipsoids[pTransform->ellipsoid]);
 
   if (flipToLongLat)
     return udDouble3::create(newLatLong.y, newLatLong.x, newLatLong.z);
@@ -469,6 +469,17 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
   {
     switch (sridCode)
     {
+    case 84: // LongLat (Not EPSG - CRS:84. There is no EPSG LongLat code)
+      pZone->datum = udGZGD_WGS84;
+      pZone->projection = udGZPT_LongLat;
+      pZone->zone = 0;
+      pZone->scaleFactor = 0.0174532925199433;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-90, -180);
+      pZone->latLongBoundMax = udDouble2::create(90, 180);
+      break;
     case 2230: // NAD83 / California zone 6 (ftUS)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
@@ -606,6 +617,39 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(1.1200, 103.6200);
       pZone->latLongBoundMax = udDouble2::create(1.4600, 104.1600);
       break;
+    case 4326: // LatLong
+      pZone->datum = udGZGD_WGS84;
+      pZone->projection = udGZPT_LatLong;
+      pZone->zone = 0;
+      pZone->scaleFactor = 0.0174532925199433;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-90, -180);
+      pZone->latLongBoundMax = udDouble2::create(90, 180);
+      break;
+    case 4328: // ECEF (Deprecated)
+      pZone->datum = udGZGD_WGS84;
+      pZone->projection = udGZPT_ECEF;
+      pZone->zone = 0;
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-90, -180);
+      pZone->latLongBoundMax = udDouble2::create(90, 180);
+      break;
+    case 4978: // ECEF
+      pZone->datum = udGZGD_WGS84;
+      pZone->projection = udGZPT_ECEF;
+      pZone->zone = 0;
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-90, -180);
+      pZone->latLongBoundMax = udDouble2::create(90, 180);
+      break;
     case 7845: // GDA2020 / Geoscience Australia Lambert
       pZone->datum = udGZGD_GDA2020;
       pZone->projection = udGZPT_LambertConformalConic2SP;
@@ -710,6 +754,9 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
     }
     else if (udStrEqual(pType, "PROJCS"))
     {
+      if (pZone->projection == udGZPT_Unknown)
+        pZone->projection = udGZPT_TransverseMercator; // Most likely- This will be overriden later
+
       size_t pIndex = 0;
       const char *pNameStr = udStrchr(pName, "/", &pIndex); // sometimes the PROJCS name is listed in WKT as: 'shortname / longname'...
       if (pNameStr != nullptr)
@@ -735,6 +782,56 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
     }
     else if (udStrEqual(pType, "GEOGCS"))
     {
+      if (pZone->projection == udGZPT_Unknown)
+      {
+        pZone->projection = udGZPT_LatLong; // Most likely situation
+        pZone->unitMetreScale = 1.0;
+
+        udSprintf(&pVal, "%s.values", pElem);
+        size_t numValues = wkt->Get("%s", pVal).ArrayLength();
+        for (size_t j = 0; j < numValues; ++j)
+        {
+          const char *pItemName = wkt->Get("%s[%d].type", pVal, (int)j).AsString();
+
+          if (udStrEqual(pItemName, "UNIT"))
+            pZone->scaleFactor = wkt->Get("%s[%d].values[0]", pVal, (int)j).AsDouble();
+          else if (udStrEqual(pItemName, "AUTHORITY"))
+            pZone->srid = wkt->Get("%s[%d].values[0]", pVal, (int)j).AsInt();
+          else if (udStrEqual(pItemName, "AXIS") && udStrEqual(wkt->Get("%s[%d].name", pVal, (int)j).AsString(), "Lat") && udStrEqual(wkt->Get("%s[%d].values[0]", pVal, (int)j).AsString(), "Y"))
+            pZone->projection = udGZPT_LongLat;
+        }
+      }
+
+      for (int j = 0; j < udGZGD_Count; ++j)
+      {
+        if (udStrEqual(g_udGZ_GeodeticDatumDescriptors[j].pFullName, pName))
+        {
+          pZone->datum = (udGeoZoneGeodeticDatum)j; // enum ordering corresponds to GDD dataset ordering
+          udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[j].pShortName);
+          break;
+        }
+      }
+    }
+    else if (udStrEqual(pType, "GEOCCS"))
+    {
+      if (pZone->projection == udGZPT_Unknown)
+      {
+        pZone->projection = udGZPT_ECEF;
+        pZone->scaleFactor = 1.0;
+
+        udSprintf(&pVal, "%s.values", pElem);
+        size_t numValues = wkt->Get("%s", pVal).ArrayLength();
+        for (size_t j = 0; j < numValues; ++j)
+        {
+          const char *pItemName = wkt->Get("%s[%d].type", pVal, (int)j).AsString();
+
+          if (udStrEqual(pItemName, "UNIT"))
+            pZone->unitMetreScale = wkt->Get("%s[%d].values[0]", pVal, (int)j).AsDouble();
+          else if (udStrEqual(pItemName, "AUTHORITY"))
+            pZone->srid = wkt->Get("%s[%d].values[0]", pVal, (int)j).AsInt();
+        }
+      }
+
       for (int j = 0; j < udGZGD_Count; ++j)
       {
         if (udStrEqual(g_udGZ_GeodeticDatumDescriptors[j].pFullName, pName))
@@ -769,18 +866,14 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       pZone->semiMajorAxis = wkt->Get("%s.values[0]", pElem).AsDouble(); // in feet or metres
       pZone->flattening = 1.0 / wkt->Get("%s.values[1]", pElem).AsDouble(); // inverse flattening
       if (pZone->unitMetreScale != 0)
-      {
         udGeoZone_MetreScaleSpheroidMaths(pZone);
-      }
     }
 
     // Recursive Iteration (or Iterative Recursion)
     udSprintf(&pVal, "%s.values", pElem);
     udFree(pElem);
     if (wkt->Get("%s", pVal).ArrayLength() > 0)
-    {
       udGeoZone_JSONTreeSearch(pZone, wkt, pVal);
-    }
     udFree(pVal);
   }
 }
@@ -840,11 +933,18 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
 
   udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 9), udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
   udSprintf(&pWKTDatum, "DATUM[\"%s\",%s%s,AUTHORITY[\"EPSG\",\"%d\"]", pDesc->pDatumName, pWKTSpheroid, pWKTToWGS84 ? pWKTToWGS84 : "", pDesc->authority);
-  udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"%d\"]]",
-    pDesc->pFullName, pWKTDatum, pDesc->epsg);
+
+  if (zone.projection == udGZPT_ECEF)
+    udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
+  else if (zone.projection == udGZPT_LongLat) // This isn't an official option- ISO6709 doesn't allow it so we handle it specially
+    udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Lon\",X],AXIS[\"Lat\",Y],AUTHORITY[\"CRS\",\"%d\"]]", pDesc->pFullName, pWKTDatum, zone.srid);
+  else
+    udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pFullName, pWKTDatum, pDesc->epsg);
 
   // We only handle metres and us feet, each of which have their own fixed authority code
-  if (zone.unitMetreScale == 1.0)
+  if (zone.scaleFactor == 0.0174532925199433)
+    udSprintf(&pWKTUnit, "UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]");
+  else if (zone.unitMetreScale == 1.0)
     udSprintf(&pWKTUnit, "UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]");
   else if (zone.unitMetreScale == 0.3048006096012192)
     udSprintf(&pWKTUnit, "UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]]");
@@ -869,17 +969,23 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
-  if (pDesc->exportAxisInfo )
+  if (pDesc->exportAxisInfo)
   {
     // Generally transverse mercator projections have one style, lambert another, except for GDA LCC (3112 and 7845)
     if (zone.projection == udGZPT_TransverseMercator || zone.srid == 3112 || zone.srid == 7845)
       udSprintf(&pWKTProjection, "%s,AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]", pWKTProjection);
-    else
+    else if (zone.projection == udGZPT_ECEF)
+      udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],AXIS[\"Geocentric Y\",OTHER],AXIS[\"Geocentric Z\",NORTH]");
+    else if (zone.projection == udGZPT_LambertConformalConic2SP)
       udSprintf(&pWKTProjection, "%s,AXIS[\"X\",EAST],AXIS[\"Y\",NORTH]", pWKTProjection);
   }
 
   // Hong Kong doesn't seem to have actual zones, so we detect by testing if short name and zone name are the same
-  if (udStrBeginsWith(zone.zoneName, pDesc->pShortName))
+  if (zone.projection == udGZPT_ECEF)
+    udSprintf(&pWKT, "%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pWKTGeoGCS, pWKTProjection, zone.srid);
+  else if (zone.projection == udGZPT_LatLong || zone.projection == udGZPT_LongLat)
+    udSprintf(&pWKT, "%s", pWKTGeoGCS);
+  else if (udStrBeginsWith(zone.zoneName, pDesc->pShortName))
     udSprintf(&pWKT, "PROJCS[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", zone.zoneName, pWKTGeoGCS, pWKTProjection, zone.srid);
   else
     udSprintf(&pWKT, "PROJCS[\"%s / %s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pShortName, zone.zoneName, pWKTGeoGCS, pWKTProjection, zone.srid);
@@ -928,7 +1034,7 @@ static double udGeoZone_LCCConformal(double phi, double e)
 
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
-udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat /*= false*/, udGeoZoneGeodeticDatum datum /*= udGZGD_WGS84*/)
+udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat /*= false*/, udGeoZoneGeodeticDatum datum /*= udGZGD_WGS84*/)
 {
   double e = zone.eccentricity;
   double phi = ((!flipFromLongLat) ? latLong.x : latLong.y);
@@ -942,12 +1048,23 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
     omega = convertedLatLong.y;
   }
 
-  phi = UD_DEG2RAD(phi);
-  omega = UD_DEG2RAD(omega - zone.meridian);
-
-  if (zone.secondParallel == 0.0)
+  if (zone.projection == udGZPT_ECEF)
+  {
+    return udGeoZone_LatLongToGeocentric(udDouble3::create(phi, omega, latLong.z), g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid]);
+  }
+  else if (zone.projection == udGZPT_LatLong)
+  {
+    return udDouble3::create(phi, omega, latLong.z);
+  }
+  else if (zone.projection == udGZPT_LongLat)
+  {
+    return udDouble3::create(omega, phi, latLong.z);
+  }
+  else if (zone.projection == udGZPT_TransverseMercator)
   {
     // UTM rather than Lambert CC which requires two parallels for calculation
+    phi = UD_DEG2RAD(phi);
+    omega = UD_DEG2RAD(omega - zone.meridian);
 
     double sigma = udSinh(e * udATanh(e * udTan(phi) / udSqrt(1 + udPow(udTan(phi), 2))));
     double tanConformalPhi = udTan(phi) * udSqrt(1 + udPow(sigma, 2)) - sigma * udSqrt(1 + udPow(udTan(phi), 2));
@@ -973,9 +1090,12 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
 
     return udDouble3::create(zone.scaleFactor * X + zone.falseEasting, zone.scaleFactor * (Y - zone.firstParallel) + zone.falseNorthing, latLong.z);
   }
-  else
+  else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
     // If two standard parallels, project onto Lambert Conformal Conic
+    phi = UD_DEG2RAD(phi);
+    omega = UD_DEG2RAD(omega - zone.meridian);
+
     double phi0 = UD_DEG2RAD(zone.parallel);
     double phi1 = UD_DEG2RAD(zone.firstParallel);
     double phi2 = UD_DEG2RAD(zone.secondParallel);
@@ -991,18 +1111,33 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
     double p = zone.semiMajorAxis * F *  udPow(t, n);
     X = p * udSin(n * omega);
     Y = p0 - p * udCos(n * omega);
+
     return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, latLong.z);
   }
+
+  return udDouble3::zero(); // Unsupported projection
 }
 
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
-udDouble3 udGeoZone_ToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat /*= false*/, udGeoZoneGeodeticDatum datum /*= udGZGD_WGS84*/)
+udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat /*= false*/, udGeoZoneGeodeticDatum datum /*= udGZGD_WGS84*/)
 {
-  udDouble3 latLong;
+  udDouble3 latLong = udDouble3::zero();
   double e = zone.eccentricity;
 
-  if (zone.secondParallel == 0.0)
+  if (zone.projection == udGZPT_ECEF)
+  {
+    latLong = udGeoZone_GeocentricToLatLong(position, g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid]);
+  }
+  else if (zone.projection == udGZPT_LatLong)
+  {
+    latLong = position;
+  }
+  else if (zone.projection == udGZPT_LongLat)
+  {
+    latLong = udDouble3::create(position.y, position.x, position.z);
+  }
+  else if (zone.projection == udGZPT_TransverseMercator)
   {
     double y = (zone.firstParallel * zone.scaleFactor + position.y - zone.falseNorthing) / (zone.radius * zone.scaleFactor);
     double x = (position.x - zone.falseEasting) / (zone.radius*zone.scaleFactor);
@@ -1032,7 +1167,7 @@ udDouble3 udGeoZone_ToLatLong(const udGeoZone &zone, const udDouble3 &position, 
     latLong.y = (zone.meridian + UD_RAD2DEG(omega));
     latLong.z = position.z;
   }
-  else
+  else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
     double y = position.y - zone.falseNorthing;
     double x = position.x - zone.falseEasting;
@@ -1075,8 +1210,8 @@ udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sour
   if (sourceZone.zone == destZone.zone)
     return point;
 
-  udDouble3 latlon = udGeoZone_ToLatLong(sourceZone, point);
-  return udGeoZone_ToCartesian(destZone, latlon);
+  udDouble3 latlon = udGeoZone_CartesianToLatLong(sourceZone, point);
+  return udGeoZone_LatLongToCartesian(destZone, latlon);
 }
 
 // ----------------------------------------------------------------------------
@@ -1089,16 +1224,16 @@ udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone
   // A very large model will lead to inaccuracies, so in this case, scale it down
   double accuracyScale = (matrix.a[0] > 1000) ? matrix.a[0] / 1000.0 : 1.0;
 
-  udDouble3 llO = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3());
-  udDouble3 llX = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.x.toVector3() * accuracyScale));
-  udDouble3 llY = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.y.toVector3() * accuracyScale));
-  udDouble3 llZ = udGeoZone_ToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.z.toVector3() * accuracyScale));
+  udDouble3 llO = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3());
+  udDouble3 llX = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.x.toVector3() * accuracyScale));
+  udDouble3 llY = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.y.toVector3() * accuracyScale));
+  udDouble3 llZ = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.z.toVector3() * accuracyScale));
 
   accuracyScale = 1.0 / accuracyScale;
-  udDouble3 czO = udGeoZone_ToCartesian(destZone, llO);
-  udDouble3 czX = (udGeoZone_ToCartesian(destZone, llX) - czO) * accuracyScale;
-  udDouble3 czY = (udGeoZone_ToCartesian(destZone, llY) - czO) * accuracyScale;
-  udDouble3 czZ = (udGeoZone_ToCartesian(destZone, llZ) - czO) * accuracyScale;
+  udDouble3 czO = udGeoZone_LatLongToCartesian(destZone, llO);
+  udDouble3 czX = (udGeoZone_LatLongToCartesian(destZone, llX) - czO) * accuracyScale;
+  udDouble3 czY = (udGeoZone_LatLongToCartesian(destZone, llY) - czO) * accuracyScale;
+  udDouble3 czZ = (udGeoZone_LatLongToCartesian(destZone, llZ) - czO) * accuracyScale;
 
   // TODO: Get scale from matrix, ortho-normalise, then reset scale
 

@@ -54,6 +54,12 @@ enum udGeoZoneGeodeticDatum
 
 enum udGeoZoneProjectionType
 {
+  udGZPT_Unknown,
+
+  udGZPT_ECEF,
+  udGZPT_LongLat,
+  udGZPT_LatLong,
+
   udGZPT_TransverseMercator,
   udGZPT_LambertConformalConic2SP,
 
@@ -129,14 +135,14 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT);
 udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone);
 
 // Convert a point from lat/long to the cartesian coordinate system defined by the zone
-udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
+udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
 
 // Convert a point from the cartesian coordinate system defined by the zone to lat/long
-udDouble3 udGeoZone_ToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
+udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
 
 // Conversion to and from Geocentric
 udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllipsoidInfo &ellipsoid);
-udDouble3 udGeoZone_LatLongFromGeocentric(udDouble3 geoCentric, const udGeoZoneEllipsoidInfo &ellipsoid);
+udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEllipsoidInfo &ellipsoid);
 
 // Convert a lat/long pair in one datum to another datum
 udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum currentDatum, udGeoZoneGeodeticDatum newDatum, bool flipToLongLat = false);
