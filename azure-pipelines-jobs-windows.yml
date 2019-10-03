@@ -1,0 +1,40 @@
+parameters:
+  name: ''
+  displayName: ''
+  platform: 'x64'
+  premakeOpts: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  displayName: ${{ parameters.displayName }}
+  pool:
+    vmImage: 'windows-latest'
+  strategy:
+    matrix:
+      Debug:
+        configuration: Debug
+      Release:
+        configuration: Release
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: bin\premake-bin\premake5.exe vs2019 ${{ parameters.premakeOpts }}
+    displayName: 'Run Premake'
+  - task: MSBuild@1
+    displayName: 'Build Projects'
+    inputs:
+      solution: udCore.sln
+      platform: ${{ parameters.platform }}
+      configuration: $(configuration)
+      maximumCpuCount: true
+      msbuildArguments: '/v:m'
+  - script: Output\bin\$(configuration)_${{ parameters.platform }}\udTest.exe --gtest_output=xml
+    displayName: "Run Tests"
+    condition: and(succeeded(), eq('${{ parameters.name }}', 'windows'))
+  - task: PublishTestResults@2
+    displayName: "Publish Test Results"
+    condition: and(always(), eq('${{ parameters.name }}', 'windows'))
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'test_detail.xml'
+      testRunTitle: ${{ parameters.name }}_${{ parameters.platform }}_$(configuration)

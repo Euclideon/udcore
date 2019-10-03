@@ -1,0 +1,40 @@
+parameters:
+  name: ''
+  displayName: ''
+  container: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  displayName: ${{ parameters.displayName }}
+  pool:
+    vmImage: 'ubuntu-latest'
+  container:
+    image: ${{ parameters.container }}
+  variables:
+    platform: x64
+  strategy:
+    matrix:
+      Debug:
+        configuration: Debug
+      Release:
+        configuration: Release
+      DebugClang:
+        configuration: DebugClang
+      ReleaseClang:
+        configuration: ReleaseClang
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: bin/premake-bin/premake5 gmake2
+    displayName: 'Run Premake'
+  - script: make -j4 config=$(echo ${CONFIGURATION}_${PLATFORM} | tr [:upper:] [:lower:])
+    displayName: 'Build Projects'
+  - script: Output/bin/$(configuration)_$(platform)/udTest --gtest_output=xml
+    displayName: "Run Tests"
+  - task: PublishTestResults@2
+    displayName: "Publish Test Results"
+    condition: always()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'test_detail.xml'
+      testRunTitle: ${{ parameters.name }}_$(platform)_$(configuration)
