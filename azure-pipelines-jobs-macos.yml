@@ -1,0 +1,46 @@
+parameters:
+  name: ''
+  displayName: ''
+  sdk: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  displayName: ${{ parameters.displayName }}
+  pool:
+    vmImage: 'macOS-latest'
+  strategy:
+    matrix:
+      Debug:
+        configuration: Debug
+      Release:
+        configuration: Release
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: bin/premake-bin/premake5-osx xcode4
+    displayName: 'Run Premake'
+  - task: Xcode@5
+    displayName: 'Build Projects'
+    inputs:
+      xcWorkspacePath: 'udCore.xcodeproj'
+      sdk: ${{ parameters.sdk }}
+      configuration: $(configuration)
+      packageApp: false
+  - task: Xcode@5
+    displayName: 'Build Projects'
+    condition: and(succeeded(), eq('${{ parameters.name }}', 'macos'))
+    inputs:
+      xcWorkspacePath: 'udTest/udTest.xcodeproj'
+      sdk: ${{ parameters.sdk }}
+      configuration: $(configuration)
+      packageApp: false
+  - script: Output/bin/$(configuration)_x64/udTest --gtest_output=xml
+    displayName: "Run Tests"
+    condition: and(succeeded(), eq('${{ parameters.name }}', 'macos'))
+  - task: PublishTestResults@2
+    displayName: "Publish Test Results"
+    condition: and(always(), eq('${{ parameters.name }}', 'macos'))
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'test_detail.xml'
+      testRunTitle: ${{ parameters.name }}_x64_$(configuration)

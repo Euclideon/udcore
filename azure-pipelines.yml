@@ -1,0 +1,50 @@
+name: $(Date:yyyyMMdd)$(Rev:r)
+variables:
+  linkedVDK: Pipeline_43776
+  VAULTSDK_HOME: $(Build.SourcesDirectory)/linkedVDK/$(linkedVDK)
+
+stages:
+- stage: build
+  displayName: 'Build'
+  jobs:
+  - template: azure-pipelines-jobs-linux.yml
+    parameters:
+      name: ubuntu1604
+      displayName: 'Ubuntu 16.04'
+      container: euclideon/vault:dev-xenial-v1
+  - template: azure-pipelines-jobs-linux.yml
+    parameters:
+      name: ubuntu1804
+      displayName: 'Ubuntu 18.04'
+      container: euclideon/vault:dev-bionic-v1
+  - template: azure-pipelines-jobs-macos.yml
+    parameters:
+      name: macos
+      displayName: 'macOS'
+      sdk: 'macosx'
+  - template: azure-pipelines-jobs-macos.yml
+    parameters:
+      name: ios
+      displayName: 'iOS'
+      sdk: 'iphoneos'
+  - template: azure-pipelines-jobs-macos.yml
+    parameters:
+      name: iossimulator
+      displayName: 'iOS Simulator'
+      sdk: 'iphonesimulator'
+  - template: azure-pipelines-jobs-windows.yml
+    parameters:
+      name: windows
+      displayName: 'Windows'
+  - template: azure-pipelines-jobs-windows.yml
+    parameters:
+      name: androidx64
+      displayName: 'Android x64'
+      platform: 'x64'
+      premakeOpts: '--os=android'
+  - template: azure-pipelines-jobs-windows.yml
+    parameters:
+      name: androidarm64
+      displayName: 'Android ARM64'
+      platform: 'arm64'
+      premakeOpts: '--os=android'
