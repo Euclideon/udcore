@@ -105,7 +105,16 @@ struct udGeoZoneGeodeticDatumDescriptor
   bool exportToWGS84;
 };
 
+struct udGeoZoneEllipsoidInfo
+{
+  const char *pName;
+  double semiMajorAxis;
+  double flattening;
+  int32_t authorityEpsg;
+};
+
 extern const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
+extern const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count];
 
 // Find an appropriate SRID code for a given lat/long within UTM/WGS84 (for example as a default value)
 udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
@@ -124,6 +133,10 @@ udDouble3 udGeoZone_ToCartesian(const udGeoZone &zone, const udDouble3 &latLong,
 
 // Convert a point from the cartesian coordinate system defined by the zone to lat/long
 udDouble3 udGeoZone_ToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
+
+// Conversion to and from Geocentric
+udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllipsoidInfo &ellipsoid);
+udDouble3 udGeoZone_LatLongFromGeocentric(udDouble3 geoCentric, const udGeoZoneEllipsoidInfo &ellipsoid);
 
 // Convert a lat/long pair in one datum to another datum
 udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum currentDatum, udGeoZoneGeodeticDatum newDatum, bool flipToLongLat = false);
