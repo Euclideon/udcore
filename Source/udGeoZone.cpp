@@ -3,14 +3,6 @@
 #include "udStringUtil.h"
 #include "udJSON.h"
 
-struct udGeoZoneEllipsoidInfo
-{
-  const char *pName;
-  double semiMajorAxis;
-  double flattening;
-  int32_t authorityEpsg;
-};
-
 const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   // WKT Sphere name      semiMajor    flattening           authority epsg
   { "WGS 84",             6378137.000, 1.0 / 298.257223563, 7030 }, // udGZE_WGS84
