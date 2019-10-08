@@ -48,3 +48,29 @@ stages:
       displayName: 'Android ARM64'
       platform: 'arm64'
       premakeOpts: '--os=android'
+- stage: test
+  displayName: 'Test'
+  jobs:
+  - job: coverage
+    displayName: Coverage
+    pool:
+      vmImage: 'ubuntu-latest'
+    container:
+      image: euclideon/vault:dev-bionic-v1
+    steps:
+    - checkout: self
+      submodules: recursive
+    - script: bin/premake-bin/premake5 gmake2 --coverage
+      displayName: 'Run Premake'
+    - script: make -j4 config=debug_x64
+      displayName: 'Build Projects'
+    - script: Output/bin/Debug_x64/udTest
+      displayName: 'Run Tests'
+    - script: gcovr -r . -e 3rdParty -e udTest -s -p --xml -o coverage.xml
+      displayName: 'Generate Coverage'
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish Coverage Results'
+      condition: always()
+      inputs:
+        codeCoverageTool: 'cobertura'
+        summaryFileLocation: 'coverage.xml'
