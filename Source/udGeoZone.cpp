@@ -41,6 +41,8 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "China Geodetic Coordinate System 2000", "CGCS2000",        "China_2000",                                 udGZE_CGCS2000,      { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4490, 1043, false,    false },
   { "Hong Kong 1980",                        "Hong Kong 1980",  "Hong_Kong_1980",                             udGZE_Intl1924,      { -162.619,-276.959,-161.764,0.067753,-2.24365,-1.15883,-1.09425 }, 4611, 6611, false,    true  },
   { "SVY21",                                 "SVY21",           "SVY21",                                      udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4757, 6757, false,    false },
+  { "MGI",                                   "MGI",             "Militar_Geographische_Institute",            udGZE_Bessel1841,    { 577.326, 90.129, 463.919, 5.137, 1.474, 5.297, 2.4232 },          4312, 6312, true,     true  },
+  { "MGI (Ferro)",                           "MGI (Ferro)",     "Militar_Geographische_Institut_Ferro",       udGZE_Bessel1841,    { 682, -203, 480, 0, 0, 0, 0 },                                     4805, 6805, true,     true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -295,6 +297,141 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->scaleFactor = 0.9996;
     udGeoZone_SetSpheroid(pZone);
     udGeoZone_SetUTMZoneBounds(pZone, false);
+  }
+  else if (sridCode >= 31284 && sridCode <= 31287)
+  {
+    pZone->datum = udGZGD_MGI;
+    pZone->projection = udGZPT_TransverseMercator;
+    pZone->zone = 1618;
+    pZone->parallel = 0.0;
+    pZone->falseNorthing = 0;
+    pZone->scaleFactor = 1;
+
+    const char *pSuffix = nullptr;
+
+    switch (sridCode)
+    {
+    case 31284:
+      pSuffix = "M28";
+      pZone->meridian = 10.33333333333333;
+      pZone->falseEasting = 150000;
+      break;
+
+    case 31285:
+      pSuffix = "M31";
+      pZone->meridian = 13.33333333333333;
+      pZone->falseEasting = 450000;
+      break;
+
+    case 31286:
+      pSuffix = "M34";
+      pZone->meridian = 16.33333333333333;
+      pZone->falseEasting = 750000;
+      break;
+
+    case 31287:
+      pSuffix = "Lambert";
+      pZone->meridian = 13.33333333333333;
+      pZone->firstParallel = 49;
+      pZone->secondParallel = 46;
+      pZone->falseEasting = 400000;
+      pZone->falseNorthing = 400000;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      pZone->parallel = 47.5;
+      break;
+    }
+
+    udSprintf(pZone->zoneName, "MGI / Austria %s", pSuffix);
+    udGeoZone_SetSpheroid(pZone);
+    udGeoZone_SetUTMZoneBounds(pZone, true);
+  }
+  else if (sridCode >= 31254 && sridCode <= 31259)
+  {
+    pZone->datum = udGZGD_MGI;
+    pZone->projection = udGZPT_TransverseMercator;
+    pZone->zone = 1618;
+    pZone->parallel = 0.0;
+    pZone->scaleFactor = 1;
+    pZone->falseEasting = 0;
+    pZone->falseNorthing = -5000000;
+    pZone->meridian = 10.33333333333333;
+
+    const char *pSuffix = nullptr;
+
+    switch (sridCode)
+    {
+    case 31254:
+      pSuffix = "GK West";
+      break;
+
+    case 31255:
+      pZone->falseEasting = 400000;
+      pZone->falseNorthing = 400000;
+      pZone->meridian = 13.33333333333333;
+      pSuffix = "GK Central";
+      break;
+
+    case 31256:
+      pZone->falseEasting = 400000;
+      pZone->falseNorthing = 400000;
+      pZone->meridian = 16.33333333333333;
+      pSuffix = "GK East";
+      break;
+
+    case 31257:
+      pZone->falseEasting = 150000;
+      pSuffix = "GK M28";
+      break;
+
+    case 31258:
+      pZone->falseEasting = 450000;
+      pZone->meridian = 13.33333333333333;
+      pSuffix = "GK M31";
+      break;
+
+    case 31259:
+      pZone->falseEasting = 750000;
+      pZone->meridian = 16.33333333333333;
+      pSuffix = "GK M34";
+      break;
+
+    }
+
+    udSprintf(pZone->zoneName, "MGI / Austria %s", pSuffix);
+    udGeoZone_SetSpheroid(pZone);
+    udGeoZone_SetUTMZoneBounds(pZone, true);
+  }
+  else if (sridCode >= 31251 && sridCode <= 31253)
+  {
+  pZone->datum = udGZGD_MGI;
+  pZone->projection = udGZPT_TransverseMercator;
+  pZone->zone = 1618;
+  pZone->parallel = 0.0;
+  pZone->scaleFactor = 1;
+  pZone->falseEasting = 0;
+  pZone->falseNorthing = -5000000;
+  pZone->meridian = 28 + ((sridCode - 31251) * 3);
+
+  const char *pSuffix = nullptr;
+
+  switch (sridCode)
+  {
+  case 31251:
+    pSuffix = "GK West Zone";
+    break;
+
+  case 31252:
+    pSuffix = "GK Central Zone";
+    break;
+
+  case 31253:
+    pSuffix = "GK East Zone";
+    break;
+  }
+
+  udSprintf(pZone->zoneName, "MGI / Austria %s", pSuffix);
+  udGeoZone_SetSpheroid(pZone);
+  udGeoZone_SetUTMZoneBounds(pZone, true);
   }
   else if (sridCode >= 4534 && sridCode <= 4554)
   {
