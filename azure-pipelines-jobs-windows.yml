@@ -29,10 +29,10 @@ jobs:
       maximumCpuCount: true
       msbuildArguments: '/v:m'
   - script: Output\bin\$(configuration)_${{ parameters.platform }}\udTest.exe --gtest_output=xml
-    displayName: "Run Tests"
+    displayName: 'Run Tests'
     condition: and(succeeded(), eq('${{ parameters.name }}', 'windows'))
   - task: PublishTestResults@2
-    displayName: "Publish Test Results"
+    displayName: 'Publish Test Results'
     condition: and(always(), eq('${{ parameters.name }}', 'windows'))
     inputs:
       testResultsFormat: 'JUnit'

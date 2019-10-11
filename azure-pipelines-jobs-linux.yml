@@ -30,9 +30,9 @@ jobs:
   - script: make -j4 config=$(echo ${CONFIGURATION}_${PLATFORM} | tr [:upper:] [:lower:])
     displayName: 'Build Projects'
   - script: Output/bin/$(configuration)_$(platform)/udTest --gtest_output=xml
-    displayName: "Run Tests"
+    displayName: 'Run Tests'
   - task: PublishTestResults@2
-    displayName: "Publish Test Results"
+    displayName: 'Publish Test Results'
     condition: always()
     inputs:
       testResultsFormat: 'JUnit'
