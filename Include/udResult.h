@@ -24,7 +24,7 @@ extern uint32_t g_udLastErrorHelpCode; // Help code for output to user to track 
 #else
 # define UD_ERROR_SETLAST(f,l) g_udLastErrorLine = l
 #endif
-constexpr unsigned udResultCalcHelpCode(const char filename[], const int line, uint32_t code = 1, int seed = 2)
+constexpr unsigned udResultCalcHelpCode(const char filename[], const int line, uint32_t code = 1, int seed = 4)
 {
   return !filename[0] ? (code << 11) | (line & ((1 << 11) - 1))
     : (filename[0] == '/' || filename[0] == '\\')
