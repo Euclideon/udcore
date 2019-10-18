@@ -41,6 +41,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "China Geodetic Coordinate System 2000", "CGCS2000",        "China_2000",                                 udGZE_CGCS2000,      { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4490, 1043, false,    false },
   { "Hong Kong 1980",                        "Hong Kong 1980",  "Hong_Kong_1980",                             udGZE_Intl1924,      { -162.619,-276.959,-161.764,0.067753,-2.24365,-1.15883,-1.09425 }, 4611, 6611, false,    true  },
   { "SVY21",                                 "SVY21",           "SVY21",                                      udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4757, 6757, false,    false },
+  { "MGI",                                   "MGI",             "Militar_Geographische_Institute",            udGZE_Bessel1841,    { 577.326, 90.129, 463.919, 5.137, 1.474, 5.297, 2.4232 },          4312, 6312, false,    true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -295,6 +296,105 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->scaleFactor = 0.9996;
     udGeoZone_SetSpheroid(pZone);
     udGeoZone_SetUTMZoneBounds(pZone, false);
+  }
+  else if (sridCode >= 31284 && sridCode <= 31287)
+  {
+    pZone->datum = udGZGD_MGI;
+    pZone->projection = udGZPT_TransverseMercator;
+    pZone->zone = 1618;
+    pZone->parallel = 0.0;
+    pZone->falseNorthing = 0;
+    pZone->scaleFactor = 1;
+
+    const char *pSuffix = nullptr;
+
+    switch (sridCode)
+    {
+    case 31284:
+      pSuffix = "M28";
+      pZone->meridian = 10.33333333333333;
+      pZone->falseEasting = 150000;
+      break;
+
+    case 31285:
+      pSuffix = "M31";
+      pZone->meridian = 13.33333333333333;
+      pZone->falseEasting = 450000;
+      break;
+
+    case 31286:
+      pSuffix = "M34";
+      pZone->meridian = 16.33333333333333;
+      pZone->falseEasting = 750000;
+      break;
+
+    case 31287:
+      pSuffix = "Lambert";
+      pZone->meridian = 13.33333333333333;
+      pZone->firstParallel = 49;
+      pZone->secondParallel = 46;
+      pZone->falseEasting = 400000;
+      pZone->falseNorthing = 400000;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      pZone->parallel = 47.5;
+      break;
+    }
+
+    udSprintf(pZone->zoneName, "Austria %s", pSuffix);
+    udGeoZone_SetSpheroid(pZone);
+    udGeoZone_SetUTMZoneBounds(pZone, true);
+  }
+  else if (sridCode >= 31254 && sridCode <= 31259)
+  {
+    pZone->datum = udGZGD_MGI;
+    pZone->projection = udGZPT_TransverseMercator;
+    pZone->zone = 1618;
+    pZone->parallel = 0.0;
+    pZone->scaleFactor = 1;
+    pZone->falseEasting = 0;
+    pZone->falseNorthing = -5000000;
+    pZone->meridian = 10.33333333333333;
+
+    const char *pSuffix = nullptr;
+
+    switch (sridCode)
+    {
+    case 31254:
+      pSuffix = "GK West";
+      break;
+
+    case 31255:
+      pZone->meridian = 13.33333333333333;
+      pSuffix = "GK Central";
+      break;
+
+    case 31256:
+      pZone->meridian = 16.33333333333333;
+      pSuffix = "GK East";
+      break;
+
+    case 31257:
+      pZone->falseEasting = 150000;
+      pSuffix = "GK M28";
+      break;
+
+    case 31258:
+      pZone->falseEasting = 450000;
+      pZone->meridian = 13.33333333333333;
+      pSuffix = "GK M31";
+      break;
+
+    case 31259:
+      pZone->falseEasting = 750000;
+      pZone->meridian = 16.33333333333333;
+      pSuffix = "GK M34";
+      break;
+
+    }
+
+    udSprintf(pZone->zoneName, "Austria %s", pSuffix);
+    udGeoZone_SetSpheroid(pZone);
+    udGeoZone_SetUTMZoneBounds(pZone, true);
   }
   else if (sridCode >= 4534 && sridCode <= 4554)
   {
@@ -921,17 +1021,18 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   // If the ellipsoid isn't WGS84, then provide parameters to get to WGS84
   if (pDesc->exportToWGS84)
   {
+    int decimalPlaces = zone.datum == udGZGD_HK1980 ? 7 : zone.datum == udGZGD_MGI ? 4 : 3;
     udSprintf(&pWKTToWGS84, ",TOWGS84[%s,%s,%s,%s,%s,%s,%s]",
       udTempStr_TrimDouble(pDesc->paramsHelmert7[0], 3),
       udTempStr_TrimDouble(pDesc->paramsHelmert7[1], 3),
       udTempStr_TrimDouble(pDesc->paramsHelmert7[2], 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[3], zone.datum == udGZGD_HK1980 ? 7 : 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[4], zone.datum == udGZGD_HK1980 ? 7 : 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[5], zone.datum == udGZGD_HK1980 ? 7 : 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[6], zone.datum == udGZGD_HK1980 ? 7 : 3));
+      udTempStr_TrimDouble(pDesc->paramsHelmert7[3], decimalPlaces),
+      udTempStr_TrimDouble(pDesc->paramsHelmert7[4], decimalPlaces),
+      udTempStr_TrimDouble(pDesc->paramsHelmert7[5], decimalPlaces),
+      udTempStr_TrimDouble(pDesc->paramsHelmert7[6], decimalPlaces));
   }
 
-  udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 9), udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
+  udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 8), udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
   udSprintf(&pWKTDatum, "DATUM[\"%s\",%s%s,AUTHORITY[\"EPSG\",\"%d\"]", pDesc->pDatumName, pWKTSpheroid, pWKTToWGS84 ? pWKTToWGS84 : "", pDesc->authority);
 
   if (zone.projection == udGZPT_ECEF)
@@ -957,14 +1058,14 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
     int parallelPrecision = (zone.srid == 3414) ? 15 : 14; // For some reason the SVY21 zone needs an additional decimal place
     udSprintf(&pWKTProjection, "PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],"
                                "PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
-                               udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, 13), udTempStr_TrimDouble(zone.scaleFactor, 10),
+                               udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, zone.datum == udGZGD_MGI ? 14 : 13), udTempStr_TrimDouble(zone.scaleFactor, 10),
                                udTempStr_TrimDouble(zone.falseEasting, 3), udTempStr_TrimDouble(zone.falseNorthing, 3), pWKTUnit);
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",%s],PARAMETER[\"standard_parallel_2\",%s],"
                                "PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
-                                udTempStr_TrimDouble(zone.firstParallel, 14, 0, true), udTempStr_TrimDouble(zone.secondParallel, 14), udTempStr_TrimDouble(zone.parallel, 14, 0, true), udTempStr_TrimDouble(zone.meridian, 13),
+                                udTempStr_TrimDouble(zone.firstParallel, 14, 0, true), udTempStr_TrimDouble(zone.secondParallel, 14), udTempStr_TrimDouble(zone.parallel, 14, 0, true), udTempStr_TrimDouble(zone.meridian, zone.datum == udGZGD_MGI ? 14 : 13),
                                 udTempStr_TrimDouble(zone.falseEasting, 3), udTempStr_TrimDouble(zone.falseNorthing, 3), pWKTUnit);
   }
 
