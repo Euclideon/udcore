@@ -1140,6 +1140,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
   double e = zone.eccentricity;
   double phi = ((!flipFromLongLat) ? latLong.x : latLong.y);
   double omega = ((!flipFromLongLat) ? latLong.y : latLong.x);
+  double ellipsoidHeight = latLong.z;
   double X, Y;
 
   if (datum != zone.datum)
@@ -1147,19 +1148,20 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     udDouble3 convertedLatLong = udGeoZone_ConvertDatum(udDouble3::create(phi, omega, latLong.z), datum, zone.datum);
     phi = convertedLatLong.x;
     omega = convertedLatLong.y;
+    ellipsoidHeight = convertedLatLong.z;
   }
 
   if (zone.projection == udGZPT_ECEF)
   {
-    return udGeoZone_LatLongToGeocentric(udDouble3::create(phi, omega, latLong.z), g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid]);
+    return udGeoZone_LatLongToGeocentric(udDouble3::create(phi, omega, ellipsoidHeight), g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid]);
   }
   else if (zone.projection == udGZPT_LatLong)
   {
-    return udDouble3::create(phi, omega, latLong.z);
+    return udDouble3::create(phi, omega, ellipsoidHeight);
   }
   else if (zone.projection == udGZPT_LongLat)
   {
-    return udDouble3::create(omega, phi, latLong.z);
+    return udDouble3::create(omega, phi, ellipsoidHeight);
   }
   else if (zone.projection == udGZPT_TransverseMercator)
   {
@@ -1189,7 +1191,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     }
     Y = Y * zone.radius;
 
-    return udDouble3::create(zone.scaleFactor * X + zone.falseEasting, zone.scaleFactor * (Y - zone.firstParallel) + zone.falseNorthing, latLong.z);
+    return udDouble3::create(zone.scaleFactor * X + zone.falseEasting, zone.scaleFactor * (Y - zone.firstParallel) + zone.falseNorthing, ellipsoidHeight);
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
@@ -1213,7 +1215,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     X = p * udSin(n * omega);
     Y = p0 - p * udCos(n * omega);
 
-    return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, latLong.z);
+    return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, ellipsoidHeight);
   }
 
   return udDouble3::zero(); // Unsupported projection
