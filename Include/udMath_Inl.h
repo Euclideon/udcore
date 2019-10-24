@@ -1,6 +1,41 @@
 #include <float.h>
 #include <math.h>
 
+template <typename T>
+T udHighestBitValue(T i)
+{
+  T result = 0;
+  while (i)
+  {
+    result = (i & (~i + 1)); // grab lowest bit
+    i &= ~result; // clear lowest bit
+  }
+  return result;
+}
+
+template <typename T> bool udIsPowerOfTwo(T i) {
+  return !(i & (i - 1));
+}
+template <typename T> T udPowerOfTwoAbove(T v) {
+  return udIsPowerOfTwo(v) ? v : udHighestBitValue(v) << 1;
+}
+
+template <typename T> T udRoundEven(T t)
+{
+  int integer = (int)t;
+  T integerPart = (integer < 0 ? udCeil(t) : udFloor(t));
+  T fractionalPart = udAbs(t - integer);
+
+  if (fractionalPart > T(0.5) || fractionalPart < T(0.5))
+    return udRound(t);
+  else if ((integer % 2) == 0)
+    return integerPart;
+  else if (integer < 0)
+    return integerPart - T(1.0); // Negative values should be +1 negative
+  else
+    return integerPart + T(1.0);
+}
+
 UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
 UDFORCE_INLINE float udLogN(float f) { return logf(f); }
@@ -51,43 +86,27 @@ UDFORCE_INLINE double udATanh(double d) { return atanh(d); }
 
 UDFORCE_INLINE float udRound(float f) { return f >= 0.0f ? floorf(f + 0.5f) : ceilf(f - 0.5f); }
 UDFORCE_INLINE double udRound(double d) { return d >= 0.0 ? floor(d + 0.5) : ceil(d - 0.5); }
+template <typename T> udVector2<T> udRound(const udVector2<T> &v)       { return v.create(udRound(v.x), udRound(v.y)); }
+template <typename T> udVector3<T> udRound(const udVector3<T> &v)       { return v.create(udRound(v.x), udRound(v.y), udRound(v.z)); }
+template <typename T> udVector4<T> udRound(const udVector4<T> &v)       { return v.create(udRound(v.x), udRound(v.y), udRound(v.z), udRound(v.w)); }
+
 UDFORCE_INLINE float udFloor(float f) { return floorf(f); }
 UDFORCE_INLINE double udFloor(double d) { return floor(d); }
+template <typename T> udVector2<T> udFloor(const udVector2<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y)); }
+template <typename T> udVector3<T> udFloor(const udVector3<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z)); }
+template <typename T> udVector4<T> udFloor(const udVector4<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z), udFloor(v.w)); }
+
 UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
 UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
+template <typename T> udVector2<T> udCeil(const udVector2<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y)); }
+template <typename T> udVector3<T> udCeil(const udVector3<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z)); }
+template <typename T> udVector4<T> udCeil(const udVector4<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z), udCeil(v.w)); }
+
 UDFORCE_INLINE float udMod(float f, float den) { return fmodf(f, den); }
 UDFORCE_INLINE double udMod(double d, double den) { return fmod(d, den); }
-
-template <typename T>
-T udHighestBitValue(T i)
-{
-  T result = 0;
-  while (i)
-  {
-    result = (i & (~i + 1)); // grab lowest bit
-    i &= ~result; // clear lowest bit
-  }
-  return result;
-}
-
-template <typename T> bool udIsPowerOfTwo(T i) { return !(i & (i - 1)); }
-template <typename T> T udPowerOfTwoAbove(T v) { return udIsPowerOfTwo(v) ? v : udHighestBitValue(v) << 1; }
-
-template <typename T> T udRoundEven(T t)
-{
-  int integer = (int)t;
-  T integerPart = (integer < 0 ? udCeil(t) : udFloor(t));
-  T fractionalPart = udAbs(t - integer);
-
-  if (fractionalPart > T(0.5) || fractionalPart < T(0.5))
-    return udRound(t);
-  else if ((integer % 2) == 0)
-    return integerPart;
-  else if (integer < 0)
-    return integerPart - T(1.0); // Negative values should be +1 negative
-  else
-    return integerPart + T(1.0);
-}
+template <typename T> udVector2<T> udMod(const udVector2<T> &v)       { return v.create(udMod(v.x), udMod(v.y)); }
+template <typename T> udVector3<T> udMod(const udVector3<T> &v)       { return v.create(udMod(v.x), udMod(v.y), udMod(v.z)); }
+template <typename T> udVector4<T> udMod(const udVector4<T> &v)       { return v.create(udMod(v.x), udMod(v.y), udMod(v.z), udMod(v.w)); }
 
 template <typename T> T            udAbs(T v) { return v < T(0) ? -v : v; }
 template <typename T> udVector2<T> udAbs(const udVector2<T> &v) { udVector2<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y }; return r; }

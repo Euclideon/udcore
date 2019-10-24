@@ -47,6 +47,11 @@ template <typename T> struct udVector4;
 template <typename T> struct udQuaternion;
 template <typename T> struct udMatrix4x4;
 
+template <typename T> T udRoundEven(T t);
+template <typename T> T udPowerOfTwoAbove(T i);
+template <typename T> bool udIsPowerOfTwo(T i);
+template <typename T> T udHighestBitValue(T i);
+
 // math functions
 float udPow(float f, float n);
 double udPow(double d, double n);
@@ -93,15 +98,21 @@ T udNormaliseRotation(T rad, T absRange = UD_PI);
 // rounding functions
 float udRound(float f);
 double udRound(double d);
+template <typename T> udVector2<T> udRound(const udVector2<T> &v);
+template <typename T> udVector3<T> udRound(const udVector3<T> &v);
+template <typename T> udVector4<T> udRound(const udVector4<T> &v);
+
 float udFloor(float f);
 double udFloor(double d);
+template <typename T> udVector2<T> udFloor(const udVector2<T> &v);
+template <typename T> udVector3<T> udFloor(const udVector3<T> &v);
+template <typename T> udVector4<T> udFloor(const udVector4<T> &v);
+
 float udCeil(float f);
 double udCeil(double d);
-
-template <typename T> T udRoundEven(T t);
-template <typename T> T udPowerOfTwoAbove(T i);
-template <typename T> bool udIsPowerOfTwo(T i);
-template <typename T> T udHighestBitValue(T i);
+template <typename T> udVector2<T> udCeil(const udVector2<T> &v);
+template <typename T> udVector3<T> udCeil(const udVector3<T> &v);
+template <typename T> udVector4<T> udCeil(const udVector4<T> &v);
 
 // typical linear algebra functions
 template <typename T> T            udAbs(T v);
