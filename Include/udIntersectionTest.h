@@ -5,7 +5,7 @@
 
 #include "udMath.h"
 
-bool udIntersectionTest_AABBTriangle(const udFloat3 &boxCenter, const udFloat3 &boxHalfSize, const udFloat3 triVerts[3]);
-bool udIntersectionTest_AABBLine(const udFloat3 &boxCenter, const udFloat3 &boxExtents, const udFloat3 lineVerts[2]);
+bool udIntersectionTest_AABBTriangle(const udDouble3 &boxMin, double boxExtents, const udDouble3 &a, const udDouble3 &b, const udDouble3 &c);
+bool udIntersectionTest_AABBLine(const udDouble3 &boxMin, double boxExtents, const udDouble3 &a, const udDouble3 &b);
 
 #endif // UDINTERSECTIONTEST_H
