@@ -80,7 +80,7 @@ udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEll
   // This is an alternative method to generate the lat- don't merge until we confirm which one is 'correct'
   double lat2 = 0;
   double lat2Temp = 1;
-  while (lat2 != lat2Temp)
+  while (lat2 != lat2Temp && !isnan(lat2))
   {
     lat2 = lat2Temp;
     lat2Temp = udATan((geoCentric.z + eSq*v*udSin(lat2)) / udSqrt(geoCentric.x * geoCentric.x + geoCentric.y * geoCentric.y));
