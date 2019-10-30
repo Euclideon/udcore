@@ -65,9 +65,9 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
   u =  u * pImage->width;
   v = -v * pImage->height;
 
-  if (u < 0.0f || u > pImage->width)
+  while (u < 0.0f || u >= pImage->width)
     u = u - pImage->width * udFloor((u / pImage->width));
-  if (v < 0.0f || v > pImage->height)
+  while (v < 0.0f || v >= pImage->height)
     v = v - pImage->height * udFloor((v / pImage->height));
 
   int x = (int)u;
