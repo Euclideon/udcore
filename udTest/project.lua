@@ -27,6 +27,7 @@ project ("udTest" .. (projectSuffix or ""))
 
 	filter { "system:macosx" }
 		links { "Foundation.framework", "Security.framework" }
+		buildoptions { "-fno-stack-check" }
 
 	-- include common stuff
 	dofile "../bin/premake-bin/common-proj.lua"
