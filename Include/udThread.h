@@ -9,6 +9,7 @@
 //
 
 #include "udPlatform.h"
+#include "udCallback.h"
 
 // Minimalist MOST BASIC cross-platform thread support
 struct udSemaphore;
@@ -20,10 +21,10 @@ enum udThreadPriority { udTP_Lowest, udTP_Low, udTP_Normal, udTP_High, udTP_High
 enum udThreadCreateFlags { udTCF_None }; // For future expansion
 #define UDTHREAD_WAIT_INFINITE -1
 
-typedef uint32_t(udThreadStart)(void *data);
+using udThreadStart = udCallback<uint32_t(void *)>;
 
 // Create a thread object
-udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, void *pThreadData, udThreadCreateFlags flags = udTCF_None, const char *pThreadName = nullptr);
+udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void *pThreadData, udThreadCreateFlags flags = udTCF_None, const char *pThreadName = nullptr);
 
 // Set the thread priority
 void udThread_SetPriority(udThread *pThread, udThreadPriority priority);

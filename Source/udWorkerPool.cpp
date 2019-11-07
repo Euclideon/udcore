@@ -16,8 +16,8 @@ struct udWorkerPoolThread
 
 struct udWorkerPoolTask
 {
-  udWorkerPoolCallback *pFunction;
-  udWorkerPoolCallback *pPostFunction; // runs on main thread
+  udWorkerPoolCallback function;
+  udWorkerPoolCallback postFunction; // runs on main thread
   void *pDataBlock;
   bool freeDataBlock;
 };
@@ -63,10 +63,10 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
       continue;
     }
 
-    if (currentTask.pFunction)
-      currentTask.pFunction(currentTask.pDataBlock);
+    if (currentTask.function)
+      currentTask.function(currentTask.pDataBlock);
 
-    if (currentTask.pPostFunction)
+    if (currentTask.postFunction)
       udSafeDeque_PushBack(pPool->pQueuedPostTasks, currentTask);
     else if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);
@@ -158,7 +158,7 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback *pFunc, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback *pPostFunc /*= nullptr*/)
+udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
 {
   udResult result = udR_Failure_;
   udWorkerPoolTask tempTask;
@@ -169,8 +169,8 @@ udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback *pFunc, 
   UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized_);
   UD_ERROR_IF(!pPool->isRunning, udR_NotAllowed);
 
-  tempTask.pFunction = pFunc;
-  tempTask.pPostFunction = pPostFunc;
+  tempTask.function = func;
+  tempTask.postFunction = postFunction;
   tempTask.pDataBlock = pUserData;
   tempTask.freeDataBlock = clearMemory;
 
@@ -199,7 +199,7 @@ udResult udWorkerPool_DoPostWork(udWorkerPool *pPool, int processLimit /*= 0*/)
 
   while (udSafeDeque_PopFront(pPool->pQueuedPostTasks, &currentTask) == udR_Success)
   {
-    currentTask.pPostFunction(currentTask.pDataBlock);
+    currentTask.postFunction(currentTask.pDataBlock);
 
     if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);

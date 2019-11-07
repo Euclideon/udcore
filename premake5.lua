@@ -62,7 +62,7 @@ solution "udCore"
 		filter { "kind:*App" }
 			targetextension ".js"
 		filter { "files:**.cpp" }
-			buildoptions { "-std=c++11" }
+			buildoptions { "-std=c++14" }
 		filter {}
 	else
 		platforms { "x64" }
@@ -70,8 +70,7 @@ solution "udCore"
 
 	pic "On"
 	editorintegration "on"
-	cppdialect "C++11"
-	xcodebuildsettings { ["CLANG_CXX_LANGUAGE_STANDARD"] = "c++0x" } -- XCode doesn't support c++11, needs to be c++0x
+	cppdialect "C++14"
 
 	startproject "udTest"
 

@@ -1,7 +1,7 @@
 project ("udCore" .. (projectSuffix or ""))
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++11"
+	cppdialect "C++14"
 	staticruntime "On"
 	flags { "OmitDefaultLibrary", "FatalWarnings" }
 
