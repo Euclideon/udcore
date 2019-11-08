@@ -35,6 +35,9 @@ project ("udCore" .. (projectSuffix or ""))
 		buildoptions { "-pedantic" }
 		enablewarnings { "undef" }
 
+	filter { "system:macosx" }
+		buildoptions { "-fno-stack-check" }
+
 	-- for windows, make the output name and location identical to that of udbin
 	filter { "system:Windows" }
 		targetdir "Lib/%{cfg.system}_%{cfg.shortname}"
