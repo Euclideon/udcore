@@ -1,7 +1,7 @@
 project ("udTest" .. (projectSuffix or ""))
 	kind "ConsoleApp"
 	language "C++"
-	cppdialect "C++11"
+	cppdialect "C++14"
 	staticruntime "On"
 
 	includedirs { "../3rdParty" }

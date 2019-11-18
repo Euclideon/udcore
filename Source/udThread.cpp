@@ -65,7 +65,7 @@ struct udThread
 # else
   pthread_t t;
 # endif
-  udThreadStart *pThreadStarter;
+  udThreadStart threadStarter;
   void *pThreadData;
   udSemaphore *pCacheSemaphore; // Semaphore is non-null only while on the cached thread list
   volatile int32_t refCount;
@@ -76,16 +76,16 @@ static uint32_t udThread_Bootstrap(udThread *pThread)
 {
   uint32_t threadReturnValue;
   bool reclaimed = false; // Set to true when the thread is reclaimed by the cache system
-  UDASSERT(pThread->pThreadStarter, "No starter function");
+  UDASSERT(pThread->threadStarter, "No starter function");
   do
   {
 #if DEBUG_CACHE
     if (reclaimed)
       udDebugPrintf("Successfully reclaimed thread %p\n", pThread);
 #endif
-    threadReturnValue = pThread->pThreadStarter ? pThread->pThreadStarter(pThread->pThreadData) : 0;
+    threadReturnValue = pThread->threadStarter ? pThread->threadStarter(pThread->pThreadData) : 0;
 
-    udInterlockedExchangePointer(&pThread->pThreadStarter, nullptr);
+    pThread->threadStarter = nullptr;
     udInterlockedExchangePointer(&pThread->pThreadData, nullptr);
     reclaimed = false;
 
@@ -121,7 +121,7 @@ static uint32_t udThread_Bootstrap(udThread *pThread)
         }
       }
     }
-  } while (reclaimed && pThread->pThreadStarter);
+  } while (reclaimed && pThread->threadStarter);
 
   // Call to destroy here will decrement reference count, and only destroy if
   // the original creator of the thread didn't take a reference themselves
@@ -133,14 +133,14 @@ static uint32_t udThread_Bootstrap(udThread *pThread)
 
 
 // ****************************************************************************
-udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, void *pThreadData, udThreadCreateFlags /*flags*/, const char *pThreadName)
+udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void *pThreadData, udThreadCreateFlags /*flags*/, const char *pThreadName)
 {
   udResult result;
   udThread *pThread = nullptr;
   int slotIndex;
   udUnused(pThreadName);
 
-  UD_ERROR_NULL(pThreadStarter, udR_InvalidParameter_);
+  UD_ERROR_NULL(threadStarter, udR_InvalidParameter_);
   for (slotIndex = 0; pThread == nullptr && slotIndex < MAX_CACHED_THREADS; ++slotIndex)
   {
     pThread = const_cast<udThread*>(s_pCachedThreads[slotIndex]);
@@ -149,7 +149,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
   }
   if (pThread)
   {
-    udInterlockedExchangePointer(&pThread->pThreadStarter, pThreadStarter);
+    pThread->threadStarter = threadStarter;
     udInterlockedExchangePointer(&pThread->pThreadData, pThreadData);
     udIncrementSemaphore(pThread->pCacheSemaphore);
   }
@@ -161,7 +161,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart *pThreadStarter, voi
 #if DEBUG_CACHE
     udDebugPrintf("Creating udThread %p\n", pThread);
 #endif
-    pThread->pThreadStarter = pThreadStarter;
+    pThread->threadStarter = threadStarter;
     pThread->pThreadData = pThreadData;
     udInterlockedExchange(&pThread->refCount, 1);
 # if UDPLATFORM_WINDOWS

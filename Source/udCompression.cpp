@@ -432,7 +432,7 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     pFile->pFileData = udAllocType(uint8_t, (size_t)stat.m_uncomp_size, udAF_None);
     UD_ERROR_NULL(pFile->pFileData, udR_MemoryAllocationFailure);
     pFile->lengthRead = 0;
-    udThreadStart *pStartFunc = [](void *pOpaque) -> unsigned int
+    udThreadStart startFunc = [](void *pOpaque) -> unsigned int
     {
       udFile_Zip *pFile = (udFile_Zip *)pOpaque;
       mz_zip_reader_extract_to_callback(&pFile->mz, pFile->index, udMiniZ_ReadFileFromZipCallback, pOpaque, 0);
@@ -442,7 +442,7 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     };
     pFile->readComplete = false;
     pFile->pRWLock = udCreateRWLock();
-    udThread_Create(nullptr, pStartFunc, pFile);
+    udThread_Create(nullptr, startFunc, pFile);
   }
   else
   {
