@@ -173,6 +173,22 @@ void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength)
 }
 
 // ****************************************************************************
+// Author: Dave Pevreal, November 2019
+udResult udFile_SetSubFilename(udFile *pFile, const char *pSubFilename, int64_t *pFileLengthInBytes)
+{
+  udResult result;
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile->fpSetSubFilename, udR_InvalidConfiguration);
+
+  result = pFile->fpSetSubFilename(pFile, pSubFilename);
+  if (pFileLengthInBytes)
+    *pFileLengthInBytes = pFile->fileLength;
+
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, July 2016
 udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint64_t nonce, int64_t counterOffset)
 {
