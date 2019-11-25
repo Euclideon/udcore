@@ -1,0 +1,36 @@
+parameters:
+  name: ''
+  displayName: ''
+  container: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  displayName: ${{ parameters.displayName }}
+  pool:
+    vmImage: 'ubuntu-latest'
+  container:
+    image: ${{ parameters.container }}
+  variables:
+    platform: emscripten
+  strategy:
+    matrix:
+      Debug:
+        configuration: Debug
+      Release:
+        configuration: Release
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: |
+      pushd /emsdk
+      ./emsdk activate latest
+      popd
+    displayName: 'Configure Emscripten Environment'
+  - script: bin/premake-bin/premake5 gmake2 --os=emscripten
+    displayName: 'Run Premake'
+  - script: make -j4 config=$(echo ${CONFIGURATION}_${PLATFORM} | tr [:upper:] [:lower:])
+    displayName: 'Build Projects'
+    env:
+      EMSDK: /emsdk
+      EMSDK_NODE: /emsdk/node/12.9.1_64bit/bin/node
+      PATH: $(PATH):/emsdk:/emsdk/upstream/emscripten:/emsdk/node/12.9.1_64bit/bin
