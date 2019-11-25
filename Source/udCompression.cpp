@@ -268,6 +268,25 @@ struct udFile_Zip : public udFile
 };
 
 // ----------------------------------------------------------------------------
+// Author: Dave Pevreal, November 2019
+// Helper to wait for reads to abort
+static void AbortRead(udFile_Zip *pZip)
+{
+  while (pZip->pFileData && !pZip->readComplete)
+  {
+    udDebugPrintf("Waiting for read of zip to abort\n");
+    pZip->abortRead = true;
+    udSleep(1);
+  }
+  if (pZip->pFileData)
+  {
+    udReadLockRWLock(pZip->pRWLock);
+    udFree(pZip->pFileData);
+    udReadUnlockRWLock(pZip->pRWLock);
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2014
 // Implementation of SeekReadHandler to access a file in the registered zip
 static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
@@ -276,27 +295,40 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
   udResult result;
   udFile_Zip *pZip = static_cast<udFile_Zip *>(pFile);
   size_t actualRead = 0;
+  bool locked = false;
 
-  UD_ERROR_IF(seekOffset < 0 || seekOffset >= pZip->fileLength, udR_InvalidParameter_);
-  bufferLength = udMin(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
-
-  // Passive wait for the read to complete
-  while (!pZip->readComplete && pZip->lengthRead < int32_t(seekOffset + bufferLength))
+  UD_ERROR_NULL(pZip->pZipFile, udR_InvalidConfiguration);
+  if (pZip->pFileData)
   {
-    if (pZip->abortRead)
-      UD_ERROR_SET_NO_BREAK(udR_ReadFailure);
-    udSleep(1);
+    UD_ERROR_IF(seekOffset < 0 || seekOffset >= pZip->fileLength, udR_InvalidParameter_);
+    bufferLength = udMin(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
+
+    // Passive wait for the read to complete
+    while (!pZip->readComplete && pZip->lengthRead < int32_t(seekOffset + bufferLength))
+    {
+      if (pZip->abortRead)
+        UD_ERROR_SET_NO_BREAK(udR_ReadFailure);
+      udSleep(1);
+    }
+    UD_ERROR_IF(int64_t(pZip->lengthRead) < seekOffset, udR_ReadFailure);
+
+    actualRead = udMin(bufferLength, pZip->lengthRead - (size_t)seekOffset);
+    udReadLockRWLock(pZip->pRWLock);
+    locked = true;
+    UD_ERROR_NULL(pZip->pFileData, udR_ReadFailure);
+    memcpy(pBuffer, pZip->pFileData + seekOffset, actualRead);
+
+    result = udR_Success;
   }
-  UD_ERROR_IF(int64_t(pZip->lengthRead) < seekOffset, udR_ReadFailure);
-
-  actualRead = udMin(bufferLength, pZip->lengthRead - (size_t)seekOffset);
-  udReadLockRWLock(pZip->pRWLock);
-  memcpy(pBuffer, pZip->pFileData + seekOffset, actualRead);
-  udReadUnlockRWLock(pZip->pRWLock);
-
-  result = udR_Success;
+  else
+  {
+    result = udFile_Read(pZip->pZipFile, pBuffer, bufferLength, seekOffset, udFSW_SeekSet, &actualRead);
+  }
 
 epilogue:
+  if (locked)
+    udReadUnlockRWLock(pZip->pRWLock);
+
   if (pActualRead)
     *pActualRead = actualRead;
   return result;
@@ -312,17 +344,12 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
   udFile_Zip *pZip = static_cast<udFile_Zip *>(*ppFile);
   if (pZip)
   {
-    while (!pZip->readComplete)
-    {
-      udDebugPrintf("Waiting for read of zip to abort\n");
-      pZip->abortRead = true;
-      udSleep(1);
-    }
+    AbortRead(pZip);
     udFile *pZipFile = pZip->pZipFile;
     if (pZipFile && udInterlockedCompareExchangePointer((void**)&pZip->pZipFile, nullptr, pZipFile) == pZipFile)
       udFile_Close(&pZipFile);
     udDestroyRWLock(&pZip->pRWLock);
-    udFree(pZip->pFileData);
+    mz_zip_reader_end(&pZip->mz);
     udFree(pZip);
   }
   return udR_Success;
@@ -349,10 +376,93 @@ static size_t udMiniZ_ReadFileFromZipCallback(void *pOpaque, mz_uint64 file_ofs,
   if ((file_ofs + n) > (mz_uint64)pFile->fileLength)
     return 0;
   udWriteLockRWLock(pFile->pRWLock);
-  memcpy(pFile->pFileData + file_ofs, pBuf, n);
+  if (pFile->pFileData)
+    memcpy(pFile->pFileData + file_ofs, pBuf, n);
   udWriteUnlockRWLock(pFile->pRWLock);
   udInterlockedAdd(&pFile->lengthRead, (int32_t)n);
   return n;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, November 2019
+// Special API to access individual subfiles of a zip without re-opening
+udResult udFileHandler_MiniZSetSubFilename(udFile *pFile, const char *pSubFilename)
+{
+  udResult result;
+  udFile_Zip *pZip = (udFile_Zip *)pFile;
+  mz_zip_archive_file_stat stat;
+
+  UD_ERROR_IF(pZip->fpRead != udFileHandler_MiniZSeekRead, udR_ObjectTypeMismatch);
+  // First tidy up any existing sub file data, waiting for pending read if necessary
+  AbortRead(pZip);
+  pZip->fileLength = 0;
+  UD_ERROR_NULL(pSubFilename, udR_Success); // Legal to "unset" the sub filename
+
+  pZip->index = mz_zip_reader_locate_file(&pZip->mz, pSubFilename, nullptr, 0);
+  if (pZip->index < 0 && udStrchr(pSubFilename, "/\\"))
+  {
+    // Sometimes the zip can be created on a different platform that uses different separators,
+    // so before giving up attempt to locate using both kinds of separators
+    // We assume the file in the zip uses separators consistently, but not necessarily in pSubFilename
+    udStrcpy(stat.m_filename, pSubFilename); // Borrow stat.filename memory as it's the right size
+    size_t sepIndex;
+    // Try linux separators
+    while (udStrchr(stat.m_filename, "\\", &sepIndex))
+      stat.m_filename[sepIndex] = '/';
+    pZip->index = mz_zip_reader_locate_file(&pZip->mz, stat.m_filename, nullptr, 0);
+    if (pZip->index < 0)
+    {
+      // Try windows separators
+      while (udStrchr(stat.m_filename, "/", &sepIndex))
+        stat.m_filename[sepIndex] = '\\';
+      pZip->index = mz_zip_reader_locate_file(&pZip->mz, stat.m_filename, nullptr, 0);
+    }
+  }
+  UD_ERROR_IF(pZip->index < 0, udR_OpenFailure);
+  UD_ERROR_IF(!mz_zip_reader_file_stat(&pZip->mz, pZip->index, &stat), udR_OpenFailure);
+  pZip->fileLength = (int64_t)stat.m_uncomp_size;
+
+  if (stat.m_method == 0)
+  {
+    // The file in the zip is just stored, so instead of going through the extraction
+    // machinery, we can use the SeekBase machinery of udFile to auto-offset
+    int64_t seekBase = (int64_t)stat.m_local_header_ofs;
+    uint8_t localDirHeader[MZ_ZIP_LOCAL_DIR_HEADER_SIZE];
+    UD_ERROR_CHECK(udFile_Read(pZip->pZipFile, localDirHeader, sizeof(localDirHeader), seekBase, udFSW_SeekSet));
+    uint32_t sig;
+    uint16_t filenameLen;
+    uint16_t extraLen;
+    memcpy(&sig, localDirHeader + 0, sizeof(sig));
+    memcpy(&filenameLen, localDirHeader + MZ_ZIP_LDH_FILENAME_LEN_OFS, sizeof(filenameLen));
+    memcpy(&extraLen, localDirHeader + MZ_ZIP_LDH_EXTRA_LEN_OFS, sizeof(extraLen));
+    UD_ERROR_IF(sig != MZ_ZIP_LOCAL_DIR_HEADER_SIG, udR_CorruptData);
+    seekBase += MZ_ZIP_LOCAL_DIR_HEADER_SIZE + filenameLen + extraLen;
+
+    pZip->filePos = pZip->seekBase = seekBase;
+    pZip->readComplete = true;
+  }
+  else
+  {
+    // File is compressed, so allocate memory and begin the decompression on a thread
+    pZip->pFileData = udAllocType(uint8_t, (size_t)stat.m_uncomp_size, udAF_None);
+    UD_ERROR_NULL(pZip->pFileData, udR_MemoryAllocationFailure);
+    pZip->filePos = 0;
+    pZip->lengthRead = 0;
+    pZip->readComplete = false;
+
+    udThreadStart startFunc = [](void *pOpaque) -> unsigned int
+    {
+      udFile_Zip *pZip = (udFile_Zip *)pOpaque;
+      mz_zip_reader_extract_to_callback(&pZip->mz, pZip->index, udMiniZ_ReadFileFromZipCallback, pOpaque, 0);
+      pZip->readComplete = true; // If an error occured, lengthRead won't equal fileLength
+      return 0;
+    };
+    udThread_Create(nullptr, startFunc, pZip);
+  }
+  result = udR_Success;
+
+epilogue:
+  return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -362,16 +472,19 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
 {
   udResult result;
   udFile_Zip *pFile = nullptr;
-  char *pSubFileName = nullptr;
+  char *pSubFilename = nullptr;
   char *pZipName = nullptr;
   const char *pFolderDelim = nullptr;
-  mz_zip_archive_file_stat stat;
   int64_t zipLen;
 
   UD_ERROR_IF(flags & udFOF_Write, udR_OpenFailure);
 
   pFile = udAllocType(udFile_Zip, 1, udAF_Zero);
   UD_ERROR_NULL(pFile, udR_MemoryAllocationFailure);
+  pFile->pRWLock = udCreateRWLock();
+  UD_ERROR_NULL(pFile->pRWLock, udR_MemoryAllocationFailure);
+
+  pFile->fpSetSubFilename = udFileHandler_MiniZSetSubFilename;
   pFile->fpRead = udFileHandler_MiniZSeekRead;
   pFile->fpClose = udFileHandler_MiniZClose;
   pFile->readComplete = true;
@@ -386,67 +499,20 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
   pZipName = udStrdup(pFilename + 6); // Skip zip://
   // Find a colon, but importantly, AFTER a folder delimiter if one exists (to exclude drive letters / protocols such as raw://)
   pFolderDelim = udStrchr(pZipName, "/\\");
-  pSubFileName = (char*)udStrrchr(pFolderDelim ? pFolderDelim : pZipName, ":");
-  if (pSubFileName)
-    *pSubFileName++ = 0; // Skip and null the colon
+  pSubFilename = (char*)udStrrchr(pFolderDelim ? pFolderDelim : pZipName, ":");
+  if (pSubFilename)
+    *pSubFilename++ = 0; // Skip and null the colon
 
   // Now open the underlying zip file
   UD_ERROR_CHECK(udFile_Open((udFile**)&pFile->pZipFile, pZipName, udFOF_Read, &zipLen));
 
-  // And initialise the zip reader
+  // Initialise the zip reader
   UD_ERROR_IF(!mz_zip_reader_init(&pFile->mz, (mz_uint64)zipLen, 0), udR_OpenFailure);
 
-  if (pSubFileName && *pSubFileName)
+  if (!pSubFilename)
   {
-    pFile->index = mz_zip_reader_locate_file(&pFile->mz, pSubFileName, nullptr, 0);
-    UD_ERROR_IF(pFile->index < 0, udR_OpenFailure);
-    UD_ERROR_IF(!mz_zip_reader_file_stat(&pFile->mz, pFile->index, &stat), udR_OpenFailure);
-    if (stat.m_method == 0)
-    {
-      // *** SPECIAL CASE ***
-      // The file in the zip is just stored, so instead of going through the extraction
-      // machinery, we can just apply an offset to the underlying zip file, and free
-      // the file we were in the process of building
-
-      int64_t seekBase = (int64_t)stat.m_local_header_ofs;
-      uint8_t localDirHeader[MZ_ZIP_LOCAL_DIR_HEADER_SIZE];
-      UD_ERROR_CHECK(udFile_Read(pFile->pZipFile, localDirHeader, sizeof(localDirHeader), seekBase, udFSW_SeekSet));
-      uint32_t sig;
-      uint16_t filenameLen;
-      uint16_t extraLen;
-      memcpy(&sig, localDirHeader + 0, sizeof(sig));
-      memcpy(&filenameLen, localDirHeader + MZ_ZIP_LDH_FILENAME_LEN_OFS, sizeof(filenameLen));
-      memcpy(&extraLen, localDirHeader + MZ_ZIP_LDH_EXTRA_LEN_OFS, sizeof(extraLen));
-      UD_ERROR_IF(sig != MZ_ZIP_LOCAL_DIR_HEADER_SIG, udR_CorruptData);
-      seekBase += MZ_ZIP_LOCAL_DIR_HEADER_SIZE + filenameLen + extraLen;
-
-      pFile->pZipFile->seekBase = seekBase;
-      pFile->pZipFile->filePos = seekBase; // In case first read is relative to expected zero position
-      pFile->pZipFile->fileLength = (int64_t)stat.m_uncomp_size;
-      *ppFile = pFile->pZipFile;
-      pFile->pZipFile = nullptr;
-      UD_ERROR_SET(udR_Success); // Avoid the rest of the function, but have it clean up pFile which is no longer needed
-    }
-
-    pFile->fileLength = stat.m_uncomp_size;
-    pFile->pFileData = udAllocType(uint8_t, (size_t)stat.m_uncomp_size, udAF_None);
-    UD_ERROR_NULL(pFile->pFileData, udR_MemoryAllocationFailure);
-    pFile->lengthRead = 0;
-    udThreadStart startFunc = [](void *pOpaque) -> unsigned int
-    {
-      udFile_Zip *pFile = (udFile_Zip *)pOpaque;
-      mz_zip_reader_extract_to_callback(&pFile->mz, pFile->index, udMiniZ_ReadFileFromZipCallback, pOpaque, 0);
-      mz_zip_reader_end(&pFile->mz);
-      pFile->readComplete = true; // If an error occured, lengthRead won't equal fileLength
-      return 0;
-    };
-    pFile->readComplete = false;
-    pFile->pRWLock = udCreateRWLock();
-    udThread_Create(nullptr, startFunc, pFile);
-  }
-  else
-  {
-    // No sub-filename was offered, so read the TOC and return that as the file
+    // No sub-filename was specified, so read the TOC and return that as the file
+    mz_zip_archive_file_stat stat;
     int fileCount = mz_zip_reader_get_num_files(&pFile->mz);
     size_t tocSize = 1; // final null terminator
 
@@ -475,7 +541,10 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     }
     pFile->pFileData[tocSize++] = '\0';
     pFile->lengthRead = (int32_t)pFile->fileLength;
-    mz_zip_reader_end(&pFile->mz);
+  }
+  else if (*pSubFilename) // If the sub filename is not an empty string, assign it
+  {
+    pFile->fpSetSubFilename(pFile, pSubFilename);
   }
 
   result = udR_Success;

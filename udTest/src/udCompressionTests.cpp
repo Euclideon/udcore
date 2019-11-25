@@ -117,28 +117,92 @@ TEST(udCompressionTests, Zip)
     "at non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
   // First up, load the table of contents (exposed as a text file)
-  result = udFile_Load(pRawZip, (void**)&pTOC);
+  int64_t tocLen, doc1Len, doc2Len, doc3Len;
+  result = udFile_Load(pRawZip, (void**)&pTOC, &tocLen);
   EXPECT_EQ(udR_Success, result);
   fileCount = (int)udStrTokenSplit(pTOC, "\n", pFilenames, (int)udLengthOf(pFilenames));
   EXPECT_EQ(3, fileCount);
 
   EXPECT_TRUE(udStrEqual(pFilenames[0], "Doc1.txt"));
-  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[0]), (void**)&pDOC);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[0]), (void**)&pDOC, &doc1Len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_TRUE(udStrEqual(pDOC, udTempStr("Compressed with deflate\r\n%s", pText)));
   udFree(pDOC);
 
   EXPECT_TRUE(udStrEqual(pFilenames[1], "Doc2.txt"));
-  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[1]), (void**)&pDOC);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[1]), (void**)&pDOC, &doc2Len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_TRUE(udStrEqual(pDOC, udTempStr("Compressed with deflate64\r\n%s", pText)));
   udFree(pDOC);
 
   EXPECT_TRUE(udStrEqual(pFilenames[2], "Doc3.txt"));
-  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[2]), (void**)&pDOC);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[2]), (void**)&pDOC, &doc3Len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_TRUE(udStrEqual(pDOC, "Not compressed"));
   udFree(pDOC);
 
+  // Now make sure each of the files can be accessed with a single open
+  int64_t len;
+  udFile *pFile;
+  result = udFile_Open(&pFile, udTempStr("%s:", pRawZip), udFOF_Read, &len);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(0, len); // No TOC is returned if a single colon follows the name
+  udFile_Close(&pFile);
+
+
+  result = udFile_Open(&pFile, pRawZip, udFOF_Read, &len);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(tocLen, len); // TOC is opened and length returned
+
+  pDOC = udAllocType(char, udMax(doc1Len, udMax(doc2Len, doc3Len)) + 1, udAF_None); // Extra byte for nul terminator
+
+  result = udFile_SetSubFilename(pFile, pFilenames[0], &len);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(doc1Len, len);
+  result = udFile_Read(pFile, pDOC, doc1Len);
+  EXPECT_EQ(udR_Success, result);
+  pDOC[doc1Len] = 0;
+  EXPECT_TRUE(udStrEqual(pDOC, udTempStr("Compressed with deflate\r\n%s", pText)));
+
+  // Just set the second file and immediately set the third file to test switching before the read has completed
+  result = udFile_SetSubFilename(pFile, pFilenames[1], nullptr);
+  EXPECT_EQ(udR_Success, result);
+
+  result = udFile_SetSubFilename(pFile, pFilenames[2], &len);
+  EXPECT_EQ(doc3Len, len);
+  result = udFile_Read(pFile, pDOC, doc3Len);
+  EXPECT_EQ(udR_Success, result);
+  pDOC[doc3Len] = 0;
+  EXPECT_TRUE(udStrEqual(pDOC, "Not compressed"));
+
+  result = udFile_SetSubFilename(pFile, "no exist", &len);
+  EXPECT_EQ(udR_OpenFailure, result);
+
+  result = udFile_SetSubFilename(pFile, nullptr, &len);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(0, len);
+
+  udFile_Close(&pFile);
+
+  udFree(pDOC);
   udFree(pTOC);
+}
+
+TEST(udCompressionTests, ZipWithFolder)
+{
+  udResult result;
+  udFile *pFile;
+
+  // Test accessing a file under a folder in the zip
+  static const char *pFolderInZip =
+    "zip://raw://UEsDBBQAAAAAAHFtdk81p2zRCgAAAAoAAAAWAAAAZm9sZGVyL0RvY0luRm9sZGVyLnR4dGNhcnBlIGRpZW1QSwECFAAUAAAAAABxbXZPNads0Q"
+    "oAAAAKAAAAFgAAAAAAAAABACAAAAAAAAAAZm9sZGVyL0RvY0luRm9sZGVyLnR4dFBLBQYAAAAAAQABAEQAAAA+AAAAAAA=";
+
+  result = udFile_Open(&pFile, pFolderInZip, udFOF_Read);
+  EXPECT_EQ(udR_Success, result);
+  result = udFile_SetSubFilename(pFile, "folder/DocInFolder.txt");
+  EXPECT_EQ(udR_Success, result);
+  result = udFile_SetSubFilename(pFile, "folder\\DocInFolder.txt");
+  EXPECT_EQ(udR_Success, result);
+  udFile_Close(&pFile);
 }

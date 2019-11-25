@@ -64,6 +64,9 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
 // Set a base value added to all udFSW_SeekSet positions (useful when a file is wrapped inside another file), optionally set new length
 void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength = 0);
 
+// For files that are achives (such as a zip file), this API specifies the subfile that is returned when reading
+udResult udFile_SetSubFilename(udFile *pFile, const char *pSubFilename, int64_t *pFileLengthInBytes = nullptr);
+
 // Set the encryption key/nonce (currently only supported on files opened for read due to alignment complexities)
 udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint64_t nonce, int64_t counterOffset = 0);
 
