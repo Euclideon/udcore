@@ -45,6 +45,11 @@ stages:
       displayName: 'Android ARM64'
       platform: 'arm64'
       premakeOpts: '--os=android'
+  - template: azure-pipelines-jobs-emscripten.yml
+    parameters:
+      name: emscripten
+      displayName: 'Emscripten'
+      container: euclideon/vault:emscripten-bionic-v1
 - stage: test
   displayName: 'Test'
   jobs:

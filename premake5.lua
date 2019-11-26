@@ -56,8 +56,8 @@ solution "udCore"
 		platforms { "x64", "arm64" }
 	elseif os.target() == "emscripten" then
 		platforms { "Emscripten" }
-		buildoptions { "-s USE_PTHREADS=1", "-s PTHREAD_POOL_SIZE=8", "-s ABORTING_MALLOC=0", "-s FETCH=1", "-s PROXY_TO_PTHREAD=1", "-s WASM=0", "-s TOTAL_MEMORY=1073741824" }
-		linkoptions  { "-s USE_PTHREADS=1", "-s PTHREAD_POOL_SIZE=8", "-s ABORTING_MALLOC=0", "-s FETCH=1", "-s PROXY_TO_PTHREAD=1", "-s WASM=0", "-s TOTAL_MEMORY=1073741824" }
+		buildoptions { "-s USE_PTHREADS=1", "-s PTHREAD_POOL_SIZE=8", "-s ABORTING_MALLOC=0", "-s FETCH=1", "-s PROXY_TO_PTHREAD=1", "-s WASM=1", "-s TOTAL_MEMORY=1073741824" }
+		linkoptions  { "-s USE_PTHREADS=1", "-s PTHREAD_POOL_SIZE=8", "-s ABORTING_MALLOC=0", "-s FETCH=1", "-s PROXY_TO_PTHREAD=1", "-s WASM=1", "-s TOTAL_MEMORY=1073741824" }
 		targetextension ".bc"
 		filter { "kind:*App" }
 			targetextension ".js"
