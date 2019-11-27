@@ -544,7 +544,7 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
   }
   else if (*pSubFilename) // If the sub filename is not an empty string, assign it
   {
-    pFile->fpSetSubFilename(pFile, pSubFilename);
+    UD_ERROR_CHECK(pFile->fpSetSubFilename(pFile, pSubFilename));
   }
 
   result = udR_Success;
