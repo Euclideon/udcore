@@ -370,8 +370,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
         UD_ERROR_SET(udR_InternalCryptoError);
       }
 
-      // TODO: Has to be removed before we ship...
-      mbedtls_ssl_conf_authmode(&pSocket->tlsClient.conf, MBEDTLS_SSL_VERIFY_NONE);
+      mbedtls_ssl_conf_authmode(&pSocket->tlsClient.conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     }
 
     //Required
