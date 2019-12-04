@@ -257,7 +257,7 @@ TEST(udSocket, SecureValidationTests)
   EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCF_UseTLS | udSCF_IsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
   EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsServerThread, sockets[0]));
 
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCF_UseTLS));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCF_UseTLS | udSCF_DisableVerification));
   EXPECT_EQ(udR_Success, udSocket_SendData(sockets[1], clientSend, sizeof(clientSend)));
 
   uint8_t recv[UDARRAYSIZE(serverSend)];
@@ -313,7 +313,7 @@ TEST(udSocket, SecureSocketSetValidationTests)
   EXPECT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 40404, udSCF_UseTLS | udSCF_IsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
   EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsSocketSetServerThread, sockets[0]));
 
-  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCF_UseTLS));
+  EXPECT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 40404, udSCF_UseTLS| udSCF_DisableVerification));
   EXPECT_EQ(udR_Success, udSocket_SendData(sockets[1], clientSend, sizeof(clientSend)));
 
   uint8_t recv[UDARRAYSIZE(serverSend)];
