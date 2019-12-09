@@ -112,6 +112,13 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   }
   pFile->filenameCopyRequiresFree = true; // Let the system free the duplicate filename
 
+  if (udFOF_Create & flags)
+  {
+    udFilename temp(pFile->pFilenameCopy);
+    temp.SetFilenameWithExt("");
+    UD_ERROR_CHECK(udCreateDir(temp.GetPath()));
+  }
+
   result = udFileExists(pFile->pFilenameCopy, &pFile->fileLength);
   if (result != udR_Success)
   {

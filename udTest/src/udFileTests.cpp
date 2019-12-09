@@ -17,13 +17,13 @@ static const char *s_pQBF_ZlibDef = "raw://compression=ZlibDeflate,size=43@eJwLy
 // Author: Paul Fox, July 2017
 TEST(udFileTests, GeneralFileTests)
 {
-  const char *pFileName = "._donotcommit";
-  EXPECT_NE(udR_Success, udFileExists(pFileName));
+  const char *pFilename = "._donotcommit";
+  EXPECT_NE(udR_Success, udFileExists(pFilename));
 
   int64_t currentTime = udGetEpochSecsUTCd();
 
   udFile *pFile;
-  if (udFile_Open(&pFile, pFileName, udFOF_Write) == udR_Success)
+  if (udFile_Open(&pFile, pFilename, udFOF_Write) == udR_Success)
   {
     udFile_Write(pFile, "TEST", 4);
     udFile_Close(&pFile);
@@ -32,13 +32,13 @@ TEST(udFileTests, GeneralFileTests)
   int64_t size = 0;
   int64_t modifyTime = 0;
 
-  EXPECT_EQ(udR_Success, udFileExists(pFileName, &size, &modifyTime));
+  EXPECT_EQ(udR_Success, udFileExists(pFilename, &size, &modifyTime));
 
   EXPECT_EQ(4, size);
   EXPECT_GT(2, udAbs(currentTime - modifyTime));
 
-  EXPECT_EQ(udR_Success, udFileDelete(pFileName));
-  EXPECT_EQ(udR_ObjectNotFound, udFileExists(pFileName));
+  EXPECT_EQ(udR_Success, udFileDelete(pFilename));
+  EXPECT_EQ(udR_ObjectNotFound, udFileExists(pFilename));
 
   // Additional destructions of non-existent objects
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
@@ -57,19 +57,19 @@ TEST(udFileTests, GeneralDirectoryTests)
 
 TEST(udFileTests, BasicReadWriteLoadFILE)
 {
-  const char *pFileName = "._donotcommit_FILEtest";
+  const char *pFilename = "._donotcommit_FILEtest";
   const char writeBuffer[] = "Testing!";
-  EXPECT_NE(udR_Success, udFileExists(pFileName));
+  EXPECT_NE(udR_Success, udFileExists(pFilename));
 
   // Write
   udFile *pFile = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
   EXPECT_EQ(udR_Success, udFile_Write(pFile, writeBuffer, UDARRAYSIZE(writeBuffer)));
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   // Read
   char readBuffer[UDARRAYSIZE(writeBuffer)];
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Read));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Read));
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer)));
   EXPECT_STREQ(writeBuffer, readBuffer);
 
@@ -87,7 +87,7 @@ TEST(udFileTests, BasicReadWriteLoadFILE)
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   // Change seek base
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Read));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Read));
   udFile_SetSeekBase(pFile, 1);
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer) - 1));
   EXPECT_STREQ(&writeBuffer[1], readBuffer);
@@ -95,24 +95,24 @@ TEST(udFileTests, BasicReadWriteLoadFILE)
 
   // Load
   char *pLoadBuffer = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Load(pFileName, (void**)&pLoadBuffer));
+  EXPECT_EQ(udR_Success, udFile_Load(pFilename, (void**)&pLoadBuffer));
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
-  EXPECT_EQ(udR_Success, udFile_Load(pFileName, &pLoadBuffer));
+  EXPECT_EQ(udR_Success, udFile_Load(pFilename, &pLoadBuffer));
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
-  EXPECT_EQ(udR_Success, udFileExists(pFileName));
-  EXPECT_EQ(udR_Success, udFileDelete(pFileName));
-  EXPECT_NE(udR_Success, udFileExists(pFileName));
+  EXPECT_EQ(udR_Success, udFileExists(pFilename));
+  EXPECT_EQ(udR_Success, udFileDelete(pFilename));
+  EXPECT_NE(udR_Success, udFileExists(pFilename));
 }
 
 TEST(udFileTests, EncryptedReadWriteFILE)
 {
   udCrypto_Init();
 
-  const char *pFileName = "._donotcommit_EncryptedFILEtest";
+  const char *pFilename = "._donotcommit_EncryptedFILEtest";
   const char writeBuffer[] = "Testing!asdfasdfasdfasdfasdfasd";
   char cipherBuffer[UDARRAYSIZE(writeBuffer)];
   uint8_t *pKey = nullptr;
@@ -120,10 +120,10 @@ TEST(udFileTests, EncryptedReadWriteFILE)
   const char *pKeyBase64 = nullptr;
   ASSERT_EQ(udR_Success, udCryptoKey_DeriveFromRandom(&pKeyBase64, udCCKL_AES256KeyLength));
   EXPECT_EQ(udR_Success, udBase64Decode(&pKey, &keyLen, pKeyBase64));
-  EXPECT_NE(udR_Success, udFileExists(pFileName));
+  EXPECT_NE(udR_Success, udFileExists(pFilename));
 
   udFile *pFile = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
   udCryptoCipherContext *pCipherCtx;
   EXPECT_EQ(udR_Success, udCryptoCipher_Create(&pCipherCtx, udCC_AES256, udCPM_None, pKeyBase64, udCCM_CTR));
   udCryptoIV iv;
@@ -134,7 +134,7 @@ TEST(udFileTests, EncryptedReadWriteFILE)
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   char readBuffer[UDARRAYSIZE(writeBuffer)];
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Read));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Read));
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer)));
   EXPECT_STRNE(writeBuffer, readBuffer);
   EXPECT_EQ(udR_Success, udFile_SetEncryption(pFile, pKey, (int)keyLen, 12));
@@ -145,9 +145,9 @@ TEST(udFileTests, EncryptedReadWriteFILE)
   udFree(pKey);
   udFree(pKeyBase64);
 
-  EXPECT_EQ(udR_Success, udFileExists(pFileName));
-  EXPECT_EQ(udR_Success, udFileDelete(pFileName));
-  EXPECT_NE(udR_Success, udFileExists(pFileName));
+  EXPECT_EQ(udR_Success, udFileExists(pFilename));
+  EXPECT_EQ(udR_Success, udFileDelete(pFilename));
+  EXPECT_NE(udR_Success, udFileExists(pFilename));
 
   udCrypto_Deinit();
 }
@@ -195,27 +195,27 @@ TEST(udFileTests, CustomFileHandler)
 {
   EXPECT_EQ(udR_Success, udFile_RegisterHandler(udFileTests_CustomFileHandler_Open, "CUSTOM:"));
 
-  const char *pFileName = "CUSTOM://._donotcommit_CUSTOMtest";
+  const char *pFilename = "CUSTOM://._donotcommit_CUSTOMtest";
   const char writeBuffer[] = "Testing!";
 
   udFile *pFile = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
   EXPECT_EQ(udR_Success, udFile_Write(pFile, writeBuffer, UDARRAYSIZE(writeBuffer)));
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   char readBuffer[UDARRAYSIZE(writeBuffer)];
-  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Read));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Read));
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer)));
   EXPECT_STREQ(writeBuffer, readBuffer);
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   char *pLoadBuffer = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Load(pFileName, (void**)&pLoadBuffer));
+  EXPECT_EQ(udR_Success, udFile_Load(pFilename, (void**)&pLoadBuffer));
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
   EXPECT_EQ(udR_Success, udFile_DeregisterHandler(udFileTests_CustomFileHandler_Open));
-  EXPECT_NE(udR_Success, udFile_Open(&pFile, pFileName, udFOF_Write));
+  EXPECT_NE(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
 }
 
 // Emscripten does not have a "home" directory concept
@@ -339,4 +339,55 @@ TEST(udFileTests, RawWrite)
   ASSERT_EQ(udR_Success, udFile_GenerateRawFilename(&pRawFilename, nullptr, 0, udCT_ZlibDeflate, "Buffer too small test", 159));
   EXPECT_EQ(udR_Success, udFile_Save(pRawFilename, s_pQBF_Text, s_QBF_Len));
   udFree(pRawFilename);
+}
+
+TEST(udFileTests, RecursiveCreateDirectoryTests)
+{
+  const char *pFilename = "./some/.hidden/testFile.txt";
+  const char *pFilename2 = "./some/folder.name/subdir/testFile.txt";
+  const char *pFilename3 = "~/folder/testFile.txt";
+  const char *pOutput = "Test Output";
+  udFile *pFile = nullptr;
+
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Create | udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Write(pFile, pOutput, udStrlen(pOutput)));
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+
+  EXPECT_EQ(udR_Success, udFileExists(pFilename));
+  EXPECT_EQ(udR_Success, udFileDelete(pFilename));
+  EXPECT_NE(udR_Success, udFileExists(pFilename));
+
+  EXPECT_EQ(udR_Success, udRemoveDir("./some/.hidden"));
+
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename2, udFOF_Create | udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Write(pFile, pOutput, udStrlen(pOutput)));
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+
+  EXPECT_EQ(udR_Success, udFileExists(pFilename2));
+  EXPECT_EQ(udR_Success, udFileDelete(pFilename2));
+  EXPECT_NE(udR_Success, udFileExists(pFilename2));
+
+  EXPECT_EQ(udR_Success, udRemoveDir("./some/folder.name/subdir"));
+  EXPECT_EQ(udR_Failure_, udRemoveDir("./some"));
+  EXPECT_EQ(udR_Success, udRemoveDir("./some/folder.name"));
+  EXPECT_EQ(udR_Success, udRemoveDir("./some"));
+  
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename3, udFOF_Create | udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Write(pFile, pOutput, udStrlen(pOutput)));
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+  
+  EXPECT_EQ(udR_Success, udFileExists(pFilename3));
+  EXPECT_EQ(udR_Success, udFileDelete(pFilename3));
+  EXPECT_NE(udR_Success, udFileExists(pFilename3));
+
+  EXPECT_EQ(udR_Success, udRemoveDir("~/folder"));
+
+  int newFolders = 0;
+  EXPECT_EQ(udR_Success, udCreateDir("./dir", &newFolders));
+  EXPECT_EQ(1, newFolders);
+  EXPECT_EQ(udR_Success, udCreateDir("./dir/two/more", &newFolders));
+  EXPECT_EQ(2, newFolders);
+  EXPECT_EQ(udR_Success, udRemoveDir("./dir/two/more"));
+  EXPECT_EQ(udR_Success, udRemoveDir("./dir/two"));
+  EXPECT_EQ(udR_Success, udRemoveDir("./dir"));
 }
