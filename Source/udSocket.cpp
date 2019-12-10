@@ -356,6 +356,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
     {
       // Connect
       retVal = mbedtls_net_connect(&pSocket->tlsClient.socketContext, pAddress, portStr, MBEDTLS_NET_PROTO_TCP);
+      UD_ERROR_IF(retVal == MBEDTLS_ERR_NET_SOCKET_FAILED || retVal == MBEDTLS_ERR_NET_CONNECT_FAILED, udR_SocketError);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_net_connect returned %d\n", retVal);
@@ -500,28 +501,37 @@ void udSocket_Close(udSocket **ppSocket)
 
 // --------------------------------------------------------------------------
 // Author: Paul Fox, October 2018
-udResult udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t totalBytes, int64_t *pActualSent)
+udResult udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t totalBytes, int64_t *pActualSent /* = nullptr*/)
 {
   udResult result;
+
+  int64_t actualSent = 0;
+  int64_t currentSend = 0;
+
   UD_ERROR_NULL(pSocket, udR_InvalidParameter_);
   UD_ERROR_NULL(pBytes, udR_InvalidParameter_);
   UD_ERROR_IF(totalBytes == 0, udR_Success); // Quietly succeed at doing nothing
 
-  if (pSocket->isSecure)
+  while (actualSent < totalBytes)
   {
-    int status = mbedtls_ssl_write(&pSocket->tlsClient.ssl, pBytes, totalBytes);
-    UD_ERROR_IF(status < 0, udR_SocketError); //TODO: this is really important to close socket somehow
-    if (pActualSent)
-      *pActualSent = totalBytes;
+    if (pSocket->isSecure)
+      currentSend = mbedtls_ssl_write(&pSocket->tlsClient.ssl, &pBytes[actualSent], totalBytes - actualSent);
+    else
+      currentSend = send(pSocket->basicSocket, (const char *)&pBytes[actualSent], (int)(totalBytes - actualSent), 0);
+
+    //TODO: Specifically handle the MBED errors
+
+    UD_ERROR_IF(currentSend < 0, udR_SocketError); //TODO: this is really important to close socket somehow
+
+    actualSent += currentSend;
   }
-  else
-  {
-    int actual = send(pSocket->basicSocket, (const char*)pBytes, (int)totalBytes, 0);
-    if (pActualSent)
-      *pActualSent = (int64_t)actual;
-    UD_ERROR_IF(actual < 0, udR_SocketError);
-    UD_ERROR_IF(!pActualSent && int64_t(actual) != totalBytes, udR_SocketError);
-  }
+
+  if (pActualSent)
+    *pActualSent = actualSent;
+
+  //If the caller doesn't want the actual bytes sent, it must match exactly
+  UD_ERROR_IF(!pActualSent && int64_t(actualSent) != totalBytes, udR_SocketError);
+
   result = udR_Success;
 
 epilogue:
@@ -530,7 +540,7 @@ epilogue:
 
 // --------------------------------------------------------------------------
 // Author: Paul Fox, October 2018
-udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t bufferSize, int64_t *pActualReceived)
+udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t bufferSize, int64_t *pActualReceived /* = nullptr*/)
 {
   udResult result;
   int64_t actualReceived;
@@ -546,6 +556,8 @@ udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t buffer
     actualReceived = recv(pSocket->basicSocket, (char*)pBytes, (int)bufferSize, 0);
 
   UD_ERROR_IF(actualReceived < 0, udR_SocketError);
+
+  //If the caller doesn't want the actual bytes recv, it must match the buffer size exactly
   UD_ERROR_IF(!pActualReceived && actualReceived != bufferSize, udR_SocketError);
   if (pActualReceived)
     *pActualReceived = actualReceived;
