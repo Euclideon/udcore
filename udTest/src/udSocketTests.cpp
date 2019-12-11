@@ -59,6 +59,8 @@ zLRT2lr+z1PYAYtrGHEUVhc17FlBo0gIkQYigsPguiJculBgzM6EDR9H8eiMcVPT\n\
 CkUe0VXaLRTOp2gffJHHdMxYN0ZfuKs3\n\
 -----END CERTIFICATE-----"
 
+const int32_t BigTestSize = 1024 * 1024 * 40; //40MB; Anything over a few MB will cause send to fail for SSL
+
 uint32_t udSocketTestsServerThread(void *data)
 {
   udSocket *pListenSocket = (udSocket*)data;
@@ -177,6 +179,72 @@ TEST(udSocket, ValidationTests)
   udSocket_Close(&sockets[0]);
   EXPECT_EQ(nullptr, sockets[0]);
 
+  udSocket_DeinitSystem();
+}
+
+uint8_t udSocketTests_BigTestVal(int i)
+{
+  return (uint8_t)(((i * 1103515245) + 12345) & 0x7fffffff);
+}
+
+uint32_t udSocketTestsServerThread_BigTest(void *data)
+{
+  udSocket *pListenSocket = (udSocket *)data;
+  udSocket *pSocket = nullptr;
+
+  EXPECT_TRUE(udSocket_ServerAcceptClient(pListenSocket, &pSocket));
+
+  const int TotalReadBuffer = 1024 * 1024 * 10; //10MB
+
+  uint8_t *pRecv = udAllocType(uint8_t, TotalReadBuffer, udAF_None); //2MB
+  int64_t totalRead = 0;
+  int64_t currentRead = 0;
+
+  while (totalRead < BigTestSize)
+  {
+    EXPECT_EQ(udR_Success, udSocket_ReceiveData(pSocket, pRecv, TotalReadBuffer, &currentRead));
+
+    for (int i = 0; i < currentRead; ++i)
+      EXPECT_EQ(pRecv[i], udSocketTests_BigTestVal((int32_t)(i + totalRead)));
+
+    totalRead += currentRead;
+  }
+
+  udSocket_Close(&pSocket);
+  EXPECT_EQ(nullptr, pSocket);
+
+  udFree(pRecv);
+  return 0;
+}
+
+TEST(udSocket, BigReadWriteTest)
+{
+  EXPECT_EQ(udR_Success, udSocket_InitSystem());
+
+  uint8_t *pData = udAllocType(uint8_t, BigTestSize, udAF_None);
+ 
+  udSocket *sockets[2];
+  udThread *pServerThread;
+
+  ASSERT_EQ(udR_Success, udSocket_Open(&sockets[0], "127.0.0.1", 42624, udSCF_UseTLS | udSCF_IsServer, UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY, UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY));
+  EXPECT_EQ(udR_Success, udThread_Create(&pServerThread, udSocketTestsServerThread_BigTest, sockets[0]));
+
+  ASSERT_EQ(udR_Success, udSocket_Open(&sockets[1], "127.0.0.1", 42624, udSCF_UseTLS));
+
+  for (int i = 0; i < BigTestSize; ++i)
+    pData[i] = udSocketTests_BigTestVal(i);
+
+  int64_t actualWritten = 0;
+  EXPECT_EQ(udR_Success, udSocket_SendData(sockets[1], pData, BigTestSize, &actualWritten));
+  EXPECT_EQ(BigTestSize, (int32_t)actualWritten);
+
+  EXPECT_EQ(udR_Success, udThread_Join(pServerThread));
+  udThread_Destroy(&pServerThread);
+
+  udSocket_Close(&sockets[1]);
+  udSocket_Close(&sockets[0]);
+
+  udFree(pData);
   udSocket_DeinitSystem();
 }
 
