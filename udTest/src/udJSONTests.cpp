@@ -447,3 +447,28 @@ TEST(udJSONTests, XMLEncoding)
   EXPECT_STREQ("content:<\xE3\x81\x99>", v.Get("root.content").AsString());
 }
 
+TEST(udJSONTests, ExponentStr)
+{
+  const char *pData = R"json({
+  "46CDC": {
+    "uuid": "610fe368-91ed-4f74-885a-d2a166425f43",
+    "cloudpercent": 0.0,
+    "area": 2e-06,
+    "date": "2019-12-01T07:00:20.885Z",
+    "id": 23732830,
+    "thumb": true,
+    "processed": true
+  }
+})json";
+
+  udJSON data;
+  ASSERT_EQ(udR_Success, data.Parse(pData));
+
+  EXPECT_STREQ("610fe368-91ed-4f74-885a-d2a166425f43", data.Get("46CDC.uuid").AsString());
+  EXPECT_DOUBLE_EQ(0.0, data.Get("46CDC.cloudpercent").AsDouble());
+  EXPECT_DOUBLE_EQ(2e-6, data.Get("46CDC.area").AsDouble());
+  EXPECT_STREQ("2019-12-01T07:00:20.885Z", data.Get("46CDC.date").AsString());
+  EXPECT_EQ(23732830, data.Get("46CDC.id").AsInt());
+  EXPECT_TRUE(data.Get("46CDC.thumb").AsBool());
+  EXPECT_TRUE(data.Get("46CDC.processed").AsBool());
+}
