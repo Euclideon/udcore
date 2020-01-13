@@ -36,20 +36,15 @@ static udFileHandler s_handlers[MAX_HANDLERS] =
 };
 static int s_handlersCount = 3;
 
-// ****************************************************************************
-// Author: Dave Pevreal, Ocober 2014
-udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes)
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, October 2014
+udResult udFile_GenericLoad(udFile *pFile, void **ppMemory, int64_t *pFileLengthInBytes)
 {
   UDTRACE();
   udResult result;
-  udFile *pFile = nullptr;
   char *pMemory = nullptr;
-  int64_t length = 0;
+  int64_t length = pFile->fileLength;
   size_t actualRead;
-
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
-  UD_ERROR_NULL(ppMemory, udR_InvalidParameter_);
-  UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Read, &length)); // NOTE: Length can be zero. Chrome does this on cached files.
 
   if (length)
   {
@@ -59,7 +54,7 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   }
   else
   {
-    udDebugPrintf("udFile_Load: %s open succeeded, length unknown\n", pFilename);
+    udDebugPrintf("udFile_Load: %s open succeeded, length unknown\n", pFile->pFilenameCopy);
     size_t alreadyRead = 0, attemptRead = 0;
     length = CONTENT_LOAD_CHUNK_SIZE;
     for (actualRead = 0; attemptRead == actualRead; alreadyRead += actualRead)
@@ -93,9 +88,26 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   result = udR_Success;
 
 epilogue:
+  udFree(pMemory);
+  return result;
+}
+
+// ****************************************************************************
+// Author: Samuel Surtees, January 2020
+udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes)
+{
+  UDTRACE();
+  udResult result;
+  udFile *pFile = nullptr;
+
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppMemory, udR_InvalidParameter_);
+  UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Read | udFOF_FastOpen)); // NOTE: Length can be zero. Chrome does this on cached files.
+  UD_ERROR_CHECK(pFile->fpLoad(pFile, ppMemory, pFileLengthInBytes));
+
+epilogue:
   if (pFile)
     udFile_Close(&pFile);
-  udFree(pMemory);
   return result;
 }
 
@@ -143,6 +155,9 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
         (*ppFile)->filenameCopyRequiresFree = true;
         (*ppFile)->pFilenameCopy = udStrdup(pFilename);
       }
+
+      if (!(*ppFile)->fpLoad)
+        (*ppFile)->fpLoad = udFile_GenericLoad;
 
       (*ppFile)->flagsCopy = flags;
       if (pFileLengthInBytes)
