@@ -22,6 +22,9 @@ typedef udResult udFile_OpenHandlerFunc(udFile **ppFile, const char *pFilename, 
 // Optional handler for archives to handle setting a new subfile
 typedef udResult udFile_SetSubFilenameFunc(udFile *pFile, const char *pSubFilename);
 
+// Perform a load - reads the entire file into memory
+typedef udResult udFile_LoadHandlerFunc(udFile *pFile, void **ppBuffer, int64_t *pBufferLength);
+
 // Perform a seek followed by read
 typedef udResult udFile_SeekReadHandlerFunc(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest *pPipelinedRequest);
 
@@ -43,6 +46,7 @@ struct udFile
   const char *pFilenameCopy;              // If assigned by a handler, set filenameCopyRequiresFree, or handler is responsible for free
   udFileOpenFlags flagsCopy;              // Set by udFile, not handlers. A copy of the flags used to open the file
   udFile_SetSubFilenameFunc *fpSetSubFilename; // Optional, for handlers of archive files such as zip etc
+  udFile_LoadHandlerFunc *fpLoad;              // Optional, for handlers that can optimize the Open/Read/Close approach of udFile_Load, such as HTTP
   udFile_SeekReadHandlerFunc *fpRead;
   udFile_SeekWriteHandlerFunc *fpWrite;
   udFile_BlockForPipelinedRequestHandlerFunc *fpBlockPipedRequest;
