@@ -339,7 +339,7 @@ TEST(udSocket, RealWebsiteSecureTest)
   udSocket *pSockets = nullptr;
   EXPECT_EQ(udR_Success, udSocket_Open(&pSockets, "www.euclideon.com", 443, udSCF_UseTLS));
 
-  const char *pRequest = "GET / HTTP/1.1\r\nHost: www.euclideon.com\r\nUser-Agent: HTTPTestAgent\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-us,en;q=0.5\r\nPragma: no-cache\r\nCache-Control: no-cache\r\n\r\n";
+  const char *pRequest = "GET /favicon.ico HTTP/1.1\r\nHost: www.euclideon.com\r\nUser-Agent: HTTPTestAgent\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-us,en;q=0.5\r\nPragma: no-cache\r\nCache-Control: no-cache\r\n\r\n";
 
   EXPECT_EQ(udR_Success, udSocket_SendData(pSockets, (const uint8_t*)pRequest, udStrlen(pRequest)+1));
 
@@ -353,6 +353,15 @@ TEST(udSocket, RealWebsiteSecureTest)
     recvCount = 0;
     EXPECT_EQ(udR_Success, udSocket_ReceiveData(pSockets, &recv[totalRecv], sizeof(recv) - totalRecv, &recvCount));
     totalRecv += recvCount;
+
+    // Avoid calling udSocket_ReceiveData after receiving all of the data, which results in a failure
+    size_t index = 0;
+    if (udStrstr((const char *)recv, totalRecv, "\r\n\r\n", &index) != nullptr)
+    {
+      // favicon is 1150 bytes, and \r\n\r\n is 4 bytes.
+      if ((totalRecv - (int64_t)index) == (1150 + 4))
+        break;
+    }
   } while (recvCount > 0);
 
   udSocket_Close(&pSockets);
