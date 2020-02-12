@@ -84,7 +84,7 @@ UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray
 const char *udResultAsString(udResult result)
 {
   if (result < 0  || result > udR_Count)
-    return "Unknown error";
+    return "UnknownError";
   if (result == udR_Count)
   {
     // Count is a special case to test the result string array
