@@ -173,6 +173,42 @@ TEST(udGeoZone, LCC)
   }
 }
 
+TEST(udGeoZone, WebMercator)
+{
+  const int64_t angularPrecision = 1 * 60 * 60; // 60x60 to get to arc seconds
+  const int64_t localPrecision = 1; // 1m
+
+  struct TestInput
+  {
+    udDouble3 latLon, localSpace;
+  } testInput[] =
+  {
+    { udDouble3::create(37.800158, -121.298752, 0),   udDouble3::create(-13502915.31, 4551233.18, 0.0) }, // Tesla Motors California
+    { udDouble3::create(28.385233, -81.5660627, 0),   udDouble3::create(-9079892.57, 3297630.25, 0.0) }, // Disney World, Florida
+    { udDouble3::create(-28.0386128, 153.2827519, 0), udDouble3::create(17063357.89, -3253842.85, 0.0) }, // Lake Advancement
+    { udDouble3::create(-29.014848, 134.7520264, 0),  udDouble3::create(15000526.96, -3377535.99, 0.0) }, // Coober Pedy
+    { udDouble3::create(-22.6979855, 116.2332262, 0), udDouble3::create(12939023.55, -2595535.72, 0.0) }, // Wyloo Station
+  };
+
+  udDouble3 latLong, localSpace;
+
+  udGeoZone zone;
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, 3857));
+
+  // The ordering for the tests in this loop is important- if 27700-4277 or 4326-4277 aren't accurate the last one can't be either
+  for (size_t i = 0; i < udLengthOf(testInput); ++i)
+  {
+    localSpace = udGeoZone_LatLongToCartesian(zone, testInput[i].latLon);
+    latLong = udGeoZone_CartesianToLatLong(zone, testInput[i].localSpace);
+
+    EXPECT_EQ(int64_t(udRound(testInput[i].latLon.x * angularPrecision)), int64_t(udRound(latLong.x * angularPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(testInput[i].latLon.y * angularPrecision)), int64_t(udRound(latLong.y * angularPrecision))) << "PointSet:" << i;
+
+    EXPECT_EQ(int64_t(udRound(testInput[i].localSpace.x * localPrecision)), int64_t(udRound(localSpace.x * localPrecision))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(testInput[i].localSpace.y * localPrecision)), int64_t(udRound(localSpace.y * localPrecision))) << "PointSet:" << i;
+  }
+}
+
 TEST(udGeoZone, OSGB)
 {
   // 27700 - UK
@@ -398,6 +434,8 @@ struct
   { 3414, R"wkt(PROJCS["SVY21 / Singapore TM",GEOGCS["SVY21",DATUM["SVY21",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6757"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4757"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",1.366666666666667],PARAMETER["central_meridian",103.8333333333333],PARAMETER["scale_factor",1],PARAMETER["false_easting",28001.642],PARAMETER["false_northing",38744.572],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","3414"]])wkt" },
 
   { 3433, R"wkt(PROJCS["NAD83 / Arkansas North (ftUS)",GEOGCS["NAD83",DATUM["North_American_Datum_1983",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6269"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4269"]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",36.23333333333333],PARAMETER["standard_parallel_2",34.93333333333333],PARAMETER["latitude_of_origin",34.33333333333334],PARAMETER["central_meridian",-92],PARAMETER["false_easting",1312333.3333],PARAMETER["false_northing",0],UNIT["US survey foot",0.3048006096012192,AUTHORITY["EPSG","9003"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","3433"]])wkt" },
+
+  { 3857, R"wkt(PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","3857"]])wkt" },
 
   { 3942, "PROJCS[\"RGF93 / CC42\",GEOGCS[\"RGF93\",DATUM[\"Reseau_Geodesique_Francais_1993\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6171\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4171\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",41.25],PARAMETER[\"standard_parallel_2\",42.75],PARAMETER[\"latitude_of_origin\",42],PARAMETER[\"central_meridian\",3],PARAMETER[\"false_easting\",1700000],PARAMETER[\"false_northing\",1200000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"3942\"]]" },
   { 3943, "PROJCS[\"RGF93 / CC43\",GEOGCS[\"RGF93\",DATUM[\"Reseau_Geodesique_Francais_1993\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6171\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4171\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",42.25],PARAMETER[\"standard_parallel_2\",43.75],PARAMETER[\"latitude_of_origin\",43],PARAMETER[\"central_meridian\",3],PARAMETER[\"false_easting\",1700000],PARAMETER[\"false_northing\",2200000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"3943\"]]" },

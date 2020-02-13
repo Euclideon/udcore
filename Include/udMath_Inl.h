@@ -38,6 +38,8 @@ template <typename T> T udRoundEven(T t)
 
 UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
 UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
+UDFORCE_INLINE float udExp(float f) { return expf(f); }
+UDFORCE_INLINE double udExp(double d) { return exp(d); }
 UDFORCE_INLINE float udLogN(float f) { return logf(f); }
 UDFORCE_INLINE double udLogN(double d) { return log(d); }
 UDFORCE_INLINE float udLog10(float f) { return log10f(f); }

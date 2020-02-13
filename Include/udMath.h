@@ -55,6 +55,8 @@ template <typename T> T udHighestBitValue(T i);
 // math functions
 float udPow(float f, float n);
 double udPow(double d, double n);
+float udExp(float f);
+double udExp(double d);
 float udLogN(float f);
 double udLogN(double d);
 float udLog2(float f);
