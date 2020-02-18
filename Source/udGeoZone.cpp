@@ -717,6 +717,23 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(1.1200, 103.6200);
       pZone->latLongBoundMax = udDouble2::create(1.4600, 104.1600);
       break;
+    case 3433: // Arkansas North
+      pZone->datum = udGZGD_NAD83;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      pZone->zone = 0;
+      pZone->parallel = 34 + (1.0/3);
+      pZone->firstParallel = 36.2 + (1.0/30);
+      pZone->secondParallel = 34.9 + (1.0/30);
+      pZone->meridian = -92;
+      pZone->falseNorthing = 0.0;
+      pZone->falseEasting = 1312333.3333;
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 0.3048006096012192;
+      udStrcpy(pZone->zoneName, "NAD83 / Arkansas North (ftUS)");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(34.67,-94.62);
+      pZone->latLongBoundMax = udDouble2::create(36.5,-89.64);
+      break;
     case 4326: // LatLong
       pZone->datum = udGZGD_WGS84;
       pZone->projection = udGZPT_LatLong;
@@ -749,6 +766,23 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       udGeoZone_SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(-90, -180);
       pZone->latLongBoundMax = udDouble2::create(90, 180);
+      break;
+    case 6411: // Arkansas North, technically identical to 3411, WKT is modified on tests to avoid defining NAD83(2011) datum
+      pZone->datum = udGZGD_NAD83; //This should be NAD83(2011)
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      pZone->zone = 0;
+      pZone->parallel = 34 + (1.0/3);
+      pZone->firstParallel = 36.2 + (1.0/30);
+      pZone->secondParallel = 34.9 + (1.0/30);
+      pZone->meridian = -92;
+      pZone->falseNorthing = 0.0;
+      pZone->falseEasting = 1312333.3333;//this gets truncated by the WKT converter by 1 decimal place
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 0.3048006096012192;
+      udStrcpy(pZone->zoneName, "NAD83(2011) / Arkansas North (ftUS)");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(34.67,-94.62);
+      pZone->latLongBoundMax = udDouble2::create(36.5,-89.64);
       break;
     case 7845: // GDA2020 / Geoscience Australia Lambert
       pZone->datum = udGZGD_GDA2020;
