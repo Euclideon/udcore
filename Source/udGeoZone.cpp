@@ -545,7 +545,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->falseEasting = 0;
     pZone->scaleFactor = 0.9999;
     udGeoZone_SetSpheroid(pZone);
-    udGeoZone_SetUTMZoneBounds(pZone, false);
+    udGeoZone_SetUTMZoneBounds(pZone, true);
   }
   else if (sridCode >= 3942 && sridCode <= 3950)
   {
