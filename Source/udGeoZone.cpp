@@ -735,6 +735,20 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(34.67,-94.62);
       pZone->latLongBoundMax = udDouble2::create(36.5,-89.64);
       break;
+    case 3857: // Web Mercator
+      pZone->datum = udGZGD_WGS84;
+      pZone->projection = udGZPT_WebMercator;
+      pZone->zone = 0;
+      udStrcpy(pZone->zoneName, "Pseudo-Mercator");
+      pZone->meridian = 0;
+      pZone->parallel = 0;
+      pZone->falseNorthing = 0;
+      pZone->falseEasting = 0;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-85, -180);
+      pZone->latLongBoundMax = udDouble2::create(95, 180);
+      break;
     case 4326: // LatLong
       pZone->datum = udGZGD_WGS84;
       pZone->projection = udGZPT_LatLong;
@@ -983,7 +997,13 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
     }
     else if (udStrEqual(pType, "PROJECTION"))
     {
-      if (udStrstr(pName, 0, "Mercator"))
+      if (udStrstr(pName, 0, "Mercator_1SP"))
+      {
+        pZone->projection = udGZPT_WebMercator;
+        if (pZone->scaleFactor == 0) // default for WebMerc is 1.0
+          pZone->scaleFactor = 1.0;
+      }
+      else if (udStrstr(pName, 0, "Mercator"))
       {
         pZone->projection = udGZPT_TransverseMercator;
         if (pZone->scaleFactor == 0) // default for TM is 0.9996
@@ -1107,6 +1127,12 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
                                 udTempStr_TrimDouble(zone.firstParallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.meridian, meridianPrecision),
                                 udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
+  else if (zone.projection == udGZPT_WebMercator)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Mercator_1SP\"],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+                                udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+                                udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
   if (pDesc->exportAxisInfo)
@@ -1116,7 +1142,7 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udSprintf(&pWKTProjection, "%s,AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]", pWKTProjection);
     else if (zone.projection == udGZPT_ECEF)
       udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],AXIS[\"Geocentric Y\",OTHER],AXIS[\"Geocentric Z\",NORTH]");
-    else if (zone.projection == udGZPT_LambertConformalConic2SP)
+    else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator)
       udSprintf(&pWKTProjection, "%s,AXIS[\"X\",EAST],AXIS[\"Y\",NORTH]", pWKTProjection);
   }
 
@@ -1256,6 +1282,16 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_WebMercator)
+  {
+    phi = UD_DEG2RAD(phi);
+    omega = UD_DEG2RAD(omega - zone.meridian);
+
+    X = zone.semiMajorAxis * omega;
+    Y = zone.semiMajorAxis * udLogN(udTan(UD_PI/4.0 + phi/2.0));
+
+    return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -1336,6 +1372,18 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG(theta / n) + zone.meridian;
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_WebMercator)
+  {
+    double y = position.y - zone.falseNorthing;
+    double x = position.x - zone.falseEasting;
+
+    double phi = UD_HALF_PI - 2 * udATan(udExp(-y / zone.semiMajorAxis));
+    double omega = (x / zone.semiMajorAxis);
+
+    latLong.x = UD_RAD2DEG(phi);
+    latLong.y = UD_RAD2DEG(omega) + zone.meridian;
     latLong.z = position.z;
   }
 
