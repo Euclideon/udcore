@@ -281,6 +281,8 @@ struct udVector2
   static udVector2<T> create(T _x, T _y) { udVector2<T> r = { _x, _y }; return r; }
   template <typename U>
   static udVector2<T> create(const udVector2<U> &_v) { udVector2<T> r = { T(_v.x), T(_v.y) }; return r; }
+  template <typename U>
+  static udVector2<T> create(const U &_v) { udVector2<T> r = { T(_v.x), T(_v.y) }; return r; }
 };
 template <typename T>
 udVector2<T> operator *(T f, const udVector2<T> &v) { return v * f; }
