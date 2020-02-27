@@ -69,14 +69,14 @@ const char *udAsyncPause_GetErrorContextString(udAsyncPause::Context errorContex
 // Some helper macros for boiler-plate code generation, each macro corresponds to number of parameters before pAsyncJob
 // For these macros to work, udAsyncJob *pAsyncJob must be the LAST PARAMETER of the function
 
-#define UDASYNC_CALL(funcCall) if (pAsyncJob) {                                           \
-  udThreadStart udajStartFunc = [=](void *) -> unsigned int                               \
-  {                                                                                       \
-    udAsyncJob_SetResult(pAsyncJob, funcCall);                                            \
-    return 0;                                                                             \
-  };                                                                                      \
-  udAsyncJob_SetPending(pAsyncJob);                                                       \
-  return udThread_Create(nullptr, udajStartFunc, nullptr, udTCF_None, UDSTRINGIFY(func)); \
+#define UDASYNC_CALL(funcCall) if (pAsyncJob) {                                       \
+  udThreadStart udajStartFunc = [=](void *) -> unsigned int                           \
+  {                                                                                   \
+    udAsyncJob_SetResult(pAsyncJob, funcCall);                                        \
+    return 0;                                                                         \
+  };                                                                                  \
+  udAsyncJob_SetPending(pAsyncJob);                                                   \
+  return udThread_Create(nullptr, udajStartFunc, nullptr, udTCF_None, __FUNC_NAME__); \
 }
 
 #define UDASYNC_CALL1(func, t0, p0) if (pAsyncJob) {                                                                    \
