@@ -2,6 +2,7 @@
 #include "udFile.h"
 #include "udMath.h"
 #include "udCompression.h"
+#include "udThread.h"
 #include "../3rdParty/stb/stb_image.h"
 
 #define UDIMAGE_FOURCC MAKE_FOURCC('U', 'D', 'T', 'X')
@@ -14,7 +15,11 @@ struct udImageOnDisk
   uint16_t sourceChannels;
   uint16_t mipCount;
   enum Flags { F_None = 0, F_PNG = 1, F_Force32 = 0xffffffff } flags;
-  uint64_t reserved;
+  union
+  {
+    uint64_t reserved;
+    udMutex *pLock;
+  } u;
   int64_t mipOffsets[MAX_MIP_LEVELS];
   uint32_t mipSizes[MAX_MIP_LEVELS];
 };
@@ -276,6 +281,7 @@ udResult udImage_LoadStreamable(udImage **ppImage, udFile *pFile, int64_t offset
   pImage->sourceChannels = onDisk.sourceChannels;
   pImage->mipCount = onDisk.mipCount;
   pImage->flags = udImage::IF_Streaming;
+  onDisk.u.pLock = udCreateMutex();
   memcpy(pImage->apImageData + onDisk.mipCount, &onDisk, sizeof(onDisk));
 
   *ppImage = pImage;
@@ -294,15 +300,20 @@ udResult udImage_LoadMip(udImage *pImage, uint16_t mipLevel, udFile *pFile, int6
   uint32_t mipW, mipH;
   const stbi_uc *pSTBIImage = nullptr;
   void *pMipSourceImage = nullptr;
+  udMutex *pLocked = nullptr;
+  udImageOnDisk *pOnDisk = nullptr;
 
   UD_ERROR_NULL(pImage, udR_InvalidParameter_);
   UD_ERROR_NULL(pFile, udR_InvalidParameter_);
   UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter_);
   UD_ERROR_IF((pImage->flags & udImage::IF_Streaming) == 0, udR_InvalidConfiguration);
 
+  pOnDisk = (udImageOnDisk *)(pImage->apImageData + pImage->mipCount);
+  if (pImage->apImageData[mipLevel] == nullptr)
+    pLocked = udLockMutex(pOnDisk->u.pLock);
+
   if (pImage->apImageData[mipLevel] == nullptr)
   {
-    udImageOnDisk *pOnDisk = (udImageOnDisk *)(pImage->apImageData + pImage->mipCount);
     pMipSourceImage = udAlloc(pOnDisk->mipSizes[mipLevel]);
     UD_ERROR_NULL(pMipSourceImage, udR_MemoryAllocationFailure);
     UD_ERROR_CHECK(udFile_Read(pFile, pMipSourceImage, pOnDisk->mipSizes[mipLevel], offset + pOnDisk->mipOffsets[mipLevel], udFSW_SeekSet));
@@ -317,6 +328,11 @@ udResult udImage_LoadMip(udImage *pImage, uint16_t mipLevel, udFile *pFile, int6
       pImage->apImageData[mipLevel] = udAllocType(uint32_t, mipW * mipH, udAF_None);
       UD_ERROR_NULL(pImage->apImageData[mipLevel], udR_MemoryAllocationFailure);
       memcpy(pImage->apImageData[mipLevel], pSTBIImage, (mipW * mipH * 4));
+      if (mipLevel == 0)
+      {
+        for (int i = udMin(pImage->width, pImage->height) - 1; i >= 0; i -= 4)
+          pImage->apImageData[mipLevel][i * pImage->width + i] ^= 0xffffff;
+      }
     }
     else
     {
@@ -328,6 +344,8 @@ udResult udImage_LoadMip(udImage *pImage, uint16_t mipLevel, udFile *pFile, int6
   result = udR_Success;
 
 epilogue:
+  if (pLocked)
+    udReleaseMutex(pLocked);
   if (pSTBIImage)
   {
     stbi_image_free((void *)pSTBIImage);
@@ -424,6 +442,12 @@ void udImage_Destroy(udImage **ppImage)
     *ppImage = nullptr;
     for (uint16_t i = 0; i < pImage->mipCount; ++i)
       udFree(pImage->apImageData[i]);
+    if (pImage->flags & udImage::IF_Streaming)
+    {
+      udImageOnDisk *pOnDisk = (udImageOnDisk *)(pImage->apImageData + pImage->mipCount);
+      if (pOnDisk->u.pLock)
+        udDestroyMutex(&pOnDisk->u.pLock);
+    }
     udFree(pImage);
   }
 }
