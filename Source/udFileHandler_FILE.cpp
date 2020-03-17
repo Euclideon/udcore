@@ -169,9 +169,11 @@ epilogue:
 static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   UDTRACE();
-  udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
+  const size_t maxReadSize = (size_t)(64 * 1048576);  // Read in 64MB chunks if >64MB is requested (otherwise O/S lockups can occur until read is complete)
+  udFile_FILE *pFILE = static_cast<udFile_FILE *>(pFile);
   udResult result;
-  size_t actualRead;
+  size_t actualRead = 0;
+  size_t chunkSize, chunkRead;
 
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
@@ -185,11 +187,18 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
     UD_ERROR_NULL(pFILE->pCrtFile, udR_OpenFailure);
   }
 
-  fseeko(pFILE->pCrtFile, seekOffset, SEEK_SET);
-  if (pFILE->fileLength && ((seekOffset - pFILE->seekBase) >= pFILE->fileLength))
-    actualRead = 0;
-  else
-    actualRead = bufferLength ? fread(pBuffer, 1, bufferLength, pFILE->pCrtFile) : 0;
+  do
+  {
+    fseeko(pFILE->pCrtFile, seekOffset + actualRead, SEEK_SET);
+    chunkSize = udMin(bufferLength - actualRead, maxReadSize);
+#if FILE_DEBUG
+    if (chunkSize < bufferLength)
+      udDebugPrintf("Reading chunk %d/%d of large read %sMB from %s\n", (int)(actualRead / maxReadSize), (int)(bufferLength / maxReadSize), udTempStr_CommaInt(bufferLength / 1048576), pFile->pFilenameCopy);
+#endif
+    chunkRead = fread(udAddBytes(pBuffer, actualRead), 1, chunkSize, pFILE->pCrtFile);
+    actualRead += chunkRead;
+  } while (chunkRead == chunkSize && actualRead < bufferLength);
+
   if (pActualRead)
     *pActualRead = actualRead;
   UD_ERROR_IF(ferror(pFILE->pCrtFile) != 0, udR_ReadFailure);
