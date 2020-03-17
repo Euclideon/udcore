@@ -234,6 +234,7 @@ template <typename T> udQuaternion<T> udConjugate(const udQuaternion<T> &q);
 template <typename T> udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, double t);
 
 template <typename V> bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilon = UD_EPSILON);
+template <typename T> bool udMatrixEqualApprox(const udMatrix4x4<T> &a, const udMatrix4x4<T> &b, T epsilon = (T)(UD_EPSILON));
 
 template <typename T> udVector3<T> udDirectionFromYPR(const udVector3<T> &ypr);
 template <typename T> udVector3<T> udDirectionToYPR(const udVector3<T> &direction);

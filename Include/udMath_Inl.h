@@ -223,6 +223,16 @@ inline bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilo
 }
 
 template <typename T>
+inline bool udMatrixEqualApprox(const udMatrix4x4<T> &a, const udMatrix4x4<T> &b, T epsilon)
+{
+  for (int i = 0; i < udMatrix4x4<T>::ElementCount; ++i)
+    if (udAbs(a.a[i] - b.a[i]) > epsilon)
+      return false;
+
+  return true;
+}
+
+template <typename T>
 inline T udNormaliseRotation(T rad, T absRange)
 {
   absRange = udAbs(absRange);
