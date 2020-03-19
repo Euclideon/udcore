@@ -770,11 +770,13 @@ double udStrAtof64(const char *pStr, int *pCharCount)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString)
+int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString, bool knownUnique)
 {
   uint32_t offset = 0;
   int addStrLen = (int)udStrlen(addString); // Length of string to be added
 
+  if (knownUnique)
+    offset = *pStringTableLength;
   while (offset < *pStringTableLength)
   {
     int curStrLen = (int)udStrlen(pStringTable + offset);

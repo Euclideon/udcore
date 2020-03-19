@@ -104,7 +104,7 @@ inline bool udStrEquali(const char *pStr1, const char *pStr2) { return udStrcmpi
 // Initialise pStringTable to NULL and stringTableLength to 0,
 // and table will be reallocated as necessary
 // *********************************************************************
-int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString);
+int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const char *addString, bool knownUnique = false);
 
 // *********************************************************************
 // Some helper functions that make use of internal cycling buffers for convenience (threadsafe)
