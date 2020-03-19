@@ -102,7 +102,7 @@ bool udQuaternion_SlerpAxisAngleUnitTest(udQuaternion<T> q0, udQuaternion<T> q1,
   if (udAbs(2.0 * halfTheta - T(UD_PI)) < thetaEpsilon)
     return true;
 
-  // If the rotation is greater than PI (180°) neqate q1 to take the shortest path along the arc
+  // If the rotation is greater than PI (180Â°) neqate q1 to take the shortest path along the arc
   udQuaternion<T> q1c = cosHalfTheta < T(0) ? -q1 : q1;
   udQuaternion<T> qr = udMul(udConjugate(q0), q1c);
 
@@ -245,6 +245,35 @@ bool EqualApproxUnitTest()
 }
 
 template <typename T>
+bool MatrixEqualApproxUnitTest()
+{
+  const T epsilon = T(0.01);
+  udMatrix4x4<T> a;
+  udMatrix4x4<T> b;
+  udMatrix4x4<T> c;
+
+  const int count = udMatrix4x4<T>::ElementCount;
+
+  for (int i = 0; i < count; ++i)
+  {
+    a.a[i] = T(0);
+    b.a[i] = T(0.001);
+    c.a[i] = T(0.02);
+  }
+
+  if (!udMatrixEqualApprox(a, a, epsilon))
+    return false;
+
+  if (!udMatrixEqualApprox(a, b, epsilon))
+    return false;
+
+  if (udMatrixEqualApprox(a, c, epsilon))
+    return false;
+
+  return true;
+}
+
+template <typename T>
 bool IsUnitLengthUnitTest()
 {
   typedef typename T::ElementType ET;
@@ -286,7 +315,7 @@ void udQuaternion_SlerpAssertUnitLengthQ1()
   udSlerp(qi, q0, T(0.5)); // This should assert
 }
 
-// FAIL Test assert for slerping quaternions separated by an angle of PI (180°)
+// FAIL Test assert for slerping quaternions separated by an angle of PI (180Â°)
 template <typename T>
 void udQuaternion_SlerpAssertPITheta()
 {
@@ -368,6 +397,9 @@ TEST(MathTests, UnitLengthCanaries)
   EXPECT_TRUE(EqualApproxUnitTest<udVector4<double> >());
   EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<float> >());
   EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<double> >());
+
+  EXPECT_TRUE(MatrixEqualApproxUnitTest<float>());
+  EXPECT_TRUE(MatrixEqualApproxUnitTest<double>());
 
   EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<float> >());
   EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<double> >());
