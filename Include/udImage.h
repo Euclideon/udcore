@@ -45,7 +45,7 @@ struct udImageStreaming : public udImageStreamingOnDisk
     int64_t offset;             // Offset from beginning of on-disk image of first tile
     uint32_t width, height;     // Dimensions for this mip
     uint16_t gridW, gridH;      // Dimensions of cell grid
-    uint8_t **ppCellImage;      // Pointers to each 64x64 tile
+    uint8_t * volatile * ppCellImage;      // Pointers to each 64x64 tile
   } mips[MaxMipLevels];
 };
 

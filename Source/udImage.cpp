@@ -309,6 +309,7 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
   uint32_t texel = 0;
   udMutex *pLocked = nullptr;
   udImageStreaming::Mip &mip = pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
+  uint8_t *pCellMem = nullptr;
   uint8_t *p;
 
   if (flags & udISF_Clamp)
@@ -347,9 +348,13 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
       }
       uint32_t cellSizeBytes = cellWidth * cellHeight * 3;
       uint32_t cellOffset = (cellY * udImageStreaming::TileSize * mip.width * 3) + (cellX * udImageStreaming::TileSize * udImageStreaming::TileSize * 3);
-      mip.ppCellImage[cellIndex] = udAllocType(uint8_t, cellSizeBytes, udAF_None);
-      UD_ERROR_NULL(mip.ppCellImage[cellIndex], udR_MemoryAllocationFailure);
-      UD_ERROR_CHECK(udFile_Read(pImage->pFile, mip.ppCellImage[cellIndex], cellSizeBytes, mip.offset + cellOffset, udFSW_SeekSet));
+      // Read into locally allocated block
+      pCellMem = udAllocType(uint8_t, cellSizeBytes, udAF_None);
+      UD_ERROR_NULL(pCellMem, udR_MemoryAllocationFailure);
+      UD_ERROR_CHECK(udFile_Read(pImage->pFile, pCellMem, cellSizeBytes, mip.offset + cellOffset, udFSW_SeekSet));
+      // Assign the pointer after reading to ensure another thread doesn't access the memory before the read is complete
+      udInterlockedExchangePointer(&mip.ppCellImage[cellIndex], pCellMem);
+      pCellMem = nullptr;
     }
     udReleaseMutex(pLocked);
     pLocked = nullptr;
@@ -363,6 +368,7 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
     texel = p[2] | (p[1] << 8) | (p[0] << 16) | 0xff000000;
 
 epilogue:
+  udFree(pCellMem);
   if (pLocked)
     udReleaseMutex(pLocked);
   return texel;
@@ -382,7 +388,7 @@ void udImageStreaming_Destroy(udImageStreaming **ppImage)
       if (pImage->mips[i].ppCellImage)
       {
         for (uint16_t j = 0; j < (pImage->mips[i].gridW * pImage->mips[i].gridH); ++j)
-          udFree(pImage->mips[i].ppCellImage[j]);
+          udFree(const_cast<uint8_t*&>(pImage->mips[i].ppCellImage[j]));
         udFree(pImage->mips[i].ppCellImage);
       }
     }
