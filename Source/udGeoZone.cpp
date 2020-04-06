@@ -1411,26 +1411,28 @@ udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone
   if (sourceZone.zone == destZone.zone)
     return matrix;
 
-  // A very large model will lead to inaccuracies, so in this case, scale it down
-  double accuracyScale = (matrix.a[0] > 1000) ? matrix.a[0] / 1000.0 : 1.0;
+  udDouble3 position, scale;
+  udDoubleQuat orientation;
+  matrix.extractTransforms(position, scale, orientation);
 
   udDouble3 llO = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3());
-  udDouble3 llX = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.x.toVector3() * accuracyScale));
-  udDouble3 llY = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.y.toVector3() * accuracyScale));
-  udDouble3 llZ = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + (matrix.axis.z.toVector3() * accuracyScale));
+  udDouble3 llX = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + udNormalize3(matrix.axis.x.toVector3()));
+  udDouble3 llY = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + udNormalize3(matrix.axis.y.toVector3()));
+  udDouble3 llZ = udGeoZone_CartesianToLatLong(sourceZone, matrix.axis.t.toVector3() + udNormalize3(matrix.axis.z.toVector3()));
 
-  accuracyScale = 1.0 / accuracyScale;
   udDouble3 czO = udGeoZone_LatLongToCartesian(destZone, llO);
-  udDouble3 czX = (udGeoZone_LatLongToCartesian(destZone, llX) - czO) * accuracyScale;
-  udDouble3 czY = (udGeoZone_LatLongToCartesian(destZone, llY) - czO) * accuracyScale;
-  udDouble3 czZ = (udGeoZone_LatLongToCartesian(destZone, llZ) - czO) * accuracyScale;
+  udDouble3 czX = (udGeoZone_LatLongToCartesian(destZone, llX) - czO);
+  udDouble3 czY = (udGeoZone_LatLongToCartesian(destZone, llY) - czO);
+  udDouble3 czZ = (udGeoZone_LatLongToCartesian(destZone, llZ) - czO);
 
-  // TODO: Get scale from matrix, ortho-normalise, then reset scale
+  //Orthonormalise using z as the reference seems to give the best results.
+  czY = udCross3(czZ, czX);
+  czX = udCross3(czY, czZ);
 
   udDouble4x4 m;
-  m.axis.x = udDouble4::create(czX, 0);
-  m.axis.y = udDouble4::create(czY, 0);
-  m.axis.z = udDouble4::create(czZ, 0);
+  m.axis.x = udDouble4::create(czX * scale.x, 0);
+  m.axis.y = udDouble4::create(czY * scale.y, 0);
+  m.axis.z = udDouble4::create(czZ * scale.z, 0);
   m.axis.t = udDouble4::create(czO, 1);
 
   return m;
