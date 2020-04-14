@@ -201,10 +201,10 @@ template <typename T> inline T *udInterlockedExchangePointer(T * volatile* dest,
 template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, std::nullptr_t, U *comparand) { return udInterlockedCompareExchangePointer(dest, (U*)nullptr, comparand); }
 template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, std::nullptr_t) { return udInterlockedCompareExchangePointer(dest, exchange, (U*)nullptr); }
 
-#ifndef UDUTIL_H
-template <typename T> T udMax(T a, T b) { return (a > b) ? a : b; }
-template <typename T> T udMin(T a, T b) { return (a < b) ? a : b; }
-#endif // !UDUTIL_H
+template <typename T> T             udMax(T a, T b) { return (a > b) ? a : b; }
+template <typename T> T             udMin(T a, T b) { return (a < b) ? a : b; }
+template <typename T, typename U> T udMax(T a, U b) { return (a > (T)b) ? a : (T)b; }
+template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T)b; }
 
 // Helpers to perform various interlocked functions based on the platform-wrapped primitives
 inline int32_t udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
