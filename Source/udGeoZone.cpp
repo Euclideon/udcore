@@ -1397,7 +1397,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 // Author: Dave Pevreal, August 2018
 udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sourceZone, const udGeoZone &destZone)
 {
-  if (sourceZone.zone == destZone.zone)
+  if (sourceZone.srid == destZone.srid)
     return point;
 
   udDouble3 latlon = udGeoZone_CartesianToLatLong(sourceZone, point);
@@ -1408,7 +1408,7 @@ udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sour
 // Author: Dave Pevreal, August 2018
 udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone &sourceZone, const udGeoZone &destZone)
 {
-  if (sourceZone.zone == destZone.zone)
+  if (sourceZone.srid == destZone.srid)
     return matrix;
 
   udDouble3 position, scale;
