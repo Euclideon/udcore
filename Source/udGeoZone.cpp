@@ -256,6 +256,30 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
 }
 
 // ----------------------------------------------------------------------------
+// Author: Paul Fox, April 2020
+udResult udGeoZone_UpdateDisplayName(udGeoZone *pZone)
+{
+  if (pZone == nullptr)
+    return udR_InvalidParameter_;
+
+  const udGeoZoneGeodeticDatumDescriptor *pDesc = &g_udGZ_GeodeticDatumDescriptors[pZone->datum];
+
+  // Some zones include the datum in the zoneName- if it does thats the displayName as well
+  if (udStrBeginsWith(pZone->zoneName, pDesc->pShortName))
+    udStrcpy(pZone->displayName, pZone->zoneName);
+  else if (pZone->projection == udGZPT_ECEF)
+    udSprintf(pZone->displayName, "%s / ECEF", pDesc->pShortName);
+  else if (pZone->projection == udGZPT_LatLong)
+    udSprintf(pZone->displayName, "%s / LatLong", pDesc->pShortName);
+  else if (pZone->projection == udGZPT_LongLat)
+    udSprintf(pZone->displayName, "%s / LongLat", pDesc->pShortName);
+  else
+    udSprintf(pZone->displayName, "%s / %s", pDesc->pShortName, pZone->zoneName);
+
+  return udR_Success;
+}
+
+// ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
 udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
 {
@@ -268,7 +292,11 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     memset(pZone, 0, sizeof(udGeoZone));
 
   pZone->unitMetreScale = 1.0; // Default to metres as there's only a few in feet
-  if (sridCode >= 32601 && sridCode <= 32660)
+  if (sridCode == 0)
+  {
+    udSprintf(pZone->displayName, "Not Geolocated");
+  }
+  else if (sridCode >= 32601 && sridCode <= 32660)
   {
     // WGS84 Northern Hemisphere
     pZone->datum = udGZGD_WGS84;
@@ -831,9 +859,15 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       return udR_ObjectNotFound;
     }
   }
+
   pZone->srid = sridCode;
-  udStrcpy(pZone->datumName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pDatumName);
-  udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pShortName);
+
+  if (sridCode != 0)
+  {
+    udStrcpy(pZone->datumName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pDatumName);
+    udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pShortName);
+    udGeoZone_UpdateDisplayName(pZone);
+  }
 
   return udR_Success;
 }
@@ -1047,6 +1081,8 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
 
   // recursive helper function
   udGeoZone_JSONTreeSearch(pZone, &wkt, "values");
+
+  udGeoZone_UpdateDisplayName(pZone);
 
   if (pZone->scaleFactor != 0 && !udStrEqual(pZone->datumShortName, "") && pZone->semiMajorAxis != 0) // ensure some key variables are not null
     return udR_Success;
