@@ -98,6 +98,7 @@ struct udGeoZone
   char datumShortName[16];
   char datumName[64];
   char zoneName[64]; // Only 33 characters required for longest known name "Japan Plane Rectangular CS XVIII"
+  char displayName[128]; // This is the human readable name; often just datumShortName & zoneName concatenated
 };
 
 // Stored as g_udGZ_GeodeticDatumDescriptors

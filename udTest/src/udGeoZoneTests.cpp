@@ -801,7 +801,7 @@ TEST(udGeoZone, WKT)
 #endif
 
   // Now test every code to ensure we have a test WKT for everything we support
-  for (int32_t srid = 0; srid < 40000; ++srid)
+  for (int32_t srid = 1; srid < 40000; ++srid)
   {
     if (udGeoZone_SetFromSRID(&zone, srid) == udR_Success)
     {
