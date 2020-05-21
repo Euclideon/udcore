@@ -219,7 +219,7 @@ public:
   // Construct either empty as default or from a path
   // No destructor (or memory allocation) to keep the object simple and copyable
   udFilename() { Construct(); }
-  udFilename(const char *path) { SetFromFullPath(path); }
+  udFilename(const char *path) { SetFromFullPath("%s", path); }
   void Construct() { SetFromFullPath(NULL); }
 
   enum { MaxPath = 260 };
@@ -234,7 +234,7 @@ public:
   //    SetFilenameNoExt  - Set the filename without extension, retaining the existing folder and extension
   //    SetExtension      - Set the extension, retaining the folder and filename
   //
-  bool SetFromFullPath(const char *pFormat, ...);
+  UD_PRINTF_FORMAT_FUNC(2) bool SetFromFullPath(const char *pFormat, ...);
   bool SetFolder(const char *folder);
   bool SetFilenameNoExt(const char *filenameOnlyComponent);
   bool SetFilenameWithExt(const char *filenameWithExtension);
