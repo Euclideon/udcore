@@ -488,7 +488,7 @@ bool udFilename::SetFolder(const char *pFolder)
 
   if (!udStrcat(newPath, GetFilenameWithExt()))
     return false;
-  return SetFromFullPath(newPath);
+  return SetFromFullPath("%s", newPath);
 }
 
 // *********************************************************************
@@ -502,7 +502,7 @@ bool udFilename::SetFilenameNoExt(const char *pFilenameOnlyComponent)
     return false;
   if (!udStrcat(newPath, GetExt()))
     return false;
-  return SetFromFullPath(newPath);
+  return SetFromFullPath("%s", newPath);
 }
 
 // *********************************************************************
@@ -514,7 +514,7 @@ bool udFilename::SetFilenameWithExt(const char *pFilenameWithExtension)
   ExtractFolder(newPath, sizeof(newPath));
   if (!udStrcat(newPath, pFilenameWithExtension))
     return false;
-  return SetFromFullPath(newPath);
+  return SetFromFullPath("%s", newPath);
 }
 
 // *********************************************************************
@@ -528,7 +528,7 @@ bool udFilename::SetExtension(const char *pExtComponent)
   newPath[extensionIndex] = 0; // Truncate the extension
   if (!udStrcat(newPath, pExtComponent))
     return false;
-  return SetFromFullPath(newPath);
+  return SetFromFullPath("%s", newPath);
 }
 
 // *********************************************************************
