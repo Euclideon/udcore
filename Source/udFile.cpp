@@ -435,7 +435,7 @@ udResult udFile_Close(udFile **ppFile)
   udFile *pFile = *ppFile;
   if (pFile)
   {
-    if (pFile->filenameCopyRequiresFree)
+    if (pFile->filenameCopyRequiresFree && pFile->pFilenameCopy)
       udFree(pFile->pFilenameCopy);
     if (pFile->pCipherCtx)
       udCryptoCipher_Destroy(&pFile->pCipherCtx);
