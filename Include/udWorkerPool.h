@@ -17,6 +17,7 @@ struct udWorkerPool;
 
 udResult udWorkerPool_Create(udWorkerPool **ppPool, uint8_t totalThreads, const char *pThreadNamePrefix = "udWorkerPool");
 void udWorkerPool_Destroy(udWorkerPool **ppPool);
+void udWorkerPool_RemoveAll(udWorkerPool **ppPool);
 
 // Adds a function to run on a background thread, optionally with userdata. If clearMemory is true, it will call udFree on pUserData after running
 udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData = nullptr, bool clearMemory = true, udWorkerPoolCallback postFunction = nullptr);

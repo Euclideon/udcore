@@ -157,6 +157,33 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
 }
 
 // ----------------------------------------------------------------------------
+// Copy from udWorkerPool_Destroy, May 2020
+void udWorkerPool_RemoveAll(udWorkerPool **ppPool)
+{
+  if (ppPool == nullptr || *ppPool == nullptr)
+    return;
+
+  udWorkerPool *pPool = *ppPool;
+
+  for (int i = 0; i < pPool->totalThreads; i++)
+    udThread_Destroy(&pPool->pThreadData[i].pThread);
+
+  udWorkerPoolTask currentTask;
+  while (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) == udR_Success)
+  {
+    if (currentTask.freeDataBlock)
+      udFree(currentTask.pDataBlock);
+  }
+
+  while (udSafeDeque_PopFront(pPool->pQueuedPostTasks, &currentTask) == udR_Success)
+  {
+    if (currentTask.freeDataBlock)
+      udFree(currentTask.pDataBlock);
+  }
+
+}
+
+// ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
 udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
 {
