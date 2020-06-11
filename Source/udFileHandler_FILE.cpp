@@ -173,6 +173,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   udResult result;
   size_t actualRead;
 
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
@@ -197,7 +198,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   result = udR_Success;
 
 epilogue:
-  if (pFILE->pMutex)
+  if (pFILE && pFILE->pMutex)
     udReleaseMutex(pFILE->pMutex);
 
   return result;
@@ -214,6 +215,7 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   size_t actualWritten;
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
 
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
@@ -228,7 +230,7 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   result = udR_Success;
 
 epilogue:
-  if (pFILE->pMutex)
+  if (pFILE && pFILE->pMutex)
     udReleaseMutex(pFILE->pMutex);
 
   return result;
@@ -244,6 +246,7 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
 
   // Early-exit that doesn't involve locking the mutex
+  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
   if (!pFILE->pCrtFile)
     return udR_NothingToDo;
 
@@ -266,8 +269,7 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   result = udR_Success;
 
 epilogue:
-
-  if (pFILE->pMutex)
+  if (pFILE && pFILE->pMutex)
     udReleaseMutex(pFILE->pMutex);
 
   return result;
@@ -284,16 +286,19 @@ static udResult udFileHandler_FILEClose(udFile **ppFile)
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(*ppFile);
   *ppFile = nullptr;
 
-  if (pFILE->pCrtFile)
+  if (pFILE)
   {
-    result = (fclose(pFILE->pCrtFile) != 0) ? udR_CloseFailure : udR_Success;
-    pFILE->pCrtFile = nullptr;
-    udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
-  }
+    if (pFILE->pCrtFile)
+    {
+      result = (fclose(pFILE->pCrtFile) != 0) ? udR_CloseFailure : udR_Success;
+      pFILE->pCrtFile = nullptr;
+      udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
+    }
 
-  if (pFILE->pMutex)
-    udDestroyMutex(&pFILE->pMutex);
-  udFree(pFILE);
+    if (pFILE->pMutex)
+      udDestroyMutex(&pFILE->pMutex);
+    udFree(pFILE);
+  }
 
   return result;
 }
