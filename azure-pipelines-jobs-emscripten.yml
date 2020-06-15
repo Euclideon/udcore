@@ -11,7 +11,7 @@ jobs:
   container:
     image: ${{ parameters.container }}
   variables:
-    platform: emscripten
+    platform: Emscripten
   strategy:
     matrix:
       Debug:
@@ -34,3 +34,12 @@ jobs:
       EMSDK: /emsdk
       EMSDK_NODE: /emsdk/node/12.9.1_64bit/bin/node
       PATH: $(PATH):/emsdk:/emsdk/upstream/emscripten:/emsdk/node/12.9.1_64bit/bin
+  - script: |
+      mkdir www
+      cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
+      cp udTest/udTest.html www
+      pushd www
+      python -m SimpleHTTPServer 8000 </dev/null &>/dev/null &
+      popd
+      python ./udTest/webtest.py
+    displayName: 'Run Tests'
