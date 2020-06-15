@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>udTest</title>
+</head>
+<body>
+	<textarea id="output" rows=8></textarea>
+	<script>
+		var unitTestsFinished = false;
+		var Module = {};
+		Module["noExitRuntime"] = true;
+		Module["noInitialRun"] = true;
+		Module["mainScriptUrlOrBlob"] = "udTest.js";
+		Module["print"] = (function() {
+			var element = document.getElementById('output');
+			if (element) element.value = ''; // Clear browser cache
+			return function(text) {
+				if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+				console.log(text);
+				if (element) {
+					element.value += text + "\n";
+					element.scrollTop = element.scrollHeight; // Focus on bottom
+				}
+			}
+		})();
+		Module["onExit"] = function(status) {
+			unitTestsFinished = true;
+		};
+	</script>
+	<script src="udTest.js"></script>
+	<script>
+		Module["noInitialRun"] = false;
+		Module["noExitRuntime"] = false;
+		shouldRunNow = true;
+		Module.run();
+	</script>
+</body>
+</html>
