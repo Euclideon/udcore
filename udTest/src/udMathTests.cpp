@@ -1062,41 +1062,52 @@ TEST(MathTests, MatrixExtraction)
   EXPECT_DOUBLE_EQ(outQuatYPR.z, outMatYPR.z);
 }
 
+//return  0: success
+//        1: result is not perpendicular to input
+//        2: result is a zero vector
+int udPerpendicular3_Check(const udDouble3 &v, double epsilon)
+{
+  udDouble3 vPerp = udPerpendicular3(v);
+  double proj = udDot(v, vPerp);
+  if (udMag3(vPerp) <= epsilon)
+    return 2;
+  if (udAbs(proj) > epsilon)
+    return 1;
+  return 0;
+}
+
 TEST(MathTests, UtilityFunctions)
 {
   {
     udDouble3 vec;
-    double epsilon = 1e-12;
+    double epsilon        = 1e-12;
+    double epsilonSmaller = 1e-13;
 
-    vec = udDouble3::create(1.0, 0.0, 0.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(0.0, 1.0, 0.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(0.0, 0.0, 1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(1.0, 1.0, 0.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(0.0, 1.0, 1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(1.0, 0.0, 1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(1.0, 1.0, 1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 0.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, 1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 0.0, 1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 1.0, 1.0}, epsilon), 0);
 
-    vec = udDouble3::create(-1.0, 0.0, 0.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(0.0, -1.0, 0.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(0.0, 0.0, -1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(-1.0, -1.0, 0.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(0.0, -1.0, -1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(1.0, 0.0, -1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
-    vec = udDouble3::create(-1.0, -1.0, -1.0);
-    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, 0.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, -1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, -1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, -1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, 0.0, -1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, -1.0, -1.0}, epsilon), 0);
+
+    EXPECT_EQ(udPerpendicular3_Check({23.45, -45.89, 4597.13}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-3421750394.3, 987715.3457, 184573763.437}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1e43, -2e109, 42.0}, epsilon), 0);
+
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({epsilonSmaller, 0.0, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, epsilonSmaller, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, epsilonSmaller}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({-epsilonSmaller, 0.0, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, -epsilonSmaller, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, -epsilonSmaller}, epsilon), 2);
   }
 
   {

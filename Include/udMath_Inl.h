@@ -273,20 +273,20 @@ udVector3<T> udDirectionToYPR(const udVector3<T> &direction)
 template <typename T>
 udVector3<T> udPerpendicular3(const udVector3<T> &axis)
 {
+  //The idea here is to choose two non-zero elements, negate and switch so that axis dot perp == 0.
+  //Here we simply choose the largest two elements (in magnitude) to try and avoid any close-to-zero elements.
   udVector3<T> perp = {};
 
-  if (axis[0] != 0.0 || axis[1] != 0.0)
-  {
-    perp[0] = -axis[1];
-    perp[1] = axis[0];
-    perp[2] = 0.0;
-  }
-  else
-  {
-    perp[0] = -axis[2];
-    perp[1] = 0.0;
-    perp[2] = axis[0];
-  }
+  int minInd = (udAbs(axis[0]) < udAbs(axis[1])) ? 0 : 1;
+  if (udAbs(axis[2]) < udAbs(axis[minInd]))
+    minInd = 2;
+
+  int firstInd = (minInd + 1) % 3;
+  int secondInd = (minInd + 2) % 3;
+
+  perp[firstInd] = -axis[secondInd];
+  perp[secondInd] = axis[firstInd];
+
   return perp;
 }
 
