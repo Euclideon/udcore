@@ -270,6 +270,65 @@ udVector3<T> udDirectionToYPR(const udVector3<T> &direction)
   return r;
 }
 
+template <typename T>
+udVector3<T> udPerpendicular3(const udVector3<T> &axis)
+{
+  udVector3<T> perp = {};
+
+  if (axis[0] != 0.0 || axis[1] != 0.0)
+  {
+    perp[0] = -axis[1];
+    perp[1] = axis[0];
+    perp[2] = 0.0;
+  }
+  else
+  {
+    perp[0] = -axis[2];
+    perp[1] = 0.0;
+    perp[2] = axis[0];
+  }
+  return perp;
+}
+
+template <typename T>
+bool udIsRotatedAxisStillAxisAligned(const udVector3<T> &extentsIn, const udQuaternion<T> &q, udVector3<T> &extentsOut, const T epsilon)
+{
+  extentsOut = udVector3<T>::zero();
+  bool result = true;
+  for (int i = 0; i < 3; ++i)
+  {
+    udDouble3 v = {};
+    v[i] = extentsIn[i];
+    v = q.apply(v);
+
+    int nonZeroIndex = -1;
+    bool isAA = true;
+    for (int j = 0; j < 3; ++j)
+    {
+      if (udAbs(v[j]) <= epsilon)
+        continue;
+      if (nonZeroIndex != -1)
+      {
+        isAA = false;
+        break;
+      }
+      nonZeroIndex = j;
+    }
+    if (!isAA)
+    {
+      result = false;
+      break;
+    }
+    if (nonZeroIndex > -1)
+    {
+      (extentsOut)[nonZeroIndex] = udAbs((extentsIn)[i]);
+      if (v[nonZeroIndex] < 0.0)
+        (extentsOut)[nonZeroIndex] = -(extentsOut)[nonZeroIndex];
+    }
+  }
+  return result;
+}
+
 // many kinds of mul...
 template <typename T, typename U>
 udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, U f)

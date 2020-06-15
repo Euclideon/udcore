@@ -1061,3 +1061,80 @@ TEST(MathTests, MatrixExtraction)
   EXPECT_DOUBLE_EQ(outQuatYPR.y, outMatYPR.y);
   EXPECT_DOUBLE_EQ(outQuatYPR.z, outMatYPR.z);
 }
+
+TEST(MathTests, UtilityFunctions)
+{
+  {
+    udDouble3 vec;
+    double epsilon = 1e-12;
+
+    vec = udDouble3::create(1.0, 0.0, 0.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(0.0, 1.0, 0.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(0.0, 0.0, 1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(1.0, 1.0, 0.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(0.0, 1.0, 1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(1.0, 0.0, 1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(1.0, 1.0, 1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+
+    vec = udDouble3::create(-1.0, 0.0, 0.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(0.0, -1.0, 0.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(0.0, 0.0, -1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(-1.0, -1.0, 0.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(0.0, -1.0, -1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(1.0, 0.0, -1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+    vec = udDouble3::create(-1.0, -1.0, -1.0);
+    EXPECT_NEAR(udDot(vec, udPerpendicular3(vec)), 0.0, epsilon);
+  }
+
+  {
+    udDoubleQuat q;
+    udDouble3 extentsIn = udDouble3::create(1, 2, 3);
+    udDouble3 extentsOut = {};
+    double epsilon = 1e-12;
+
+    q = udDoubleQuat::create({0, 0, 0});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, extentsIn);
+
+    q = udDoubleQuat::create({UD_HALF_PI, 0, 0});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(-2, 1, 3));
+
+    q = udDoubleQuat::create({0, UD_HALF_PI, 0});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(1, -3, 2));
+
+    q = udDoubleQuat::create({0, 0, UD_HALF_PI});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(3, 2, -1));
+
+    q = udDoubleQuat::create({UD_HALF_PI, UD_HALF_PI, UD_HALF_PI});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(-1, 3, 2));
+
+    q = udDoubleQuat::create({3, 0, 0});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+
+    q = udDoubleQuat::create({0, 2, 0});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+
+    q = udDoubleQuat::create({0, 0, 1});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+
+    q = udDoubleQuat::create({3, 2, 1});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+  }
+}
