@@ -144,3 +144,46 @@ TEST(udChunkedArrayTests, FullChunkInsert)
   }
 }
 
+TEST(udChunkedArrayTests, Iterator)
+{
+  udChunkedArray<int> array;
+  array.Init(8);
+
+  // Iterates across chunk boundaries correctly
+  int i;
+  for (i = 0; i < 16; ++i)
+    array.PushBack(i);
+
+  i = 0;
+  for (auto x : array)
+  {
+    EXPECT_EQ(i, x);
+    ++i;
+  }
+  EXPECT_EQ(16, i);
+
+  // Iterates partially filled chunks correct
+  array.PopBack();
+
+  i = 0;
+  for (auto x : array)
+  {
+    EXPECT_EQ(i, x);
+    ++i;
+  }
+  EXPECT_EQ(15, i);
+
+  // Iterates with inset chunk correctly
+  array.PopFront();
+
+  i = 1;
+  for (auto x : array)
+  {
+    EXPECT_EQ(i, x);
+    ++i;
+  }
+  EXPECT_EQ(15, i);
+
+  array.Deinit();
+}
+
