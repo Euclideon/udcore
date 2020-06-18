@@ -1061,3 +1061,435 @@ TEST(MathTests, MatrixExtraction)
   EXPECT_DOUBLE_EQ(outQuatYPR.y, outMatYPR.y);
   EXPECT_DOUBLE_EQ(outQuatYPR.z, outMatYPR.z);
 }
+
+udDouble2 ProjectAABB(const udDouble3 &aabbMin, double aabbSize, const udDouble3 &vector)
+{
+  udDouble2 result;
+  result[0] = udDot(aabbMin, vector);
+  result[1] = result[0];
+  double u;
+
+  u = udDot(aabbMin + udDouble3::create(0.0, aabbSize, 0.0), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  u = udDot(aabbMin + udDouble3::create(0.0, 0.0, aabbSize), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  u = udDot(aabbMin + udDouble3::create(0.0, aabbSize, aabbSize), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  u = udDot(aabbMin + udDouble3::create(aabbSize, 0.0, 0.0), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  u = udDot(aabbMin + udDouble3::create(aabbSize, aabbSize, 0.0), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  u = udDot(aabbMin + udDouble3::create(aabbSize, 0.0, aabbSize), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  u = udDot(aabbMin + udDouble3::create(aabbSize, aabbSize, aabbSize), vector);
+  if (u < result[0]) result[0] = u;
+  else if (u > result[1]) result[1] = u;
+
+  return result;
+}
+
+double SqDistLinePoint(udDouble3 lsOrigin, udDouble3 lsAxis, udDouble3 point)
+{
+  udDouble3 w;
+  w = point - lsOrigin;
+  double proj = udDot(w, lsAxis);
+  udDouble3 closest = lsOrigin + proj * lsAxis;
+  udDouble3 v = (closest - point);
+  return udMagSq3(v);
+}
+
+//TODO, operate in aabb space (aabb center == [0, 0, 0])
+bool AreIntersecting(udDouble3 aabbMin, double aabbSize, udDouble3 p1, udDouble3 p2, double radius)
+{
+  //------------------------------------------------------------------------
+  // Setup (this can be precalculated)
+  //------------------------------------------------------------------------
+
+  //Todo rework this...
+  udDouble3 cylinderAxis = p2 - p1;
+  udDouble3 axisSq = cylinderAxis * cylinderAxis;
+  double c0 = axisSq.x + axisSq.y + axisSq.z;
+  double axisSq_xy = axisSq.x + axisSq.y;
+  double axisSq_xz = axisSq.x + axisSq.z;
+  double axisSq_zy = axisSq.z + axisSq.y;
+  double cylinderLength = udMag3(cylinderAxis);
+  cylinderAxis /= cylinderLength;
+  udDouble3 offset = {};
+
+  //the span of the end disk on the x-axis
+  double denom = axisSq_zy * c0;
+  if (denom == 0.0)
+    offset[0] = 0.0;
+  else
+    offset[0] = (axisSq_zy) / sqrt(denom) * radius;
+
+  //the span of the end disk on the y-axis
+  denom = axisSq_xz * c0;
+  if (denom == 0.0)
+    offset[1] = 0.0;
+  else
+    offset[1] = (axisSq_xz) / sqrt(denom) * radius;
+
+  //the span of the end disk on the z-axis
+  denom = axisSq_xy * c0;
+  if (denom == 0.0)
+    offset[2] = 0.0;
+  else
+    offset[2] = (axisSq_xy) / sqrt(denom) * radius;
+
+
+  //------------------------------------------------------------------------
+  // Test
+  //------------------------------------------------------------------------
+  bool result = false;
+
+  //separating axis = aabb axis
+  for (int i = 0; i < 3; ++i)
+  {
+    udDouble2 cylinderRange = (p1[i] < p2[i]) ? udDouble2::create(p1[i] - offset[i], p2[i] + offset[i]) :  udDouble2::create(p2[i] - offset[i], p1[i] + offset[i]);
+    udDouble2 aabbRange = udDouble2::create(aabbMin[i], aabbMin[i] + aabbSize);
+    if (aabbRange[1] < cylinderRange[0] || aabbRange[0] > cylinderRange[1])
+      goto epilogue;
+  }
+
+  //separating axis = cylinder axis
+  udDouble2 aabbRange = ProjectAABB(aabbMin, aabbSize, cylinderAxis);
+  udDouble2 cylinderRange = udDouble2::create(udDot3(p1, cylinderAxis), udDot3(p2, cylinderAxis)); //cylinderRange[1] could just be cylinderRange[0] + cylinderLength
+  if (cylinderRange[0] > cylinderRange[1])
+  {
+    double temp = cylinderRange[0];
+    cylinderRange[0] = cylinderRange[1];
+    cylinderRange[1] = temp;
+  }
+  if (aabbRange[1] < cylinderRange[0] || aabbRange[0] > cylinderRange[1])
+    goto epilogue;
+
+  //separating axis = aabb edges x cylinder axis
+  int parallelAxis = -1;
+  for (int i = 0; i < 3; ++i)
+  {
+    udDouble3 edge = {};
+    edge[i] = 1.0;
+    udDouble3 separatingAxis = udCross3(edge, cylinderAxis);
+    double saLen = udMag3(separatingAxis);
+    if (saLen == 0.0)
+    {
+      //Might be the case the cylinder is very close to, and aligned with an edge
+      parallelAxis = i;
+      break;
+    }
+    separatingAxis /= saLen; 
+
+    //TODO can be optimised; don't have to project all 8 vertices. Indeed, we only need to project 2... but how to determine which 2?
+    udDouble2 aabbProj = ProjectAABB(aabbMin, aabbSize, separatingAxis);
+
+    double cylCenterProj = udDot(p1, separatingAxis); 
+    udDouble2 cylinderProj = udDouble2::create(cylCenterProj - radius, cylCenterProj + radius); //As cylinder axis is always perpendicular to separating axis
+
+    if (cylinderProj[0] > aabbProj[1] || cylinderProj[1] < aabbProj[0])
+      goto epilogue;
+  }
+
+  //Check if the cylinder is parallel to an axis, within the aabb range and close to an edge.
+  //We need to check the case where the cylinder is just off an aabb edge.
+  //This can be seen as the separating axis is the vector from a point on the edge, perpendicular to the cylinder axis.
+  if (parallelAxis != -1)
+  {
+    int indFirst = parallelAxis + 1;
+    int indSecond = parallelAxis + 2;
+    if (indFirst > 2) indFirst -= 3;
+    if (indSecond > 2) indSecond -= 3;
+
+    //Only need to worry about the closest edge
+    udDouble3 cylinderCenter = {}; //Can these be udDouble2??
+    cylinderCenter[indFirst] = p1[indFirst];
+    cylinderCenter[indSecond] = p1[indSecond];
+    double minDistSq = DBL_MAX;
+    double testDistSq;
+    udDouble3 vert = {};
+
+    vert[indFirst] = aabbMin[indFirst];
+    vert[indSecond] = aabbMin[indSecond];
+    testDistSq = udMagSq3(vert - cylinderCenter);
+    if (testDistSq < minDistSq)
+      minDistSq = testDistSq;
+
+    vert[indFirst] = aabbMin[indFirst] + aabbSize;
+    vert[indSecond] = aabbMin[indSecond];
+    testDistSq = udMagSq3(vert - cylinderCenter);
+    if (testDistSq < minDistSq)
+      minDistSq = testDistSq;
+
+    vert[indFirst] = aabbMin[indFirst];
+    vert[indSecond] = aabbMin[indSecond] + aabbSize;
+    testDistSq = udMagSq3(vert - cylinderCenter);
+    if (testDistSq < minDistSq)
+      minDistSq = testDistSq;
+
+    vert[indFirst] = aabbMin[indFirst] + aabbSize;
+    vert[indSecond] = aabbMin[indSecond] + aabbSize;
+    testDistSq = udMagSq3(vert - cylinderCenter);
+    if (testDistSq < minDistSq)
+      minDistSq = testDistSq;
+
+    if (minDistSq > radius * radius) //precalculate radius * radius? Is it used anywhere else?
+      goto epilogue; //No need for further testing.
+  }
+
+  //aabb vertex to cylinder edge
+  //Find closest vertex to cylinder axis
+  //This can be seen as the separating axis is the vector from the aabb vertex, perpendicular to the cylinder axis.
+  {
+    double minDistSq = DBL_MAX;
+    double testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin);
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(0.0, aabbSize, 0.0));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(0.0, 0.0, aabbSize));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(0.0, aabbSize, aabbSize));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(aabbSize, 0.0, 0.0));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(aabbSize, aabbSize, 0.0));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(aabbSize, 0.0, aabbSize));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    testDistSq = SqDistLinePoint(p1, cylinderAxis, aabbMin + udDouble3::create(aabbSize, aabbSize, aabbSize));
+    if (testDistSq < minDistSq) minDistSq = testDistSq;
+
+    if (testDistSq > radius * radius)
+      goto epilogue;
+  }
+
+  result = true;
+
+epilogue:
+  return result;
+}
+
+TEST(MathTests, GeometryCylinderAABB_NotIntersecting)
+{
+  //------------------------------------------------------------------------------------------
+  //Axis aligned cylinder, off aabb face
+  //------------------------------------------------------------------------------------------
+
+  //x-axis
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {3.0, 0.0, 0.0}, {4.0, 0.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {4.0, 0.0, 0.0}, {3.0, 0.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-3.0, 0.0, 0.0}, {-4.0, 0.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-4.0, 0.0, 0.0}, {-3.0, 0.0, 0.0}, 0.5));
+
+  //y-axis
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 3.0, 0.0}, {0.0, 4.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 4.0, 0.0}, {0.0, 3.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -3.0, 0.0}, {0.0, -4.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -4.0, 0.0}, {0.0, -3.0, 0.0}, 0.5));
+
+  //z-axis
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 3.0, 0.5}, {0.0, 4.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 4.0, 0.5}, {0.0, 3.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -3.0, 0.5}, {0.0, -4.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -4.0, 0.5}, {0.0, -3.0, 1.0}, 0.5));
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder end close to aabb edge
+  //------------------------------------------------------------------------------------------
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, 1.001, 0.0}, {3.0, 3.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, 1.001, 0.0}, {-3.0, 3.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, -1.001, 0.0}, {3.0, -3.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, -1.001, 0.0}, {-3.0, -3.0, 0.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, 0.0, 1.001}, {3.0, 0.0, 3.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, 0.0, -1.001}, {3.0, 0.0, -3.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, 0.0, 1.001}, {-3.0, 0.0, 3.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, 0.0, -1.001}, {-3.0, 0.0, -3.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 1.001, 1.001}, {0.0, 3.0, 3.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 1.001, -1.001}, {0.0, 3.0, -3.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -1.001, 1.001}, {0.0, -3.0, 3.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -1.001, -1.001}, {0.0, -3.0, -3.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {3.0, 3.0, 0.0}, {1.001, 1.001, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-3.0, 3.0, 0.0}, {-1.001, 1.001, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {3.0, -3.0, 0.0}, {1.001, -1.001, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-3.0, -3.0, 0.0}, {-1.001, -1.001, 0.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {3.0, 0.0, 3.0}, {1.001, 0.0, 1.001}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {3.0, 0.0, -3.0}, {1.001, 0.0, -1.001}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-3.0, 0.0, 3.0}, {-1.001, 0.0, 1.001}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-3.0, 0.0, -3.0}, {-1.001, 0.0, -1.001}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 3.0, 3.0}, {0.0, 1.001, 1.001}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 3.0, -3.0}, {0.0, 1.001, -1.001}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -3.0, 3.0}, {0.0, -1.001, 1.001}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -3.0, -3.0}, {0.0, -1.001, -1.001}, 0.5));
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder end close to aabb vertex
+  //------------------------------------------------------------------------------------------
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, 1.001, 1.001}, {5.0, 5.0, 5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, 1.001, -1.001}, {5.0, 5.0, -5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, -1.001, 1.001}, {5.0, -5.0, 5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.001, -1.001, -1.001}, {5.0, -5.0, -5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, 1.001, 1.001}, {-5.0, 5.0, 5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, 1.001, -1.001}, {-5.0, 5.0, -5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, -1.001, 1.001}, {-5.0, -5.0, 5.0}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.001, -1.001, -1.001}, {-5.0, -5.0, -5.0}, 1.2));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {5.0, 5.0, 5.0}, {1.001, 1.001, 1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {5.0, 5.0, -5.0}, {1.001, 1.001, -1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {5.0, -5.0, 5.0}, {1.001, -1.001, 1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {5.0, -5.0, -5.0}, {1.001, -1.001, -1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-5.0, 5.0, 5.0}, {-1.001, 1.001, 1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-5.0, 5.0, -5.0}, {-1.001, 1.001, -1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-5.0, -5.0, 5.0}, {-1.001, -1.001, 1.001}, 1.2));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-5.0, -5.0, -5.0}, {-1.001, -1.001, -1.001}, 1.2));
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder crossing aabb edge
+  //------------------------------------------------------------------------------------------
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {4.0, 1.0, 0.0}, {1.0, 4.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-4.0, 1.0, 0.0}, {-1.0, 4.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {4.0, -1.0, 0.0}, {1.0, -4.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-4.0, -1.0, 0.0}, {-1.0, -4.0, 0.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {4.0, 0.0, 1.0}, {1.0, 0.0, 4.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-4.0, 0.0, 1.0}, {-1.0, 0.0, 4.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {4.0, 0.0, -1.0}, {1.0, 0.0, -4.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-4.0, 0.0, -1.0}, {-1.0, 0.0, -4.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 4.0, 1.0}, {0.0, 1.0, 4.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -4.0, 1.0}, {0.0, -1.0, 4.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 4.0, -1.0}, {0.0, 1.0, -4.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -4.0, -1.0}, {0.0, -1.0, -4.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 4.0, 0.0}, {4.0, 1.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 4.0, 0.0}, {-4.0, 1.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, -4.0, 0.0}, {4.0, -1.0, 0.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, -4.0, 0.0}, {-4.0, -1.0, 0.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 0.0, 4.0}, {4.0, 0.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 0.0, 4.0}, {-4.0, 0.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 0.0, -4.0}, {4.0, 0.0, -1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 0.0, -4.0}, {-4.0, 0.0, -1.0}, 0.5));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 1.0, 4.0}, {0.0, 4.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -1.0, 4.0}, {0.0, -4.0, 1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, 1.0, -4.0}, {0.0, 4.0, -1.0}, 0.5));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {0.0, -1.0, -4.0}, {0.0, -4.0, -1.0}, 0.5));
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder side just off aabb corner
+  //------------------------------------------------------------------------------------------
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, 2.0, 1.0}, {1.0, 1.0, 2.5}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, 2.0, 1.0}, {-1.0, 1.0, 2.5}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, -2.0, 1.0}, {1.0, -1.0, 2.5}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, -2.0, 1.0}, {-1.0, -1.0, 2.5}, 0.98));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, 2.0, -1.0}, {1.0, 1.0, -2.5}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, 2.0, -1.0}, {-1.0, 1.0, -2.5}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, -2.0, -1.0}, {1.0, -1.0, -2.5}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, -2.0, -1.0}, {-1.0, -1.0, -2.5}, 0.98));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 1.0, 2.5}, {2.0, 2.0, 1.0}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 1.0, 2.5}, {-2.0, 2.0, 1.0}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, -1.0, 2.5}, {2.0, -2.0, 1.0}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, -1.0, 2.5}, {-2.0, -2.0, 1.0}, 0.98));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 1.0, -2.5}, {2.0, 2.0, -1.0}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 1.0, -2.5}, {-2.0, 2.0, -1.0}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, -1.0, -2.5}, {2.0, -2.0, -1.0}, 0.98));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, -1.0, -2.5}, {-2.0, -2.0, -1.0}, 0.98));
+
+  //------------------------------------------------------------------------------------------
+  ////Cylinder parallel to axis, just of aabb edge
+  //------------------------------------------------------------------------------------------
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, 2.0, -1.0}, {2.0, 2.0, 1.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, 2.0, -1.0}, {-2.0, 2.0, 1.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, -2.0, -1.0}, {2.0, -2.0, 1.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, -2.0, -1.0}, {-2.0, -2.0, 1.0}, 1.414));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 2.0, 2.0}, {1.0, 2.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, -2.0, 2.0}, {1.0, -2.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, 2.0, -2.0}, {1.0, 2.0, -2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-1.0, -2.0, -2.0}, {1.0, -2.0, -2.0}, 1.414));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, -1.0, 2.0}, {2.0, 1.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, -1.0, 2.0}, {-2.0, 1.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, -1.0, -2.0}, {2.0, 1.0, -2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, -1.0, -2.0}, {-2.0, 1.0, -2.0}, 1.414));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, 2.0, 1.0}, {2.0, 2.0, -1.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, 2.0, 1.0}, {-2.0, 2.0, -1.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, -2.0, 1.0}, {2.0, -2.0, -1.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, -2.0, 1.0}, {-2.0, -2.0, -1.0}, 1.414));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 2.0, 2.0}, {-1.0, 2.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, -2.0, 2.0}, {-1.0, -2.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, 2.0, -2.0}, {-1.0, 2.0, -2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.0, -2.0, -2.0}, {-1.0, -2.0, -2.0}, 1.414));
+
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, 1.0, 2.0}, {2.0, -1.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, 1.0, 2.0}, {-2.0, -1.0, 2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {2.0, 1.0, -2.0}, {2.0, -1.0, -2.0}, 1.414));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {-2.0, 1.0, -2.0}, {-2.0, -1.0, -2.0}, 1.414));
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder at some other interesting orientations
+  //------------------------------------------------------------------------------------------
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.2, 0.0, 0.0}, {6.0, 0.0, 1.0}, 0.7));
+  EXPECT_FALSE(AreIntersecting({-1.0, -1.0, -1.0}, 2.0, {1.22, -0.03, 1.0}, {6.0, -1.31, 2.83}, 0.7));
+}
+
+TEST(MathTests, GeometryCylinderAABB_Intersecting)
+{
+  //------------------------------------------------------------------------------------------
+  //Axis aligned cylinder, end penetrating aabb face
+  //------------------------------------------------------------------------------------------
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder end penetrating aabb edge
+  //------------------------------------------------------------------------------------------
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder end penetrating aabb vertex
+  //------------------------------------------------------------------------------------------
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder crossing aabb edge
+  //------------------------------------------------------------------------------------------
+
+  //------------------------------------------------------------------------------------------
+  //aabb vertex penetrating cylinder side
+  //------------------------------------------------------------------------------------------
+
+  //------------------------------------------------------------------------------------------
+  ////Cylinder parallel to axis, penetrating aabb edge
+  //------------------------------------------------------------------------------------------
+
+  //------------------------------------------------------------------------------------------
+  //Cylinder at some other interesting orientations
+  //------------------------------------------------------------------------------------------
+}
