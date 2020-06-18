@@ -543,47 +543,47 @@ udQuaternion<T> udConjugate(const udQuaternion<T> &q)
   return r;
 }
 
-// udRay members
-template <typename T>
-udRay<T> udRay<T>::rotationAround(const udRay<T> &ray, const udVector3<T> &center, const udVector3<T> &axis, const T &angle)
-{
-  udRay<T> r;
-
-  udQuaternion<T> rotation = udQuaternion<T>::create(axis, angle);
-
-  udVector3<T> direction = ray.position - center; // find current direction relative to center
-  r.position = center + rotation.apply(direction); // define new position
-  r.direction = udDirectionFromYPR((rotation * udQuaternion<T>::create(udDirectionToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
-
-  return r;
-}
+//// udRay members
+//template <typename T>
+//udRay<T> udRay<T>::rotationAround(const udRay<T> &ray, const udVector3<T> &center, const udVector3<T> &axis, const T &angle)
+//{
+//  udRay<T> r;
+//
+//  udQuaternion<T> rotation = udQuaternion<T>::create(axis, angle);
+//
+//  udVector3<T> direction = ray.position - center; // find current direction relative to center
+//  r.position = center + rotation.apply(direction); // define new position
+//  r.direction = udDirectionFromYPR((rotation * udQuaternion<T>::create(udDirectionToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
+//
+//  return r;
+//}
 
 // udPlane members
-template <typename T>
-bool udPlane<T>::intersects(const udRay<T> &ray, udVector3<T> *pIntersectionPoint, T *pIntersectionDistance) const
-{
-  udVector3<T> rayDir = ray.direction;
-  udVector3<T> planeRay = point - ray.position;
-
-  T denom = udDot(normal, rayDir);
-  T distance = T(0);
-
-  if (denom == T(0))
-    return false; // Plane is parallel to the ray
-
-  distance = udDot(planeRay, normal) / denom;
-
-  if (distance < T(0))
-    return false; // Behind the ray
-
-  if (pIntersectionPoint)
-    *pIntersectionPoint = ray.position + rayDir * distance;
-
-  if (pIntersectionDistance)
-    *pIntersectionDistance = distance;
-
-  return true;
-}
+//template <typename T>
+//bool udPlane<T>::intersects(const udRay<T> &ray, udVector3<T> *pIntersectionPoint, T *pIntersectionDistance) const
+//{
+//  udVector3<T> rayDir = ray.direction;
+//  udVector3<T> planeRay = point - ray.position;
+//
+//  T denom = udDot(normal, rayDir);
+//  T distance = T(0);
+//
+//  if (denom == T(0))
+//    return false; // Plane is parallel to the ray
+//
+//  distance = udDot(planeRay, normal) / denom;
+//
+//  if (distance < T(0))
+//    return false; // Behind the ray
+//
+//  if (pIntersectionPoint)
+//    *pIntersectionPoint = ray.position + rayDir * distance;
+//
+//  if (pIntersectionDistance)
+//    *pIntersectionDistance = distance;
+//
+//  return true;
+//}
 
 // udMatrix4x4 members
 template <typename T>
