@@ -13,6 +13,18 @@
 
 // --------------------------------------------------------------------------
 template <typename T>
+struct udChunkedArrayIterator
+{
+  T **ppCurrChunk;
+  size_t currChunkElementIndex;
+  size_t chunkElementCount;
+
+  udChunkedArrayIterator<T> &operator++();
+  T &operator*() const;
+  bool operator!=(const udChunkedArrayIterator<T> &rhs) const;
+};
+
+template <typename T>
 struct udChunkedArray
 {
   udResult Init(size_t chunkElementCount);
@@ -54,6 +66,11 @@ struct udChunkedArray
   size_t ChunkElementCount() const               { return chunkElementCount; }
   size_t ElementSize() const                     { return sizeof(T); }
 
+  // Iterators
+  typedef udChunkedArrayIterator<T> iterator;
+  iterator begin();
+  iterator end();
+
   enum { ptrArrayInc = 32};
 
   T **ppChunks;
@@ -64,6 +81,36 @@ struct udChunkedArray
   size_t length;
   size_t inset;
 };
+
+// --------------------------------------------------------------------------
+// Author: Samuel Surtees, June 2020
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator++()
+{
+  ++currChunkElementIndex;
+  if (currChunkElementIndex == chunkElementCount)
+  {
+    currChunkElementIndex = 0;
+    ++ppCurrChunk;
+  }
+  return *this;
+}
+
+// --------------------------------------------------------------------------
+// Author: Samuel Surtees, June 2020
+template <typename T>
+T &udChunkedArrayIterator<T>::operator*() const
+{
+  return (*ppCurrChunk)[currChunkElementIndex];
+}
+
+// --------------------------------------------------------------------------
+// Author: Samuel Surtees, June 2020
+template <typename T>
+bool udChunkedArrayIterator<T>::operator!=(const udChunkedArrayIterator<T> &rhs) const
+{
+  return !(ppCurrChunk == rhs.ppCurrChunk && currChunkElementIndex == rhs.currChunkElementIndex);
+}
 
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
@@ -670,6 +717,22 @@ inline size_t udChunkedArray<T>::GetElementRunLength(size_t index, bool elements
     return (runLength > (length - index)) ? (length - index) : runLength;
   }
   return 0;
+}
+
+// --------------------------------------------------------------------------
+// Author: Samuel Surtees, June 2020
+template <typename T>
+inline typename udChunkedArray<T>::iterator udChunkedArray<T>::begin()
+{
+  return udChunkedArray<T>::iterator{ &ppChunks[0], inset, chunkElementCount };
+}
+
+// --------------------------------------------------------------------------
+// Author: Samuel Surtees, June 2020
+template <typename T>
+inline typename udChunkedArray<T>::iterator udChunkedArray<T>::end()
+{
+  return udChunkedArray<T>::iterator{ &ppChunks[(inset + length) / chunkElementCount], (inset + length) % chunkElementCount, chunkElementCount };
 }
 
 #endif // UDCHUNKEDARRAY_H
