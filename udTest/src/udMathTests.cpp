@@ -1,6 +1,7 @@
 #include "udMath.h"
 #include "gtest/gtest.h"
 #include "udPlatform.h"
+#include "udMathUtility.h"
 
 // Due to IEEE-754 supporting two different ways to specify 8.f and 2.f, the next three EXPECT_* calls are different
 // This appears to only occur when using Clang in Release, and only for udFloat4 - SIMD optimizations perhaps?
@@ -1117,35 +1118,35 @@ TEST(MathTests, UtilityFunctions)
     double epsilon = 1e-12;
 
     q = udDoubleQuat::create({0, 0, 0});
-    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, extentsIn);
 
     q = udDoubleQuat::create({UD_HALF_PI, 0, 0});
-    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(-2, 1, 3));
 
     q = udDoubleQuat::create({0, UD_HALF_PI, 0});
-    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(1, -3, 2));
 
     q = udDoubleQuat::create({0, 0, UD_HALF_PI});
-    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(3, 2, -1));
 
     q = udDoubleQuat::create({UD_HALF_PI, UD_HALF_PI, UD_HALF_PI});
-    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(-1, 3, 2));
 
     q = udDoubleQuat::create({3, 0, 0});
-    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
 
     q = udDoubleQuat::create({0, 2, 0});
-    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
 
     q = udDoubleQuat::create({0, 0, 1});
-    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
 
     q = udDoubleQuat::create({3, 2, 1});
-    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(extentsIn, q, extentsOut, epsilon));
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
   }
 }

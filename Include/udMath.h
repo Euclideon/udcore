@@ -239,10 +239,6 @@ template <typename T> bool udMatrixEqualApprox(const udMatrix4x4<T> &a, const ud
 template <typename T> udVector3<T> udDirectionFromYPR(const udVector3<T> &ypr);
 template <typename T> udVector3<T> udDirectionToYPR(const udVector3<T> &direction);
 
-// Find a perpendicular vector (not normalised) to axis, in no particular direction.
-template <typename T> udVector3<T> udPerpendicular3(const udVector3<T> &axis);
-template <typename T> bool udIsRotatedAxisStillAxisAligned(const udVector3<T> &extentsIn, const udQuaternion<T> &q, udVector3<T> &extentsOut, const T epsilon = T(0));
-
 // types
 template <typename T>
 struct udVector2
