@@ -1080,7 +1080,6 @@ int udPerpendicular3_Check(const udDouble3 &v, double epsilon)
 TEST(MathTests, UtilityFunctions)
 {
   {
-    udDouble3 vec;
     double epsilon        = 1e-12;
     double epsilonSmaller = 1e-13;
 
