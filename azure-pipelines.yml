@@ -49,7 +49,7 @@ stages:
     parameters:
       name: emscripten
       displayName: 'Emscripten'
-      container: euclideon/vault:emscripten-bionic-v1
+      container: euclideon/vault:emscripten-bionic-v2
 - stage: test
   displayName: 'Test'
   jobs:
