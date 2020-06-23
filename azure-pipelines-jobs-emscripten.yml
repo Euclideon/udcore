@@ -41,5 +41,5 @@ jobs:
       pushd www
       python -m SimpleHTTPServer 8000 </dev/null &>/dev/null &
       popd
-      python ./udTest/webtest.py
+      python ./udTest/webtest.py chrome
     displayName: 'Run Tests'
