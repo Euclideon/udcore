@@ -39,7 +39,16 @@ jobs:
       cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
       cp udTest/udTest.html www
       pushd www
-      python -m SimpleHTTPServer 8000 </dev/null &>/dev/null &
+      python3 -m http.server 8000 </dev/null &>/dev/null &
       popd
-      python ./udTest/webtest.py chrome
-    displayName: 'Run Tests'
+      python3 ./udTest/webtest.py chrome
+    displayName: 'Run Chrome Tests'
+  - script: |
+      mkdir www
+      cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
+      cp udTest/udTest.html www
+      pushd www
+      python3 -m http.server 8000 </dev/null &>/dev/null &
+      popd
+      python3 ./udTest/webtest.py firefox
+    displayName: 'Run Firefox Tests'
