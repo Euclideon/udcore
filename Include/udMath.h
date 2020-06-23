@@ -116,6 +116,11 @@ template <typename T> udVector2<T> udCeil(const udVector2<T> &v);
 template <typename T> udVector3<T> udCeil(const udVector3<T> &v);
 template <typename T> udVector4<T> udCeil(const udVector4<T> &v);
 
+//floating point tolerance
+template<typename T> constexpr T udGetEpsilon();
+template<> constexpr double udGetEpsilon() { return 1e-12; };
+template<> constexpr float udGetEpsilon() { return 1e-6f; };
+
 // typical linear algebra functions
 template <typename T> T            udAbs(T v);
 template <typename T> udVector2<T> udAbs(const udVector2<T> &v);

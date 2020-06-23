@@ -1,20 +1,14 @@
 
 #ifdef UD_USE_EXACT_MATH
-template<typename T>
-bool udIsZero(T value)
-{
-  return value == T(0);
-}
+template<typename T> bool udIsZero(T value) { return value == T(0); }
 #else
-template<typename T>
-bool udIsZero(T value)
-{
-  return udAbs(value) < udGetEpsilon<T>();
-}
+template<typename T> bool udIsZero(T value) { return udAbs(value) < udGetEpsilon<T>(); }
 #endif
 
+// ****************************************************************************
+// Author: Frank Hart, June 2020
 template<typename T>
-udGeometryCode udCP_PointLine3(const udVector3<T> &lineOrigin, const udVector3<T> &lineDirection, const udVector3<T> &point, udVector3<T> &out, T * pU)
+udGeometryCode udGeometry_CPPointLine3(const udVector3<T> &lineOrigin, const udVector3<T> &lineDirection, const udVector3<T> &point, udVector3<T> &out, T * pU)
 {
   udVector3<T> w;
   w = point - lineOrigin;
@@ -25,8 +19,10 @@ udGeometryCode udCP_PointLine3(const udVector3<T> &lineOrigin, const udVector3<T
   return udGC_Success;
 }
 
+// ****************************************************************************
+// Author: Frank Hart, June 2020
 template<typename T>
-udGeometryCode udCP_PointSegment3(const udVector3<T> &ls0, const udVector3<T> &ls1, const udVector3<T> &point, udVector3<T> &out, T *pU)
+udGeometryCode udGeometry_CPPointSegment3(const udVector3<T> &ls0, const udVector3<T> &ls1, const udVector3<T> &point, udVector3<T> &out, T *pU)
 {
   udVector3<T> w = point - ls0;
   udVector3<T> axis = ls1 - ls0;
@@ -56,8 +52,11 @@ udGeometryCode udCP_PointSegment3(const udVector3<T> &ls0, const udVector3<T> &l
   return udGC_Success;
 }
 
+// ****************************************************************************
+// Author: Frank Hart, June 2020
+// Based of the work of James M. Van Verth and Lars M. Biship, taken from 'Essential Mathematics for Games and Interactive Applications: A Programmer's Guide, Second Edition
 template<typename T>
-udGeometryCode udCP_SegmentSegment3(const udVector3<T> &a0, const udVector3<T> &a1, const udVector3<T> &b0, const udVector3<T> &b1, udVector3<T> &aOut, udVector3<T> &bOut, udVector2<T> * pU)
+udGeometryCode udGeometry_CPSegmentSegment3(const udVector3<T> &a0, const udVector3<T> &a1, const udVector3<T> &b0, const udVector3<T> &b1, udVector3<T> &aOut, udVector3<T> &bOut, udVector2<T> * pU)
 {
   T ua, ub; //could be outputs?
   udGeometryCode result = udGC_Success;
@@ -91,7 +90,7 @@ udGeometryCode udCP_SegmentSegment3(const udVector3<T> &a0, const udVector3<T> &
       }
       else
       {
-        udCP_PointSegment3(b0, b1, a0, bOut, &ub);
+        udGeometry_CPPointSegment3(b0, b1, a0, bOut, &ub);
         aOut = a0;
         ua = T(0);
       }
@@ -99,7 +98,7 @@ udGeometryCode udCP_SegmentSegment3(const udVector3<T> &a0, const udVector3<T> &
     }
     else if (udIsZero(c)) //length of b is 0
     {
-      udCP_PointSegment3(a0, a1, b0, aOut, &ua);
+      udGeometry_CPPointSegment3(a0, a1, b0, aOut, &ua);
       bOut = b0;
       ub = T(0);
       goto epilogue;
