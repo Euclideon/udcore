@@ -1,6 +1,7 @@
 #include "udMath.h"
 #include "gtest/gtest.h"
 #include "udPlatform.h"
+#include "udMathUtility.h"
 
 // Due to IEEE-754 supporting two different ways to specify 8.f and 2.f, the next three EXPECT_* calls are different
 // This appears to only occur when using Clang in Release, and only for udFloat4 - SIMD optimizations perhaps?
@@ -1060,4 +1061,91 @@ TEST(MathTests, MatrixExtraction)
   EXPECT_DOUBLE_EQ(outQuatYPR.x, outMatYPR.x);
   EXPECT_DOUBLE_EQ(outQuatYPR.y, outMatYPR.y);
   EXPECT_DOUBLE_EQ(outQuatYPR.z, outMatYPR.z);
+}
+
+//return  0: success
+//        1: result is not perpendicular to input
+//        2: result is a zero vector
+int udPerpendicular3_Check(const udDouble3 &v, double epsilon)
+{
+  udDouble3 vPerp = udPerpendicular3(v);
+  double proj = udDot(v, vPerp);
+  if (udMag3(vPerp) <= epsilon)
+    return 2;
+  if (udAbs(proj) > epsilon)
+    return 1;
+  return 0;
+}
+
+TEST(MathTests, UtilityFunctions)
+{
+  {
+    double epsilon        = 1e-12;
+    double epsilonSmaller = 1e-13;
+
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 0.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, 1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 0.0, 1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({1.0, 1.0, 1.0}, epsilon), 0);
+
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, 0.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, -1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, -1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, -1.0, 0.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, 0.0, -1.0}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1.0, -1.0, -1.0}, epsilon), 0);
+
+    EXPECT_EQ(udPerpendicular3_Check({23.45, -45.89, 4597.13}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-3421750394.3, 987715.3457, 184573763.437}, epsilon), 0);
+    EXPECT_EQ(udPerpendicular3_Check({-1e43, -2e109, 42.0}, epsilon), 0);
+
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({epsilonSmaller, 0.0, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, epsilonSmaller, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, epsilonSmaller}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({-epsilonSmaller, 0.0, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, -epsilonSmaller, 0.0}, epsilon), 2);
+    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, -epsilonSmaller}, epsilon), 2);
+  }
+
+  {
+    udDoubleQuat q;
+    udDouble3 extentsIn = udDouble3::create(1, 2, 3);
+    udDouble3 extentsOut = {};
+    double epsilon = 1e-12;
+
+    q = udDoubleQuat::create({0, 0, 0});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, extentsIn);
+
+    q = udDoubleQuat::create({UD_HALF_PI, 0, 0});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(-2, 1, 3));
+
+    q = udDoubleQuat::create({0, UD_HALF_PI, 0});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(1, -3, 2));
+
+    q = udDoubleQuat::create({0, 0, UD_HALF_PI});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(3, 2, -1));
+
+    q = udDoubleQuat::create({UD_HALF_PI, UD_HALF_PI, UD_HALF_PI});
+    EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+    EXPECT_EQ(extentsOut, udDouble3::create(-1, 3, 2));
+
+    q = udDoubleQuat::create({3, 0, 0});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+
+    q = udDoubleQuat::create({0, 2, 0});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+
+    q = udDoubleQuat::create({0, 0, 1});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+
+    q = udDoubleQuat::create({3, 2, 1});
+    EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
+  }
 }
