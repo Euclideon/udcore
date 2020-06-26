@@ -63,7 +63,7 @@ udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle)
       return udR_NothingToDo;
     }
   }
-  return udR_InvalidParameter_;
+  return udR_Success;
 }
 
 // ****************************************************************************
@@ -75,12 +75,17 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
     udWaitSemaphore(pJobHandle->pSemaphore, timeoutMs);
     if (pJobHandle->returnResult != RESULT_SENTINAL)
     {
-      *pResult = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
+      if (pResult)
+        *pResult = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
       pJobHandle->pending = false;
       return true;
     }
+    return false;
   }
-  return false;
+  // If null job handle, return success
+  if (pResult)
+    *pResult = udR_Success;
+  return true;
 }
 
 // ****************************************************************************

@@ -28,6 +28,13 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
   struct libdeflate_compressor *ldComp = nullptr;
 
   UD_ERROR_IF(!ppDest || !pDestSize || !pSource, udR_InvalidParameter_);
+  if (!sourceSize)
+  {
+    // Special-case, when compressing zero bytes, result is zero bytes
+    *ppDest = nullptr;
+    *pDestSize = 0;
+    UD_ERROR_SET(udR_Success);
+  }
   switch (type)
   {
     case udCT_None:
@@ -118,6 +125,13 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
   libdeflate_result lresult;
 
   UD_ERROR_IF(!pDest || !pSource, udR_InvalidParameter_);
+  if (!sourceSize)
+  {
+    // Special-case, when decompressing zero bytes, result is zero bytes
+    if (pInflatedSize)
+      *pInflatedSize = 0;
+    UD_ERROR_SET(udR_Success);
+  }
   switch (type)
   {
   case udCT_None:
@@ -135,7 +149,8 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
     UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
     lresult = libdeflate_deflate_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
-    UD_ERROR_IF(lresult == LIBDEFLATE_INSUFFICIENT_SPACE, udR_BufferTooSmall);
+    if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
+      UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
     UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
     if (pInflatedSize)
@@ -152,7 +167,8 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
     UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
     lresult = libdeflate_zlib_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
-    UD_ERROR_IF(lresult == LIBDEFLATE_INSUFFICIENT_SPACE, udR_BufferTooSmall);
+    if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
+      UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
     UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
     if (pInflatedSize)
@@ -169,7 +185,8 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
     UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
     lresult = libdeflate_gzip_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
-    UD_ERROR_IF(lresult == LIBDEFLATE_INSUFFICIENT_SPACE, udR_BufferTooSmall);
+    if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
+      UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
     UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
     if (pInflatedSize)
