@@ -828,38 +828,52 @@ struct udFindDirData : public udFindDir
 #endif
 };
 
-// ****************************************************************************
-// Author: Dave Pevreal, August 2014
-udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes, int64_t *pModifiedTime)
-{
 #if UD_32BIT
 # define UD_STAT_STRUCT stat
 # define UD_STAT_FUNC stat
 # define UD_STAT_MODTIME (int64_t)st.st_mtime
+# define UD_STAT_ISDIR (st.st_mode & S_IFDIR)
 #elif UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
-  // Apple made these 64bit and deprecated the 64bit variants
+// Apple made these 64bit and deprecated the 64bit variants
 # define UD_STAT_STRUCT stat
 # define UD_STAT_FUNC stat
 # define UD_STAT_MODTIME (int64_t)st.st_mtime
+# define UD_STAT_ISDIR S_ISDIR(st.st_mode)
 #elif UDPLATFORM_WINDOWS
 # define UD_STAT_STRUCT _stat64
 # define UD_STAT_FUNC _wstat64
 # define UD_STAT_MODTIME (int64_t)st.st_mtime
+# define UD_STAT_ISDIR (st.st_mode & _S_IFDIR)
 #elif UDPLATFORM_LINUX
 # define UD_STAT_STRUCT stat64
 # define UD_STAT_FUNC stat64
 # define UD_STAT_MODTIME (int64_t)st.st_mtim.tv_sec
+# define UD_STAT_ISDIR (st.st_mode & S_IFDIR)
 #elif UDPLATFORM_ANDROID
 # define UD_STAT_STRUCT stat64
 # define UD_STAT_FUNC stat64
 # define UD_STAT_MODTIME (int64_t)st.st_mtime
+# define UD_STAT_ISDIR (st.st_mode & S_IFDIR)
 #else
 # error "Unsupported Platform"
 #endif
 
+// ****************************************************************************
+// Author: Dave Pevreal, August 2014
+udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes, int64_t *pModifiedTime)
+{
+  const char *pPath = pFilename;
+  const char *pNewPath = nullptr;
+  if (udFile_TranslatePath((const char **)&pNewPath, pFilename) == udR_Success)
+    pPath = pNewPath;
+
   struct UD_STAT_STRUCT st;
   memset(&st, 0, sizeof(st));
-  if (UD_STAT_FUNC(udOSString(pFilename), &st) == 0)
+
+  int result = UD_STAT_FUNC(udOSString(pPath), &st);
+  udFree(pNewPath);
+
+  if (result == 0)
   {
     if (pFileLengthInBytes)
       *pFileLengthInBytes = (int64_t)st.st_size;
@@ -873,16 +887,61 @@ udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes, int64_
   {
     return udR_ObjectNotFound;
   }
+}
+
+// ****************************************************************************
+// Author: Damian Madden, January 2020
+udResult udDirectoryExists(const char *pFilename, int64_t *pModifiedTime)
+{
+  // Assume if only a drive letter is specified that it exists (for now)
+  if (udStrlen(pFilename) <= 3 && udStrchr(pFilename, ":") != nullptr)
+    return udR_Success;
+
+  const char *pPath = pFilename;
+  const char *pNewPath = nullptr;
+  if (udFile_TranslatePath((const char **)&pNewPath, pFilename) == udR_Success)
+    pPath = pNewPath;
+
+  struct UD_STAT_STRUCT st;
+  memset(&st, 0, sizeof(st));
+
+  int result = UD_STAT_FUNC(udOSString(pPath), &st);
+  udFree(pNewPath);
+
+  if (result == 0)
+  {
+    if (!UD_STAT_ISDIR)
+      return udR_ObjectTypeMismatch; // Exists but isn't directory
+
+    if (pModifiedTime)
+      *pModifiedTime = UD_STAT_MODTIME;
+
+    return udR_Success;
+  }
+  else
+  {
+    return udR_ObjectNotFound;
+  }
+}
 
 #undef UD_STAT_STRUCT
 #undef UD_STAT_FUNC
-}
+#undef UD_STAT_ISDIR
+#undef UD_STAT_MODTIME
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2014
 udResult udFileDelete(const char *pFilename)
 {
-  return remove(pFilename) == -1 ? udR_Failure_ : udR_Success;
+  const char *pPath = pFilename;
+  const char *pNewPath = nullptr;
+  if (udFile_TranslatePath((const char **)&pNewPath, pFilename) == udR_Success)
+    pPath = pNewPath;
+
+  udResult result = remove(pPath) == -1 ? udR_Failure_ : udR_Success;
+  udFree(pNewPath);
+
+  return result;
 }
 
 // ****************************************************************************
@@ -981,40 +1040,87 @@ udResult udCloseDir(udFindDir **ppFindDir)
 }
 
 // ****************************************************************************
-// Author: Samuel Surtees, May 2016
-udResult udCreateDir(const char *pFolder)
+// Author: Damian Madden, December 2019
+udResult udCreateDir(const char *pFolder, int *pNewFolders)
 {
-  udResult ret = udR_Success;
+  if (pFolder == nullptr)
+    return udR_InvalidParameter_;
 
-  // TODO: Handle creating intermediate directories that don't exist already?
-  // TODO: Have udFile_Open call this for the user when udFOF_Create is used?
+  udResult result = udR_Success;
+  uint16_t depth = 0;
+
+  char *pMutableDirectoryPath = nullptr;
+  char *pCurr = nullptr;
+
+  if (udFile_TranslatePath((const char **)&pMutableDirectoryPath, pFolder) != udR_Success)
+  {
+    pMutableDirectoryPath = udStrdup(pFolder);
+    UD_ERROR_NULL(pMutableDirectoryPath, udR_MemoryAllocationFailure);
+  }
+    
+  pCurr = pMutableDirectoryPath;
+
+  if (*pCurr == '/' || *pCurr == '\\')
+    ++pCurr;
+
+  while (true)
+  {
+    if (*pCurr == '\0' || *pCurr == '/' || *pCurr == '\\')
+    {
+      char temp = *pCurr;
+      *pCurr = '\0';
+
+      if (udDirectoryExists(pMutableDirectoryPath, nullptr) != udR_Success)
+      {
 #if UDPLATFORM_WINDOWS
-  // Returns 0 on fail
-  if (CreateDirectoryW(udOSString(pFolder), NULL) == 0)
+        // Returns 0 on fail
+        UD_ERROR_IF(CreateDirectoryW(udOSString(pMutableDirectoryPath), NULL) == 0, udR_Failure_);
 #else
-  // Returns -1 on fail
-  if (mkdir(pFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+        // Returns -1 on fail
+        UD_ERROR_IF(mkdir(pMutableDirectoryPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1, udR_Failure_);
 #endif
-    ret = udR_Failure_;
+        ++depth;
+      }
 
-  return ret;
+      *pCurr = temp;
+
+      if (*pCurr == '\0')
+        break;
+    }
+    ++pCurr;
+  }
+
+  if (pNewFolders)
+    *pNewFolders = depth;
+
+  result = udR_Success;
+epilogue:
+  udFree(pMutableDirectoryPath);
+  return result;
 }
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
 udResult udRemoveDir(const char *pFolder)
 {
+  udResult result = udR_Success;
+
+  const char *pPath = pFolder;
+  const char *pNewPath = nullptr;
+  if (udFile_TranslatePath((const char **)&pNewPath, pFolder) == udR_Success)
+    pPath = pNewPath;
+
 #if UDPLATFORM_WINDOWS
   // Returns 0 on fail
-  if (RemoveDirectoryW(udOSString(pFolder)) == 0)
-    return udR_Failure_;
+  UD_ERROR_IF(RemoveDirectoryW(udOSString(pPath)) == 0, udR_Failure_);
 #else
   // Returns -1 on fail
-  if (rmdir(pFolder) != 0)
-    return udR_Failure_;
+  UD_ERROR_IF(rmdir(pPath) != 0, udR_Failure_);
 #endif
 
-  return udR_Success;
+epilogue:
+  udFree(pNewPath);
+  return result;
 }
 
 // ****************************************************************************

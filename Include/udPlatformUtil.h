@@ -327,7 +327,7 @@ udResult udReadDir(udFindDir *pFindDir);
 udResult udCloseDir(udFindDir **ppFindDir);
 
 // Create a folder
-udResult udCreateDir(const char *pFolder);
+udResult udCreateDir(const char *pFolder, int *pNewFolders = nullptr);
 
 // Removes a folder
 udResult udRemoveDir(const char *pFolder);
