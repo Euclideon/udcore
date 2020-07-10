@@ -390,4 +390,8 @@ TEST(udFileTests, RecursiveCreateDirectoryTests)
   EXPECT_EQ(udR_Success, udRemoveDir("./dir/two/more"));
   EXPECT_EQ(udR_Success, udRemoveDir("./dir/two"));
   EXPECT_EQ(udR_Success, udRemoveDir("./dir"));
+
+  // Empty directory should always succeed
+  EXPECT_EQ(udR_Success, udCreateDir("", &newFolders));
+  EXPECT_EQ(0, newFolders);
 }

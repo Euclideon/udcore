@@ -1057,6 +1057,15 @@ udResult udCreateDir(const char *pFolder, int *pNewFolders)
     pMutableDirectoryPath = udStrdup(pFolder);
     UD_ERROR_NULL(pMutableDirectoryPath, udR_MemoryAllocationFailure);
   }
+
+  // Edge case, an empty directory path won't exist and will fail to be created
+  if (udStrEqual(pMutableDirectoryPath, ""))
+  {
+    if (pNewFolders)
+      *pNewFolders = depth;
+
+    UD_ERROR_SET_NO_BREAK(udR_Success);
+  }
     
   pCurr = pMutableDirectoryPath;
 
