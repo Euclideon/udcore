@@ -21,6 +21,7 @@
 udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
 udFile_OpenHandlerFunc udFileHandler_RawOpen;      // Default raw handler
 udFile_OpenHandlerFunc udFileHandler_MiniZOpen;    // Default zip handler
+udFile_OpenHandlerFunc udFileHandler_DataOpen;     // Default data handler
 
 struct udFileHandler
 {
@@ -33,8 +34,9 @@ static udFileHandler s_handlers[MAX_HANDLERS] =
   { udFileHandler_FILEOpen, "" },         // Default file handler
   { udFileHandler_RawOpen, "raw://" },    // Raw handler
   { udFileHandler_MiniZOpen, "zip://" },  // Zip handler
+  { udFileHandler_DataOpen, "data:" },  // Data handler
 };
-static int s_handlersCount = 3;
+static int s_handlersCount = 4;
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2014

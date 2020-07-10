@@ -12,6 +12,7 @@ static const char *s_pQBF_Uncomp  = "raw://VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvd
 static const char *s_pQBF_RawDef  = "raw://compression=RawDeflate,size=43@C8lIVSgszUzOVkgqyi/PU0jLr1DIKs0tKFbIL0stUigBSuckVlUqpOSnAwA=";
 static const char *s_pQBF_GzipDef = "raw://compression=GzipDeflate,size=43@H4sIAAAAAAAA/wvJSFUoLM1MzlZIKsovz1NIy69QyCrNLShWyC9LLVIoAUrnJFZVKqTkpwMAOaNPQSsAAAA=";
 static const char *s_pQBF_ZlibDef = "raw://compression=ZlibDeflate,size=43@eJwLyUhVKCzNTM5WSCrKL89TSMuvUMgqzS0oVsgvSy1SKAFK5yRWVSqk5KcDAFvcD9o=";
+static const char *s_pQBF_DataBase64 = "data:text/plain;base64,VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, July 2017
@@ -394,4 +395,22 @@ TEST(udFileTests, RecursiveCreateDirectoryTests)
   // Empty directory should always succeed
   EXPECT_EQ(udR_Success, udCreateDir("", &newFolders));
   EXPECT_EQ(0, newFolders);
+}
+
+TEST(udFileTests, DataLoad)
+{
+  udResult result;
+  void *pMemory = nullptr;
+  int64_t len;
+
+  result = udFile_Load("data:,Hello%20World", &pMemory, &len);
+  EXPECT_EQ(udR_Success, result);
+  EXPECT_EQ(11, len);
+  EXPECT_STREQ("Hello World", (char *)pMemory); // Can do strcmp here because udFile_Load always adds a nul
+  udFree(pMemory);
+
+  udFile_Load(s_pQBF_DataBase64, &pMemory, &len);
+  EXPECT_EQ(s_QBF_Len, (size_t)len);
+  EXPECT_STREQ(s_pQBF_Text, (char *)pMemory);
+  udFree(pMemory);
 }
