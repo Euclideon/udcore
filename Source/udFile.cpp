@@ -465,6 +465,10 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath)
 
     if (pHomeDirW)
       CoTaskMemFree(pHomeDirW);
+#elif UDPLATFORM_EMSCRIPTEN
+    // TODO: Fix this
+    const char *pHomeDir = nullptr;
+    UD_ERROR_SET(udR_Unsupported);
 #else
     struct passwd *pPw = getpwuid(getuid());
     UD_ERROR_NULL(pPw, udR_ObjectNotFound);
