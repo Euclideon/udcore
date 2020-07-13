@@ -74,6 +74,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_SessionExpired),
   RESULTINFO(udR_ProxyError),
   RESULTINFO(udR_ProxyAuthRequired),
+  RESULTINFO(udR_ExceededAllowedLimit),
 };
 
 UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), "Result code not entered in strings table");

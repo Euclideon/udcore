@@ -100,6 +100,7 @@ enum udResult
   udR_SessionExpired,
   udR_ProxyError,
   udR_ProxyAuthRequired,
+  udR_ExceededAllowedLimit,
 
   udR_Count,
 
