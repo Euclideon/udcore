@@ -732,6 +732,19 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
       pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
       break;
+    case 3113: // GDA94 / BCSG02
+      pZone->datum = udGZGD_GDA94;
+      pZone->projection = udGZPT_TransverseMercator;
+      udStrcpy(pZone->zoneName, "BCSG02");
+      pZone->meridian = 153;
+      pZone->parallel = -28;
+      pZone->falseNorthing = 100000;
+      pZone->falseEasting = 50000;
+      pZone->scaleFactor = 0.99999;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
+      pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
+      break;
     case 3414: // Singapore TM
       pZone->datum = udGZGD_SVY21;
       pZone->projection = udGZPT_TransverseMercator;
