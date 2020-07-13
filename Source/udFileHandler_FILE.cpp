@@ -103,9 +103,7 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile = udAllocType(udFile_FILE, 1, udAF_Zero);
   UD_ERROR_NULL(pFile, udR_MemoryAllocationFailure);
 
-#if !UDPLATFORM_EMSCRIPTEN
   if (udFile_TranslatePath(&pFile->pFilenameCopy, pFilename) != udR_Success)
-#endif
   {
     pFile->pFilenameCopy = udStrdup(pFilename);
     UD_ERROR_NULL(pFile->pFilenameCopy, udR_MemoryAllocationFailure);

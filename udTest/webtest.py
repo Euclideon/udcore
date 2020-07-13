@@ -32,9 +32,11 @@ else:
 
 start_url = "http://127.0.0.1:8000/udTest.html"
 driver.get(start_url)
+success = False
 
 try:
 	element = WebDriverWait(driver, 30).until(EC.text_to_be_present_in_element_value((By.ID, 'output'), ' tests.'))
+	success = True
 except TimeoutException:
 	print("Loading took too much time!")
 except Exception as e:
@@ -43,7 +45,7 @@ except Exception as e:
 # TODO: Output changes as they come in...
 print(driver.execute_script("return document.getElementById('output').value;"))
 
-exitStatus = driver.execute_script("return EXITSTATUS;")
+exitStatus = driver.execute_script("return EXITSTATUS;") if success else -1
 
 driver.quit()
 
