@@ -397,6 +397,10 @@ template <typename T, size_t N> constexpr size_t udLengthOf(T(&)[N]) { return N;
 // Get physical memory available if possible, otherwise outputs 0 to *pTotalMemory and returns udR_Failure_
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
+// CPU Feature tests
+bool udCPUSupportsAVX();
+bool udCPUSupportsAVX2();
+
 #include "udDebug.h"
 
 #endif // UDPLATFORM_H
