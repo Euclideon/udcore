@@ -207,13 +207,13 @@ bool udStrEndsWithi(const char *pStr, const char *pSuffix)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-char *udStrdup(const char *pStr, size_t additionalChars)
+char *_udStrdup(const char *pStr, size_t additionalChars, const char *pFile, int line)
 {
   if (!pStr && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
   if (!pStr) pStr = s_udStrEmptyString;
 
   size_t len = udStrlen(pStr) + 1;
-  char *pDup = udAllocType(char, len + additionalChars, udAF_None);
+  char *pDup = (char*)_udAlloc(len + additionalChars, udAF_None, pFile, line);
   if (pDup)
     memcpy(pDup, pStr, len);
 

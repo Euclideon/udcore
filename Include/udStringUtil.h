@@ -37,7 +37,8 @@ template <size_t N> inline size_t udStrcat(char(&dest)[N], const char *pSrc) { r
 // String maniplulation functions, NULL-safe
 // *********************************************************************
 // udStrdup behaves much like strdup, optionally allocating additional characters and replicating NULL
-char *udStrdup(const char *pStr, size_t additionalChars = 0);
+char *_udStrdup(const char *pStr, size_t additionalChars = 0, const char *pFile = nullptr, int line = 0);
+#define udStrdup(x) _udStrdup(x, 0, __FILE__, __LINE__)
 // udStrndup behaves much like strndup, optionally allocating additional characters and replicating NULL
 char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars = 0);
 // udStrchr behaves much like strchr, optionally also providing the index

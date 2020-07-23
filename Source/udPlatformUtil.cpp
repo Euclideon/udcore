@@ -602,7 +602,7 @@ udResult udURL::SetURL(const char *pURL)
   if (pURL)
   {
     // Take a copy of the entire string
-    char *p = pURLText = udStrdup(pURL, udStrlen(pURL) * 3 + 2); // Add an extra chars for nul terminate domain, and URL encoding switches for every character (worst case)
+    char *p = pURLText = _udStrdup(pURL, udStrlen(pURL) * 3 + 2, __FILE__, __LINE__); // Add an extra chars for nul terminate domain, and URL encoding switches for every character (worst case)
     if (!pURLText)
       return udR_MemoryAllocationFailure;
 
