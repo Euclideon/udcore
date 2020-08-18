@@ -50,6 +50,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_HK1980,     //EPSG:4611
   udGZGD_SVY21,      //EPSG:4757
   udGZGD_MGI,        //EPSG:6312
+  udGZGD_NZGD,        //EPSG:6312
 
   udGZGD_Count
 };
