@@ -43,6 +43,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Hong Kong 1980",                        "Hong Kong 1980",  "Hong_Kong_1980",                               udGZE_Intl1924,      { -162.619,-276.959,-161.764,0.067753,-2.24365,-1.15883,-1.09425 }, 4611, 6611, false,    true  },
   { "SVY21",                                 "SVY21",           "SVY21",                                        udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4757, 6757, false,    false },
   { "MGI",                                   "MGI",             "Militar_Geographische_Institute",              udGZE_Bessel1841,    { 577.326, 90.129, 463.919, 5.137, 1.474, 5.297, 2.4232 },          4312, 6312, false,    true  },
+  { "NZGD2000",                              "NZGD2000",        "New_Zealand_Geodetic_Datum_2000",              udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4167, 6167, false,     true },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -703,6 +704,19 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       udGeoZone_SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(32.51, -118.14);
       pZone->latLongBoundMax = udDouble2::create(34.08, -114.43);
+      break;
+    case 2193: // NZGD2000
+      pZone->datum = udGZGD_NZGD;
+      pZone->projection = udGZPT_TransverseMercator;
+      udStrcpy(pZone->zoneName, "New Zealand Transverse Mercator 2000");
+      pZone->meridian = 173;
+      pZone->parallel = 0;
+      pZone->falseNorthing = 10000000;
+      pZone->falseEasting = 1600000;
+      pZone->scaleFactor = 0.9996;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-47.4, 166.33);
+      pZone->latLongBoundMax = udDouble2::create(-34, 178.6);
       break;
     case 2326: // Hong Kong 1980 Grid System
       pZone->datum = udGZGD_HK1980;

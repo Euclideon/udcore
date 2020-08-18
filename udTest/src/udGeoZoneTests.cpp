@@ -307,6 +307,7 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1649467,  149.1577442,  0.0 }, // udGZGD_HK1980 / EPSG:4611
     { -21.1649467,  149.1577442,  0.0 }, // udGZGD_SVY21 / EPSG:4757
     { -21.1649467,  149.1577442,  0.0 }, // udGZGD_MGI / EPSG:4312
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NZGD2000 / EPSG:4167
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
@@ -397,6 +398,8 @@ struct
 {
   // This is the non-official CRS84 zone which does NOT have an official WKT implementation; This should be able to be handled by other systems but ISO6709 makes this entire thing invalid
   { 84, R"wkt(GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Lon",X],AXIS["Lat",Y],AUTHORITY["CRS","84"]])wkt" },
+
+  { 2193, R"wkt(PROJCS["NZGD2000 / New Zealand Transverse Mercator 2000",GEOGCS["NZGD2000",DATUM["New_Zealand_Geodetic_Datum_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6167"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4167"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",173],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",1600000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","2193"]])wkt"},
 
   // WKT taken from PostgreSQL, with random sample cross referenced with epsg.io
   { 2230, "PROJCS[\"NAD83 / California zone 6 (ftUS)\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",33.88333333333333],PARAMETER[\"standard_parallel_2\",32.78333333333333],PARAMETER[\"latitude_of_origin\",32.16666666666666],PARAMETER[\"central_meridian\",-116.25],PARAMETER[\"false_easting\",6561666.667],PARAMETER[\"false_northing\",1640416.667],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"2230\"]]" },
