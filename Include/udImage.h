@@ -79,6 +79,9 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
 // Load a streamable image from an existing file handle and offset
 udResult udImageStreaming_Load(udImageStreaming **ppImage, udFile *pFile, int64_t offset);
 
+// Reserve a streamable image so that the actual load can be deferred to LoadCell (mutually exclusive with udImageStreaming_Load)
+udResult udImageStreaming_Reserve(udImageStreaming **ppImage, udFile *pFile, int64_t offset);
+
 // Sample a pixel (optionally with bilinear filtering) with openGL-style UV coordinates (0,0 bottom left)
 uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udImageSampleFlags flags = udISF_None, uint16_t mipLevel = 0);
 
