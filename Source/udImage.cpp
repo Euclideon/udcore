@@ -269,53 +269,58 @@ udResult udImageStreaming_Load(udImageStreaming **ppImage, udFile *pFile, int64_
   udImageStreaming *pImage = nullptr;
 
   UD_ERROR_NULL(ppImage, udR_InvalidParameter_);
+  UD_ERROR_CHECK(udImageStreaming_Reserve(&pImage, pFile, offset));
+  UD_ERROR_CHECK(udImageStreaming_LoadCell(pImage, (uint32_t)-1));
+  *ppImage = pImage;
+  pImage = nullptr;
+  result = udR_Success;
+
+epilogue:
+  if (pImage)
+    udImageStreaming_Destroy(&pImage);
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2020
+udResult udImageStreaming_Reserve(udImageStreaming **ppImage, udFile *pFile, int64_t offset)
+{
+  udResult result;
+  udImageStreaming *pImage = nullptr;
+
+  UD_ERROR_NULL(ppImage, udR_InvalidParameter_);
   UD_ERROR_NULL(pFile, udR_InvalidParameter_);
 
   pImage = udAllocType(udImageStreaming, 1, udAF_Zero);
   UD_ERROR_NULL(pImage, udR_MemoryAllocationFailure);
-  UD_ERROR_CHECK(udFile_Read(pFile, pImage, sizeof(udImageStreamingOnDisk), offset, udFSW_SeekSet));
-  UD_ERROR_IF(pImage->fourcc != udImageStreamingOnDisk::Fourcc, udR_ObjectTypeMismatch);
-  UD_ERROR_IF(pImage->mipCount > udImageStreamingOnDisk::MaxMipLevels, udR_CorruptData);
   pImage->pFile = pFile;
   pImage->baseOffset = offset;
   pImage->pLock = udCreateMutex();
-
-  for (uint16_t mip = 0; mip < pImage->mipCount; ++mip)
-  {
-    if (!mip)
-    {
-      pImage->mips[mip].offset = offset + pImage->offsetToMip0;
-      pImage->mips[mip].width = pImage->width;
-      pImage->mips[mip].height = pImage->height;
-    }
-    else
-    {
-      pImage->mips[mip].offset = pImage->mips[mip - 1].offset + (pImage->mips[mip - 1].width * pImage->mips[mip - 1].height * 3);
-      pImage->mips[mip].width = udMax(1, pImage->mips[mip - 1].width >> 1);
-      pImage->mips[mip].height = udMax(1, pImage->mips[mip - 1].height >> 1);
-    }
-
-    pImage->mips[mip].gridW = (uint16_t)(pImage->mips[mip].width + udImageStreamingOnDisk::TileSize - 1) / udImageStreamingOnDisk::TileSize;
-    pImage->mips[mip].gridH = (uint16_t)(pImage->mips[mip].height + udImageStreamingOnDisk::TileSize - 1) / udImageStreamingOnDisk::TileSize;
-  }
-
 
   *ppImage = pImage;
   pImage = nullptr;
   result = udR_Success;
 
 epilogue:
+  if (pImage)
+    udImageStreaming_Destroy(&pImage);
   return result;
 }
-
 // ****************************************************************************
 // Author: Dave Pevreal, March 2020
 uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udImageSampleFlags flags, uint16_t mipLevel)
 {
   udResult result;
-  uint32_t texel = 0;
-  udImageStreaming::Mip &mip = pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
+  uint32_t texel = 0; // Default value returned if no data available
+  udImageStreaming::Mip *pMip = nullptr;
   uint8_t *p;
+
+  // First sample may trigger the initial load, but can't do error checking here so an error returns zero color
+  if (pImage->fourcc == 0 && udImageStreaming_LoadCell(pImage, (uint32_t)-1) != udR_Success)
+  {
+    udDebugPrintf("Error loading texture header\n");
+    return texel;
+  }
 
   if (flags & udISF_Clamp)
   {
@@ -323,24 +328,25 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
     v = udClamp(v, 0.f, 1.f);
   }
 
-  u = u * mip.width;
+  pMip = &pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
+  u = u * pMip->width;
   if (flags & udISF_TopLeft)
-    v = v * mip.height;
+    v = v * pMip->height;
   else
-    v = -v * mip.height;
+    v = -v * pMip->height;
 
-  while (u < 0.0f || u >= mip.width)
-    u = u - mip.width * udFloor((u / mip.width));
-  while (v < 0.0f || v >= mip.height)
-    v = v - mip.height * udFloor((v / mip.height));
+  while (u < 0.0f || u >= pMip->width)
+    u = u - pMip->width * udFloor((u / pMip->width));
+  while (v < 0.0f || v >= pMip->height)
+    v = v - pMip->height * udFloor((v / pMip->height));
 
   uint32_t x = (uint32_t)u;
   uint32_t y = (uint32_t)v;
   uint32_t cellX = x / udImageStreaming::TileSize;
   uint32_t cellY = y / udImageStreaming::TileSize;
-  uint32_t cellIndex = cellY * mip.gridW + cellX;
-  uint32_t cellWidth = udMin(udImageStreaming::TileSize, mip.width - (cellX * udImageStreaming::TileSize));
-  if (!mip.ppCellImage || !mip.ppCellImage[cellIndex])
+  uint32_t cellIndex = cellY * pMip->gridW + cellX;
+  uint32_t cellWidth = udMin(udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
+  if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex])
   {
     texel = mipLevel | (cellX << 8) | (cellY << 16);
     if (flags & udISF_NoStream)
@@ -350,7 +356,7 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
   }
   x &= (udImageStreaming::TileSize - 1);
   y &= (udImageStreaming::TileSize - 1);
-  p = mip.ppCellImage[cellIndex] + (y * cellWidth + x) * 3;
+  p = pMip->ppCellImage[cellIndex] + (y * cellWidth + x) * 3;
   if (flags & udISF_ABGR)
     texel = p[0] | (p[1] << 8) | (p[2] << 16) | 0xff000000;
   else
@@ -365,45 +371,79 @@ epilogue:
 udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexData)
 {
   udResult result;
-  uint32_t mipLevel = (cellIndexData >> 0) & 0xff;
-  uint32_t cellX = (cellIndexData >> 8) & 0xff;
-  uint32_t cellY = (cellIndexData >> 16) & 0xff;
-  uint32_t cellIndex, cellWidth;
   udMutex *pLocked = nullptr;
   uint8_t *pCellMem = nullptr;
-  udImageStreaming::Mip *pMip = nullptr;
 
   UD_ERROR_NULL(pImage, udR_InvalidParameter_);
-  UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter_);
-  pMip = &pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
-  UD_ERROR_IF(cellX >= pMip->gridW, udR_InvalidParameter_);
-  UD_ERROR_IF(cellY >= pMip->gridH, udR_InvalidParameter_);
 
-  cellIndex = cellY * pMip->gridW + cellX;
-  cellWidth = udMin(udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
-  if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex])
+  if (pImage->fourcc == 0)
   {
     pLocked = udLockMutex(pImage->pLock);
-    if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex]) // Second check after the lock
+    if (pImage->fourcc == 0)
     {
-      if (!pMip->ppCellImage)
+      UD_ERROR_CHECK(udFile_Read(pImage->pFile, pImage, sizeof(udImageStreamingOnDisk), pImage->baseOffset, udFSW_SeekSet));
+      UD_ERROR_IF(pImage->fourcc != udImageStreamingOnDisk::Fourcc, udR_ObjectTypeMismatch);
+      UD_ERROR_IF(pImage->mipCount > udImageStreamingOnDisk::MaxMipLevels, udR_CorruptData);
+
+      for (uint16_t mip = 0; mip < pImage->mipCount; ++mip)
       {
-        pMip->ppCellImage = udAllocType(uint8_t *, pMip->gridW * pMip->gridH, udAF_Zero);
-        UD_ERROR_NULL(pMip->ppCellImage, udR_MemoryAllocationFailure);
+        if (!mip)
+        {
+          pImage->mips[mip].offset = pImage->baseOffset + pImage->offsetToMip0;
+          pImage->mips[mip].width = pImage->width;
+          pImage->mips[mip].height = pImage->height;
+        }
+        else
+        {
+          pImage->mips[mip].offset = pImage->mips[mip - 1].offset + (pImage->mips[mip - 1].width * pImage->mips[mip - 1].height * 3);
+          pImage->mips[mip].width = udMax(1, pImage->mips[mip - 1].width >> 1);
+          pImage->mips[mip].height = udMax(1, pImage->mips[mip - 1].height >> 1);
+        }
+
+        pImage->mips[mip].gridW = (uint16_t)(pImage->mips[mip].width + udImageStreamingOnDisk::TileSize - 1) / udImageStreamingOnDisk::TileSize;
+        pImage->mips[mip].gridH = (uint16_t)(pImage->mips[mip].height + udImageStreamingOnDisk::TileSize - 1) / udImageStreamingOnDisk::TileSize;
       }
-      uint32_t cellHeight = udMin(udImageStreaming::TileSize, pMip->height - (cellY * udImageStreaming::TileSize));
-      uint32_t cellSizeBytes = cellWidth * cellHeight * 3;
-      uint32_t cellOffset = (cellY * udImageStreaming::TileSize * pMip->width * 3) + (cellX * udImageStreaming::TileSize * udImageStreaming::TileSize * 3);
-      // Read into locally allocated block
-      pCellMem = udAllocType(uint8_t, cellSizeBytes, udAF_None);
-      UD_ERROR_NULL(pCellMem, udR_MemoryAllocationFailure);
-      UD_ERROR_CHECK(udFile_Read(pImage->pFile, pCellMem, cellSizeBytes, pMip->offset + cellOffset, udFSW_SeekSet));
-      // Assign the pointer after reading to ensure another thread doesn't access the memory before the read is complete
-      udInterlockedExchangePointer(&pMip->ppCellImage[cellIndex], pCellMem);
-      pCellMem = nullptr;
     }
-    udReleaseMutex(pLocked);
-    pLocked = nullptr;
+  }
+
+  if (cellIndexData != (uint32_t)-1)
+  {
+    uint32_t mipLevel = (cellIndexData >> 0) & 0xff;
+    uint32_t cellX = (cellIndexData >> 8) & 0xff;
+    uint32_t cellY = (cellIndexData >> 16) & 0xff;
+
+    UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter_);
+    udImageStreaming::Mip *pMip = &pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
+    UD_ERROR_IF(cellX >= pMip->gridW, udR_InvalidParameter_);
+    UD_ERROR_IF(cellY >= pMip->gridH, udR_InvalidParameter_);
+
+    uint32_t cellIndex = cellY * pMip->gridW + cellX;
+    uint32_t cellWidth = udMin(udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
+    if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex])
+    {
+      if (!pLocked)
+        pLocked = udLockMutex(pImage->pLock);
+      if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex]) // Second check after the lock
+      {
+        if (!pMip->ppCellImage)
+        {
+          pMip->ppCellImage = udAllocType(uint8_t *, pMip->gridW * pMip->gridH, udAF_Zero);
+          UD_ERROR_NULL(pMip->ppCellImage, udR_MemoryAllocationFailure);
+        }
+        uint32_t cellHeight = udMin(udImageStreaming::TileSize, pMip->height - (cellY * udImageStreaming::TileSize));
+        uint32_t cellSizeBytes = cellWidth * cellHeight * 3;
+        uint32_t cellOffset = (cellY * udImageStreaming::TileSize * pMip->width * 3) + (cellX * udImageStreaming::TileSize * udImageStreaming::TileSize * 3);
+        // Read into locally allocated block
+        pCellMem = udAllocType(uint8_t, cellSizeBytes, udAF_None);
+        UD_ERROR_NULL(pCellMem, udR_MemoryAllocationFailure);
+        UD_ERROR_CHECK(udFile_Read(pImage->pFile, pCellMem, cellSizeBytes, pMip->offset + cellOffset, udFSW_SeekSet));
+        // Assign the pointer after reading to ensure another thread doesn't access the memory before the read is complete
+        udInterlockedExchangePointer(&pMip->ppCellImage[cellIndex], pCellMem);
+        pCellMem = nullptr;
+      }
+      udReleaseMutex(pLocked);
+      pLocked = nullptr;
+    }
   }
 
   result = udR_Success;
@@ -423,7 +463,6 @@ void udImageStreaming_Destroy(udImageStreaming **ppImage)
   {
     udImageStreaming *pImage = *ppImage;
     *ppImage = nullptr;
-    udLockMutex(pImage->pLock);
     for (uint16_t i = 0; i < pImage->mipCount; ++i)
     {
       if (pImage->mips[i].ppCellImage)
@@ -433,7 +472,6 @@ void udImageStreaming_Destroy(udImageStreaming **ppImage)
         udFree(pImage->mips[i].ppCellImage);
       }
     }
-    udReleaseMutex(pImage->pLock);
     udDestroyMutex(&pImage->pLock);
     pImage->pFile = nullptr;
     udFree(pImage);
