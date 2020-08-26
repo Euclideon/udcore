@@ -610,6 +610,19 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-90, -180);
       pZone->latLongBoundMax = udDouble2::create(90, 180);
       break;
+    case 2193: // NZGD2000
+      pZone->datum = udGZGD_NZGD2000;
+      pZone->projection = udGZPT_TransverseMercator;
+      udStrcpy(pZone->zoneName, "New Zealand Transverse Mercator 2000");
+      pZone->meridian = 173;
+      pZone->parallel = 0;
+      pZone->falseNorthing = 10000000;
+      pZone->falseEasting = 1600000;
+      pZone->scaleFactor = 0.9996;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-47.4, 166.33);
+      pZone->latLongBoundMax = udDouble2::create(-34, 178.6);
+      break;
     case 2230: // NAD83 / California zone 6 (ftUS)
       pZone->datum = udGZGD_NAD83;
       pZone->projection = udGZPT_LambertConformalConic2SP;
@@ -690,6 +703,19 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(47.08, -124.75);
       pZone->latLongBoundMax = udDouble2::create(49.0, -117.03);
       break;
+    case 2326: // Hong Kong 1980 Grid System
+      pZone->datum = udGZGD_HK1980;
+      pZone->projection = udGZPT_TransverseMercator;
+      udStrcpy(pZone->zoneName, "Hong Kong 1980 Grid System");
+      pZone->meridian = 114.1785555555556;
+      pZone->parallel = 22.31213333333334;
+      pZone->falseNorthing = 819069.8;
+      pZone->falseEasting = 836694.05;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(22.13, 113.76);
+      pZone->latLongBoundMax = udDouble2::create(22.58, 114.51);
+      break;
     case 2771: // NAD83(HARN) / California zone 6
       pZone->datum = udGZGD_NAD83_HARN;
       pZone->projection = udGZPT_LambertConformalConic2SP;
@@ -704,32 +730,6 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       udGeoZone_SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(32.51, -118.14);
       pZone->latLongBoundMax = udDouble2::create(34.08, -114.43);
-      break;
-    case 2193: // NZGD2000
-      pZone->datum = udGZGD_NZGD;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "New Zealand Transverse Mercator 2000");
-      pZone->meridian = 173;
-      pZone->parallel = 0;
-      pZone->falseNorthing = 10000000;
-      pZone->falseEasting = 1600000;
-      pZone->scaleFactor = 0.9996;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-47.4, 166.33);
-      pZone->latLongBoundMax = udDouble2::create(-34, 178.6);
-      break;
-    case 2326: // Hong Kong 1980 Grid System
-      pZone->datum = udGZGD_HK1980;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "Hong Kong 1980 Grid System");
-      pZone->meridian = 114.1785555555556;
-      pZone->parallel = 22.31213333333334;
-      pZone->falseNorthing = 819069.8;
-      pZone->falseEasting = 836694.05;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(22.13, 113.76);
-      pZone->latLongBoundMax = udDouble2::create(22.58, 114.51);
       break;
     case 3112: // GDA94 / Geoscience Australia Lambert
       pZone->datum = udGZGD_GDA94;
