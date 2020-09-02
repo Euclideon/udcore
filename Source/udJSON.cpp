@@ -410,6 +410,19 @@ udFloat4 udJSON::AsFloat4(const udFloat4 &defaultValue) const
 }
 
 // ****************************************************************************
+// Author: Peter Adams, September 2020
+udDouble2 udJSON::AsDouble2(const udDouble2 &defaultValue) const
+{
+  udDouble2 ret = defaultValue;
+  if (type == T_Array && u.pArray->length >= ret.ElementCount)
+  {
+    for (size_t i = 0; i < ret.ElementCount; ++i)
+      ret[i] = u.pArray->GetElement(i)->AsDouble();
+  }
+  return ret;
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, May 2017
 udDouble3 udJSON::AsDouble3(const udDouble3 &defaultValue) const
 {
