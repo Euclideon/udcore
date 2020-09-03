@@ -157,9 +157,10 @@ public:
   const char *AsString(const char *pDefaultValue = nullptr) const; // Returns "true"/"false" for bools, pDefaultValue for any other non-string
 
   // Some convenience accessors that expect the udJSON to be a array of numbers
+  udFloat2 AsFloat2(const udFloat2 &defaultValue = udFloat2::zero()) const;
   udFloat3 AsFloat3(const udFloat3 &defaultValue = udFloat3::zero()) const;
   udFloat4 AsFloat4(const udFloat4 &defaultValue = udFloat4::zero()) const;
-  udDouble2 AsDouble2(const udDouble2 &defaultValue) const;
+  udDouble2 AsDouble2(const udDouble2 &defaultValue = udDouble2::zero()) const;
   udDouble3 AsDouble3(const udDouble3 &defaultValue = udDouble3::zero()) const;
   udDouble4 AsDouble4(const udDouble4 &defaultValue = udDouble4::zero()) const;
   udQuaternion<double> AsQuaternion(const udQuaternion<double> &defaultValue = udQuaternion<double>::identity()) const;
