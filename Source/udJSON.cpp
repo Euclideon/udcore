@@ -384,6 +384,19 @@ const char *udJSON::AsString(const char *pDefaultValue) const
 }
 
 // ****************************************************************************
+// Author: Peter Adams, September 2020
+udFloat2 udJSON::AsFloat2(const udFloat2 &defaultValue) const
+{
+  udFloat2 ret = defaultValue;
+  if (type == T_Array && u.pArray->length >= ret.ElementCount)
+  {
+    for (size_t i = 0; i < ret.ElementCount; ++i)
+      ret[i] = u.pArray->GetElement(i)->AsFloat();
+  }
+  return ret;
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, August 2018
 udFloat3 udJSON::AsFloat3(const udFloat3 &defaultValue) const
 {
@@ -405,6 +418,19 @@ udFloat4 udJSON::AsFloat4(const udFloat4 &defaultValue) const
   {
     for (size_t i = 0; i < ret.ElementCount; ++i)
       ret[i] = u.pArray->GetElement(i)->AsFloat();
+  }
+  return ret;
+}
+
+// ****************************************************************************
+// Author: Peter Adams, September 2020
+udDouble2 udJSON::AsDouble2(const udDouble2 &defaultValue) const
+{
+  udDouble2 ret = defaultValue;
+  if (type == T_Array && u.pArray->length >= ret.ElementCount)
+  {
+    for (size_t i = 0; i < ret.ElementCount; ++i)
+      ret[i] = u.pArray->GetElement(i)->AsDouble();
   }
   return ret;
 }
