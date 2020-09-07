@@ -66,6 +66,7 @@ udResult udFileHandler_DataOpen(udFile **ppFile, const char *pFilename, udFileOp
 
   pData->fpRead = udFileHandler_DataSeekRead;
   pData->fpClose = udFileHandler_DataClose;
+  pData->fileLength = pData->dataLen;
 
   *ppFile = pData;
   pData = nullptr;
