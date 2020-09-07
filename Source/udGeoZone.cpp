@@ -1493,9 +1493,9 @@ udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone
   czX = udCross3(czY, czZ);
 
   udDouble4x4 m;
-  m.axis.x = udDouble4::create(udNormalize3(czX) * scale.x, 0);
-  m.axis.y = udDouble4::create(udNormalize3(czY) * scale.y, 0);
-  m.axis.z = udDouble4::create(udNormalize3(czZ) * scale.z, 0);
+  m.axis.x = udDouble4::create(czX * scale.x, 0);
+  m.axis.y = udDouble4::create(czY * scale.y, 0);
+  m.axis.z = udDouble4::create(czZ * scale.z, 0);
   m.axis.t = udDouble4::create(czO, 1);
 
   return m;
