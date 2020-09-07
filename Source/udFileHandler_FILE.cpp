@@ -114,7 +114,7 @@ udResult udFileHandler_FILEOpen(udFile **ppFile, const char *pFilename, udFileOp
   {
     udFilename temp(pFile->pFilenameCopy);
     temp.SetFilenameWithExt("");
-    UD_ERROR_CHECK(udCreateDir(temp.GetPath()));
+    udCreateDir(temp.GetPath()); // Don't error check, it will fail on file create if there are problems
   }
 
   result = udFileExists(pFile->pFilenameCopy, &pFile->fileLength);

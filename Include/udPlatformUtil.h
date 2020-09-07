@@ -326,11 +326,11 @@ udResult udReadDir(udFindDir *pFindDir);
 // Free resources associated with the directory
 udResult udCloseDir(udFindDir **ppFindDir);
 
-// Create a folder
-udResult udCreateDir(const char *pFolder, int *pNewFolders = nullptr);
+// Create a directory, potentially creating other directories in the path leading to it
+udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount = nullptr);
 
-// Removes a folder
-udResult udRemoveDir(const char *pFolder);
+// Removes a folder and a number of sub-folders (pass count returned by udCreateDir to undo; passing zero will not remove the folder)
+udResult udRemoveDir(const char *pDirPath, int removeCount = 1);
 
 // *********************************************************************
 // Geospatial helper functions

@@ -12,14 +12,15 @@
 #include <chrono>
 
 #if UDPLATFORM_WINDOWS
-#include <io.h>
-#include <mmsystem.h>
+# include <io.h>
+# include <mmsystem.h>
 #else
-#include <sys/types.h>
-#include <pwd.h>
-#include "dirent.h"
-#include <time.h>
-#include <sys/time.h>
+# include <sys/types.h>
+# include <pwd.h>
+# include "dirent.h"
+# include <time.h>
+# include <sys/time.h>
+# include <errno.h>
 static const uint64_t nsec_per_sec = 1000000000; // 1 billion nanoseconds in one second
 static const uint64_t nsec_per_msec = 1000000;   // 1 million nanoseconds in one millisecond
 //static const uint64_t usec_per_msec = 1000;      // 1 thousand microseconds in one millisecond
@@ -1040,95 +1041,124 @@ udResult udCloseDir(udFindDir **ppFindDir)
 }
 
 // ****************************************************************************
-// Author: Damian Madden, December 2019
-udResult udCreateDir(const char *pFolder, int *pNewFolders)
+// Author: Dave Pevreal, September 2020
+udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
 {
-  if (pFolder == nullptr)
-    return udR_InvalidParameter_;
+  udResult result;
+  char *pPath = nullptr;
+  size_t currPathLen; // Length of the path string that we're attempting now
+  size_t fullPathLen; // Length of the full path (for comparison)
+  int dirsCreatedCount = 0;
+  char truncChar = 0; // Character at truncation point (currPathLen)
 
-  udResult result = udR_Success;
-  uint16_t depth = 0;
-
-  char *pMutableDirectoryPath = nullptr;
-  char *pCurr = nullptr;
-
-  if (udFile_TranslatePath((const char **)&pMutableDirectoryPath, pFolder) != udR_Success)
+  UD_ERROR_NULL(pDirPath, udR_InvalidParameter_);
+  if (udFile_TranslatePath(const_cast<const char**>(&pPath), pDirPath) != udR_Success)
   {
-    pMutableDirectoryPath = udStrdup(pFolder);
-    UD_ERROR_NULL(pMutableDirectoryPath, udR_MemoryAllocationFailure);
+    pPath = udStrdup(pDirPath);
+    UD_ERROR_NULL(pPath, udR_MemoryAllocationFailure);
   }
 
-  // Edge case, an empty directory path won't exist and will fail to be created
-  if (udStrEqual(pMutableDirectoryPath, ""))
+  fullPathLen = udStrlen(pPath);
+  // If there's a trailing slash(s), remove it(them) because that just creates confusion
+  while (fullPathLen > 0 && (pPath[fullPathLen - 1] == '\\' || pPath[fullPathLen - 1] == '/'))
+    pPath[--fullPathLen] = 0;
+
+  // Special case allowing creation of empty or root folders to "succeed" with create count being zero
+  UD_ERROR_IF(fullPathLen == 0, udR_Success);
+
+  // Attempt the full path first, if it completes this is the most efficient case
+  for (currPathLen = fullPathLen; ;)
   {
-    if (pNewFolders)
-      *pNewFolders = depth;
-
-    UD_ERROR_SET_NO_BREAK(udR_Success);
-  }
-    
-  pCurr = pMutableDirectoryPath;
-
-  if (*pCurr == '/' || *pCurr == '\\')
-    ++pCurr;
-
-  while (true)
-  {
-    if (*pCurr == '\0' || *pCurr == '/' || *pCurr == '\\')
-    {
-      char temp = *pCurr;
-      *pCurr = '\0';
-
-      if (udDirectoryExists(pMutableDirectoryPath, nullptr) != udR_Success)
-      {
 #if UDPLATFORM_WINDOWS
-        // Returns 0 on fail
-        UD_ERROR_IF(CreateDirectoryW(udOSString(pMutableDirectoryPath), NULL) == 0, udR_Failure_);
+    bool actuallyCreated = CreateDirectoryW(udOSString(pPath), nullptr) != 0;
+    bool alreadyExisted = !actuallyCreated && (GetLastError() == ERROR_ALREADY_EXISTS);
 #else
-        // Returns -1 on fail
-        UD_ERROR_IF(mkdir(pMutableDirectoryPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1, udR_Failure_);
+    bool actuallyCreated = mkdir(pPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0;
+    bool alreadyExisted = !actuallyCreated && (errno == EEXIST);
 #endif
-        ++depth;
-      }
 
-      *pCurr = temp;
+    if (actuallyCreated)
+      ++dirsCreatedCount; // A folder was created, account for it
 
-      if (*pCurr == '\0')
-        break;
+    if (!actuallyCreated && !alreadyExisted)
+    {
+      // Directory creation failed, move back one folder and try there
+      while (currPathLen > 0 && (pPath[currPathLen] != '\\' && pPath[currPathLen] != '/'))
+        --currPathLen;
+      UD_ERROR_IF(currPathLen == 0, udR_Failure_); // Weren't able to make any of the folders
+      truncChar = pPath[currPathLen];
+      pPath[currPathLen] = 0;
     }
-    ++pCurr;
+    else if (currPathLen != fullPathLen)
+    {
+      // Directory creation succeeded on a sub-path, replace truncation character and move forward
+      pPath[currPathLen++] = truncChar;
+      while (currPathLen != fullPathLen && (pPath[currPathLen] != '\\' && pPath[currPathLen] != '/'))
+        ++currPathLen;
+      if (currPathLen != fullPathLen)
+      {
+        truncChar = pPath[currPathLen];
+        pPath[currPathLen] = 0;
+      }
+    }
+    else
+    {
+      UD_ERROR_SET(udR_Success);
+    }
   }
 
-  if (pNewFolders)
-    *pNewFolders = depth;
-
-  result = udR_Success;
 epilogue:
-  udFree(pMutableDirectoryPath);
+  if (pDirsCreatedCount)
+    *pDirsCreatedCount = dirsCreatedCount;
+  udFree(pPath);
   return result;
 }
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
-udResult udRemoveDir(const char *pFolder)
+udResult udRemoveDir(const char *pDirPath, int removeCount)
 {
-  udResult result = udR_Success;
+  udResult result;
+  char *pPath = nullptr;
+  size_t pathLen;
 
-  const char *pPath = pFolder;
-  const char *pNewPath = nullptr;
-  if (udFile_TranslatePath((const char **)&pNewPath, pFolder) == udR_Success)
-    pPath = pNewPath;
+  UD_ERROR_NULL(pDirPath, udR_InvalidParameter_);
+  if (udFile_TranslatePath(const_cast<const char **>(&pPath), pDirPath) != udR_Success)
+  {
+    pPath = udStrdup(pDirPath);
+    UD_ERROR_NULL(pPath, udR_MemoryAllocationFailure);
+  }
 
+  pathLen = udStrlen(pPath);
+  // If there's a trailing slash(s), remove it(them) because that just creates confusion
+  while (pathLen > 0 && (pPath[pathLen - 1] == '\\' || pPath[pathLen - 1] == '/'))
+    pPath[--pathLen] = 0;
+
+  // Special case allowing removal of empty or root folders to "succeed"
+  UD_ERROR_IF(pathLen == 0, udR_Success);
+
+  for (; *pPath && removeCount > 0; --removeCount)
+  {
 #if UDPLATFORM_WINDOWS
-  // Returns 0 on fail
-  UD_ERROR_IF(RemoveDirectoryW(udOSString(pPath)) == 0, udR_Failure_);
+    // Returns 0 on fail
+    if (RemoveDirectoryW(udOSString(pPath)) == 0)
+      UD_ERROR_SET_NO_BREAK(udR_Failure_);
 #else
-  // Returns -1 on fail
-  UD_ERROR_IF(rmdir(pPath) != 0, udR_Failure_);
+    // Returns 0 on success
+    if (rmdir(pPath) != 0)
+      UD_ERROR_SET_NO_BREAK(udR_Failure_);
 #endif
 
+    // Directory creation failed, move back one folder and try there
+    while (pathLen > 0 && (pPath[pathLen] != '\\' && pPath[pathLen] != '/'))
+      --pathLen;
+    pPath[pathLen] = 0;
+  }
+
+  result = udR_Success;
+
 epilogue:
-  udFree(pNewPath);
+  udFree(pPath);
   return result;
 }
 
