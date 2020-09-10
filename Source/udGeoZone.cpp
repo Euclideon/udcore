@@ -1262,6 +1262,48 @@ static double udGeoZone_LCCConformal(double phi, double e)
  }
 
 // ----------------------------------------------------------------------------
+// Author: Jules Proust, September 2020
+static double udGeoZone_MeridianArcDistance(const double phi, const double* n)
+{
+  // Helmert's series
+  // Maxima:
+  // trigreduce( defint(taylor((1-n^2)^2/(2 * n * cos(2*t) + n^2 + 1)^(3/2), n, 0,9),t,0,phi) );
+  return (phi * (82575360.0 + 185794560.0 * n[2] + 290304000.0 * n[4] + 395136000.0 * n[6] + 500094000.0 * n[8])
+    + udSin(2.0 * phi) * (-123863040.0 * n[1] - 232243200.0 * n[3] - 338688000.0 * n[5] - 444528000.0 * n[7] - 550103400.0 * n[9])
+    + udSin(4.0 * phi) * (77414400.0 * n[2] + 135475200.0 * n[4] + 190512000.0 * n[6] + 244490400.0 * n[8])
+    + udSin(6.0 * phi) * (-60211200.0 * n[3] - 101606400.0 * n[5] - 139708800.0 * n[7] - 176576400.0 * n[9])
+    + udSin(8.0 * phi) * (50803200.0 * n[4] + 83825280.0 * n[6] + 113513400.0 * n[8])
+    + udSin(10.0 * phi) * (-44706816.0 * n[5] - 72648576.0 * n[7] - 97297200.0 * n[9])
+    + udSin(12.0 * phi) * (40360320.0 * n[6] + 64864800.0 * n[8])
+    + udSin(14.0 * phi) * (-37065600.0 * n[7] - 59073300.0 * n[9])
+    + udSin(16.0 * phi) * (34459425.0 * n[8])
+    + udSin(18.0 * phi) * (-32332300.0 * n[9])
+    ) / 82575360.0;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Jules Proust, September 2020
+static double udGeoZone_DelambreCoefficients(const double e)
+{
+  // First Delambre coeficients Ao
+  // http://www.mygeodesy.id.au/documents/Meridian%20Distance.pdf p.7
+  return 1.0 - 1.0 / 4.0 * udPow(e, 2) - 3.0 / 64.0 * udPow(e, 4) - 5.0 / 256.0 * udPow(e, 6) - 175.0 / 16384.0 * udPow(e, 8) - 441.0 / 65536.0 * udPow(e, 10);
+}
+
+// ----------------------------------------------------------------------------
+// Author: Jules Proust, September 2020
+static double udGeoZone_LatMeridianSameNorthing(const double mu, const double e)
+{
+  // Reverted Helmert's series .... Lack of precision need investigation on Maxima
+  // http://www.mygeodesy.id.au/documents/Meridian%20Distance.pdf p.20 eq.61
+  return mu
+      + (3.0 / 2.0 * e - 20.0 / 32.0 * udPow(e,3)) * udSin(2 * mu)
+      + (21.0 / 16.0 * udPow(e,2) - 55.0 / 32.0 * udPow(e,4)) * udSin(4 * mu)
+      + 121.0 / 96.0 * udPow(e,3) * udSin(6 * mu)
+      + 1097.0 / 512.0 * udPow(e,4) * udSin(8 * mu);;
+}
+
+// ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
 udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat /*= false*/, udGeoZoneGeodeticDatum datum /*= udGZGD_WGS84*/)
 {
@@ -1355,6 +1397,43 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_CassiniSoldner)
+  {
+    phi = UD_DEG2RAD(phi);
+    double A = UD_DEG2RAD(omega - zone.parallel) * udCos(phi);
+    double T = udPow(udTan(phi), 2);
+    double C = zone.eccentricitySq * udPow(udCos(phi), 2) / (1 - zone.eccentricitySq);
+    double nu = zone.semiMajorAxis / udSqrt(1 - zone.eccentricitySq * udPow(udSin(phi), 2));
+
+    double m = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(phi, zone.n);
+    double m0 = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.meridian), zone.n);
+
+    double x = m - m0 + nu * udTan(phi) * (udPow(A, 2) / 2 + (5 - T + 6 * C) * udPow(A, 4) / 24);
+
+    double E = zone.falseEasting + nu * (A - T * udPow(A, 3) / 6 - (8 - T + 8 * C) * T * udPow(A, 5) / 120);
+    double N = zone.falseNorthing + x;
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+  }
+  else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
+  {
+    phi = UD_DEG2RAD(phi);
+    double A = UD_DEG2RAD(omega - zone.parallel) * udCos(phi);
+    double T = udPow(udTan(phi), 2);
+    double C = zone.eccentricitySq * udPow(udCos(phi), 2) / (1 - zone.eccentricitySq);
+    double nu = zone.semiMajorAxis / udSqrt(1 - zone.eccentricitySq * udPow(udSin(phi), 2));
+    double rho = zone.semiMajorAxis * (1 - zone.eccentricitySq) / udPow(1 - zone.eccentricitySq * udPow(udSin(phi), 2), 1.5);
+
+    double m = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(phi, zone.n);
+    double m0 = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.meridian), zone.n);
+
+    double x = m - m0 + nu * udTan(phi) * (udPow(A, 2) / 2 + (5 - T + 6 * C) * udPow(A, 4) / 24);
+
+    double E = zone.falseEasting + nu * (A - T * udPow(A, 3) / 6 - (8 - T + 8 * C) * T * udPow(A, 5) / 120);
+    double N = zone.falseNorthing + x - (udPow(x, 3) / (6 * rho * nu));
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -1447,6 +1526,59 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG(omega) + zone.meridian;
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_CassiniSoldner)
+  {
+    // Reading variables
+    double a = zone.semiMajorAxis;
+    double lmESq = 1 - zone.eccentricitySq;
+
+    double m0 = a * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.meridian), zone.n);
+    double m1 = m0 + (position.y - zone.falseNorthing);
+    double mu1 = m1 / (a * udGeoZone_DelambreCoefficients(zone.eccentricity));
+    double e1 = (1 - udSqrt(lmESq)) / (1 + udSqrt(lmESq));
+    double phi1 = udGeoZone_LatMeridianSameNorthing(mu1, e1);
+
+    double nu1 = a / udSqrt(lmESq * udPow(udSin(phi1), 2));
+    double rho1 = a * (lmESq) / udPow(lmESq * udPow(udSin(phi1), 2), 1.5);
+
+    double t1 = udPow(udTan(phi1), 2);
+    double d = (position.x - zone.falseEasting) / nu1;
+
+    latLong.x = UD_RAD2DEG(phi1 - (nu1 * udTan(phi1) / rho1) * (udPow(d, 2) / 2.0 - (1.0 + 3.0 * t1) * udPow(d, 4) / 24.0));
+    latLong.y = UD_RAD2DEG(zone.parallel + (d - t1 * udPow(d, 3) / 3.0 + (1.0 + 3.0 * t1) * t1 * udPow(d, 5) / 15.0) / udCos(phi1));
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
+  {
+    double phi0 = UD_DEG2RAD(zone.meridian);
+    double lambda0 = UD_DEG2RAD(zone.parallel);
+
+    // Reading variables
+    double a = zone.semiMajorAxis;
+    double NmFN = position.y - zone.falseNorthing;
+    double lmESq = 1 - zone.eccentricitySq;
+
+    double m0 = a * udGeoZone_MeridianArcDistance(phi0, zone.n);
+    double phi1p = phi0 + NmFN / 315320.0;
+    double rho1p = a * lmESq / udPow(lmESq * udPow(udSin(phi1p), 2), 1.5);
+    double nu1p = a / udSqrt(lmESq * udPow(udSin(phi1p), 2));
+    double qp = udPow(NmFN, 3) / (6 * rho1p * nu1p);
+    double q = udPow(NmFN + qp, 3) / (6 * rho1p * nu1p);
+    double m1 = m0 + NmFN + q;
+    double mu1 = m1 / (a * udGeoZone_DelambreCoefficients(zone.eccentricity));
+    double e1 = (1 - udSqrt(lmESq)) / (1 + udSqrt(lmESq));
+    double phi1 = udGeoZone_LatMeridianSameNorthing(mu1, e1);
+
+    double nu1 = a / udSqrt(lmESq * udPow(udSin(phi1), 2));
+    double rho1 = a * lmESq / udPow(lmESq * udPow(udSin(phi1), 2), 1.5);
+
+    double t1 = udPow(udTan(phi1), 2);
+    double d = (position.x - zone.falseEasting) / nu1;
+
+    latLong.x = UD_RAD2DEG(phi1 - (nu1 * udTan(phi1) / rho1) * (udPow(d, 2) / 2 - (1 + 3 * t1) * udPow(d, 4) / 24));
+    latLong.y = UD_RAD2DEG(lambda0 + (d - t1 * udPow(d, 3) / 3 + (1 + 3 * t1) * t1 * udPow(d, 5) / 15) / udCos(phi1));
     latLong.z = position.z;
   }
 

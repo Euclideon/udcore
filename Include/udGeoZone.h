@@ -66,6 +66,8 @@ enum udGeoZoneProjectionType
   udGZPT_TransverseMercator,
   udGZPT_LambertConformalConic2SP,
   udGZPT_WebMercator,
+  udGZPT_CassiniSoldner,
+  udGZPT_CassiniSoldnerHyperbolic,
 
   udGZPT_Count
 };
