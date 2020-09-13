@@ -15,6 +15,9 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "International 1924", 6378388.000, 1.0 / 297.00,        7022 }, // udGZE_Intl1924
   { "WGS 72",             6378135.000, 1.0 / 298.26,        7043 }, // udGZE_WGS72
   { "CGCS2000",           6378137.000, 1.0 / 298.257222101, 1024 }, // udGZE_CGCS2000
+  //clarke 1858
+  //everest 1830
+  //GRS 1967
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -1434,6 +1437,45 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(E, N, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_SterographicObliqueNEquatorial)
+  {
+    double eSq = zone.eccentricitySq;
+    double a = zone.semiMajorAxis;
+    phi = UD_DEG2RAD(phi);
+
+    double phi0 = UD_DEG2RAD(zone.meridian);
+    double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);; // radius of curvature at the meridian
+    double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));; // radius of curvature at the Transverse
+
+    double s1 = (1.0 + udSin(phi0)) / (1.0 - udSin(phi0));
+    double s2 = (1.0 - e * udSin(phi0)) / (1.0 + e * udSin(phi0));
+
+    // Sphere constants
+    double R = udSqrt(rho0 * nu0);
+    double n = udSqrt(1.0 + (eSq * udPow(udCos(phi0), 2) / (1.0 - eSq)));
+
+    double w1 = udPow(s1 * udPow(s2, e), n);
+    double sin_chi0 = (w1 - 1.0) / (w1 + 1.0);
+
+    double c = (n + udSin(phi0)) * (1.0 - sin_chi0) / ((n - udSin(phi0)) * (1.0 + sin_chi0));
+
+    double w2 = c * w1;
+    double chi0 = udASin((w2 - 1.0) / (w1 + 1.0));
+    double lambda0 = zone.parallel;
+
+    double lambda = n * (UD_DEG2RAD(omega) - lambda0) + lambda0;
+    double sA = (1.0 + udSin(phi)) / (1.0 - udSin(phi));
+    double sB = (1.0 - e * udSin(phi)) / (1.0 + e * udSin(phi));
+    double w = c * udPow(sA * udPow(sB,e),n);
+    double chi = udASin((w - 1.0) / (w + 1.0));
+
+    double B = (1.0 + udSin(chi) * udSin(chi0) + udCos(chi) * udCos(chi0) * cos(lambda - lambda0));
+
+    double E = zone.falseEasting + 2 * R * zone.scaleFactor * udCos(chi) * udSin(lambda - lambda0) / B;
+    double N = zone.falseNorthing + 2 * R * zone.scaleFactor * (udSin(chi) * udCos(chi0) - udCos(chi) * udSin(chi0) * udCos(lambda - lambda0)) / B;
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -1579,6 +1621,54 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi1 - (nu1 * udTan(phi1) / rho1) * (udPow(d, 2) / 2 - (1 + 3 * t1) * udPow(d, 4) / 24));
     latLong.y = UD_RAD2DEG(lambda0 + (d - t1 * udPow(d, 3) / 3 + (1 + 3 * t1) * t1 * udPow(d, 5) / 15) / udCos(phi1));
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_SterographicObliqueNEquatorial)
+  {
+    double eSq = zone.eccentricitySq;
+    double a = zone.semiMajorAxis;
+
+    double phi0 = UD_DEG2RAD(zone.meridian);
+    double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);; // radius of curvature at the meridian
+    double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));; // radius of curvature at the Transverse
+
+    double s1 = (1.0 + udSin(phi0)) / (1.0 - udSin(phi0));
+    double s2 = (1.0 - e * udSin(phi0)) / (1.0 + e * udSin(phi0));
+
+    // Sphere constants
+    double R = udSqrt(rho0 * nu0);
+    double n = udSqrt(1.0 + (eSq * udPow(udCos(phi0), 2) / (1.0 - eSq)));
+
+    double w1 = udPow(s1 * udPow(s2, e), n);
+    double sin_chi0 = (w1 - 1.0) / (w1 + 1.0);
+
+    double c = (n + udSin(phi0)) * (1.0 - sin_chi0) / ((n - udSin(phi0)) * (1.0 + sin_chi0));
+
+    double w2 = c * w1;
+    double chi0 = udASin((w2 - 1.0) / (w1 + 1.0));
+
+    double g = 2 * R * zone.scaleFactor * udTan(UD_PI / 4.0 - chi0 / 2.0);
+    double h = 4 * R * zone.scaleFactor * udTan(chi0) + g;
+    double i = udATan2((position.x - zone.falseEasting), (h + (position.y - zone.falseNorthing)));
+    double j = udATan2((position.x - zone.falseEasting), (g + (position.y - zone.falseNorthing))) - i;
+
+    double chi = chi0 + 2 * udATan(((position.y - zone.falseNorthing) - (position.x - zone.falseEasting)*udTan(j/2.0)) / (2.0 * R * zone.scaleFactor));
+    double lambda = j + 2 * i + zone.parallel;
+
+    double psi = 0.5 * udLogN((1 + udSin(chi)) / (c * (1 - udSin(chi)))) / n;
+
+    double phi = 0;
+    double phiTmp = 2 * udTan(udExp(psi)) - UD_HALF_PI;
+    double psiI = 0;
+    while (phi != phiTmp && !isnan(phi))
+    {
+      phi = phiTmp;
+      psiI = udLogN(udTan(phiTmp / 2.0 + UD_PI / 4.0) * udPow((1 - e * udSin(phiTmp)) / (1 + e * udSin(phiTmp)), (e / 2.0)));
+      phiTmp = phi - (psiI - psi) * udCos(phi) * (1 - eSq * udPow(udSin(phi), 2)) / (1 - eSq);
+    }
+
+    latLong.x = UD_RAD2DEG(phi);
+    latLong.y = UD_RAD2DEG((lambda - zone.parallel) / n + zone.parallel);
     latLong.z = position.z;
   }
 
