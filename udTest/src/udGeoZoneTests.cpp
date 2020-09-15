@@ -173,6 +173,78 @@ TEST(udGeoZone, LCC)
   }
 }
 
+TEST(udGeoZone, CassiniSoldner)
+{
+  // Test is from 373-07-02.pdf Guidance Note 7-2 p.45
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 30200 : Trinidad 1903 / Trinidad Grid based on Clarke 1858
+  // lat = 10
+  // long = -62
+
+  udDouble3 latLong = udDouble3::create(10, -62, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone;
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 30200)); //Trinidad 1903
+  EXPECT_EQ(geoZone.datum, udGZGD_TRI1903);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  //EXPECT_EQ(udRound(pos.x * localPrecision), udRound(66644.94 * localPrecision));
+  //EXPECT_EQ(udRound(pos.y * localPrecision), udRound(82536.22 * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
+TEST(udGeoZone, CassiniSoldnerHyperbolic)
+{
+  // Test is from 373-07-02.pdf Guidance Note 7-2 p.46
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 3139 : Vanua Levu 1915 / Vanua Levu Grid based on Clarke 1880
+  // lat = 10
+  // long = -62
+
+  udDouble3 latLong = udDouble3::create(-16.841457, 179.994337, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 3139)); // Vanua Levu 1915
+  EXPECT_EQ(geoZone.datum, udGZGD_VANUA1915);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  //EXPECT_EQ(udRound(pos.x* localPrecision), udRound(1601528.90 * localPrecision));
+  //EXPECT_EQ(udRound(pos.y* localPrecision), udRound(1336966.01 * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
+TEST(udGeoZone, StereographicOblique)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.67
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 28992 : Amersfoort / RD New based on Bessel 1841
+  // lat = 53
+  // long = 6
+
+  udDouble3 latLong = udDouble3::create(53, 6, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 28992)); // Amersfoort
+  EXPECT_EQ(geoZone.datum, udGZGD_AMERSFOORT);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  //EXPECT_EQ(udRound(pos.x * localPrecision), udRound(196105.283 * localPrecision));
+  //EXPECT_EQ(udRound(pos.y * localPrecision), udRound(557057.739 * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, WebMercator)
 {
   const int64_t angularPrecision = 1 * 60 * 60; // 60x60 to get to arc seconds
@@ -308,6 +380,9 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1649467,  149.1577442,  0.0 }, // udGZGD_SVY21 / EPSG:4757
     { -21.1649467,  149.1577442,  0.0 }, // udGZGD_MGI / EPSG:4312
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NZGD2000 / EPSG:4167
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_AMERSFOORT / EPSG:28992
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_TRI1903 / EPSG:30200
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_VANUA1915 / EPSG:3139
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
@@ -434,6 +509,8 @@ struct
 
   { 3112, "PROJCS[\"GDA94 / Geoscience Australia Lambert\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",-18],PARAMETER[\"standard_parallel_2\",-36],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",134],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3112\"]]" },
   { 3113, "PROJCS[\"GDA94 / BCSG02\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",-28],PARAMETER[\"central_meridian\",153],PARAMETER[\"scale_factor\",0.99999],PARAMETER[\"false_easting\",50000],PARAMETER[\"false_northing\",100000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3113\"]]" },
+
+  { 3139, "PROJCS[\"Vanua_Levu_1915 / Vanua Levu 1915\",GEOGCS[\"Vanua Levu 1915\",DATUM[\"Vanua_Levu_1915\",SPHEROID[\"Clarke 1880 (international foot)\",6378306.369,293.466307656,AUTHORITY[\"EPSG\",\"7055\"]],TOWGS84[51,391,-36,0,0,0,0],AUTHORITY[\"EPSG\",\"6748\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4748\"]],PROJECTION[\"Hyperbolic_Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",-16.25],PARAMETER[\"central_meridian\",179.3333333333333],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",1251331.8],PARAMETER[\"false_northing\",1662888.5],UNIT[\"link\",0.201168,AUTHORITY[\"EPSG\",\"9098\"]],AUTHORITY[\"EPSG\",\"3139\"]]" },
 
   { 3414, R"wkt(PROJCS["SVY21 / Singapore TM",GEOGCS["SVY21",DATUM["SVY21",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6757"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4757"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",1.366666666666667],PARAMETER["central_meridian",103.8333333333333],PARAMETER["scale_factor",1],PARAMETER["false_easting",28001.642],PARAMETER["false_northing",38744.572],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","3414"]])wkt" },
 
@@ -563,6 +640,9 @@ struct
   { 28354, "PROJCS[\"GDA94 / MGA zone 54\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",141],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"28354\"]]" },
   { 28355, "PROJCS[\"GDA94 / MGA zone 55\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",147],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"28355\"]]" },
   { 28356, "PROJCS[\"GDA94 / MGA zone 56\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",153],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"28356\"]]" },
+
+  { 28992, "PROJCS[\"Amersfoort\",GEOGCS[\"Amersfoort\",DATUM[\"Amersfoort\",SPHEROID[\"Bessel 1841\",6377397.155,299.1528128,AUTHORITY[\"EPSG\",\"7004\"]],AUTHORITY[\"EPSG\",\"6289\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4289\"]],PROJECTION[\"Oblique_Stereographic\"],PARAMETER[\"latitude_of_origin\",52.15616055555556],PARAMETER[\"central_meridian\",5.3876388888889],PARAMETER[\"scale_factor\",0.9999079],PARAMETER[\"false_easting\",155000],PARAMETER[\"false_northing\",463000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"28992\"]]" },
+  { 30200, "PROJCS[\"Trinidad_1903 / Trinidad 1903\",GEOGCS[\"Trinidad 1903\",DATUM[\"Trinidad_1903\",SPHEROID[\"Clarke 1858\",6378293.64520876,294.260676369,AUTHORITY[\"EPSG\",\"7007\"]],AUTHORITY[\"EPSG\",\"6302\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4302\"]],PROJECTION[\"Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",10.44166666666667],PARAMETER[\"central_meridian\",-61.3333333333333],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",430000],PARAMETER[\"false_northing\",325000],UNIT[\"Clarke's link\",0.201166195164,AUTHORITY[\"EPSG\",\"9039\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"30200\"]]" },
 
   { 31254, "PROJCS[\"MGI / Austria GK West\",GEOGCS[\"MGI\",DATUM[\"Militar_Geographische_Institute\",SPHEROID[\"Bessel 1841\",6377397.155,299.1528128,AUTHORITY[\"EPSG\",\"7004\"]],TOWGS84[577.326,90.129,463.919,5.137,1.474,5.297,2.4232],AUTHORITY[\"EPSG\",\"6312\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4312\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",10.33333333333333],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",-5000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AUTHORITY[\"EPSG\",\"31254\"]]" },
   { 31255, "PROJCS[\"MGI / Austria GK Central\",GEOGCS[\"MGI\",DATUM[\"Militar_Geographische_Institute\",SPHEROID[\"Bessel 1841\",6377397.155,299.1528128,AUTHORITY[\"EPSG\",\"7004\"]],TOWGS84[577.326,90.129,463.919,5.137,1.474,5.297,2.4232],AUTHORITY[\"EPSG\",\"6312\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4312\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",13.33333333333333],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",-5000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AUTHORITY[\"EPSG\",\"31255\"]]" },

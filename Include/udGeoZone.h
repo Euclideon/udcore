@@ -22,6 +22,8 @@ enum udGeoZoneEllipsoid
   udGZE_Intl1924,       //EPSG:7022 (Same numbers as Hayford)
   udGZE_WGS72,          //EPSG:7043
   udGZE_CGCS2000,       //EPSG:1024
+  udGZE_Clarke1858,     //EPSG:7007
+  udGZE_Clarke1880FOOT, //EPSG:7055
 
   udGZE_Count
 };
@@ -51,6 +53,9 @@ enum udGeoZoneGeodeticDatum
   udGZGD_SVY21,      //EPSG:4757
   udGZGD_MGI,        //EPSG:6312
   udGZGD_NZGD2000,   //EPSG:2193
+  udGZGD_AMERSFOORT, //EPSG:28992
+  udGZGD_TRI1903,    //EPSG:30200
+  udGZGD_VANUA1915,  //EPSG:3139
 
   udGZGD_Count
 };
@@ -66,6 +71,11 @@ enum udGeoZoneProjectionType
   udGZPT_TransverseMercator,
   udGZPT_LambertConformalConic2SP,
   udGZPT_WebMercator,
+
+  udGZPT_CassiniSoldner,
+  udGZPT_CassiniSoldnerHyperbolic,
+
+  udGZPT_SterographicObliqueNEquatorial,
 
   udGZPT_Count
 };
