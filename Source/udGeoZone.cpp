@@ -17,9 +17,6 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "CGCS2000",           6378137.000, 1.0 / 298.257222101, 1024 }, // udGZE_CGCS2000
   { "Clarke 1858",        6378293.64520876, 1.0 / 294.260676369, 7007 }, // udGZE_Clarke1858
   { "Clarke 1880 (international foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
-
-  //everest 1830
-  //GRS 1967
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -1047,7 +1044,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       {
         pZone->projection = udGZPT_LatLong; // Most likely situation
         pZone->unitMetreScale = 1.0;
-        
+
         udSprintf(&pVal, "%s.values", pElem);
         size_t numValues = wkt->Get("%s", pVal).ArrayLength();
         for (size_t j = 0; j < numValues; ++j)
@@ -1370,11 +1367,6 @@ static double udGeoZone_MeridianArcDistance(const double phi, const double* n)
     + udSin(16.0 * phi) * (34459425.0 * n[8])
     + udSin(18.0 * phi) * (-32332300.0 * n[9])
     ) / 82575360.0;
-  //return (1.0 - eSq / 4.0 - 3 * udPow(eSq, 2) / 64.0 - 5 * udPow(eSq, 3) / 256.0) * phi
-  //  - (3 * eSq / 8.0 + 3 * udPow(eSq, 2) / 32.0 + 45.0 * udPow(eSq, 3) / 1024.0) * udSin(2 * phi)
-  //  + (15.0 * udPow(eSq, 2) / 256.0 + 45.0 * udPow(eSq, 3) / 1024.0) + udSin(4 * phi)
-  //  - (35 * udPow(eSq, 3) / 3072.0) * udSin(6 * phi);
-
 }
 
 // ----------------------------------------------------------------------------
