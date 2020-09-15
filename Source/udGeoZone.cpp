@@ -17,6 +17,8 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "CGCS2000",           6378137.000, 1.0 / 298.257222101, 1024 }, // udGZE_CGCS2000
   { "Clarke 1858",        6378293.64520876, 1.0 / 294.260676369, 7007 }, // udGZE_Clarke1858
   { "Clarke 1880 (international foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
+  { "Krassowsky 1940",    6378245.000, 1.0 / 298.3,         7024 }, // udGZE_Krassowsky1940
+  { "Everest 1830 Modified",6377304.063, 1.0 / 300.8017,    7018 }, // udGZE_Everest1930M
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -49,6 +51,8 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Amersfoort",                            "Amersfoort",      "Amersfoort",                                   udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4289, 6289, true,     false },
   { "Trinidad 1903",                         "Trinidad_1903",   "Trinidad_1903",                                udGZE_Clarke1858,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4302, 6302, true,     false },
   { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua_Levu_1915",                              udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         4748, 6748, false,    true  },
+  { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4317, 6317, false,    false },
+  { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,     false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -888,6 +892,20 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-43.7, 112.85);
       pZone->latLongBoundMax = udDouble2::create(-9.86, 153.69);
       break;
+    case 19920: // Singapore Grid
+      pZone->datum = udGZGD_SINGGRID;
+      pZone->projection = udGZPT_CassiniSoldner;
+      pZone->zone = 0;
+      udStrcpy(pZone->zoneName, "Singapore Grid");
+      pZone->meridian = 103.853002222;
+      pZone->parallel = 1.287646667;
+      pZone->falseNorthing = 30000;
+      pZone->falseEasting = 30000;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(1.13, 103.59);
+      pZone->latLongBoundMax = udDouble2::create(1.47, 104.07);
+      break;
     case 27700: // OSGB 1936 / British National Grid
       pZone->datum = udGZGD_OSGB36;
       pZone->projection = udGZPT_TransverseMercator;
@@ -929,6 +947,20 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       udGeoZone_SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(-62.08, 9.82);
       pZone->latLongBoundMax = udDouble2::create(-58.53, 11.68);
+      break;
+    case 31700: // Dealul Piscului 1970/ Stereo 70
+      pZone->datum = udGZGD_DEALUL1970;
+      pZone->projection = udGZPT_SterographicObliqueNEquatorial;
+      pZone->zone = 0;
+      udStrcpy(pZone->zoneName, "Dealul Piscului 1970");
+      pZone->meridian = 25.0;
+      pZone->parallel = 46.0;
+      pZone->falseNorthing = 500000;
+      pZone->falseEasting = 500000;
+      pZone->scaleFactor = 0.99975;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(3.37, 50.75);
+      pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
       break;
     default:
       return udR_ObjectNotFound;
