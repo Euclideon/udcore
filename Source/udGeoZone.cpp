@@ -15,8 +15,8 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "International 1924", 6378388.000, 1.0 / 297.00,        7022 }, // udGZE_Intl1924
   { "WGS 72",             6378135.000, 1.0 / 298.26,        7043 }, // udGZE_WGS72
   { "CGCS2000",           6378137.000, 1.0 / 298.257222101, 1024 }, // udGZE_CGCS2000
-  { "Clarke 1858",        6378293.645208759, 1.0 / 294.2606763692654, 7007 }, // udGZE_Clarke1858
-  { "Clarke 1880 (Foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
+  { "Clarke 1858",        6378293.64520876, 1.0 / 294.260676369, 7007 }, // udGZE_Clarke1858
+  { "Clarke 1880 (international foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
 
   //everest 1830
   //GRS 1967
@@ -49,9 +49,9 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "SVY21",                                 "SVY21",           "SVY21",                                        udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4757, 6757, false,    false },
   { "MGI",                                   "MGI",             "Militar_Geographische_Institute",              udGZE_Bessel1841,    { 577.326, 90.129, 463.919, 5.137, 1.474, 5.297, 2.4232 },          4312, 6312, false,    true  },
   { "NZGD2000",                              "NZGD2000",        "New_Zealand_Geodetic_Datum_2000",              udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4167, 6167, false,    true  },
-  { "Amersfoort",                            "Amersfoort",      "AMersfoort / RD New",                          udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              28992,4289, true,     false },
-  { "Trinidad 1903",                         "Trinidad_1903",   "Trinidad 1903 / Trinidad Grid",                udGZE_Clarke1858,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              30200,4302, true,     false },
-  { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua Levu 1915 / Vanua Levu Grid",            udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         19878,4748, true,     true  },
+  { "Amersfoort",                            "Amersfoort",      "Amersfoort",                                   udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4289, 6289, true,     false },
+  { "Trinidad 1903",                         "Trinidad_1903",   "Trinidad_1903",                                udGZE_Clarke1858,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4302, 6302, true,     false },
+  { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua_Levu_1915",                              udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         4748, 6748, false,    true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -770,9 +770,9 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     case 3139: // Vanua Levu 1915 / Cassini Soldner Hyperbolic Test
       pZone->datum = udGZGD_VANUA1915;
       pZone->projection = udGZPT_CassiniSoldnerHyperbolic;
-      udStrcpy(pZone->zoneName, "Vanua_Levu_1915");
-      pZone->meridian = -16.25;
-      pZone->parallel = 179 + 1.0 / 3.0;
+      udStrcpy(pZone->zoneName, "Vanua Levu 1915");
+      pZone->meridian = 179 + 1.0 / 3.0;
+      pZone->parallel = -16.25;
       pZone->falseNorthing = 1662888.5;
       pZone->falseEasting = 1251331.8;
       pZone->scaleFactor = 1.0;
@@ -909,8 +909,8 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->projection = udGZPT_SterographicObliqueNEquatorial;
       pZone->zone = 0;
       udStrcpy(pZone->zoneName, "Amersfoort");
-      pZone->meridian = 52.156160555555555;
-      pZone->parallel = 5.3876388888888888;
+      pZone->meridian = 5.3876388888888888;
+      pZone->parallel = 52.156160555555556;
       pZone->falseNorthing = 463000;
       pZone->falseEasting = 155000;
       pZone->scaleFactor = 0.9999079;
@@ -922,9 +922,9 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->datum = udGZGD_TRI1903;
       pZone->projection = udGZPT_CassiniSoldner;
       pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Trinidad_1903");
-      pZone->meridian = 10.441 + (2.0 / (3.0 * 1000.0));
-      pZone->parallel = -61.0 - (1.0 / 3.0);
+      udStrcpy(pZone->zoneName, "Trinidad 1903");
+      pZone->meridian = -61.0 - (1.0 / 3.0);
+      pZone->parallel = 10.441 + (2.0 / (3.0 * 1000.0));  
       pZone->falseNorthing = 325000;
       pZone->falseEasting = 430000;
       pZone->scaleFactor = 1.0;
@@ -1004,7 +1004,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
     }
     else if (udStrEqual(pType, "UNIT"))
     {
-      if (pZone->unitMetreScale == 0 && (udStrstr(pName, 0, "foot") || udStrstr(pName, 0, "feet") || udStrstr(pName, 0, "ft") || udStrstr(pName, 0, "metre")))
+      if (pZone->unitMetreScale == 0 && (udStrstr(pName, 0, "foot") || udStrstr(pName, 0, "feet") || udStrstr(pName, 0, "ft") || udStrstr(pName, 0, "metre") || udStrstr(pName, 0, "link") || udStrstr(pName, 0, "Clarke's link")))
       {
         pZone->unitMetreScale = wkt->Get("%s.values[0]", pElem).AsDouble();
         if (pZone->semiMajorAxis != 0)
@@ -1047,7 +1047,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       {
         pZone->projection = udGZPT_LatLong; // Most likely situation
         pZone->unitMetreScale = 1.0;
-
+        
         udSprintf(&pVal, "%s.values", pElem);
         size_t numValues = wkt->Get("%s", pVal).ArrayLength();
         for (size_t j = 0; j < numValues; ++j)
@@ -1127,6 +1127,24 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for lambert is 1.0
           pZone->scaleFactor = 1;
       }
+      else if (udStrstr(pName, 0, "Hyperbolic_Cassini_Soldner"))
+      {
+        pZone->projection = udGZPT_CassiniSoldnerHyperbolic;
+        if (pZone->scaleFactor == 0) // default for lambert is 1.0
+          pZone->scaleFactor = 1;
+      }
+      else if (udStrstr(pName, 0, "Cassini_Soldner"))
+      {
+        pZone->projection = udGZPT_CassiniSoldner;
+        if (pZone->scaleFactor == 0) // default for lambert is 1.0
+          pZone->scaleFactor = 1;
+      }
+      else if (udStrstr(pName, 0, "Oblique_Stereographic"))
+      {
+        pZone->projection = udGZPT_SterographicObliqueNEquatorial;
+        if (pZone->scaleFactor == 0) // default for lambert is 1.0
+          pZone->scaleFactor = 1;
+      }
     }
     else if (udStrEqual(pType, "SPHEROID"))
     {
@@ -1162,7 +1180,7 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
 
   udGeoZone_UpdateDisplayName(pZone);
 
-  if (pZone->scaleFactor != 0 && !udStrEqual(pZone->datumShortName, "") && pZone->semiMajorAxis != 0) // ensure some key variables are not null
+  if (pZone->scaleFactor != 0 && !udStrEqual(pZone->datumShortName, "") && pZone->semiMajorAxis != 0 && pZone->srid != 0) // ensure some key variables are not null
     return udR_Success;
   return udR_Failure_;
 }
@@ -1224,6 +1242,10 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
     udSprintf(&pWKTUnit, "UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]");
   else if (zone.unitMetreScale == 0.3048006096012192)
     udSprintf(&pWKTUnit, "UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]]");
+  else if (zone.unitMetreScale == 0.201166195164)
+    udSprintf(&pWKTUnit, "UNIT[\"Clarke's link\",0.201166195164,AUTHORITY[\"EPSG\",\"9039\"]]");
+  else if (zone.unitMetreScale == 0.201168)
+    udSprintf(&pWKTUnit, "UNIT[\"link\",0.201168,AUTHORITY[\"EPSG\",\"9098\"]]");
   else
     udSprintf(&pWKTUnit, "UNIT[\"unknown\",%s]", udTempStr_TrimDouble(zone.unitMetreScale, 16)); // Can't provide authority for unknown unit
 
@@ -1247,6 +1269,24 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
                                 udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
                                 udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
+  else if (zone.projection == udGZPT_CassiniSoldner)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Hyperbolic_Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_SterographicObliqueNEquatorial)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Oblique_Stereographic\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
   if (pDesc->exportAxisInfo)
@@ -1256,7 +1296,7 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udSprintf(&pWKTProjection, "%s,AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]", pWKTProjection);
     else if (zone.projection == udGZPT_ECEF)
       udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],AXIS[\"Geocentric Y\",OTHER],AXIS[\"Geocentric Z\",NORTH]");
-    else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator)
+    else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator || zone.projection == udGZPT_CassiniSoldner || zone.projection == udGZPT_SterographicObliqueNEquatorial)
       udSprintf(&pWKTProjection, "%s,AXIS[\"X\",EAST],AXIS[\"Y\",NORTH]", pWKTProjection);
   }
 
@@ -1456,13 +1496,13 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
   else if (zone.projection == udGZPT_CassiniSoldner)
   {
     phi = UD_DEG2RAD(phi);
-    double A = UD_DEG2RAD(omega - zone.parallel) * udCos(phi);
+    double A = UD_DEG2RAD(omega - zone.meridian) * udCos(phi);
     double T = udPow(udTan(phi), 2);
     double C = zone.eccentricitySq * udPow(udCos(phi), 2) / (1 - zone.eccentricitySq);
     double nu = zone.semiMajorAxis / udSqrt(1 - zone.eccentricitySq * udPow(udSin(phi), 2));
 
     double m = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(phi, zone.n);
-    double m0 = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.meridian), zone.n);
+    double m0 = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.parallel), zone.n);
 
     double x = m - m0 + nu * udTan(phi) * (udPow(A, 2) / 2.0 + (5.0 - T + 6.0 * C) * udPow(A, 4) / 24.0);
 
@@ -1474,14 +1514,14 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
   else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
   {
     phi = UD_DEG2RAD(phi);
-    double A = UD_DEG2RAD(omega - zone.parallel) * udCos(phi);
+    double A = UD_DEG2RAD(omega - zone.meridian) * udCos(phi);
     double T = udPow(udTan(phi), 2);
     double C = zone.eccentricitySq * udPow(udCos(phi), 2) / (1 - zone.eccentricitySq);
     double nu = zone.semiMajorAxis / udSqrt(1 - zone.eccentricitySq * udPow(udSin(phi), 2));
     double rho = zone.semiMajorAxis * (1 - zone.eccentricitySq) / udPow(1 - zone.eccentricitySq * udPow(udSin(phi), 2), 1.5);
 
     double m = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(phi, zone.n);
-    double m0 = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.meridian), zone.n);
+    double m0 = zone.semiMajorAxis * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.parallel), zone.n);
 
     double x = m - m0 + nu * udTan(phi) * (udPow(A, 2) / 2 + (5 - T + 6 * C) * udPow(A, 4) / 24);
 
@@ -1496,7 +1536,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double a = zone.semiMajorAxis;
     phi = UD_DEG2RAD(phi);
 
-    double phi0 = UD_DEG2RAD(zone.meridian);
+    double phi0 = UD_DEG2RAD(zone.parallel);
     double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);; // radius of curvature at the meridian
     double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));; // radius of curvature at the Transverse
 
@@ -1514,7 +1554,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     double w2 = c * w1;
     double chi0 = udASin((w2 - 1.0) / (w2 + 1.0));
-    double lambda0 = UD_DEG2RAD(zone.parallel);
+    double lambda0 = UD_DEG2RAD(zone.meridian);
 
     double lambda = n * (UD_DEG2RAD(omega) - lambda0) + lambda0;
     double sA = (1.0 + udSin(phi)) / (1.0 - udSin(phi));
@@ -1629,7 +1669,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double a = zone.semiMajorAxis;
     double lmESq = 1 - zone.eccentricitySq;
 
-    double m0 = a * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.meridian), zone.n);
+    double m0 = a * udGeoZone_MeridianArcDistance(UD_DEG2RAD(zone.parallel), zone.n);
     double m1 = m0 + (position.y - zone.falseNorthing);
     double mu1 = m1 / (a * udGeoZone_DelambreCoefficients(zone.eccentricity));
     double e1 = (1 - udSqrt(lmESq)) / (1 + udSqrt(lmESq));
@@ -1642,13 +1682,13 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double d = (position.x - zone.falseEasting) / nu1;
 
     latLong.x = UD_RAD2DEG(phi1 - (nu1 * udTan(phi1) / rho1) * (udPow(d, 2) / 2.0 - (1.0 + 3.0 * t1) * udPow(d, 4) / 24.0));
-    latLong.y = UD_RAD2DEG(UD_DEG2RAD(zone.parallel) + (d - t1 * udPow(d, 3) / 3.0 + (1.0 + 3.0 * t1) * t1 * udPow(d, 5) / 15.0) / udCos(phi1));
+    latLong.y = UD_RAD2DEG(UD_DEG2RAD(zone.meridian) + (d - t1 * udPow(d, 3) / 3.0 + (1.0 + 3.0 * t1) * t1 * udPow(d, 5) / 15.0) / udCos(phi1));
     latLong.z = position.z;
   }
   else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
   {
-    double phi0 = UD_DEG2RAD(zone.meridian);
-    double lambda0 = UD_DEG2RAD(zone.parallel);
+    double phi0 = UD_DEG2RAD(zone.parallel);
+    double lambda0 = UD_DEG2RAD(zone.meridian);
 
     // Reading variables
     double a = zone.semiMajorAxis;
@@ -1681,7 +1721,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double eSq = zone.eccentricitySq;
     double a = zone.semiMajorAxis;
 
-    double phi0 = UD_DEG2RAD(zone.meridian);
+    double phi0 = UD_DEG2RAD(zone.parallel);
     double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);; // radius of curvature at the meridian
     double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));; // radius of curvature at the Transverse
 
@@ -1706,7 +1746,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double j = udATan2((position.x - zone.falseEasting), (g - (position.y - zone.falseNorthing))) - i;
 
     double chi = chi0 + 2 * udATan(((position.y - zone.falseNorthing) - (position.x - zone.falseEasting)*udTan(j/2.0)) / (2.0 * R * zone.scaleFactor));
-    double lambda = j + 2 * i + UD_DEG2RAD(zone.parallel);
+    double lambda = j + 2 * i + UD_DEG2RAD(zone.meridian);
 
     double psi = 0.5 * udLogN((1 + udSin(chi)) / (c * (1 - udSin(chi)))) / n;
 
@@ -1722,7 +1762,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     }
 
     latLong.x = UD_RAD2DEG(phi);
-    latLong.y = UD_RAD2DEG((lambda - zone.parallel) / n + zone.parallel);
+    latLong.y = UD_RAD2DEG((lambda - zone.meridian) / n + zone.meridian);
     latLong.z = position.z;
   }
 
