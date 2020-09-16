@@ -4,7 +4,10 @@
 #include "udCompression.h"
 #include "udStringUtil.h"
 #include "udThread.h"
-#include "../3rdParty/stb/stb_image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb/stb_image_write.h"
 
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
@@ -63,6 +66,89 @@ epilogue:
   if (pImage)
     udImage_Destroy(&pImage);
 
+  return result;
+}
+
+struct stbiWriteContext
+{
+  udFile *pFile;
+  udResult *pResult;
+  uint32_t *pBytesWritten;
+};
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, February 2019
+static void stbiWriteCallback(void *_pContext, void *pData, int size)
+{
+  stbiWriteContext *pContext = (stbiWriteContext *)_pContext;
+  // Only attempt to write if there isn't a previous error
+  if (*pContext->pResult == udR_Success)
+    *pContext->pResult = udFile_Write(pContext->pFile, pData, size);
+  if (pContext->pBytesWritten && *pContext->pResult == udR_Success)
+    *pContext->pBytesWritten += size;
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, February 2019
+static void stbiWriteWrapper(stbiWriteContext *pContext, uint32_t width, uint32_t height, const void *pRGB, udImageSaveType saveType)
+{
+  if (pContext->pResult)
+    *pContext->pResult = udR_Success;
+
+  if (pContext->pBytesWritten)
+    *pContext->pBytesWritten = 0;
+
+  switch (saveType)
+  {
+    case udIST_PNG:
+      if (stbi_write_png_to_func(stbiWriteCallback, pContext, width, height, 3, pRGB, 0) == 0)
+        *pContext->pResult = udR_Failure_;
+      break;
+
+    case udIST_JPG:
+      if (stbi_write_jpg_to_func(stbiWriteCallback, pContext, width, height, 3, pRGB, 80) == 0) // quality value of 80
+        *pContext->pResult = udR_Failure_;
+      break;
+
+    case udIST_Max:
+      *pContext->pResult = udR_InvalidParameter_;
+  }
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, February 2019
+udResult udImage_Save(const udImage *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType)
+{
+  udResult result;
+  void *pRGB = nullptr; // Sadly, stbi has no support for writing 24-bit from a 32-bit source, so we must shrink
+  uint8_t *pSource, *pDest; // For shrinking
+  uint32_t count;
+  stbiWriteContext writeContext;
+
+  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
+  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter_);
+  count = pImage->width * pImage->height;
+  pRGB = udAlloc(count * 3);
+  UD_ERROR_NULL(pRGB, udR_MemoryAllocationFailure);
+  pSource = (uint8_t *)pImage->pImageData;
+  pDest = (uint8_t*)pRGB;
+  while (count--)
+  {
+    *pDest++ = pSource[0];
+    *pDest++ = pSource[1];
+    *pDest++ = pSource[2];
+    pSource += 4;
+  }
+
+  writeContext.pResult = &result;
+  writeContext.pBytesWritten = pSaveSize;
+  UD_ERROR_CHECK(udFile_Open(&writeContext.pFile, pFilename, udFOF_Create | udFOF_Write));
+  stbiWriteWrapper(&writeContext, pImage->width, pImage->height, pRGB, saveType);
+  udFile_Close(&writeContext.pFile);
+
+epilogue:
+  udFree(pRGB);
   return result;
 }
 
@@ -306,6 +392,7 @@ epilogue:
     udImageStreaming_Destroy(&pImage);
   return result;
 }
+
 // ****************************************************************************
 // Author: Dave Pevreal, March 2020
 uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udImageSampleFlags flags, uint16_t mipLevel)
@@ -452,6 +539,45 @@ epilogue:
   udFree(pCellMem);
   if (pLocked)
     udReleaseMutex(pLocked);
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2020
+udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType)
+{
+  udResult result;
+  uint8_t *pRGB = nullptr; // Need to make a 24-bit copy for stbi
+  stbiWriteContext writeContext;
+
+  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
+  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter_);
+
+  // Ensure the header has been loaded by doing an initial dummy sample
+  udImageStreaming_Sample(pImage, 0.f, 0.f);
+
+  // Make a 24-bit copy to avoid PNG saving 32-bit when all alpha values are 0xff (currently anyway)
+  // This isn't optimal, but for simplicity we just use the Sample function to handle streaming
+  pRGB = (uint8_t *)udAlloc(pImage->width * pImage->height * 3);
+  UD_ERROR_NULL(pRGB, udR_MemoryAllocationFailure);
+  for (uint32_t y = 0; y < pImage->height; ++y)
+  {
+    for (uint32_t x = 0; x < pImage->width; ++x)
+    {
+      uint32_t c = udImageStreaming_Sample(pImage, x / (float)pImage->width, y / (float)pImage->height, udISF_ABGR | udISF_TopLeft);
+      memcpy(&pRGB[(y * pImage->width + x) * 3], &c, 3);
+    }
+  }
+
+  writeContext.pResult = &result;
+  writeContext.pBytesWritten = pSaveSize;
+  UD_ERROR_CHECK(udFile_Open(&writeContext.pFile, pFilename, udFOF_Create | udFOF_Write));
+  stbiWriteWrapper(&writeContext, pImage->width, pImage->height, pRGB, saveType);
+  udFile_Close(&writeContext.pFile);
+
+epilogue:
+  udFree(pRGB);
   return result;
 }
 

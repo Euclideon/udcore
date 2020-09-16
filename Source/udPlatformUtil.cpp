@@ -4,8 +4,6 @@
 #include "udFile.h"
 #include "udMath.h"
 #include "udJSON.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
 
 #include <sys/stat.h>
 #include <time.h>
