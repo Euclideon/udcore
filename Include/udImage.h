@@ -61,11 +61,22 @@ enum udImageSampleFlags
 };
 inline udImageSampleFlags operator|(udImageSampleFlags a, udImageSampleFlags b) { return (udImageSampleFlags)(int(a) | int(b)); }
 
+enum udImageSaveType
+{
+  udIST_PNG,
+  udIST_JPG,
+
+  udIST_Max
+};
+
 // Load an image from a filename
 udResult udImage_Load(udImage **ppImage, const char *pFilename);
 
 // Load an image from a file already in memory
 udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t length);
+
+// Save the image back out
+udResult udImage_Save(const udImage *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType);
 
 // Sample a pixel (optionally with bilinear filtering) with openGL-style UV coordinates (0,0 bottom left)
 uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags flags = udISF_None);
@@ -87,6 +98,9 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
 
 // Load a cell from index data returned by udImageStreaming_Sample using the udISF_NoStream flag
 udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexData);
+
+// Save the image back to a source format
+udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType);
 
 // Destroy the image and free resources
 void udImageStreaming_Destroy(udImageStreaming **ppImage);
