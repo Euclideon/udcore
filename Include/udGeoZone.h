@@ -26,6 +26,8 @@ enum udGeoZoneEllipsoid
   udGZE_Clarke1880FOOT, //EPSG:7055
   udGZE_Krassowsky1940, //EPSG:7024
   udGZE_Everest1930M,   //EPSG:7018
+  udGZE_MARS,
+  udGZE_Moon,
 
   udGZE_Count
 };
@@ -60,6 +62,8 @@ enum udGeoZoneGeodeticDatum
   udGZGD_VANUA1915,  //EPSG:3139
   udGZGD_DEALUL1970, //EPSG:31700
   udGZGD_SINGGRID,   //EPSG:19920
+  udGZGD_MARS,        //Planet
+  udGZGD_MOON,
 
   udGZGD_Count
 };
