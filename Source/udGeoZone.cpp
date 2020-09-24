@@ -26,7 +26,6 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
 // and cross referenced with http://epsg.io/
 const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
-<<<<<<< HEAD
   // Full Name,                              Short  name        Datum name                                      Ellipsoid index      // ToWGS84 parameters                                               epsg  auth, AxisInfo, ToWGS84
   { "WGS 84",                                "WGS 84",          "WGS_1984",                                     udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4326, 6326, true,     false },
   { "ED50",                                  "ED50",            "European_Datum_1950",                          udGZE_Intl1924,      { -87.0, -98.0, -121.0, 0.0, 0.0, 0.0, 0.0 },                       4230, 6320, true,     true  },
