@@ -19,8 +19,8 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Clarke 1880 (international foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
   { "Krassowsky 1940",    6378245.000, 1.0 / 298.3,         7024 }, // udGZE_Krassowsky1940
   { "Everest 1830 Modified",6377304.063, 1.0 / 300.8017,    7018 }, // udGZE_Everest1930M
-  { "Mars_2000_IAU_IAG",  3394190.000, 1.0 / 169.89444722361179, 49900 }, // udGZE_MARS
-  { "Moon_2000_IAU_IAG",  1737400.0, 0.0012,                49900 }, // udGZE_MOON
+  { "Mars_2000_IAU_IAG",  3396190.000, 1.0 / 169.894447224, 49900 },// udGZE_MARS
+  { "Moon_2000_IAU_IAG",  1737400.000, 0.0,           39064 },// udGZE_MOON
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -55,8 +55,10 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua_Levu_1915",                              udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         4748, 6748, false,    true  },
   { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4317, 6317, false,    false },
   { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,    false },
-  { "Mars 2000",                             "Mars 2000",       "Mars 2000",                                    udGZE_MARS,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
-  { "Moon 2000",                             "Moon 2000",       "Moon 2000",                                    udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
+  { "Mars 2000 Mercator",                    "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
+  { "Mars 2000 Planetocentric",              "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
+  { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
+  { "Moon 2000 Planetocentric",              "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -896,6 +898,15 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-43.7, 112.85);
       pZone->latLongBoundMax = udDouble2::create(-9.86, 153.69);
       break;
+    case 8705: // Mars PF
+      pZone->datum = udGZGD_MARS_PCPF;
+      pZone->projection = udGZPT_ECEF;
+      pZone->zone = 0;
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "Mars 2000 Planetocentric");
+      udGeoZone_SetSpheroid(pZone);
+      break;
     case 19920: // Singapore Grid
       pZone->datum = udGZGD_SINGGRID;
       pZone->projection = udGZPT_CassiniSoldner;
@@ -937,6 +948,32 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(3.37,50.75);
       pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
       break;
+    //case 30100:
+    case 30101: //Moon PF
+      pZone->datum = udGZGD_MOON_PCPF;
+      pZone->projection = udGZPT_ECEF;
+      udStrcpy(pZone->zoneName, "Moon 2000 Planetocentric");
+      pZone->zone = 30101;
+      pZone->falseNorthing = 0;
+      pZone->falseEasting = 0;
+      pZone->meridian = 0;
+      pZone->scaleFactor = 1;
+      pZone->parallel = 0;
+      udGeoZone_SetSpheroid(pZone);
+      break;
+    //case 30174:
+    case 30175: //Moon M
+      pZone->datum = udGZGD_MOON_MERC;
+      pZone->projection = udGZPT_Mercator;
+      udStrcpy(pZone->zoneName, "Moon 2000 Mercator");
+      pZone->zone = 30175;
+      pZone->falseNorthing = 0;
+      pZone->falseEasting = 0;
+      pZone->meridian = 0;
+      pZone->firstParallel = 0;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      break;
     case 30200: // Trinidad 1903 / Cassini Soldner Projection Test
       pZone->datum = udGZGD_TRI1903;
       pZone->projection = udGZPT_CassiniSoldner;
@@ -966,54 +1003,18 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(3.37, 50.75);
       pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
       break;
-    case 49974: //Moon TM
-      pZone->datum = udGZGD_MOON;
+    //case 49974:
+    case 49975: //Mars M
+      pZone->datum = udGZGD_MARS_MERC;
       pZone->projection = udGZPT_Mercator;
-      udStrcpy(pZone->zoneName, "Moon Mercator");
-      pZone -> zone = 49974;
+      udStrcpy(pZone->zoneName, "Mars 2000 Mercator");
+      pZone->zone = 49975;
       pZone->falseNorthing = 0;
       pZone->falseEasting = 0;
       pZone->meridian = 0;
-      pZone->firstParallel = 0;
-      pZone->scaleFactor = 0.9996;
-      //pZone->parallel = 0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
-    case 30165: //Moon Centred
-      pZone->datum = udGZGD_MOON;
-      pZone->projection = udGZPT_ECEF;
-      udStrcpy(pZone->zoneName, "Moon Centred");
-      pZone -> zone = 30165;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->meridian = 0;
-      pZone->scaleFactor = 1;
-      pZone->parallel = 0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
-    case 49965: //Mars TM
-      pZone->datum = udGZGD_MARS;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "Mars Mercator");
-      pZone -> zone = 49965;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->meridian = 0;
-      pZone->scaleFactor = 0.9996;
-      pZone->parallel = 0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
-
-    case 49966: // Mars EF
-      pZone->datum = udGZGD_MARS;
-      pZone->projection = udGZPT_ECEF;
-      pZone->zone = 0;
       pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "Mars Centred");
+      pZone->firstParallel = 0;
       udGeoZone_SetSpheroid(pZone);
-      //pZone->latLongBoundMin = udDouble2::create(-90, -180);
-      //pZone->latLongBoundMax = udDouble2::create(90, 180);
       break;
 
     default:
@@ -1199,7 +1200,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for WebMerc is 1.0
           pZone->scaleFactor = 1.0;
       }
-      else if (udStrstr(pName, 0, "Mercator"))
+      else if (udStrstr(pName, 0, "Transverse_Mercator"))
       {
         pZone->projection = udGZPT_TransverseMercator;
         if (pZone->scaleFactor == 0) // default for TM is 0.9996
@@ -1228,6 +1229,12 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->projection = udGZPT_SterographicObliqueNEquatorial;
         if (pZone->scaleFactor == 0) // default for lambert is 1.0
           pZone->scaleFactor = 1;
+      }
+      else if (udStrstr(pName, 0, "Mercator"))
+      {
+        pZone->projection = udGZPT_Mercator;
+        if (pZone->scaleFactor == 0) // default for TM is 0.9996
+          pZone->scaleFactor = 1.0;
       }
     }
     else if (udStrEqual(pType, "SPHEROID"))
@@ -1309,17 +1316,19 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udTempStr_TrimDouble(pDesc->paramsHelmert7[6], decimalPlaces));
   }
 
-  udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 8), udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
+  udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 8), pEllipsoid->flattening == 0.0 ? "0.0" : udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
   udSprintf(&pWKTDatum, "DATUM[\"%s\",%s%s,AUTHORITY[\"EPSG\",\"%d\"]", pDesc->pDatumName, pWKTSpheroid, pWKTToWGS84 ? pWKTToWGS84 : "", pDesc->authority);
 
-  if (zone.projection == udGZPT_ECEF)
+  if (zone.projection == udGZPT_ECEF && zone.datum == udGZGD_MARS_PCPF) // Mars
+    udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",%s],PRIMEM[\"AIRY-0\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
+  else if (zone.projection == udGZPT_ECEF)
     udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
   else if (zone.projection == udGZPT_LongLat) // This isn't an official option- ISO6709 doesn't allow it so we handle it specially
     udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Lon\",X],AXIS[\"Lat\",Y],AUTHORITY[\"CRS\",\"%d\"]]", pDesc->pFullName, pWKTDatum, zone.srid);
   else
     udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pFullName, pWKTDatum, pDesc->epsg);
 
-  // We only handle metres and us feet, each of which have their own fixed authority code
+  // We only handle degree, metres, us feet, Clarke's link and link , each of which have their own fixed authority code
   if (zone.scaleFactor == 0.0174532925199433)
     udSprintf(&pWKTUnit, "UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]");
   else if (zone.unitMetreScale == 1.0)
@@ -1370,6 +1379,12 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
     udSprintf(&pWKTProjection, "PROJECTION[\"Oblique_Stereographic\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_Mercator)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Mercator\"],PARAMETER[\"False_Easting\",%s],PARAMETER[\"False_Northing\",%s],PARAMETER[\"Central_Meridian\",%s],PARAMETER[\"Standard_Parallel_1\",%s],%s",
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision),
+      udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), pWKTUnit);
   }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
