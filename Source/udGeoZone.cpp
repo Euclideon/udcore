@@ -19,8 +19,8 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Clarke 1880 (international foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
   { "Krassowsky 1940",    6378245.000, 1.0 / 298.3,         7024 }, // udGZE_Krassowsky1940
   { "Everest 1830 Modified",6377304.063, 1.0 / 300.8017,    7018 }, // udGZE_Everest1930M
-  { "Mars_2000_IAU_IAG",           3394190.000, 1.0 / 169.89444722361179, 49900 }, // udGZE_MARS
-  { "Moon_2000_IAU_IAG",           1737400.0, 0.0012, 49900 }, // udGZE_MOON
+  { "Mars_2000_IAU_IAG",  3394190.000, 1.0 / 169.89444722361179, 49900 }, // udGZE_MARS
+  { "Moon_2000_IAU_IAG",  1737400.0, 0.0012,                49900 }, // udGZE_MOON
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -54,9 +54,9 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Trinidad 1903",                         "Trinidad_1903",   "Trinidad_1903",                                udGZE_Clarke1858,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4302, 6302, true,     false },
   { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua_Levu_1915",                              udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         4748, 6748, false,    true  },
   { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4317, 6317, false,    false },
-  { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,     false },
-  { "Mars 2000",                                   "Mars 2000",             "Mars 2000",            udGZE_MARS,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },          490000, 490001, false,    true  },
-  { "Moon 2000",                                   "Moon 2000",             "Moon 2000",            udGZE_Moon,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },          39064, 39065, false,    true  },
+  { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,    false },
+  { "Mars 2000",                             "Mars 2000",       "Mars 2000",                                    udGZE_MARS,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
+  { "Moon 2000",                             "Moon 2000",       "Moon 2000",                                    udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -966,16 +966,17 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(3.37, 50.75);
       pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
       break;
-    case 30164: //Moon TM
+    case 49974: //Moon TM
       pZone->datum = udGZGD_MOON;
-      pZone->projection = udGZPT_TransverseMercator;
+      pZone->projection = udGZPT_Mercator;
       udStrcpy(pZone->zoneName, "Moon Mercator");
-      pZone -> zone = 30164;
+      pZone -> zone = 49974;
       pZone->falseNorthing = 0;
       pZone->falseEasting = 0;
       pZone->meridian = 0;
+      pZone->firstParallel = 0;
       pZone->scaleFactor = 0.9996;
-      pZone->parallel = 0;
+      //pZone->parallel = 0;
       udGeoZone_SetSpheroid(pZone);
       break;
     case 30165: //Moon Centred
@@ -1647,6 +1648,19 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(E, N, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_Mercator)
+  {
+    // let's try variant B
+
+    phi = UD_DEG2RAD(phi);
+
+    double k0 = udCos(UD_DEG2RAD(zone.firstParallel)) / udSqrt(1 - zone.eccentricitySq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2));
+    double E = zone.falseEasting + zone.semiMajorAxis * k0 * (UD_DEG2RAD(omega) - UD_DEG2RAD(zone.meridian));
+    double N = zone.falseNorthing + zone.semiMajorAxis * k0 * udLogN(udTan(UD_PI / 4.0 + phi / 2.0) * udPow((1 - zone.eccentricity * udSin(phi)) / (1 + zone.eccentricity * udSin(phi)), zone.eccentricity / 2.0));
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -1841,6 +1855,22 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG((lambda - zone.meridian) / n + zone.meridian);
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_Mercator)
+  {
+    double eSq = zone.eccentricitySq;
+    double k0 = udCos(UD_DEG2RAD(zone.firstParallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2));
+    double B = udExp(1.0);
+    double t = udPow(B, (zone.falseNorthing - position.y)/(zone.semiMajorAxis * k0));
+    double chi = UD_HALF_PI - 2.0 * udATan(t);
+    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
+      + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
+      + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
+      + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
+
+    latLong.x = UD_RAD2DEG(phi);
+    latLong.y = UD_RAD2DEG((position.x - zone.falseEasting) / (zone.semiMajorAxis * k0) + zone.meridian);
     latLong.z = position.z;
   }
 

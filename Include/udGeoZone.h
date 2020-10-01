@@ -85,6 +85,8 @@ enum udGeoZoneProjectionType
 
   udGZPT_SterographicObliqueNEquatorial,
 
+  udGZPT_Mercator,
+
   udGZPT_Count
 };
 
