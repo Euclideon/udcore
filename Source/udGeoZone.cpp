@@ -56,9 +56,9 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4317, 6317, false,    false },
   { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,    false },
   { "Mars 2000 Mercator",                    "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
-  { "Mars 2000 Planetocentric",              "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
+  { "Mars 2000 / ECEF",              "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
-  { "Moon 2000 Planetocentric",              "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
+  { "Moon 2000 / ECEF",              "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -904,7 +904,6 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->zone = 0;
       pZone->scaleFactor = 1.0;
       pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "Mars 2000 Planetocentric");
       udGeoZone_SetSpheroid(pZone);
       break;
     case 19920: // Singapore Grid
@@ -952,7 +951,6 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     case 30101: //Moon PF
       pZone->datum = udGZGD_MOON_PCPF;
       pZone->projection = udGZPT_ECEF;
-      udStrcpy(pZone->zoneName, "Moon 2000 Planetocentric");
       pZone->zone = 30101;
       pZone->falseNorthing = 0;
       pZone->falseEasting = 0;
@@ -1240,7 +1238,8 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
     else if (udStrEqual(pType, "SPHEROID"))
     {
       pZone->semiMajorAxis = wkt->Get("%s.values[0]", pElem).AsDouble(); // in feet or metres
-      pZone->flattening = 1.0 / wkt->Get("%s.values[1]", pElem).AsDouble(); // inverse flattening
+      double f = wkt->Get("%s.values[1]", pElem).AsDouble();
+      pZone->flattening = f == 0.0 ? 0.0 : 1.0 / wkt->Get("%s.values[1]", pElem).AsDouble(); // inverse flattening
       if (pZone->unitMetreScale != 0)
         udGeoZone_MetreScaleSpheroidMaths(pZone);
     }

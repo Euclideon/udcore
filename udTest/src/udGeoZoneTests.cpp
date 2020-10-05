@@ -245,6 +245,27 @@ TEST(udGeoZone, StereographicOblique)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+TEST(udGeoZone, Mercator)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.42
+  // update available here https://epsg.org/guidance-notes.html
+  // lat = 24 22'54.433''
+  // long = -100 20'0.0''
+
+  udDouble3 latLong = udDouble3::create(24.381787, -100.333333, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 30175)); // Moon Mercator
+  EXPECT_EQ(geoZone.datum, udGZGD_MOON_MERC);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, WebMercator)
 {
   const int64_t angularPrecision = 1 * 60 * 60; // 60x60 to get to arc seconds
@@ -599,7 +620,7 @@ struct
   { 7858, R"wkt(PROJCS["GDA2020 / MGA zone 58",GEOGCS["GDA2020",DATUM["Geocentric_Datum_of_Australia_2020",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","1168"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","7844"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",165],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","7858"]])wkt" },
   { 7859, R"wkt(PROJCS["GDA2020 / MGA zone 59",GEOGCS["GDA2020",DATUM["Geocentric_Datum_of_Australia_2020",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","1168"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","7844"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",171],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","7859"]])wkt" },
 
-  { 8705, R"wkt(GEOCCS["Mars 2000 Planetocentric",DATUM["D_Mars_2000",SPHEROID["Mars_2000_IAU_IAG",3396190,169.894447224,AUTHORITY["EPSG","49900"]],AUTHORITY["EPSG","490001"]],PRIMEM["AIRY-0",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","8705"]])wkt"},
+  { 8705, R"wkt(GEOCCS["Mars 2000 / ECEF",DATUM["D_Mars_2000",SPHEROID["Mars_2000_IAU_IAG",3396190,169.894447224,AUTHORITY["EPSG","49900"]],AUTHORITY["EPSG","490001"]],PRIMEM["AIRY-0",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","8705"]])wkt"},
 
   { 19920, "PROJCS[\"Singapore Grid\",GEOGCS[\"Singapore Grid\",DATUM[\"Singapore Grid\",SPHEROID[\"Everest 1830 Modified\",6377304.063,300.8017,AUTHORITY[\"EPSG\",\"7018\"]],AUTHORITY[\"EPSG\",\"6245\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4245\"]],PROJECTION[\"Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",1.287646667],PARAMETER[\"central_meridian\",103.853002222],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",30000],PARAMETER[\"false_northing\",30000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AUTHORITY[\"EPSG\",\"19920\"]]" },
 
@@ -655,7 +676,7 @@ struct
   { 30200, "PROJCS[\"Trinidad_1903 / Trinidad 1903\",GEOGCS[\"Trinidad 1903\",DATUM[\"Trinidad_1903\",SPHEROID[\"Clarke 1858\",6378293.64520876,294.260676369,AUTHORITY[\"EPSG\",\"7007\"]],AUTHORITY[\"EPSG\",\"6302\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4302\"]],PROJECTION[\"Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",10.44166666666667],PARAMETER[\"central_meridian\",-61.3333333333333],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",430000],PARAMETER[\"false_northing\",325000],UNIT[\"Clarke's link\",0.201166195164,AUTHORITY[\"EPSG\",\"9039\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"30200\"]]" },
 
   //{ 30100, R"wkt(GEOCCS["Moon 2000 Planetocentric",DATUM["D_Moon_2000",SPHEROID["Moon_2000_IAU_IAG",1737400,0.0,AUTHORITY["EPSG","39064"]],AUTHORITY["EPSG","39065"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","30100"]])wkt"},
-  { 30101, R"wkt(GEOCCS["Moon 2000 Planetocentric",DATUM["D_Moon_2000",SPHEROID["Moon_2000_IAU_IAG",1737400,0.0,AUTHORITY["EPSG","39064"]],AUTHORITY["EPSG","39065"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","30101"]])wkt"},
+  { 30101, R"wkt(GEOCCS["Moon 2000 / ECEF",DATUM["D_Moon_2000",SPHEROID["Moon_2000_IAU_IAG",1737400,0.0,AUTHORITY["EPSG","39064"]],AUTHORITY["EPSG","39065"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","30101"]])wkt"},
   //{ 30174, R"wkt(PROJCS["Moon 2000 Mercator",GEOGCS["Moon 2000 Mercator",DATUM["D_Moon_2000",SPHEROID["Moon_2000_IAU_IAG",1737400,0.0,AUTHORITY["EPSG","39064"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","39065"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","39064"]],PROJECTION["Mercator"],PARAMETER["False_Easting",0],PARAMETER["False_Northing",0],PARAMETER["Central_Meridian",0],PARAMETER["Standard_Parallel_1",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","30174"]])wkt"},
   { 30175, R"wkt(PROJCS["Moon 2000 Mercator",GEOGCS["Moon 2000 Mercator",DATUM["D_Moon_2000",SPHEROID["Moon_2000_IAU_IAG",1737400,0.0,AUTHORITY["EPSG","39064"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","39065"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","39064"]],PROJECTION["Mercator"],PARAMETER["False_Easting",0],PARAMETER["False_Northing",0],PARAMETER["Central_Meridian",0],PARAMETER["Standard_Parallel_1",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","30175"]])wkt" },
 
