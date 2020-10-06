@@ -86,6 +86,7 @@ enum udGeoZoneProjectionType
   udGZPT_CassiniSoldnerHyperbolic,
 
   udGZPT_SterographicObliqueNEquatorial,
+  udGZPT_SterographicPolar_vB,
 
   udGZPT_Mercator,
 

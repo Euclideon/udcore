@@ -245,6 +245,28 @@ TEST(udGeoZone, StereographicOblique)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+TEST(udGeoZone, StereographicPolar)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.72
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 28992 : Amersfoort / RD New based on Bessel 1841
+  // lat = -75
+  // long = 120
+
+  udDouble3 latLong = udDouble3::create(-75.0, 120, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 3032)); // Amersfoort
+  EXPECT_EQ(geoZone.datum, udGZGD_WGS84);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, Mercator)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.42
@@ -533,6 +555,8 @@ struct
   { 2461, "PROJCS[\"JGD2000 / Japan Plane Rectangular CS XIX\",GEOGCS[\"JGD2000\",DATUM[\"Japanese_Geodetic_Datum_2000\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6612\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4612\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",26],PARAMETER[\"central_meridian\",154],PARAMETER[\"scale_factor\",0.9999],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AUTHORITY[\"EPSG\",\"2461\"]]" },
 
   { 2771, "PROJCS[\"NAD83(HARN) / California zone 6\",GEOGCS[\"NAD83(HARN)\",DATUM[\"NAD83_High_Accuracy_Reference_Network\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6152\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4152\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",33.88333333333333],PARAMETER[\"standard_parallel_2\",32.78333333333333],PARAMETER[\"latitude_of_origin\",32.16666666666666],PARAMETER[\"central_meridian\",-116.25],PARAMETER[\"false_easting\",2000000],PARAMETER[\"false_northing\",500000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"2771\"]]" },
+
+  { 3032, R"wkt(PROJCS["WGS 84 / Australian Antarctic Polar Stereographic",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Polar_Stereographic"],PARAMETER["latitude_of_origin",-71],PARAMETER["central_meridian",70],PARAMETER["scale_factor",1],PARAMETER["false_easting",6000000],PARAMETER["false_northing",6000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","3032"]])wkt"},
 
   { 3112, "PROJCS[\"GDA94 / Geoscience Australia Lambert\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",-18],PARAMETER[\"standard_parallel_2\",-36],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",134],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3112\"]]" },
   { 3113, "PROJCS[\"GDA94 / BCSG02\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",-28],PARAMETER[\"central_meridian\",153],PARAMETER[\"scale_factor\",0.99999],PARAMETER[\"false_easting\",50000],PARAMETER[\"false_northing\",100000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3113\"]]" },

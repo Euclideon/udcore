@@ -20,7 +20,7 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Krassowsky 1940",    6378245.000, 1.0 / 298.3,         7024 }, // udGZE_Krassowsky1940
   { "Everest 1830 Modified",6377304.063, 1.0 / 300.8017,    7018 }, // udGZE_Everest1930M
   { "Mars_2000_IAU_IAG",  3396190.000, 1.0 / 169.894447224, 49900 },// udGZE_MARS
-  { "Moon_2000_IAU_IAG",  1737400.000, 0.0,           39064 },// udGZE_MOON
+  { "Moon_2000_IAU_IAG",  1737400.000, 0.0,                 39064 },// udGZE_MOON
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -56,9 +56,9 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4317, 6317, false,    false },
   { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,    false },
   { "Mars 2000 Mercator",                    "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
-  { "Mars 2000 / ECEF",              "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
+  { "Mars 2000 / ECEF",                      "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
-  { "Moon 2000 / ECEF",              "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
+  { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -746,6 +746,19 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(32.51, -118.14);
       pZone->latLongBoundMax = udDouble2::create(34.08, -114.43);
       break;
+    case 3032: // WGS 84 / Australian Antartic Polar Sterographic
+      pZone->datum = udGZGD_WGS84;//udGZGD_AUST_ANT;
+      pZone->projection = udGZPT_SterographicPolar_vB;
+      udStrcpy(pZone->zoneName, "Australian Antarctic Polar Stereographic");
+      pZone->meridian = 70.0;
+      pZone->parallel = -71.0;
+      pZone->falseEasting = 6000000.0;
+      pZone->falseNorthing = 6000000.0;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(45.0, -90.0);
+      pZone->latLongBoundMax = udDouble2::create(160.0, -60.0);
+      break;
     case 3112: // GDA94 / Geoscience Australia Lambert
       pZone->datum = udGZGD_GDA94;
       pZone->projection = udGZPT_LambertConformalConic2SP;
@@ -1018,7 +1031,6 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     default:
       return udR_ObjectNotFound;
     }
-
   }
 
   pZone->srid = sridCode;
@@ -1231,8 +1243,14 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       else if (udStrstr(pName, 0, "Mercator"))
       {
         pZone->projection = udGZPT_Mercator;
-        if (pZone->scaleFactor == 0) // default for TM is 0.9996
+        if (pZone->scaleFactor == 0) // default for Mercator is 1.0
           pZone->scaleFactor = 1.0;
+      }
+      else if (udStrstr(pName, 0, "Polar_Stereographic"))
+      {
+        pZone->projection = udGZPT_SterographicPolar_vB;
+          if (pZone->scaleFactor == 0) // default for Polar Stereo is 1.0
+            pZone->scaleFactor = 1.0;
       }
     }
     else if (udStrEqual(pType, "SPHEROID"))
@@ -1384,6 +1402,12 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
     udSprintf(&pWKTProjection, "PROJECTION[\"Mercator\"],PARAMETER[\"False_Easting\",%s],PARAMETER[\"False_Northing\",%s],PARAMETER[\"Central_Meridian\",%s],PARAMETER[\"Standard_Parallel_1\",%s],%s",
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision),
       udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_SterographicPolar_vB)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
@@ -1675,6 +1699,24 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     return udDouble3::create(E, N, ellipsoidHeight);
 
   }
+  else if (zone.projection == udGZPT_SterographicPolar_vB)
+  {
+    double eSq = zone.eccentricitySq;
+    phi = UD_DEG2RAD(phi);
+    omega = UD_DEG2RAD(omega);
+    double theta = omega - UD_DEG2RAD(zone.meridian);
+    double tF = udTan(UD_PI / 4.0 + UD_DEG2RAD(zone.parallel) / 2.0) / udPow((1 + e * udSin(UD_DEG2RAD(zone.parallel))) / (1 - e - udSin(UD_DEG2RAD(zone.parallel))), e / 2.0);
+    double mF = udCos(UD_DEG2RAD(zone.parallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.parallel)), 2));
+    double k0 = mF * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * tF);
+    double t = udTan(UD_PI / 4.0 + /*north pole -> - */ phi / 2.0) / udPow((1 + e * udSin(phi)) / (1 - e * udSin(phi)), e / 2.0);
+    double rho = 2.0 *zone.semiMajorAxis * k0 * t / udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e));
+    double dE = rho * udSin(theta);
+    double dN = rho * udCos(theta);
+    double E = dE + zone.falseEasting;
+    double N = zone.falseNorthing + dN; // north pole N = fN - dN;
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -1885,6 +1927,30 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG((position.x - zone.falseEasting) / (zone.semiMajorAxis * k0) + zone.meridian);
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_SterographicPolar_vB)
+  {
+    double eSq = zone.eccentricitySq;
+
+    // South Pole
+    double tF = udTan(UD_PI / 4.0 + UD_DEG2RAD(zone.parallel) / 2.0) / udPow((1 + e * udSin(UD_DEG2RAD(zone.parallel))) / (1 - e - udSin(UD_DEG2RAD(zone.parallel))), e / 2.0);
+    double mF = udCos(UD_DEG2RAD(zone.parallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.parallel)), 2));
+    double k0 = mF * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * tF);
+    double rhoP = udSqrt(udPow(position.x - zone.falseEasting, 2) + udPow(position.y - zone.falseNorthing, 2));
+    double tP = rhoP * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * zone.semiMajorAxis * k0);
+    double chi = 2.0 * udATan(tP) - UD_HALF_PI; // north pole -> chi = -chi
+    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
+      + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
+      + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
+      + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
+
+    latLong.x = UD_RAD2DEG(phi);
+    if (position.x == zone.falseEasting)
+      latLong.y = zone.falseEasting;
+    else
+      latLong.y = zone.meridian + UD_RAD2DEG(udATan2(position.x - zone.falseEasting, position.y - zone.falseNorthing));
+    // north pole -> udATan2(zone.falseEasting - position.x, zone.falseNorthing - position.y);
     latLong.z = position.z;
   }
 
