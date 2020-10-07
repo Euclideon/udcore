@@ -1701,6 +1701,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
   }
   else if (zone.projection == udGZPT_SterographicPolar_vB)
   {
+    bool isNorthPole = zone.parallel > 0.0;
     double eSq = zone.eccentricitySq;
     phi = UD_DEG2RAD(phi);
     omega = UD_DEG2RAD(omega);
@@ -1708,12 +1709,18 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double tF = udTan(UD_PI / 4.0 + UD_DEG2RAD(zone.parallel) / 2.0) / udPow((1 + e * udSin(UD_DEG2RAD(zone.parallel))) / (1 - e - udSin(UD_DEG2RAD(zone.parallel))), e / 2.0);
     double mF = udCos(UD_DEG2RAD(zone.parallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.parallel)), 2));
     double k0 = mF * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * tF);
-    double t = udTan(UD_PI / 4.0 + /*north pole -> - */ phi / 2.0) / udPow((1 + e * udSin(phi)) / (1 - e * udSin(phi)), e / 2.0);
+
+    double t = udTan(UD_PI / 4.0 + phi / 2.0) / udPow((1 + e * udSin(phi)) / (1 - e * udSin(phi)), e / 2.0);
+    if (isNorthPole)
+      t = udTan(UD_PI / 4.0 - phi / 2.0) / udPow((1 + e * udSin(phi)) / (1 - e * udSin(phi)), e / 2.0);
+
     double rho = 2.0 *zone.semiMajorAxis * k0 * t / udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e));
     double dE = rho * udSin(theta);
     double dN = rho * udCos(theta);
     double E = dE + zone.falseEasting;
     double N = zone.falseNorthing + dN; // north pole N = fN - dN;
+    if (isNorthPole)
+      N = zone.falseNorthing - dN;
 
     return udDouble3::create(E, N, ellipsoidHeight);
   }
@@ -1931,6 +1938,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
   }
   else if (zone.projection == udGZPT_SterographicPolar_vB)
   {
+    bool isNorthPole = zone.parallel > 0.0;
     double eSq = zone.eccentricitySq;
 
     // South Pole
@@ -1939,7 +1947,11 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double k0 = mF * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * tF);
     double rhoP = udSqrt(udPow(position.x - zone.falseEasting, 2) + udPow(position.y - zone.falseNorthing, 2));
     double tP = rhoP * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * zone.semiMajorAxis * k0);
-    double chi = 2.0 * udATan(tP) - UD_HALF_PI; // north pole -> chi = -chi
+
+    double chi = 2.0 * udATan(tP) - UD_HALF_PI;
+    if (isNorthPole)// north pole
+      chi = -chi;
+
     double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
       + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
       + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
@@ -1947,10 +1959,15 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     if (position.x == zone.falseEasting)
+    {
       latLong.y = zone.falseEasting;
+    }
     else
+    {
       latLong.y = zone.meridian + UD_RAD2DEG(udATan2(position.x - zone.falseEasting, position.y - zone.falseNorthing));
-    // north pole -> udATan2(zone.falseEasting - position.x, zone.falseNorthing - position.y);
+      if (isNorthPole) // north pole
+        latLong.y = zone.meridian + UD_RAD2DEG(udATan2(zone.falseEasting - position.x, zone.falseNorthing - position.y));
+    }
     latLong.z = position.z;
   }
 
