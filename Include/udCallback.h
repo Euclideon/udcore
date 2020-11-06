@@ -59,14 +59,15 @@ struct udCallback<Result(Args...)>
   ~udCallback() { if (pPtr) pPtr->~udAbstractCallback(); }
 
   udCallback &operator=(const udCallback &other) { memcpy(buffer, other.buffer, sizeof(buffer)); if (other.pPtr) pPtr = (decltype(pPtr))buffer; else pPtr = nullptr; return *this; }
-  udCallback &operator=(udCallback &&other) noexcept { *this = std::move(other); return *this; }
+  udCallback &operator=(udCallback &&other) noexcept { memmove(buffer, other.buffer, sizeof(buffer)); if (other.pPtr) pPtr = (decltype(pPtr))buffer; else pPtr = nullptr; other.pPtr = nullptr; return *this; }
   udCallback &operator=(std::nullptr_t) noexcept { pPtr = nullptr; return *this; }
-  template<typename T, std::enable_if_t<T::value, Result(Args...)> = 0>
-  udCallback &operator=(T &&callback)
+  template<typename T>
+  udCallback &operator=(T callback)
   {
     UDCOMPILEASSERT(sizeof(T) <= sizeof(buffer), "Provided function is larger than buffer!");
     using udCallbackT = udConcreteCallback<T, Result(Args...)>;
     pPtr = new (buffer) udCallbackT(std::move(callback));
+    return *this;
   }
 
   bool operator==(std::nullptr_t) noexcept { return pPtr == nullptr; }

@@ -30,7 +30,28 @@ TEST(udCallbackTests, Validation)
 
   TestCallback nullFunc = nullptr;
   EXPECT_FALSE(nullFunc);
+  EXPECT_TRUE(nullFunc == nullptr); // Test == operator
+  EXPECT_FALSE(nullFunc != nullptr); // Test != operator
 
+  TestCallback nullAssignFunc = [](int a) -> int { return a * 2; };
+  EXPECT_TRUE(nullAssignFunc);
+  EXPECT_FALSE(nullAssignFunc == nullptr); // Test == operator
+  EXPECT_TRUE(nullAssignFunc != nullptr); // Test != operator
+  nullAssignFunc = nullptr;
+  EXPECT_FALSE(nullAssignFunc);
+  EXPECT_TRUE(nullAssignFunc == nullptr); // Test == operator
+  EXPECT_FALSE(nullAssignFunc != nullptr); // Test != operator
+
+  // Test copy constructor
   TestCallback copyFunc = basic;
   EXPECT_EQ(basic(2), copyFunc(2));
+
+  // Test move constructors and assignments
+  TestCallback moveFunc = std::move(copyFunc); // Test move constructor
+  EXPECT_EQ(basic(3), moveFunc(3));
+  copyFunc = basic; // Test copy assignment
+  moveFunc = std::move(copyFunc); // Test move assignment
+  EXPECT_EQ(basic(4), moveFunc(4));
+  moveFunc = [](int a) -> int { return a; }; // Test direct assignment
+  EXPECT_EQ(5, moveFunc(a));
 }
