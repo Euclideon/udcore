@@ -32,6 +32,10 @@ filter { "system:ios", "action:xcode4" }
 		['ENABLE_BITCODE'] = "NO",
 	}
 
+-- Memory debug stuff
+filter { "system:windows", "configurations:debug" }
+	defines { "__MEMORY_DEBUG__" }
+
 filter {}
 
 solution "udCore"
