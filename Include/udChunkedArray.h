@@ -9,6 +9,7 @@
 //
 
 #include "udPlatform.h"
+#include "udPlatformUtil.h"
 #include "udResult.h"
 
 // --------------------------------------------------------------------------
@@ -76,6 +77,8 @@ struct udChunkedArray
   T **ppChunks;
   size_t ptrArraySize;
   size_t chunkElementCount;
+  size_t chunkElementCountShift;
+  size_t chunkElementCountMask;
   size_t chunkCount;
 
   size_t length;
@@ -130,6 +133,8 @@ inline udResult udChunkedArray<T>::Init(size_t a_chunkElementCount)
   UD_ERROR_IF(!a_chunkElementCount || (a_chunkElementCount & (a_chunkElementCount - 1)), udR_InvalidParameter_);
 
   chunkElementCount = a_chunkElementCount;
+  chunkElementCountMask = a_chunkElementCount - 1;
+  chunkElementCountShift = udCountBits64((uint64_t)chunkElementCountMask);
   chunkCount = 1;
 
   if (chunkCount > ptrArrayInc)
@@ -230,23 +235,23 @@ inline udResult udChunkedArray<T>::GrowBack(size_t numberOfNewElements)
 
   size_t oldLength = inset + length;
   size_t newLength = oldLength + numberOfNewElements;
-  size_t prevUsedChunkCount = (oldLength + chunkElementCount - 1) / chunkElementCount;
+  size_t prevUsedChunkCount = (oldLength + chunkElementCount - 1) >> chunkElementCountShift;
 
   udResult res = ReserveBack(length + numberOfNewElements);
   if (res != udR_Success)
     return res;
 
   // Zero new elements
-  size_t newUsedChunkCount = (newLength + chunkElementCount - 1) / chunkElementCount;
+  size_t newUsedChunkCount = (newLength + chunkElementCount - 1) >> chunkElementCountShift;
   size_t usedChunkDelta = newUsedChunkCount - prevUsedChunkCount;
-  size_t head = oldLength % chunkElementCount;
+  size_t head = oldLength & chunkElementCountMask;
 
   if (usedChunkDelta)
   {
     if (head)
       memset(&ppChunks[prevUsedChunkCount - 1][head], 0, (chunkElementCount - head) * sizeof(T));
 
-    size_t tail = newLength % chunkElementCount;
+    size_t tail = newLength & chunkElementCountMask;
 
     for (size_t chunkIndex = prevUsedChunkCount; chunkIndex < (newUsedChunkCount - 1 + !tail); ++chunkIndex)
       memset(ppChunks[chunkIndex], 0, sizeof(T) * chunkElementCount);
@@ -273,7 +278,7 @@ inline udResult udChunkedArray<T>::ReserveBack(size_t newCapacity)
   size_t oldCapacity = chunkElementCount * chunkCount - inset;
   if (newCapacity > oldCapacity)
   {
-    size_t newChunksCount = (newCapacity - oldCapacity + chunkElementCount - 1) / chunkElementCount;
+    size_t newChunksCount = (newCapacity - oldCapacity + chunkElementCount - 1) >> chunkElementCountShift;
     res = AddChunks(newChunksCount);
   }
   return res;
@@ -286,8 +291,8 @@ inline T &udChunkedArray<T>::operator[](size_t index)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  size_t chunkIndex = index / chunkElementCount;
-  return ppChunks[chunkIndex][index % chunkElementCount];
+  size_t chunkIndex = index >> chunkElementCountShift;
+  return ppChunks[chunkIndex][index & chunkElementCountMask];
 }
 
 // --------------------------------------------------------------------------
@@ -297,8 +302,8 @@ inline const T &udChunkedArray<T>::operator[](size_t index) const
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  size_t chunkIndex = index / chunkElementCount;
-  return ppChunks[chunkIndex][index % chunkElementCount];
+  size_t chunkIndex = index >> chunkElementCountShift;
+  return ppChunks[chunkIndex][index & chunkElementCountMask];
 }
 
 // --------------------------------------------------------------------------
@@ -308,8 +313,8 @@ inline T* udChunkedArray<T>::GetElement(size_t index)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  size_t chunkIndex = index / chunkElementCount;
-  return &ppChunks[chunkIndex][index % chunkElementCount];
+  size_t chunkIndex = index >> chunkElementCountShift;
+  return &ppChunks[chunkIndex][index & chunkElementCountMask];
 }
 
 // --------------------------------------------------------------------------
@@ -319,8 +324,8 @@ inline const T* udChunkedArray<T>::GetElement(size_t index) const
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  size_t chunkIndex = index / chunkElementCount;
-  return &ppChunks[chunkIndex][index % chunkElementCount];
+  size_t chunkIndex = index >> chunkElementCountShift;
+  return &ppChunks[chunkIndex][index & chunkElementCountMask];
 }
 
 // --------------------------------------------------------------------------
@@ -350,8 +355,8 @@ inline void udChunkedArray<T>::SetElement(size_t index, const T &data)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
-  size_t chunkIndex = index / chunkElementCount;
-  ppChunks[chunkIndex][index % chunkElementCount] = data;
+  size_t chunkIndex = index >> chunkElementCountShift;
+  ppChunks[chunkIndex][index & chunkElementCountMask] = data;
 }
 
 // --------------------------------------------------------------------------
@@ -366,9 +371,9 @@ inline udResult udChunkedArray<T>::PushBack(T **ppElement)
     return res;
 
   size_t newIndex = inset + length;
-  size_t chunkIndex = size_t(newIndex / chunkElementCount);
+  size_t chunkIndex = size_t(newIndex >> chunkElementCountShift);
 
-  *ppElement = ppChunks[chunkIndex] + (newIndex % chunkElementCount);
+  *ppElement = ppChunks[chunkIndex] + (newIndex & chunkElementCountMask);
 
   ++length;
   return udR_Success;
@@ -557,11 +562,11 @@ inline void udChunkedArray<T>::RemoveAt(size_t index)
   {
     index += inset;
 
-    size_t chunkIndex = index / chunkElementCount;
+    size_t chunkIndex = index >> chunkElementCountShift;
 
     // Move within the chunk of the remove item
     if ((index % chunkElementCount) != (chunkElementCount - 1)) // If there are items after the remove item
-      memmove(&ppChunks[chunkIndex][index % chunkElementCount], &ppChunks[chunkIndex][(index + 1) % chunkElementCount], sizeof(T) * (chunkElementCount - 1 - (index % chunkElementCount)));
+      memmove(&ppChunks[chunkIndex][index & chunkElementCountMask], &ppChunks[chunkIndex][(index + 1) & chunkElementCountMask], sizeof(T) * (chunkElementCount - 1 - (index & chunkElementCountMask)));
 
     // Handle middle chunks
     for (size_t i = (chunkIndex + 1); i < (chunkCount - 1); ++i)
@@ -580,7 +585,7 @@ inline void udChunkedArray<T>::RemoveAt(size_t index)
       memcpy(&ppChunks[chunkCount - 2][chunkElementCount - 1], &ppChunks[chunkCount - 1][0], sizeof(T));
 
       // Move remaining items
-      memmove(&ppChunks[chunkCount - 1][0], &ppChunks[chunkCount - 1][1], sizeof(T) * ((length + (inset - 1)) % chunkElementCount));
+      memmove(&ppChunks[chunkCount - 1][0], &ppChunks[chunkCount - 1][1], sizeof(T) * ((length + (inset - 1)) & chunkElementCountMask));
     }
 
     PopBack();
@@ -710,7 +715,7 @@ inline size_t udChunkedArray<T>::GetElementRunLength(size_t index, bool elements
 {
   if (index < length)
   {
-    size_t indexInChunk = ((index + inset) % chunkElementCount);
+    size_t indexInChunk = ((index + inset) & chunkElementCountMask);
     if (elementsBehind)
       return ((index + inset) >= chunkElementCount) ? indexInChunk : (indexInChunk - inset);
     size_t runLength = chunkElementCount - indexInChunk;
@@ -732,7 +737,7 @@ inline typename udChunkedArray<T>::iterator udChunkedArray<T>::begin()
 template <typename T>
 inline typename udChunkedArray<T>::iterator udChunkedArray<T>::end()
 {
-  return udChunkedArray<T>::iterator{ &ppChunks[(inset + length) / chunkElementCount], (inset + length) % chunkElementCount, chunkElementCount };
+  return udChunkedArray<T>::iterator{ &ppChunks[(inset + length) >> chunkElementCountShift], (inset + length) & chunkElementCountMask, chunkElementCount };
 }
 
 #endif // UDCHUNKEDARRAY_H
