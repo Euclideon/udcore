@@ -71,8 +71,16 @@ struct udThread
   volatile int32_t refCount;
 };
 
+#if UDPLATFORM_WINDOWS
+using udThreadReturnType = unsigned long;
+udThreadReturnType udThreadReturnTypeConvert(uint32_t ret) { return static_cast<udThreadReturnType>(ret); }
+#else
+using udThreadReturnType = void *;
+udThreadReturnType udThreadReturnTypeConvert(uint32_t ret) { return reinterpret_cast<udThreadReturnType>(ret); }
+#endif
+
 // ----------------------------------------------------------------------------
-static uint32_t udThread_Bootstrap(udThread *pThread)
+static udThreadReturnType udThread_Bootstrap(udThread *pThread)
 {
   uint32_t threadReturnValue;
   bool reclaimed = false; // Set to true when the thread is reclaimed by the cache system
@@ -128,7 +136,7 @@ static uint32_t udThread_Bootstrap(udThread *pThread)
   if (pThread)
     udThread_Destroy(&pThread);
 
-  return threadReturnValue;
+  return udThreadReturnTypeConvert(threadReturnValue);
 }
 
 

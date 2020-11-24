@@ -1,5 +1,14 @@
-#include "udJSON.h"
 #include "udPlatform.h"
+
+#if defined(UD_GCC_VERSION) && !defined(__clang__) && UD_GCC_VERSION > 90000
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+#include "udJSON.h"
+#if defined(UD_GCC_VERSION) && !defined(__clang__) && UD_GCC_VERSION > 90000
+# pragma GCC diagnostic push
+#endif
+
 #include "udStringUtil.h"
 #include "udCrypto.h"
 
