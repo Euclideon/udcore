@@ -1086,6 +1086,9 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
       UD_ERROR_IF(currPathLen == 0, udR_Failure_); // Weren't able to make any of the folders
       truncChar = pPath[currPathLen];
       pPath[currPathLen] = 0;
+
+      // If directory already exists, user can't create folders here
+      UD_ERROR_IF(udDirectoryExists(pPath, nullptr) != udR_ObjectNotFound, udR_Failure_);
     }
     else if (currPathLen != fullPathLen)
     {
