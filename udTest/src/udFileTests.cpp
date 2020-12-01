@@ -394,6 +394,13 @@ TEST(udFileTests, RecursiveCreateDirectoryTests)
   // Empty directory should always succeed
   EXPECT_EQ(udR_Success, udCreateDir("", &newFolders));
   EXPECT_EQ(0, newFolders);
+
+  // Creating a directory where a file already exists shouldn't infinite loop
+  // this infinite loop also occurs when a user has insufficient permissions.
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, "./file", udFOF_Create));
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+  EXPECT_EQ(udR_Failure_, udCreateDir("./file/dir"));
+  EXPECT_EQ(udR_Success, udFileDelete("./file"));
 }
 
 TEST(udFileTests, DataLoad)
