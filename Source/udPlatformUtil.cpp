@@ -205,20 +205,6 @@ double udGetEpochSecsUTCf()
   return 1.0 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
 }
 
-// ****************************************************************************
-// Author: Paul Fox, July 2019
-int64_t udGetEpochMilliSecsUTCd()
-{
-  return 1000 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
-}
-
-// ****************************************************************************
-// Author: Paul Fox, July 2019
-double udGetEpochMilliSecsUTCf()
-{
-  return 1000.0 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
-}
-
 #if UDPLATFORM_WINDOWS
 // *********************************************************************
 // Author: Dave Pevreal, June 2015

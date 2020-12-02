@@ -97,8 +97,6 @@ int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr); // Return the
 
 int64_t udGetEpochSecsUTCd();
 double udGetEpochSecsUTCf();
-int64_t udGetEpochMilliSecsUTCd();
-double udGetEpochMilliSecsUTCf();
 
 #if UDPLATFORM_WINDOWS
 // *********************************************************************
