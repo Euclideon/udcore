@@ -56,13 +56,16 @@ char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars = 0);
 // udStrchr behaves much like strchr, optionally also providing the index
 // of the find, which will be the length if not found (ie when null is returned)
 const char *udStrchr(const char *pStr, const char *pCharList, size_t *pIndex = nullptr, size_t *pCharListIndex = nullptr);
+const char *udStrchri(const char *pStr, const char *pCharList, size_t *pIndex = nullptr, size_t *pCharListIndex = nullptr);
 // udStrrchr behaves much like strrchr, optionally also providing the index
 // of the find, which will be the length if not found (ie when null is returned)
-const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex = nullptr);
+const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex = nullptr, size_t *pCharListIndex = nullptr);
+const char *udStrrchri(const char *pStr, const char *pCharList, size_t *pIndex = nullptr, size_t *pCharListIndex = nullptr);
 // udStrstr behaves much like strstr, though the length of s can be supplied for safety
 // (zero indicates assume nul-terminated). Optionally the function can provide the index
 // of the find, which will be the length if not found (ie when null is returned)
 const char *udStrstr(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex = nullptr);
+const char *udStrstri(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex = nullptr);
 // udStrAtoi behaves much like atoi, optionally giving the number of characters parsed
 // and the radix of 2 - 36 can be supplied to parse numbers such as hex(16) or binary(2)
 // No overflow testing is performed at this time

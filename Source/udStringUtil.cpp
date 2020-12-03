@@ -248,7 +248,8 @@ char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-const char *udStrchr(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
+template <bool insensitive>
+const char *udStrchr_Internal(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
   if (!pStr) pStr = s_udStrEmptyString;
   if (!pCharList) pCharList = s_udStrEmptyString;
@@ -260,7 +261,7 @@ const char *udStrchr(const char *pStr, const char *pCharList, size_t *pIndex, si
   {
     for (size_t i = 0; i < listLen; ++i)
     {
-      if (pStr[index] == pCharList[i])
+      if (pStr[index] == pCharList[i] || (insensitive && tolower(pStr[index]) == tolower(pCharList[i])))
       {
         // Found, set index if required and return a pointer to the found character
         if (pIndex)
@@ -279,8 +280,25 @@ const char *udStrchr(const char *pStr, const char *pCharList, size_t *pIndex, si
 
 
 // *********************************************************************
+// Author: Samuel Surtees, December 2020
+const char *udStrchr(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
+{
+  return udStrchr_Internal<false>(pStr, pCharList, pIndex, pCharListIndex);
+}
+
+
+// *********************************************************************
+// Author: Samuel Surtees, December 2020
+const char *udStrchri(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
+{
+  return udStrchr_Internal<true>(pStr, pCharList, pIndex, pCharListIndex);
+}
+
+
+// *********************************************************************
 // Author: Samuel Surtees, May 2015
-const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex)
+template <bool insensitive>
+const char *udStrrchr_Internal(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
   if (!pStr) pStr = s_udStrEmptyString;
   if (!pCharList) pCharList = s_udStrEmptyString;
@@ -292,11 +310,13 @@ const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex)
   {
     for (size_t i = 0; i < listLen; ++i)
     {
-      if (pStr[index] == pCharList[i])
+      if (pStr[index] == pCharList[i] || (insensitive && tolower(pStr[index]) == tolower(pCharList[i])))
       {
         // Found, set index if required and return a pointer to the found character
         if (pIndex)
           *pIndex = index;
+        if (pCharListIndex)
+          *pCharListIndex = i;
         return pStr + index;
       }
     }
@@ -309,8 +329,25 @@ const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex)
 
 
 // *********************************************************************
+// Author: Samuel Surtees, December 2020
+const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
+{
+  return udStrrchr_Internal<false>(pStr, pCharList, pIndex, pCharListIndex);
+}
+
+
+// *********************************************************************
+// Author: Samuel Surtees, December 2020
+const char *udStrrchri(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
+{
+  return udStrrchr_Internal<true>(pStr, pCharList, pIndex, pCharListIndex);
+}
+
+
+// *********************************************************************
 // Author: Dave Pevreal, March 2014
-const char *udStrstr(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex)
+template <bool insensitive>
+const char *udStrstr_Internal(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex)
 {
   if (!pStr) pStr = s_udStrEmptyString;
   if (!pSubString) pSubString = s_udStrEmptyString;
@@ -319,7 +356,7 @@ const char *udStrstr(const char *pStr, size_t sLen, const char *pSubString, size
 
   for (i = 0; pStr[i] && (!sLen || i < sLen); ++i)
   {
-    if (pStr[i] == pSubString[subStringIndex])
+    if (pStr[i] == pSubString[subStringIndex] || (insensitive && tolower(pStr[i]) == tolower(pSubString[subStringIndex])))
     {
       if (pSubString[++subStringIndex] == 0)
       {
@@ -340,6 +377,22 @@ const char *udStrstr(const char *pStr, size_t sLen, const char *pSubString, size
   if (pIndex)
     *pIndex = i;
   return nullptr;
+}
+
+
+// *********************************************************************
+// Author: Samuel Surtees, December 2020
+const char *udStrstr(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex)
+{
+  return udStrstr_Internal<false>(pStr, sLen, pSubString, pIndex);
+}
+
+
+// *********************************************************************
+// Author: Samuel Surtees, December 2020
+const char *udStrstri(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex)
+{
+  return udStrstr_Internal<true>(pStr, sLen, pSubString, pIndex);
 }
 
 // *********************************************************************
