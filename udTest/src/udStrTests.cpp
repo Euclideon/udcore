@@ -117,6 +117,10 @@ TEST(udStrTests, udStrchr)
   EXPECT_EQ(&input[3], udStrchr(input, "s"));
   EXPECT_STREQ(&input[18], udStrrchr(input, "s"));
   EXPECT_EQ(&input[18], udStrrchr(input, "s"));
+  EXPECT_NE(udStrchr(input, "t"), udStrchri(input, "t"));
+  EXPECT_EQ(udStrchr(input, "T"), udStrchri(input, "T"));
+  EXPECT_EQ(udStrrchr(input, "t"), udStrrchri(input, "t"));
+  EXPECT_NE(udStrrchr(input, "T"), udStrrchri(input, "T"));
 }
 
 TEST(udStrTests, udStrstr)
@@ -124,6 +128,8 @@ TEST(udStrTests, udStrstr)
   const char input[] = "That last string wasn't special at all, this one is special though.";
   EXPECT_STREQ(&input[24], udStrstr(input, UDARRAYSIZE(input), "special"));
   EXPECT_EQ(&input[24], udStrstr(input, UDARRAYSIZE(input), "special"));
+  EXPECT_STREQ(input, udStrstri(input, udLengthOf(input), "th"));
+  EXPECT_STREQ(input, udStrstri(input, udLengthOf(input), "TH"));
 }
 
 TEST(udStrTests, udStrAto)
