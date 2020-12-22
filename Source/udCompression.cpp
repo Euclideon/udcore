@@ -327,7 +327,7 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
         UD_ERROR_SET_NO_BREAK(udR_ReadFailure);
       udSleep(1);
     }
-    UD_ERROR_IF(int64_t(pZip->lengthRead) < seekOffset, udR_ReadFailure);
+    UD_ERROR_IF(int64_t(pZip->lengthRead) <= seekOffset, udR_ReadFailure);
 
     actualRead = udMin(bufferLength, pZip->lengthRead - (size_t)seekOffset);
     udReadLockRWLock(pZip->pRWLock);
