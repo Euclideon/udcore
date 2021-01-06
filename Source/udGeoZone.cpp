@@ -2,6 +2,7 @@
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udJSON.h"
+#include <proj.h>
 
 const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   // WKT Sphere name      semiMajor    flattening           authority epsg
@@ -728,8 +729,8 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->falseEasting = 836694.05;
       pZone->scaleFactor = 1.0;
       udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(22.13, 113.76);
-      pZone->latLongBoundMax = udDouble2::create(22.58, 114.51);
+      pZone->latLongBoundMin = udDouble2::create(22.16, 113.76);
+      pZone->latLongBoundMax = udDouble2::create(22.62, 114.51);
       break;
     case 2771: // NAD83(HARN) / California zone 6
       pZone->datum = udGZGD_NAD83_HARN;
@@ -1520,15 +1521,23 @@ static double udGeoZone_LatMeridianSameNorthing(const double mu, const double e)
 // Author: Lauren Jones, June 2018
 udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat /*= false*/, udGeoZoneGeodeticDatum datum /*= udGZGD_WGS84*/)
 {
+  udDouble3 latlon = latLong;
+  //if (zone.datum == udGZGD_HK1980)
+  //{
+  //  latlon.x -= 0.001527778;
+  //  latlon.y += 0.002444444;
+  //  latlon.z -= 130.0;
+  //}
+
   double e = zone.eccentricity;
-  double phi = ((!flipFromLongLat) ? latLong.x : latLong.y);
-  double omega = ((!flipFromLongLat) ? latLong.y : latLong.x);
-  double ellipsoidHeight = latLong.z;
+  double phi = ((!flipFromLongLat) ? latlon.x : latlon.y);
+  double omega = ((!flipFromLongLat) ? latlon.y : latlon.x);
+  double ellipsoidHeight = latlon.z;
   double X, Y;
 
   if (datum != zone.datum)
   {
-    udDouble3 convertedLatLong = udGeoZone_ConvertDatum(udDouble3::create(phi, omega, latLong.z), datum, zone.datum);
+    udDouble3 convertedLatLong = udGeoZone_ConvertDatum(udDouble3::create(phi, omega, latlon.z), datum, zone.datum);
     phi = convertedLatLong.x;
     omega = convertedLatLong.y;
     ellipsoidHeight = convertedLatLong.z;
@@ -1548,33 +1557,76 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
   }
   else if (zone.projection == udGZPT_TransverseMercator)
   {
-    // UTM rather than Lambert CC which requires two parallels for calculation
-    phi = UD_DEG2RAD(phi);
-    omega = UD_DEG2RAD(omega - zone.meridian);
-
-    double sigma = udSinh(e * udATanh(e * udTan(phi) / udSqrt(1 + udPow(udTan(phi), 2))));
-    double tanConformalPhi = udTan(phi) * udSqrt(1 + udPow(sigma, 2)) - sigma * udSqrt(1 + udPow(udTan(phi), 2));
-
-    double v = udASinh(udSin(omega) / udSqrt(udPow(tanConformalPhi, 2) + udPow(udCos(omega), 2)));
-    double u = udATan2(tanConformalPhi, udCos(omega));
-
-    X = v;
-    for (size_t i = 0; i < UDARRAYSIZE(zone.alpha); i++)
+    if (zone.datum == udGZGD_HK1980)
     {
-      double j = (i + 1) * 2.0;
-      X += zone.alpha[i] * udCos(j * u) * udSinh(j * v);
-    }
-    X = X * zone.radius;
+      PJ_CONTEXT *C;
+      PJ *P;
+      //PJ *P_for_GIS;
+      PJ_COORD a, b;
+      C = proj_context_create();
 
-    Y = u;
-    for (size_t i = 0; i < UDARRAYSIZE(zone.alpha); i++)
+      P = proj_create_crs_to_crs(C,
+        "EPSG:4978",
+        "EPSG:2326",
+        NULL);
+
+      if (0 == P) {
+        fprintf(stderr, "Could not create crs_to_crs\n");
+      }
+
+      /* This will ensure that the order of coordinates for the input CRS */
+      /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
+      /* longitude */
+      //P_for_GIS = proj_(C, P);
+      //if (0 == P_for_GIS) {
+      //  fprintf(stderr, "Could not normalize_for_vis\n");
+      //}
+      //proj_destroy(P);
+      //P = P_for_GIS;
+
+      /* Given that we have used proj_normalize_for_visualization(), the order of
+      /* coordinates is longitude, latitude, and values are expressed in degrees. */
+      a = proj_coord(omega, phi, ellipsoidHeight, 0);
+
+      /* transform to ECEF */
+      b = proj_trans(P, PJ_FWD, a);
+      printf("easting: %.3f, northing: %.3f\n", b.enu.e, b.enu.n);
+
+      /* Clean up */
+      proj_destroy(P);
+      proj_context_destroy(C); /* may be omitted in the single threaded case */
+      return udDouble3::create(b.enu.e, b.enu.n, b.enu.u);
+    }
+    else
     {
-      double j = (i + 1) * 2.0;
-      Y += zone.alpha[i] * udSin(j * u) * udCosh(j * v);
-    }
-    Y = Y * zone.radius;
+      // UTM rather than Lambert CC which requires two parallels for calculation
+      phi = UD_DEG2RAD(phi);
+      omega = UD_DEG2RAD(omega - zone.meridian);
 
-    return udDouble3::create(zone.scaleFactor * X + zone.falseEasting, zone.scaleFactor * (Y - zone.firstParallel) + zone.falseNorthing, ellipsoidHeight);
+      double sigma = udSinh(e * udATanh(e * udTan(phi) / udSqrt(1 + udPow(udTan(phi), 2))));
+      double tanConformalPhi = udTan(phi) * udSqrt(1 + udPow(sigma, 2)) - sigma * udSqrt(1 + udPow(udTan(phi), 2));
+
+      double v = udASinh(udSin(omega) / udSqrt(udPow(tanConformalPhi, 2) + udPow(udCos(omega), 2)));
+      double u = udATan2(tanConformalPhi, udCos(omega));
+
+      X = v;
+      for (size_t i = 0; i < UDARRAYSIZE(zone.alpha); i++)
+      {
+        double j = (i + 1) * 2.0;
+        X += zone.alpha[i] * udCos(j * u) * udSinh(j * v);
+      }
+      X = X * zone.radius;
+
+      Y = u;
+      for (size_t i = 0; i < UDARRAYSIZE(zone.alpha); i++)
+      {
+        double j = (i + 1) * 2.0;
+        Y += zone.alpha[i] * udSin(j * u) * udCosh(j * v);
+      }
+      Y = Y * zone.radius;
+
+      return udDouble3::create(zone.scaleFactor * X + zone.falseEasting, zone.scaleFactor * (Y - zone.firstParallel) + zone.falseNorthing, ellipsoidHeight);
+    }
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
@@ -1749,33 +1801,82 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
   }
   else if (zone.projection == udGZPT_TransverseMercator)
   {
-    double y = (zone.firstParallel * zone.scaleFactor + position.y - zone.falseNorthing) / (zone.radius * zone.scaleFactor);
-    double x = (position.x - zone.falseEasting) / (zone.radius*zone.scaleFactor);
-
-    double u = y;
-    for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
+    if (zone.datum == udGZGD_HK1980)
     {
-      double j = (i + 1) * 2.0;
-      u += zone.beta[i] * udSin(j * y) * udCosh(j * x);
-    }
+      PJ_CONTEXT *C;
+      PJ *P;
+      //PJ *P_for_GIS;
+      PJ_COORD a, b;
+      C = proj_context_create();
 
-    double v = x;
-    for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
+      P = proj_create_crs_to_crs(C,
+        "EPSG:2326",
+        "EPSG:4978",
+        NULL);
+
+      if (0 == P) {
+        fprintf(stderr, "Could not create crs_to_crs\n");
+      }
+
+      /* This will ensure that the order of coordinates for the input CRS */
+      /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
+      /* longitude */
+      //P_for_GIS = proj_normalize_for_visualization(C, P);
+      //if (0 == P_for_GIS) {
+      //  fprintf(stderr, "Could not normalize_for_vis\n");
+      //}
+      //proj_destroy(P);
+      //P = P_for_GIS;
+
+      /* Given that we have used proj_normalize_for_visualization(), the order of
+      /* coordinates is longitude, latitude, and values are expressed in degrees. */
+      a = proj_coord(position.x, position.y, position.z, 0);
+
+      /* transform to ECEF */
+      b = proj_trans(P, PJ_FWD, a);
+      printf("easting: %.3f, northing: %.3f\n", b.enu.e, b.enu.n);
+      latLong = udDouble3::create(b.lp.phi, b.lp.lam, position.z);
+
+      /* Clean up */
+      proj_destroy(P);
+      proj_context_destroy(C); /* may be omitted in the single threaded case */
+    }
+    else
     {
-      double j = (i + 1) * 2.0;
-      v += zone.beta[i] * udCos(j * y) * udSinh(j * x);
+      double y = (zone.firstParallel * zone.scaleFactor + position.y - zone.falseNorthing) / (zone.radius * zone.scaleFactor);
+      double x = (position.x - zone.falseEasting) / (zone.radius * zone.scaleFactor);
+
+      double u = y;
+      for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
+      {
+        double j = (i + 1) * 2.0;
+        u += zone.beta[i] * udSin(j * y) * udCosh(j * x);
+      }
+
+      double v = x;
+      for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
+      {
+        double j = (i + 1) * 2.0;
+        v += zone.beta[i] * udCos(j * y) * udSinh(j * x);
+      }
+
+      double tanConformalPhi = udSin(u) / (udSqrt(udPow(udSinh(v), 2) + udPow(udCos(u), 2)));
+      double omega = udATan2(udSinh(v), udCos(u));
+      double t = tanConformalPhi;
+
+      for (int i = 0; i < 5; ++i)
+        t = t - udGeoZone_LCCLatConverge(t, tanConformalPhi, e);
+
+      latLong.x = UD_RAD2DEG(udATan(t));
+      latLong.y = (zone.meridian + UD_RAD2DEG(omega));
+      latLong.z = position.z;
+      //if (zone.datum == udGZGD_HK1980)
+      //{
+      //  latLong.x -= 0.001527778;
+      //  latLong.y += 0.002444444;
+      //  latLong.z += 130.0;
+      //}
     }
-
-    double tanConformalPhi = udSin(u) / (udSqrt(udPow(udSinh(v), 2) + udPow(udCos(u), 2)));
-    double omega = udATan2(udSinh(v), udCos(u));
-    double t = tanConformalPhi;
-
-    for (int i = 0; i < 5; ++i)
-      t = t - udGeoZone_LCCLatConverge(t, tanConformalPhi, e);
-
-    latLong.x = UD_RAD2DEG(udATan(t));
-    latLong.y = (zone.meridian + UD_RAD2DEG(omega));
-    latLong.z = position.z;
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
@@ -1983,8 +2084,9 @@ udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sour
 {
   if (sourceZone.srid == destZone.srid)
     return point;
-
   udDouble3 latlon = udGeoZone_CartesianToLatLong(sourceZone, point);
+  //udDouble3 point_transformed = udGeoZone_LatLongToCartesian(destZone, latlon);
+
   return udGeoZone_LatLongToCartesian(destZone, latlon);
 }
 
