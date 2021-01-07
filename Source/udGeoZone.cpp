@@ -1561,12 +1561,12 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     {
       PJ_CONTEXT *C;
       PJ *P;
-      //PJ *P_for_GIS;
+      PJ *P_for_GIS;
       PJ_COORD a, b;
       C = proj_context_create();
 
       P = proj_create_crs_to_crs(C,
-        "EPSG:4978",
+        "EPSG:4326",
         "EPSG:2326",
         NULL);
 
@@ -1577,12 +1577,12 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
       /* This will ensure that the order of coordinates for the input CRS */
       /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
       /* longitude */
-      //P_for_GIS = proj_(C, P);
-      //if (0 == P_for_GIS) {
-      //  fprintf(stderr, "Could not normalize_for_vis\n");
-      //}
-      //proj_destroy(P);
-      //P = P_for_GIS;
+      P_for_GIS = proj_normalize_for_visualization(C, P);
+      if (0 == P_for_GIS) {
+        fprintf(stderr, "Could not normalize_for_vis\n");
+      }
+      proj_destroy(P);
+      P = P_for_GIS;
 
       /* Given that we have used proj_normalize_for_visualization(), the order of
       /* coordinates is longitude, latitude, and values are expressed in degrees. */
@@ -1805,13 +1805,13 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     {
       PJ_CONTEXT *C;
       PJ *P;
-      //PJ *P_for_GIS;
+      PJ *P_for_GIS;
       PJ_COORD a, b;
       C = proj_context_create();
 
       P = proj_create_crs_to_crs(C,
         "EPSG:2326",
-        "EPSG:4978",
+        "EPSG:4326",
         NULL);
 
       if (0 == P) {
@@ -1821,12 +1821,12 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
       /* This will ensure that the order of coordinates for the input CRS */
       /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
       /* longitude */
-      //P_for_GIS = proj_normalize_for_visualization(C, P);
-      //if (0 == P_for_GIS) {
-      //  fprintf(stderr, "Could not normalize_for_vis\n");
-      //}
-      //proj_destroy(P);
-      //P = P_for_GIS;
+      P_for_GIS = proj_normalize_for_visualization(C, P);
+      if (0 == P_for_GIS) {
+        fprintf(stderr, "Could not normalize_for_vis\n");
+      }
+      proj_destroy(P);
+      P = P_for_GIS;
 
       /* Given that we have used proj_normalize_for_visualization(), the order of
       /* coordinates is longitude, latitude, and values are expressed in degrees. */
