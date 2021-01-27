@@ -59,6 +59,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Mars 2000 / ECEF",                      "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
   { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
+  { "S-JTSK / Krovak East North",            "S-JTSK",          "System Jednotne Trigonometricke Site Katastralni", udGZE_Bessel1841,{ 570.8, 85.7, 462.8, 4.998, 1.587, 5.261, 3.56 },                  39064, 39065, true,   true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -709,7 +710,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       udStrcpy(pZone->zoneName, "Washington North (ftUS)");
       pZone->meridian = -120 - 25.0 / 30.0;
       pZone->parallel = 47.0;
-      pZone->firstParallel = 48.0 + 22.0 / 30.0;;
+      pZone->firstParallel = 48.0 + 22.0 / 30.0;
       pZone->secondParallel = 47.5;
       pZone->falseNorthing = 0.0;
       pZone->falseEasting = 1640416.667;
@@ -1725,6 +1726,69 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     return udDouble3::create(E, N, ellipsoidHeight);
   }
 
+  else if (zone.projection >= udGZPT_Krovak && zone.projection <= udGZPT_KrovakModifiedNorthOrientated)
+  {
+    // Constantes
+    const double eSq = zone.eccentricitySq;
+    const double phiC = zone.parallel;
+    const double phiP = zone.firstParallel;
+    const double alphaC = zone.coLatOfConeAxis;
+    const double A = zone.semiMajorAxis * udPow(1 - udPow(eSq, 2), 0.5) / (1 - eSq * udPow(udSin(phiC), 2));
+    const double B = udPow(1 + (eSq * udPow(udCos(phiC), 4) / (1 - eSq)), 0.5);
+    const double gamma0 = udASin(udSin(phiC) / B);
+    const double t0 = udTan(UD_PI / 4.0 + gamma0 / 2.0) * udPow((1 + e * udSin(phiC)) / (1 - e * udSin(phiC)), e * B / 2.0) / udPow(udTan(UD_PI / 4.0 + phiC / 2.0), B);
+    const double n = udSin(phiP);
+    const double r0 = zone.scaleFactor * A / udTan(phiP);
+
+    const double U = 2.0 * (udATan(t0 * udPow(udTan(phi / 2.0 + UD_PI / 4.0), B) / udPow((1.0 + e * udSin(phi)) / (1.0 - e * udSin(phi)), e * B / 2.0)) - UD_PI / 4.0);
+    const double V = B * (zone.meridian - omega);
+    const double T = udASin(udCos(alphaC) * udSin(U) + udSin(alphaC) * udCos(U) * udCos(V));
+    const double D = udASin(udCos(U) * udCos(V) / udCos(T));
+    const double theta = n * D;
+    const double r = r0 * udPow(udTan(UD_PI / 4.0 + phiP / 2.0), B) / udPow(udTan(T / 2.0 + UD_PI / 4.0), n);
+    const double Xp = r * udCos(theta);
+    const double Yp = r * udSin(theta);
+
+    if (zone.projection == udGZPT_Krovak)
+    {
+      return udDouble3::create(Yp + zone.falseEasting, Xp + zone.falseNorthing, ellipsoidHeight);
+    }
+    else if (zone.projection == udGZPT_KrovakNorthOrientated)
+    {
+      return udDouble3::create(-(Yp + zone.falseEasting), -(Xp + zone.falseNorthing), ellipsoidHeight);
+    }
+    else if (zone.projection >= udGZPT_KrovakModified)
+    {
+      const double Xr = Xp - zone.evaluationPoint.x;
+      const double Yr = Yp - zone.evaluationPoint.y;
+      const double dX = zone.c[0]
+                        + zone.c[2] * Xr
+                        - zone.c[3] * Yr
+                        - 2.0 * zone.c[5] * Xr * Yr
+                        + zone.c[4] * (udPow(Xr, 2) - udPow(Yr, 2))
+                        + zone.c[6] * Xr * (udPow(Xr, 2) - 3.0 * udPow(Yr, 2))
+                        - zone.c[7] * Yr * (3.0 * udPow(Xr, 2) - udPow(Yr, 2))
+                        + 4.0 * zone.c[9] * (udPow(Xr, 4) + udPow(Yr, 4) - 6.0 * udPow(Xr, 2) * udPow(Yr, 2));
+      const double dY = zone.c[1]
+                        + zone.c[2] * Yr
+                        + zone.c[3] * Xr
+                        + 2.0 * zone.c[4] * Xr * Yr
+                        + zone.c[5] * (udPow(Xr, 2) - udPow(Yr, 2))
+                        + zone.c[7] * Xr * (udPow(Xr, 2) - 3.0 * udPow(Yr, 2))
+                        + zone.c[6] * Yr * (3.0 * udPow(Xr, 2) - udPow(Yr, 2))
+                        - 4.0 * zone.c[9] * Xr * Yr * (udPow(Xr, 2) - udPow(Yr, 2))
+                        + zone.c[8] * (udPow(Xr, 4) + udPow(Yr, 4) - 6.0 * udPow(Xr, 2) * udPow(Yr, 2));
+      if (zone.projection == udGZPT_KrovakModified)
+      {
+        return udDouble3::create(Yp - dY + zone.falseEasting, Xp - dX + zone.falseNorthing, ellipsoidHeight);
+      }
+      else if (zone.projection == udGZPT_KrovakModifiedNorthOrientated)
+      {
+        return udDouble3::create(-(Yp - dY + zone.falseEasting), -(Xp - dX + zone.falseNorthing), ellipsoidHeight);
+      }
+    }
+  }
+
   return udDouble3::zero(); // Unsupported projection
 }
 
@@ -1968,6 +2032,58 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
       if (isNorthPole) // north pole
         latLong.y = zone.meridian + UD_RAD2DEG(udATan2(zone.falseEasting - position.x, zone.falseNorthing - position.y));
     }
+    latLong.z = position.z;
+  }
+  else if (zone.projection >= udGZPT_Krovak && zone.projection <= udGZPT_KrovakModifiedNorthOrientated)
+  {
+    // Constantes
+    const double eSq = zone.eccentricitySq;
+    const double phiC = zone.parallel;
+    const double phiP = zone.firstParallel;
+    const double alphaC = zone.coLatOfConeAxis;
+    const double A = zone.semiMajorAxis * udPow(1 - udPow(eSq, 2), 0.5) / (1 - eSq * udPow(udSin(phiC), 2));
+    const double B = udPow(1 + (eSq * udPow(udCos(phiC), 4) / (1 - eSq)), 0.5);
+    const double gamma0 = udASin(udSin(phiC) / B);
+    const double t0 = udTan(UD_PI / 4.0 + gamma0 / 2.0) * udPow((1 + e * udSin(phiC)) / (1 - e * udSin(phiC)), e * B / 2.0) / udPow(udTan(UD_PI / 4.0 + phiC / 2.0), B);
+    const double n = udSin(phiP);
+    const double r0 = zone.scaleFactor * A / udTan(phiP);
+
+    double Xp = position.x - zone.falseNorthing;
+    double Yp = position.y - zone.falseEasting;
+
+    if (zone.projection >= udGZPT_KrovakModified)
+    {
+      const double Xr = Xp - zone.evaluationPoint.x;
+      const double Yr = Yp - zone.evaluationPoint.y;
+      const double dX = zone.c[0] + zone.c[2] * Xr - zone.c[3] * Yr - 2.0 * zone.c[5] * Xr * Yr + zone.c[4] * (udPow(Xr, 2) - udPow(Yr, 2)) + zone.c[6] * Xr * (udPow(Xr, 2) - 3.0 * udPow(Yr, 2))
+        - zone.c[7] * Yr * (3.0 * udPow(Xr, 2) - udPow(Yr, 2)) + 4.0 * zone.c[8] * Xr * Yr * (udPow(Xr, 2) - udPow(Yr, 2)) + zone.c[9] * (udPow(Xr, 4) + udPow(Yr, 4) - 6.0 * udPow(Xr, 2) * udPow(Yr, 2));
+      const double dY = zone.c[1] + zone.c[2] * Yr + zone.c[3] * Xr + 2.0 * zone.c[4] * Xr * Yr + zone.c[5] * (udPow(Xr, 2) - udPow(Yr, 2)) + zone.c[7] * Xr * (udPow(Xr, 2) - 3.0 * udPow(Yr, 2))
+        + zone.c[6] * Yr * (3.0 * udPow(Xr, 2) - udPow(Yr, 2)) - 4.0 * zone.c[9] * Xr * Yr * (udPow(Xr, 2) - udPow(Yr, 2)) + zone.c[8] * (udPow(Xr, 4) + udPow(Yr, 4) - 6.0 * udPow(Xr, 2) * udPow(Yr, 2));
+      Xp = Xp + dX;
+      Yp = Yp + dY;
+    }
+
+    const double r = udSqrt(udPow(Xp, 2) + udPow(Yp, 2));
+    const double theta = udATan2(Yp, Xp);
+    const double D = theta / udSin(phiP);
+    const double T = 2.0 * (udATan(udPow(r0 / r, 1.0 / n) * udTan(UD_PI / 4.0 + phiP / 2.0)) - UD_PI / 4.0);
+    const double U = udASin(udCos(alphaC) * udSin(T) - udSin(alphaC) * udCos(T) * udCos(D));
+    const double V = udASin(udCos(T) * udSin(D) / udCos(U));
+
+    double phi = U;
+    for (int i = 0; i < 3; ++i)
+    {
+      phi = 2.0 * (udATan(udPow(t0, -1.0 / B) * udPow(udTan(U / 2.0 + UD_PI / 4), 1.0 / B) * udPow((1 + e * udSin(phi)) / (1.0 - e * udSin(phi)), e / 2.0)) - UD_PI / 4.0);
+    }
+
+    latLong.x = phi;
+    latLong.y = zone.meridian - V / B;
+    if (zone.projection == udGZPT_KrovakNorthOrientated || zone.projection == udGZPT_KrovakModifiedNorthOrientated)
+    {
+      latLong.x = -latLong.x;
+      latLong.y = -latLong.y;
+    }
+    
     latLong.z = position.z;
   }
 

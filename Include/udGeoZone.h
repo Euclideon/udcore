@@ -66,6 +66,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_MARS_PCPF,  //EPSG:8705
   udGZGD_MOON_MERC,  //EPSG:30174,30175
   udGZGD_MOON_PCPF,  //EPSG:30100,30100
+  udGZGD_KROVAK_EN,  //EPSG:5514
 
   udGZGD_Count
 };
@@ -90,6 +91,11 @@ enum udGeoZoneProjectionType
 
   udGZPT_Mercator,
 
+  udGZPT_Krovak,
+  udGZPT_KrovakNorthOrientated,
+  udGZPT_KrovakModified,
+  udGZPT_KrovakModifiedNorthOrientated,
+
   udGZPT_Count
 };
 
@@ -99,6 +105,7 @@ struct udGeoZone
   udGeoZoneProjectionType projection;
   udDouble2 latLongBoundMin;
   udDouble2 latLongBoundMax;
+  udDouble2 evaluationPoint;  // Evaluation Point for Krovak (Modified & ModifiedNorthOrientated) projections
   double meridian;
   double parallel;            // Parallel of origin for Transverse Mercator
   double flattening;
@@ -112,8 +119,10 @@ struct udGeoZone
   double n[10];
   double alpha[9];
   double beta[9];
+  double c[10];               // Parameters for Krovak Modified and Modified North Orientated projections
   double firstParallel;
   double secondParallel;
+  double coLatOfConeAxis;     // Co-latitude of the cone axis, used by krovak projections
   double falseNorthing;
   double falseEasting;
   double unitMetreScale;      // 1.0 for metres, 0.3048006096012192 for feet
