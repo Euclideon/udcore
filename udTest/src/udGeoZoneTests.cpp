@@ -432,6 +432,7 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_PCPF/ 
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MARS_MERC/ 
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MARS_PCPF/ 
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_KROVAK_EN/ 
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
@@ -605,6 +606,8 @@ struct
   { 4554, R"wkt(PROJCS["CGCS2000 / 3-degree Gauss-Kruger CM 135E",GEOGCS["China Geodetic Coordinate System 2000",DATUM["China_2000",SPHEROID["CGCS2000",6378137,298.257222101,AUTHORITY["EPSG","1024"]],AUTHORITY["EPSG","1043"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4490"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",135],PARAMETER["scale_factor",1],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AUTHORITY["EPSG","4554"]])wkt" },
 
   { 4978, R"wkt(GEOCCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","4978"]])wkt" },
+
+  { 5514, R"wkt(PROJCS["S-JTSK / Krovak East North",GEOGCS["S-JTSK",DATUM["System Jednotne Trigonometricke Site Katastralni",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[570.8,85.7,462.8,4.998,1.587,5.261,3.56],AUTHORITY["EPSG","6156"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4156"]],PROJECTION["Krovak East North"],PARAMETER["latitude_of_center",49.5],PARAMETER["longitude_of_center",24.8333333333333],PARAMETER["azimuth",30.28813972222222],PARAMETER["pseudo_standard_parallel_1",78.5],PARAMETER["scale_factor",0.9999],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","5514"]])wkt" },
 
   { 6411, R"wkt(PROJCS["NAD83(2011) / Arkansas North (ftUS)",GEOGCS["NAD83(2011)",DATUM["NAD83_National_Spatial_Reference_System_2011",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","1116"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","6318"]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",36.23333333333333],PARAMETER["standard_parallel_2",34.93333333333333],PARAMETER["latitude_of_origin",34.33333333333334],PARAMETER["central_meridian",-92],PARAMETER["false_easting",1312333.3333],PARAMETER["false_northing",0],UNIT["US survey foot",0.3048006096012192,AUTHORITY["EPSG","9003"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","6411"]])wkt" },
 

@@ -59,7 +59,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Mars 2000 / ECEF",                      "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
   { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
-  { "S-JTSK / Krovak East North",            "S-JTSK",          "System Jednotne Trigonometricke Site Katastralni", udGZE_Bessel1841,{ 570.8, 85.7, 462.8, 4.998, 1.587, 5.261, 3.56 },                  39064, 39065, true,   true  },
+  { "S-JTSK",                                "S-JTSK",          "System Jednotne Trigonometricke Site Katastralni", udGZE_Bessel1841,{ 570.8, 85.7, 462.8, 4.998, 1.587, 5.261, 3.56 },                  4156, 6156, true,    true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -880,6 +880,22 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-90, -180);
       pZone->latLongBoundMax = udDouble2::create(90, 180);
       break;
+    case 5514: //S-JTSK / Krovak East North
+      pZone->datum = udGZGD_KROVAK_EN;
+      pZone->projection = udGZPT_KrovakNorthOrientated;
+      pZone->scaleFactor = 0.9999;
+      pZone->meridian = 24.83333333333333;
+      pZone->parallel = 49.5;
+      pZone->coLatOfConeAxis = 30.28813972222222;
+      pZone->firstParallel = 78.5;
+      pZone->falseEasting = 0;
+      pZone->falseNorthing = 0;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "S-JTSK / Krovak East North");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(-90, -180);
+      pZone->latLongBoundMax = udDouble2::create(90, 180);
+      break;
     case 6411: // Arkansas North
       pZone->datum = udGZGD_NAD83_2011;
       pZone->projection = udGZPT_LambertConformalConic2SP;
@@ -1089,14 +1105,16 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->falseNorthing = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "scale_factor"))
         pZone->scaleFactor = wkt->Get("%s.values[0]", pElem).AsDouble();
-      else if (udStrEqual(pName, "central_meridian"))
+      else if (udStrEqual(pName, "central_meridian") || udStrEqual(pName, "longitude_of_center"))
         pZone->meridian = wkt->Get("%s.values[0]", pElem).AsDouble();
-      else if (udStrEqual(pName, "latitude_of_origin")) // aka parallel of origin
+      else if (udStrEqual(pName, "latitude_of_origin") || udStrEqual(pName, "latitude_of_center")) // aka parallel of origin
         pZone->parallel = wkt->Get("%s.values[0]", pElem).AsDouble();
-      else if (udStrEqual(pName, "standard_parallel_1"))
+      else if (udStrEqual(pName, "standard_parallel_1") || udStrEqual(pName, "pseudo_standard_parallel_1"))
         pZone->firstParallel = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "standard_parallel_2"))
         pZone->secondParallel = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "azimuth") || udStrEqual(pName, "co-latitude_of_cone_axis"))
+        pZone->coLatOfConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
     }
     else if (udStrEqual(pType, "UNIT"))
     {
@@ -1252,6 +1270,30 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->projection = udGZPT_SterographicPolar_vB;
           if (pZone->scaleFactor == 0) // default for Polar Stereo is 1.0
             pZone->scaleFactor = 1.0;
+      }
+      else if (udStrstr(pName, 0, "Krovak Modified East North (Greenwich)"))
+      {
+        pZone->projection = udGZPT_KrovakModifiedNorthOrientated;
+        if (pZone->scaleFactor == 0) // default for Krovak is 0.9999
+          pZone->scaleFactor = 0.9999;
+      }
+      else if (udStrstr(pName, 0, "Krovak Modified"))
+      {
+        pZone->projection = udGZPT_KrovakModified;
+        if (pZone->scaleFactor == 0) // default for Krovak is 0.9999
+          pZone->scaleFactor = 0.9999;
+      }
+      else if (udStrstr(pName, 0, "Krovak East North"))
+      {
+        pZone->projection = udGZPT_KrovakNorthOrientated;
+        if (pZone->scaleFactor == 0) // default for Krovak is 0.9999
+          pZone->scaleFactor = 0.9999;
+      }
+      else if (udStrstr(pName, 0, "Krovak"))
+      {
+        pZone->projection = udGZPT_Krovak;
+        if (pZone->scaleFactor == 0) // default for Krovak is 0.9999
+          pZone->scaleFactor = 0.9999;
       }
     }
     else if (udStrEqual(pType, "SPHEROID"))
@@ -1410,6 +1452,18 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
+  else if (zone.projection == udGZPT_Krovak)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Krovak\"],PARAMETER[\"latitude_of_center\",%s],PARAMETER[\"longitude_of_center\",%s],PARAMETER[\"azimuth\",%s],PARAMETER[\"pseudo_standard_parallel_1\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatOfConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_KrovakNorthOrientated)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Krovak East North\"],PARAMETER[\"latitude_of_center\",%s],PARAMETER[\"longitude_of_center\",%s],PARAMETER[\"azimuth\",%s],PARAMETER[\"pseudo_standard_parallel_1\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatOfConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
   if (pDesc->exportAxisInfo)
@@ -1419,7 +1473,7 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udSprintf(&pWKTProjection, "%s,AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]", pWKTProjection);
     else if (zone.projection == udGZPT_ECEF)
       udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],AXIS[\"Geocentric Y\",OTHER],AXIS[\"Geocentric Z\",NORTH]");
-    else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator || zone.projection == udGZPT_CassiniSoldner || zone.projection == udGZPT_SterographicObliqueNEquatorial)
+    else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator || zone.projection == udGZPT_CassiniSoldner || zone.projection == udGZPT_SterographicObliqueNEquatorial || zone.projection == udGZPT_KrovakNorthOrientated || zone.projection == udGZPT_KrovakModifiedNorthOrientated)
       udSprintf(&pWKTProjection, "%s,AXIS[\"X\",EAST],AXIS[\"Y\",NORTH]", pWKTProjection);
   }
 
