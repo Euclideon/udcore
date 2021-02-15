@@ -886,12 +886,12 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->scaleFactor = 0.9999;
       pZone->meridian = 24.83333333333333;
       pZone->parallel = 49.5;
-      pZone->coLatOfConeAxis = 30.28813972222222;
+      pZone->coLatOfConeAxis = 30.288139722222;
       pZone->firstParallel = 78.5;
       pZone->falseEasting = 0;
       pZone->falseNorthing = 0;
       pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "S-JTSK / Krovak East North");
+      udStrcpy(pZone->zoneName, "Krovak East North"); //S-JTSK / 
       udGeoZone_SetSpheroid(pZone);
       pZone->latLongBoundMin = udDouble2::create(-90, -180);
       pZone->latLongBoundMax = udDouble2::create(90, 180);

@@ -607,7 +607,7 @@ struct
 
   { 4978, R"wkt(GEOCCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Geocentric X",OTHER],AXIS["Geocentric Y",OTHER],AXIS["Geocentric Z",NORTH],AUTHORITY["EPSG","4978"]])wkt" },
 
-  { 5514, R"wkt(PROJCS["S-JTSK / Krovak East North",GEOGCS["S-JTSK",DATUM["System Jednotne Trigonometricke Site Katastralni",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[570.8,85.7,462.8,4.998,1.587,5.261,3.56],AUTHORITY["EPSG","6156"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4156"]],PROJECTION["Krovak East North"],PARAMETER["latitude_of_center",49.5],PARAMETER["longitude_of_center",24.8333333333333],PARAMETER["azimuth",30.28813972222222],PARAMETER["pseudo_standard_parallel_1",78.5],PARAMETER["scale_factor",0.9999],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","5514"]])wkt" },
+  { 5514, R"wkt(PROJCS["S-JTSK / Krovak East North",GEOGCS["S-JTSK",DATUM["System Jednotne Trigonometricke Site Katastralni",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[570.8,85.7,462.8,4.998,1.587,5.261,3.56],AUTHORITY["EPSG","6156"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4156"]],PROJECTION["Krovak East North"],PARAMETER["latitude_of_center",49.5],PARAMETER["longitude_of_center",24.8333333333333],PARAMETER["azimuth",30.288139722222],PARAMETER["pseudo_standard_parallel_1",78.5],PARAMETER["scale_factor",0.9999],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","5514"]])wkt" },
 
   { 6411, R"wkt(PROJCS["NAD83(2011) / Arkansas North (ftUS)",GEOGCS["NAD83(2011)",DATUM["NAD83_National_Spatial_Reference_System_2011",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","1116"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","6318"]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",36.23333333333333],PARAMETER["standard_parallel_2",34.93333333333333],PARAMETER["latitude_of_origin",34.33333333333334],PARAMETER["central_meridian",-92],PARAMETER["false_easting",1312333.3333],PARAMETER["false_northing",0],UNIT["US survey foot",0.3048006096012192,AUTHORITY["EPSG","9003"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","6411"]])wkt" },
 
@@ -906,6 +906,35 @@ TEST(udGeoZone, SetFromWKT)
     sridZone.parallel = int64_t(parallelPrecision * sridZone.parallel) / (double)parallelPrecision;
     wktZone.firstParallel = int64_t(parallelPrecision * wktZone.firstParallel) / (double)parallelPrecision;
     sridZone.firstParallel = int64_t(parallelPrecision * sridZone.firstParallel) / (double)parallelPrecision;
+
+#ifdef _DEBUG
+    EXPECT_EQ(wktZone.meridian, sridZone.meridian);
+    EXPECT_EQ(wktZone.parallel, sridZone.parallel);
+    EXPECT_EQ(wktZone.flattening, sridZone.flattening);
+    EXPECT_EQ(wktZone.semiMajorAxis, sridZone.semiMajorAxis);
+    EXPECT_EQ(wktZone.semiMinorAxis, sridZone.semiMinorAxis);
+    EXPECT_EQ(wktZone.thirdFlattening, sridZone.thirdFlattening);
+    EXPECT_EQ(wktZone.eccentricitySq, sridZone.eccentricitySq);
+    EXPECT_EQ(wktZone.radius, sridZone.radius);
+    EXPECT_EQ(wktZone.scaleFactor, sridZone.scaleFactor);
+    EXPECT_EQ(wktZone.n[0], sridZone.n[0]);
+    EXPECT_EQ(wktZone.alpha[0], sridZone.alpha[0]);
+    EXPECT_EQ(wktZone.beta[0], sridZone.beta[0]);
+    EXPECT_EQ(wktZone.c[0], sridZone.c[0]);
+    EXPECT_EQ(wktZone.firstParallel, sridZone.firstParallel);
+    EXPECT_EQ(wktZone.secondParallel, sridZone.secondParallel);
+    EXPECT_EQ(wktZone.coLatOfConeAxis, sridZone.coLatOfConeAxis);
+    EXPECT_EQ(wktZone.falseNorthing, sridZone.falseNorthing);
+    EXPECT_EQ(wktZone.falseEasting, sridZone.falseEasting);
+    EXPECT_EQ(wktZone.unitMetreScale, sridZone.unitMetreScale);
+    EXPECT_EQ(wktZone.zone, sridZone.zone);
+    EXPECT_EQ(wktZone.srid, sridZone.srid);
+
+    EXPECT_TRUE(udStrEqual(wktZone.zoneName, sridZone.zoneName));
+    EXPECT_TRUE(udStrEqual(wktZone.displayName, sridZone.displayName));
+    EXPECT_TRUE(udStrEqual(wktZone.datumName, sridZone.datumName));
+    EXPECT_TRUE(udStrEqual(wktZone.datumShortName, sridZone.datumShortName));
+#endif
 
     EXPECT_EQ(0, memcmp(&wktZone, &sridZone, sizeof(udGeoZone))) << "Failed on Iteration: " << i << ", SRID: " << supportedCodes[i].srid;
 
