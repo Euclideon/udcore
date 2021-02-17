@@ -1011,8 +1011,8 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->falseEasting = 500000;
       pZone->scaleFactor = 0.99975;
       udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(3.37, 50.75);
-      pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
+      pZone->latLongBoundMin = udDouble2::create(43.62, 20.26);
+      pZone->latLongBoundMax = udDouble2::create(48.26, 31.5);
       break;
     //case 49974:
     case 49975: //Mars M
