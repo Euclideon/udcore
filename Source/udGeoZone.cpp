@@ -1558,23 +1558,18 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double v = udASinh(udSin(omega) / udSqrt(udPow(tanConformalPhi, 2) + udPow(udCos(omega), 2)));
     double u = udATan2(tanConformalPhi, udCos(omega));
 
-    X = v;
+    double eta0 = v;
+    double xi0 = u;
     for (size_t i = 0; i < UDARRAYSIZE(zone.alpha); i++)
     {
       double j = (i + 1) * 2.0;
-      X += zone.alpha[i] * udCos(j * u) * udSinh(j * v);
+      eta0 += zone.alpha[i] * udCos(j * u) * udSinh(j * v);
+      xi0 += zone.alpha[i] * udSin(j * u) * udCosh(j * v);
     }
-    X = X * zone.radius;
+    eta0 = eta0 * zone.radius;
+    xi0 = xi0 * zone.radius;
 
-    Y = u;
-    for (size_t i = 0; i < UDARRAYSIZE(zone.alpha); i++)
-    {
-      double j = (i + 1) * 2.0;
-      Y += zone.alpha[i] * udSin(j * u) * udCosh(j * v);
-    }
-    Y = Y * zone.radius;
-
-    return udDouble3::create(zone.scaleFactor * X + zone.falseEasting, zone.scaleFactor * (Y - zone.firstParallel) + zone.falseNorthing, ellipsoidHeight);
+    return udDouble3::create(zone.scaleFactor * eta0 + zone.falseEasting, zone.scaleFactor * (xi0 - zone.firstParallel) + zone.falseNorthing, ellipsoidHeight);
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
@@ -1749,25 +1744,20 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
   }
   else if (zone.projection == udGZPT_TransverseMercator)
   {
-    double y = (zone.firstParallel * zone.scaleFactor + position.y - zone.falseNorthing) / (zone.radius * zone.scaleFactor);
-    double x = (position.x - zone.falseEasting) / (zone.radius*zone.scaleFactor);
+    double eta = (position.x - zone.falseEasting) / (zone.radius * zone.scaleFactor);
+    double xi = (zone.firstParallel * zone.scaleFactor + position.y - zone.falseNorthing) / (zone.radius * zone.scaleFactor);
 
-    double u = y;
+    double eta0 = eta;
+    double xi0 = xi;
     for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
     {
       double j = (i + 1) * 2.0;
-      u += zone.beta[i] * udSin(j * y) * udCosh(j * x);
+      xi0  += zone.beta[i] * udSin(j * xi) * udCosh(j * eta);
+      eta0 += zone.beta[i] * udCos(j * xi) * udSinh(j * eta);
     }
 
-    double v = x;
-    for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
-    {
-      double j = (i + 1) * 2.0;
-      v += zone.beta[i] * udCos(j * y) * udSinh(j * x);
-    }
-
-    double tanConformalPhi = udSin(u) / (udSqrt(udPow(udSinh(v), 2) + udPow(udCos(u), 2)));
-    double omega = udATan2(udSinh(v), udCos(u));
+    double tanConformalPhi = udSin(xi0) / (udSqrt(udPow(udSinh(eta0), 2) + udPow(udCos(xi0), 2)));
+    double omega = udATan2(udSinh(eta0), udCos(xi0));
     double t = tanConformalPhi;
 
     for (int i = 0; i < 5; ++i)
