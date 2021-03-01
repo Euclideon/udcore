@@ -1323,7 +1323,7 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   if (pDesc->exportToWGS84)
   {
     int decimalPlaces = zone.datum == udGZGD_HK1980 ? 7 : zone.datum == udGZGD_MGI ? 4 : 3;
-    udSprintf(&pWKTToWGS84, ",TOWGS84[%s,%s,%s,%s,%s,%s,%s]",
+    udSprintf(&pWKTToWGS84, ",\nTOWGS84[%s,%s,%s,%s,%s,%s,%s]",
       udTempStr_TrimDouble(pDesc->paramsHelmert7[0], 3),
       udTempStr_TrimDouble(pDesc->paramsHelmert7[1], 3),
       udTempStr_TrimDouble(pDesc->paramsHelmert7[2], 3),
@@ -1333,79 +1333,79 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udTempStr_TrimDouble(pDesc->paramsHelmert7[6], decimalPlaces));
   }
 
-  udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 8), pEllipsoid->flattening == 0.0 ? "0.0" : udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
-  udSprintf(&pWKTDatum, "DATUM[\"%s\",%s%s,AUTHORITY[\"EPSG\",\"%d\"]", pDesc->pDatumName, pWKTSpheroid, pWKTToWGS84 ? pWKTToWGS84 : "", pDesc->authority);
+  udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,\nAUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 8), pEllipsoid->flattening == 0.0 ? "0.0" : udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
+  udSprintf(&pWKTDatum, "DATUM[\"%s\",\n%s%s,\nAUTHORITY[\"EPSG\",\"%d\"]", pDesc->pDatumName, pWKTSpheroid, pWKTToWGS84 ? pWKTToWGS84 : "", pDesc->authority);
 
   if (zone.projection == udGZPT_ECEF && zone.datum == udGZGD_MARS_PCPF) // Mars
-    udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",%s],PRIMEM[\"AIRY-0\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
+    udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",\n%s],\nPRIMEM[\"AIRY-0\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
   else if (zone.projection == udGZPT_ECEF)
-    udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
+    udSprintf(&pWKTGeoGCS, "GEOCCS[\"%s\",\n%s],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]]", pDesc->pFullName, pWKTDatum);
   else if (zone.projection == udGZPT_LongLat) // This isn't an official option- ISO6709 doesn't allow it so we handle it specially
-    udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Lon\",X],AXIS[\"Lat\",Y],AUTHORITY[\"CRS\",\"%d\"]]", pDesc->pFullName, pWKTDatum, zone.srid);
+    udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",\n%s],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAXIS[\"Lon\",X],\nAXIS[\"Lat\",Y],\nAUTHORITY[\"CRS\",\"%d\"]]", pDesc->pFullName, pWKTDatum, zone.srid);
   else
-    udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",%s],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pFullName, pWKTDatum, pDesc->epsg);
+    udSprintf(&pWKTGeoGCS, "GEOGCS[\"%s\",\n%s],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pFullName, pWKTDatum, pDesc->epsg);
 
   // We only handle degree, metres, us feet, Clarke's link and link , each of which have their own fixed authority code
   if (zone.scaleFactor == 0.0174532925199433)
-    udSprintf(&pWKTUnit, "UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]");
+    udSprintf(&pWKTUnit, "UNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]]");
   else if (zone.unitMetreScale == 1.0)
-    udSprintf(&pWKTUnit, "UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]]");
+    udSprintf(&pWKTUnit, "UNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]]");
   else if (zone.unitMetreScale == 0.3048006096012192)
-    udSprintf(&pWKTUnit, "UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]]");
+    udSprintf(&pWKTUnit, "UNIT[\"US survey foot\",0.3048006096012192,\nAUTHORITY[\"EPSG\",\"9003\"]]");
   else if (zone.unitMetreScale == 0.201166195164)
-    udSprintf(&pWKTUnit, "UNIT[\"Clarke's link\",0.201166195164,AUTHORITY[\"EPSG\",\"9039\"]]");
+    udSprintf(&pWKTUnit, "UNIT[\"Clarke's link\",0.201166195164,\nAUTHORITY[\"EPSG\",\"9039\"]]");
   else if (zone.unitMetreScale == 0.201168)
-    udSprintf(&pWKTUnit, "UNIT[\"link\",0.201168,AUTHORITY[\"EPSG\",\"9098\"]]");
+    udSprintf(&pWKTUnit, "UNIT[\"link\",0.201168,\nAUTHORITY[\"EPSG\",\"9098\"]]");
   else
     udSprintf(&pWKTUnit, "UNIT[\"unknown\",%s]", udTempStr_TrimDouble(zone.unitMetreScale, 16)); // Can't provide authority for unknown unit
 
   if (zone.projection == udGZPT_TransverseMercator)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],"
-                               "PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],"
+                               "\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
                                udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
                                udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",%s],PARAMETER[\"standard_parallel_2\",%s],"
-                               "PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Lambert_Conformal_Conic_2SP\"],\nPARAMETER[\"standard_parallel_1\",%s],\nPARAMETER[\"standard_parallel_2\",%s],"
+                               "\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
                                 udTempStr_TrimDouble(zone.firstParallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.meridian, meridianPrecision),
                                 udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_WebMercator)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Mercator_1SP\"],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Mercator_1SP\"],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
                                 udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
                                 udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_CassiniSoldner)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Cassini_Soldner\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Hyperbolic_Cassini_Soldner\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Hyperbolic_Cassini_Soldner\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_SterographicObliqueNEquatorial)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Oblique_Stereographic\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Oblique_Stereographic\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_Mercator)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Mercator\"],PARAMETER[\"False_Easting\",%s],PARAMETER[\"False_Northing\",%s],PARAMETER[\"Central_Meridian\",%s],PARAMETER[\"Standard_Parallel_1\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Mercator\"],\nPARAMETER[\"False_Easting\",%s],\nPARAMETER[\"False_Northing\",%s],\nPARAMETER[\"Central_Meridian\",%s],\nPARAMETER[\"Standard_Parallel_1\",%s],\n%s",
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision),
       udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_SterographicPolar_vB)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",%s],PARAMETER[\"central_meridian\",%s],PARAMETER[\"scale_factor\",%s],PARAMETER[\"false_easting\",%s],PARAMETER[\"false_northing\",%s],%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Polar_Stereographic\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
@@ -1415,22 +1415,22 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   {
     // Generally transverse mercator projections have one style, lambert another, except for GDA LCC (3112 and 7845)
     if (zone.projection == udGZPT_TransverseMercator || zone.srid == 3112 || zone.srid == 7845)
-      udSprintf(&pWKTProjection, "%s,AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]", pWKTProjection);
+      udSprintf(&pWKTProjection, "%s,\nAXIS[\"Easting\",EAST],\nAXIS[\"Northing\",NORTH]", pWKTProjection);
     else if (zone.projection == udGZPT_ECEF)
-      udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],AXIS[\"Geocentric Y\",OTHER],AXIS[\"Geocentric Z\",NORTH]");
+      udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH]");
     else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator || zone.projection == udGZPT_CassiniSoldner || zone.projection == udGZPT_SterographicObliqueNEquatorial)
-      udSprintf(&pWKTProjection, "%s,AXIS[\"X\",EAST],AXIS[\"Y\",NORTH]", pWKTProjection);
+      udSprintf(&pWKTProjection, "%s,\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH]", pWKTProjection);
   }
 
   // Hong Kong doesn't seem to have actual zones, so we detect by testing if short name and zone name are the same
   if (zone.projection == udGZPT_ECEF)
-    udSprintf(&pWKT, "%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pWKTGeoGCS, pWKTProjection, zone.srid);
+    udSprintf(&pWKT, "%s,\n%s,\nAUTHORITY[\"EPSG\",\"%d\"]]", pWKTGeoGCS, pWKTProjection, zone.srid);
   else if (zone.projection == udGZPT_LatLong || zone.projection == udGZPT_LongLat)
     udSprintf(&pWKT, "%s", pWKTGeoGCS);
   else if (udStrBeginsWith(zone.zoneName, pDesc->pShortName))
-    udSprintf(&pWKT, "PROJCS[\"%s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", zone.zoneName, pWKTGeoGCS, pWKTProjection, zone.srid);
+    udSprintf(&pWKT, "PROJCS[\"%s\",\n%s,\n%s,\nAUTHORITY[\"EPSG\",\"%d\"]]", zone.zoneName, pWKTGeoGCS, pWKTProjection, zone.srid);
   else
-    udSprintf(&pWKT, "PROJCS[\"%s / %s\",%s,%s,AUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pShortName, zone.zoneName, pWKTGeoGCS, pWKTProjection, zone.srid);
+    udSprintf(&pWKT, "PROJCS[\"%s / %s\",\n%s,\n%s,\nAUTHORITY[\"EPSG\",\"%d\"]]", pDesc->pShortName, zone.zoneName, pWKTGeoGCS, pWKTProjection, zone.srid);
 
   *ppWKT = pWKT;
   pWKT = nullptr;
