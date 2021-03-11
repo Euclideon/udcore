@@ -547,6 +547,14 @@ void udFilename::CalculateIndices()
   filenameIndex = -1;
   extensionIndex = len; // If no extension, point extension to nul terminator
 
+  const char *pGetParams = nullptr;
+
+  if (udStrBeginsWithi(path, "http://") || udStrBeginsWithi(path, "https://"))
+    pGetParams = udStrchr(path, "?");
+
+  if (pGetParams != nullptr)
+    len = (int)(pGetParams - path);
+
   for (--len; len >= 0 && (filenameIndex == -1 || extensionIndex == -1); --len)
   {
     if (path[extensionIndex] == 0 && path[len] == '.') // Last period
