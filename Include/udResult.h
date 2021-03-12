@@ -41,6 +41,7 @@ constexpr unsigned udResultCalcHelpCode(const char filename[], const int line, u
 #define UD_ERROR_CHECK(funcCall)    do { result = funcCall; if (result) goto epilogue; } while(0)
 #define UD_ERROR_SET_NO_BREAK(code) do { result = code;                 goto epilogue; } while(0)
 
+#define UD_RESULT_VERSION 2103121440U
 
 enum udResult
 {
@@ -55,14 +56,9 @@ enum udResult
   udR_MemoryAllocationFailure,
   udR_CountExceeded,
   udR_ObjectNotFound,
-  udR_ParentNotFound,
-  udR_RenderAlreadyInProgress,
   udR_BufferTooSmall,
-  udR_VersionMismatch,
   udR_FormatVariationNotSupported,
   udR_ObjectTypeMismatch,
-  udR_NodeLimitExceeded,
-  udR_BlockLimitExceeded,
   udR_CorruptData,
   udR_InputExhausted,
   udR_OutputExhausted,
@@ -73,7 +69,7 @@ enum udResult
   udR_DecryptionKeyRequired,
   udR_DecryptionKeyMismatch,
   udR_SignatureMismatch,
-  udR_Expired,
+  udR_ObjectExpired,
   udR_ParseError,
   udR_InternalCryptoError,
   udR_OutOfOrder,
@@ -88,7 +84,6 @@ enum udResult
   udR_WriteFailure,
   udR_SocketError,
 
-  udR_EventNotHandled,
   udR_DatabaseError,
   udR_ServerError,
   udR_AuthError,
@@ -98,13 +93,15 @@ enum udResult
   udR_Cancelled,
   udR_OutOfSync,
   udR_SessionExpired,
+
   udR_ProxyError,
   udR_ProxyAuthRequired,
   udR_ExceededAllowedLimit,
 
-  udR_Count,
+  udR_RateLimited,
+  udR_PremiumOnly,
 
-  udR_ForceInt = 0x7FFFFFFF
+  udR_Count
 };
 
 // Return a human-friendly string for a given result code
