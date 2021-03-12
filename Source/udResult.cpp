@@ -29,14 +29,9 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_MemoryAllocationFailure),
   RESULTINFO(udR_CountExceeded),
   RESULTINFO(udR_ObjectNotFound),
-  RESULTINFO(udR_ParentNotFound),
-  RESULTINFO(udR_RenderAlreadyInProgress),
   RESULTINFO(udR_BufferTooSmall),
-  RESULTINFO(udR_VersionMismatch),
   RESULTINFO(udR_FormatVariationNotSupported),
   RESULTINFO(udR_ObjectTypeMismatch),
-  RESULTINFO(udR_NodeLimitExceeded),
-  RESULTINFO(udR_BlockLimitExceeded),
   RESULTINFO(udR_CorruptData),
   RESULTINFO(udR_InputExhausted),
   RESULTINFO(udR_OutputExhausted),
@@ -47,7 +42,7 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_DecryptionKeyRequired),
   RESULTINFO(udR_DecryptionKeyMismatch),
   RESULTINFO(udR_SignatureMismatch),
-  RESULTINFO(udR_Expired),
+  RESULTINFO(udR_ObjectExpired),
   RESULTINFO(udR_ParseError),
   RESULTINFO(udR_InternalCryptoError),
   RESULTINFO(udR_OutOfOrder),
@@ -62,7 +57,6 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_WriteFailure),
   RESULTINFO(udR_SocketError),
 
-  RESULTINFO(udR_EventNotHandled),
   RESULTINFO(udR_DatabaseError),
   RESULTINFO(udR_ServerError),
   RESULTINFO(udR_AuthError),
@@ -75,6 +69,9 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_ProxyError),
   RESULTINFO(udR_ProxyAuthRequired),
   RESULTINFO(udR_ExceededAllowedLimit),
+
+  RESULTINFO(udR_RateLimited),
+  RESULTINFO(udR_PremiumOnly),
 };
 
 UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), "Result code not entered in strings table");
@@ -86,6 +83,7 @@ const char *udResultAsString(udResult result)
 {
   if (result < 0  || result > udR_Count)
     return "Unknown error";
+
   if (result == udR_Count)
   {
     // Count is a special case to test the result string array
