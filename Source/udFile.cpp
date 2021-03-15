@@ -451,7 +451,7 @@ udResult udFile_Close(udFile **ppFile)
 // Author: Samuel Surtees, July 2018
 udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath)
 {
-  udResult result = udR_ObjectNotFound;
+  udResult result = udR_NotFound;
   UD_ERROR_NULL(ppNewPath, udR_InvalidParameter);
   UD_ERROR_NULL(pPath, udR_InvalidParameter);
 
@@ -459,7 +459,7 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath)
   {
 #if UDPLATFORM_WINDOWS
     PWSTR pHomeDirW = nullptr;
-    UD_ERROR_IF(SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &pHomeDirW) != S_OK, udR_ObjectNotFound);
+    UD_ERROR_IF(SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &pHomeDirW) != S_OK, udR_NotFound);
     udOSString temp(pHomeDirW);
     const char *pHomeDir = temp;
 
@@ -471,7 +471,7 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath)
     UD_ERROR_SET(udR_Unsupported);
 #else
     struct passwd *pPw = getpwuid(getuid());
-    UD_ERROR_NULL(pPw, udR_ObjectNotFound);
+    UD_ERROR_NULL(pPw, udR_NotFound);
     const char *pHomeDir = pPw->pw_dir;
 #endif
     size_t homeDirLength = udStrlen(pHomeDir);
@@ -526,6 +526,6 @@ udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler)
     }
   }
 
-  return udR_ObjectNotFound;
+  return udR_NotFound;
 }
 

@@ -28,7 +28,7 @@ static void udJSON_TestContent(udJSON &v)
   EXPECT_EQ(true, pTemp->IsVoid());
   // And the opposite test getting a key we know doesn't exist
   g_udBreakOnError = false; // Prevent break-on-error because we're knowingly creating error case
-  EXPECT_EQ(udR_ObjectNotFound, v.Get(&pTemp, "Settings.DoesntExist"));
+  EXPECT_EQ(udR_NotFound, v.Get(&pTemp, "Settings.DoesntExist"));
   g_udBreakOnError = true;
   EXPECT_EQ(true, udStrEqual(v.Get("Settings.SpecialChars").AsString(), "<>&\\/?[]{}\'\"%"));
 

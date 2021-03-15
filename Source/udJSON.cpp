@@ -578,7 +578,7 @@ static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **
     else
     {
       *ppValue = nullptr;
-      UD_ERROR_SET(udR_ObjectNotFound);
+      UD_ERROR_SET(udR_NotFound);
     }
   }
   else if (searchExp.IsString())
@@ -604,7 +604,7 @@ static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **
       }
       if (ppValue)
         *ppValue = pV;
-      UD_ERROR_NULL(pV, udR_ObjectNotFound);
+      UD_ERROR_NULL(pV, udR_NotFound);
     }
     else
     {
@@ -618,7 +618,7 @@ static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **
     {
       // [,n] which indicates member index
       UD_ERROR_IF(!pRoot->IsObject(), udR_ObjectTypeMismatch);
-      UD_ERROR_IF(resultNumber < 0 || (size_t)resultNumber >= pRoot->AsObject()->length, udR_ObjectNotFound);
+      UD_ERROR_IF(resultNumber < 0 || (size_t)resultNumber >= pRoot->AsObject()->length, udR_NotFound);
       const udJSON *pV = &pRoot->AsObject()->GetElement(resultNumber)->value;
       if (ppValue)
         *ppValue = pV;
@@ -742,7 +742,7 @@ static udResult udJSON_GetVA(const udJSON *pRoot, udJSON **ppValue, const char *
         {
           pRoot = pRoot->FindMember(exp.pKey);
           if (!pRoot)
-            UD_ERROR_SET_NO_BREAK(udR_ObjectNotFound);
+            UD_ERROR_SET_NO_BREAK(udR_NotFound);
         }
         break;
     }
@@ -833,7 +833,7 @@ static udResult udJSON_SetVA(udJSON *pRoot, udJSON *pSetToValue, const char *pKe
           result = udJSON_ProcessArrayOperator(pRoot, const_cast<const udJSON**>(&pV), &index, exp.pKey, &charCount, pSetToValue != nullptr);
           if (!pSetToValue && !exp.pRemainingExpression)
           {
-            UD_ERROR_NULL(pV, udR_ObjectNotFound);
+            UD_ERROR_NULL(pV, udR_NotFound);
             // End of the expression with no set, means remove the item
             if (pRoot->IsObject())
             {
@@ -883,7 +883,7 @@ static udResult udJSON_SetVA(udJSON *pRoot, udJSON *pSetToValue, const char *pKe
         }
         if (!pSetToValue && !exp.pRemainingExpression)
         {
-          UD_ERROR_NULL(pV, udR_ObjectNotFound);
+          UD_ERROR_NULL(pV, udR_NotFound);
           // Found the member, and it needs to be removed
           udJSONKVPair *pKVP = pObject->GetElement(index);
           udFree(pKVP->pKey);

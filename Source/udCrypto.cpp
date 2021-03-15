@@ -344,7 +344,7 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   else
     paddedCliperTextLen = (plainTextLen + pCtx->blockSize) & ~(pCtx->blockSize - 1);
 
-  UD_ERROR_IF((paddedCliperTextLen  & (pCtx->blockSize - 1)) != 0, udR_AlignmentRequirement);
+  UD_ERROR_IF((paddedCliperTextLen  & (pCtx->blockSize - 1)) != 0, udR_AlignmentRequired);
   UD_ERROR_IF(paddedCliperTextLen > cipherTextLen, udR_BufferTooSmall);
 
   // Trading efficiency for simplicity, just duplicate the source and add the padding bytes
@@ -415,7 +415,7 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   void *pPaddedPlainText = nullptr;
 
   UD_ERROR_IF(!pCtx || !pPlainText || !pCipherText, udR_InvalidParameter);
-  UD_ERROR_IF((cipherTextLen % pCtx->blockSize) != 0, udR_AlignmentRequirement);
+  UD_ERROR_IF((cipherTextLen % pCtx->blockSize) != 0, udR_AlignmentRequired);
 
   if (cipherTextLen > plainTextLen)
   {

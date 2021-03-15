@@ -160,7 +160,7 @@ TEST(udCryptoTests, CipherErrorCodes)
   result = udCryptoCipher_Encrypt(pCtx, &iv, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
   EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, buf, 1, buf, sizeof(buf)); // input alignment
-  EXPECT_EQ(udR_AlignmentRequirement, result);
+  EXPECT_EQ(udR_AlignmentRequired, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
   EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
@@ -173,7 +173,7 @@ TEST(udCryptoTests, CipherErrorCodes)
   result = udCryptoCipher_Decrypt(pCtx, &iv, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
   EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, buf, 1, buf, sizeof(buf)); // input alignment
-  EXPECT_EQ(udR_AlignmentRequirement, result);
+  EXPECT_EQ(udR_AlignmentRequired, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
   EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
