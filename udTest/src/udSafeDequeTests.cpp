@@ -32,8 +32,8 @@ TEST(udSafeDequeTests, ValidationTests)
   EXPECT_EQ(udR_Success, udSafeDeque_PopFront(pQueue, &result));
   EXPECT_EQ(9, result);
 
-  EXPECT_EQ(udR_ObjectNotFound, udSafeDeque_PopFront(pQueue, &result));
-  EXPECT_EQ(udR_ObjectNotFound, udSafeDeque_PopBack(pQueue, &result));
+  EXPECT_EQ(udR_NotFound, udSafeDeque_PopFront(pQueue, &result));
+  EXPECT_EQ(udR_NotFound, udSafeDeque_PopBack(pQueue, &result));
 
   EXPECT_EQ(9, result); // This should not have changed
 

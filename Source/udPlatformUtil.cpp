@@ -878,7 +878,7 @@ udResult udFileExists(const char *pFilename, int64_t *pFileLengthInBytes, int64_
   }
   else
   {
-    return udR_ObjectNotFound;
+    return udR_NotFound;
   }
 }
 
@@ -913,7 +913,7 @@ udResult udDirectoryExists(const char *pFilename, int64_t *pModifiedTime)
   }
   else
   {
-    return udR_ObjectNotFound;
+    return udR_NotFound;
   }
 }
 
@@ -961,11 +961,11 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
   pFindData->pDir = opendir(pFolder);
   UD_ERROR_NULL(pFindData->pDir, udR_OpenFailure);
   pFindData->pDirent = readdir(pFindData->pDir);
-  UD_ERROR_NULL(pFindData->pDirent, udR_ObjectNotFound);
+  UD_ERROR_NULL(pFindData->pDirent, udR_NotFound);
   pFindData->SetMembers();
 #elif UDPLATFORM_NACL
   // TODO: See if this implementation is required
-  UD_ERROR_SET(udR_ObjectNotFound);
+  UD_ERROR_SET(udR_NotFound);
 #else
   #error "Unsupported Platform"
 #endif
@@ -991,13 +991,13 @@ udResult udReadDir(udFindDir *pFindDir)
 #if UDPLATFORM_WINDOWS
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   if (!FindNextFileW(pFindData->hFind, &pFindData->findFileData))
-    return udR_ObjectNotFound;
+    return udR_NotFound;
   pFindData->SetMembers();
 #elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
   pFindData->pDirent = readdir(pFindData->pDir);
   if (!pFindData->pDirent)
-    return udR_ObjectNotFound;
+    return udR_NotFound;
   pFindData->SetMembers();
 #elif UDPLATFORM_NACL
   // Do nothing
@@ -1082,7 +1082,7 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
       pPath[currPathLen] = 0;
 
       // If directory already exists, user can't create folders here
-      UD_ERROR_IF(udDirectoryExists(pPath, nullptr) != udR_ObjectNotFound, udR_Failure);
+      UD_ERROR_IF(udDirectoryExists(pPath, nullptr) != udR_NotFound, udR_Failure);
     }
     else if (currPathLen != fullPathLen)
     {

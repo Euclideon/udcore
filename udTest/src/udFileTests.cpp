@@ -39,7 +39,7 @@ TEST(udFileTests, GeneralFileTests)
   EXPECT_GT(2, udAbs(currentTime - modifyTime));
 
   EXPECT_EQ(udR_Success, udFileDelete(pFilename));
-  EXPECT_EQ(udR_ObjectNotFound, udFileExists(pFilename));
+  EXPECT_EQ(udR_NotFound, udFileExists(pFilename));
 
   // Additional destructions of non-existent objects
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));

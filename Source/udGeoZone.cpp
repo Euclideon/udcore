@@ -183,7 +183,7 @@ udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool f
 
   int32_t zone = (uint32_t)(udFloor(lon + 186.0) / 6.0);
   if (zone < 1 || zone > 60)
-    return udR_ObjectNotFound;
+    return udR_NotFound;
 
   int32_t sridCode = (lat >= 0) ? zone + 32600 : zone + 32700;
   if (pSRIDCode)
@@ -1029,7 +1029,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       break;
 
     default:
-      return udR_ObjectNotFound;
+      return udR_NotFound;
     }
   }
 

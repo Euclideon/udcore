@@ -25,7 +25,7 @@ TEST(udResult, StringNamesMatch)
       CHECK_STR(udR_OutstandingReferences);
       CHECK_STR(udR_MemoryAllocationFailure);
       CHECK_STR(udR_CountExceeded);
-      CHECK_STR(udR_ObjectNotFound);
+      CHECK_STR(udR_NotFound);
       CHECK_STR(udR_BufferTooSmall);
       CHECK_STR(udR_FormatVariationNotSupported);
       CHECK_STR(udR_ObjectTypeMismatch);
@@ -35,7 +35,7 @@ TEST(udResult, StringNamesMatch)
       CHECK_STR(udR_CompressionError);
       CHECK_STR(udR_Unsupported);
       CHECK_STR(udR_Timeout);
-      CHECK_STR(udR_AlignmentRequirement);
+      CHECK_STR(udR_AlignmentRequired);
       CHECK_STR(udR_DecryptionKeyRequired);
       CHECK_STR(udR_DecryptionKeyMismatch);
       CHECK_STR(udR_SignatureMismatch);
