@@ -394,7 +394,7 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 template <typename T, size_t N> constexpr size_t udLengthOf(T(&)[N]) { return N; }
 #define UDARRAYSIZE udLengthOf
 
-// Get physical memory available if possible, otherwise outputs 0 to *pTotalMemory and returns udR_Failure_
+// Get physical memory available if possible, otherwise outputs 0 to *pTotalMemory and returns udR_Failure
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
 // CPU Feature tests

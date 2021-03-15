@@ -179,7 +179,7 @@ void _udFreeInternal(void * pMemory, const char *pFile, int line)
 udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 {
   if (pTotalMemory == nullptr)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
 #if UDPLATFORM_WINDOWS
   MEMORYSTATUSEX memorySatusEx;
@@ -213,7 +213,7 @@ udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
 
   // All platforms that fail or don't support the function exit here
   *pTotalMemory = 0;
-  return udR_Failure_;
+  return udR_Failure;
 }
 
 class udCPUFeatureDetection

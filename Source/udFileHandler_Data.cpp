@@ -88,7 +88,7 @@ static udResult udFileHandler_DataSeekRead(udFile *pFile, void *pBuffer, size_t 
   udFile_Data *pData = static_cast<udFile_Data *>(pFile);
   size_t actualRead;
 
-  UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pData->dataLen, udR_InvalidParameter_);
+  UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pData->dataLen, udR_InvalidParameter);
   actualRead = udMin(bufferLength, pData->dataLen - (size_t)seekOffset);
   memcpy(pBuffer, pData->pData + seekOffset, actualRead);
 

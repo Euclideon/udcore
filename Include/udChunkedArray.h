@@ -130,7 +130,7 @@ inline udResult udChunkedArray<T>::Init(size_t a_chunkElementCount)
   inset = 0;
 
   // Must be power of 2.
-  UD_ERROR_IF(!a_chunkElementCount || (a_chunkElementCount & (a_chunkElementCount - 1)), udR_InvalidParameter_);
+  UD_ERROR_IF(!a_chunkElementCount || (a_chunkElementCount & (a_chunkElementCount - 1)), udR_InvalidParameter);
 
   chunkElementCount = a_chunkElementCount;
   chunkElementCountMask = a_chunkElementCount - 1;
@@ -231,7 +231,7 @@ template <typename T>
 inline udResult udChunkedArray<T>::GrowBack(size_t numberOfNewElements)
 {
   if (numberOfNewElements == 0)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
   size_t oldLength = inset + length;
   size_t newLength = oldLength + numberOfNewElements;
@@ -616,7 +616,7 @@ inline udResult udChunkedArray<T>::ToArray(T *pArray, size_t arrayLength, size_t
     count = length - startIndex;
   UD_ERROR_IF(startIndex >= length, udR_OutOfRange);
   UD_ERROR_IF((startIndex + count) > length, udR_OutOfRange);
-  UD_ERROR_NULL(pArray, udR_InvalidParameter_);
+  UD_ERROR_NULL(pArray, udR_InvalidParameter);
   UD_ERROR_IF(arrayLength < count, udR_BufferTooSmall);
   while (count)
   {
@@ -645,7 +645,7 @@ udResult udChunkedArray<T>::ToArray(T **ppArray, size_t startIndex, size_t count
   if (count == 0)
     count = length - startIndex;
   UD_ERROR_IF(startIndex >= length, udR_OutOfRange);
-  UD_ERROR_NULL(ppArray, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppArray, udR_InvalidParameter);
 
   if (count)
   {

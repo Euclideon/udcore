@@ -43,7 +43,7 @@ TEST(udFileTests, GeneralFileTests)
 
   // Additional destructions of non-existent objects
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
-  EXPECT_EQ(udR_InvalidParameter_, udFile_Close(nullptr));
+  EXPECT_EQ(udR_InvalidParameter, udFile_Close(nullptr));
 
 }
 
@@ -369,7 +369,7 @@ TEST(udFileTests, RecursiveCreateDirectoryTests)
   EXPECT_NE(udR_Success, udFileExists(pFilename2));
 
   EXPECT_EQ(udR_Success, udRemoveDir("./some/folder.name/subdir"));
-  EXPECT_EQ(udR_Failure_, udRemoveDir("./some"));
+  EXPECT_EQ(udR_Failure, udRemoveDir("./some"));
   EXPECT_EQ(udR_Success, udRemoveDir("./some/folder.name"));
   EXPECT_EQ(udR_Success, udRemoveDir("./some"));
   
@@ -399,7 +399,7 @@ TEST(udFileTests, RecursiveCreateDirectoryTests)
   // this infinite loop also occurs when a user has insufficient permissions.
   EXPECT_EQ(udR_Success, udFile_Open(&pFile, "./file", udFOF_Create));
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
-  EXPECT_EQ(udR_Failure_, udCreateDir("./file/dir"));
+  EXPECT_EQ(udR_Failure, udCreateDir("./file/dir"));
   EXPECT_EQ(udR_Success, udFileDelete("./file"));
 }
 

@@ -19,12 +19,12 @@ struct udResultInfo
 udResultInfo udResultInfoArray[] =
 {
   RESULTINFO(udR_Success),
-  RESULTINFO(udR_Failure_),
+  RESULTINFO(udR_Failure),
   RESULTINFO(udR_NothingToDo),
   RESULTINFO(udR_InternalError),
-  RESULTINFO(udR_NotInitialized_),
+  RESULTINFO(udR_NotInitialized),
   RESULTINFO(udR_InvalidConfiguration),
-  RESULTINFO(udR_InvalidParameter_),
+  RESULTINFO(udR_InvalidParameter),
   RESULTINFO(udR_OutstandingReferences),
   RESULTINFO(udR_MemoryAllocationFailure),
   RESULTINFO(udR_CountExceeded),

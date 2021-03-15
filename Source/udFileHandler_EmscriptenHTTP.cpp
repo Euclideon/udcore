@@ -57,7 +57,7 @@ static udResult udFileHandler_EmscriptenHTTPClose(udFile **ppFile)
 {
   UDTRACE();
   udResult result = udR_Success;
-  UD_ERROR_NULL(ppFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppFile, udR_InvalidParameter);
   udFree(*ppFile);
 epilogue:
   return result;

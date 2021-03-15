@@ -90,7 +90,7 @@ udResult udSocket_LoadCACerts()
   {
 #if UDPLATFORM_WINDOWS
     HCERTSTORE store = CertOpenSystemStoreA(0, "Root");
-    UD_ERROR_NULL(store, udR_Failure_);
+    UD_ERROR_NULL(store, udR_Failure);
     for (PCCERT_CONTEXT cert = CertEnumCertificatesInStore(store, nullptr); cert; cert = CertEnumCertificatesInStore(store, cert))
     {
       if (mbedtls_x509_crt_parse_der(&g_udSocketSharedData.certificateChain, (unsigned char *)cert->pbCertEncoded, cert->cbCertEncoded) == 0)
@@ -105,7 +105,7 @@ udResult udSocket_LoadCACerts()
     CFDataRef dat;
 
     // Load keychain
-    UD_ERROR_IF(SecKeychainOpen("/System/Library/Keychains/SystemRootCertificates.keychain", &keychain) != errSecSuccess, udR_Failure_);
+    UD_ERROR_IF(SecKeychainOpen("/System/Library/Keychains/SystemRootCertificates.keychain", &keychain) != errSecSuccess, udR_Failure);
 
     // Search for certificates
     search = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
@@ -272,7 +272,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
   int retVal;
 
   udDebugPrintf("Socket init (%s:%d) flags=%d", pAddress, port, flags);
-  UD_ERROR_NULL(ppSocket, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppSocket, udR_InvalidParameter);
   pSocket = udAllocType(udSocket, 1, udAF_Zero);
   UD_ERROR_NULL(pSocket, udR_MemoryAllocationFailure);
 
@@ -508,8 +508,8 @@ udResult udSocket_SendData(udSocket *pSocket, const uint8_t *pBytes, int64_t tot
   int64_t actualSent = 0;
   int64_t currentSend = 0;
 
-  UD_ERROR_NULL(pSocket, udR_InvalidParameter_);
-  UD_ERROR_NULL(pBytes, udR_InvalidParameter_);
+  UD_ERROR_NULL(pSocket, udR_InvalidParameter);
+  UD_ERROR_NULL(pBytes, udR_InvalidParameter);
   UD_ERROR_IF(totalBytes == 0, udR_Success); // Quietly succeed at doing nothing
 
   while (actualSent < totalBytes)
@@ -545,8 +545,8 @@ udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t buffer
   udResult result;
   int64_t actualReceived;
 
-  UD_ERROR_NULL(pSocket, udR_InvalidParameter_);
-  UD_ERROR_NULL(pBytes, udR_InvalidParameter_);
+  UD_ERROR_NULL(pSocket, udR_InvalidParameter);
+  UD_ERROR_NULL(pBytes, udR_InvalidParameter);
   UD_ERROR_IF(pSocket->isServer, udR_InvalidConfiguration);
   UD_ERROR_IF(bufferSize == 0, udR_Success); // Quietly succeed at doing nothing
 

@@ -25,11 +25,11 @@ struct udSafeDeque
 template <typename T>
 udResult udSafeDeque_Create(udSafeDeque<T> **ppDeque, size_t elementCount)
 {
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   udSafeDeque<T> *pDeque = nullptr;
 
-  UD_ERROR_NULL(ppDeque, udR_InvalidParameter_);
-  UD_ERROR_IF(elementCount == 0, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppDeque, udR_InvalidParameter);
+  UD_ERROR_IF(elementCount == 0, udR_InvalidParameter);
 
   pDeque = udAllocType(udSafeDeque<T>, 1, udAF_Zero);
 
@@ -67,14 +67,14 @@ void udSafeDeque_Destroy(udSafeDeque<T> **ppDeque)
 template <typename T>
 inline udResult udSafeDeque_PushBack(udSafeDeque<T> *pDeque, const T &v)
 {
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   udMutex *pMutex = nullptr;
 
-  UD_ERROR_NULL(pDeque, udR_InvalidParameter_);
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
 
   pMutex = udLockMutex(pDeque->pMutex);
 
-  UD_ERROR_NULL(pMutex, udR_NotInitialized_);
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
   UD_ERROR_CHECK(pDeque->chunkedArray.PushBack(v));
 
 epilogue:
@@ -88,14 +88,14 @@ epilogue:
 template <typename T>
 inline udResult udSafeDeque_PushFront(udSafeDeque<T> *pDeque, const T &v)
 {
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   udMutex *pMutex = nullptr;
 
-  UD_ERROR_NULL(pDeque, udR_InvalidParameter_);
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
 
   pMutex = udLockMutex(pDeque->pMutex);
 
-  UD_ERROR_NULL(pMutex, udR_NotInitialized_);
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
   UD_ERROR_CHECK(pDeque->chunkedArray.PushFront(v));
 
 epilogue:
@@ -112,11 +112,11 @@ inline udResult udSafeDeque_PopBack(udSafeDeque<T> *pDeque, T *pData)
   udResult result = udR_Success;
   udMutex *pMutex = nullptr;
 
-  UD_ERROR_NULL(pDeque, udR_InvalidParameter_);
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
 
   pMutex = udLockMutex(pDeque->pMutex);
 
-  UD_ERROR_NULL(pMutex, udR_NotInitialized_);
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
   UD_ERROR_IF(!pDeque->chunkedArray.PopBack(pData), udR_ObjectNotFound);
 
 epilogue:
@@ -133,11 +133,11 @@ inline udResult udSafeDeque_PopFront(udSafeDeque<T> *pDeque, T *pData)
   udResult result = udR_Success;
   udMutex *pMutex = nullptr;
 
-  UD_ERROR_NULL(pDeque, udR_InvalidParameter_);
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
 
   pMutex = udLockMutex(pDeque->pMutex);
 
-  UD_ERROR_NULL(pMutex, udR_NotInitialized_);
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
   UD_ERROR_IF(!pDeque->chunkedArray.PopFront(pData), udR_ObjectNotFound);
 
 epilogue:

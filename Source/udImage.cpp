@@ -34,9 +34,9 @@ udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t l
   const stbi_uc *pSTBIImage = nullptr;
   int w, h, sc; // Some plain integers for call to 3rd party API
 
-  UD_ERROR_NULL(ppImage, udR_InvalidParameter_);
-  UD_ERROR_NULL(pMemory, udR_InvalidParameter_);
-  UD_ERROR_IF(length == 0, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pMemory, udR_InvalidParameter);
+  UD_ERROR_IF(length == 0, udR_InvalidParameter);
 
   pSTBIImage = stbi_load_from_memory((const stbi_uc *)pMemory, (int)length, &w, &h, &sc, 4);
   UD_ERROR_NULL(pSTBIImage, udR_ImageLoadFailure);
@@ -102,16 +102,16 @@ static void stbiWriteWrapper(stbiWriteContext *pContext, uint32_t width, uint32_
   {
     case udIST_PNG:
       if (stbi_write_png_to_func(stbiWriteCallback, pContext, width, height, 3, pRGB, 0) == 0)
-        *pContext->pResult = udR_Failure_;
+        *pContext->pResult = udR_Failure;
       break;
 
     case udIST_JPG:
       if (stbi_write_jpg_to_func(stbiWriteCallback, pContext, width, height, 3, pRGB, 80) == 0) // quality value of 80
-        *pContext->pResult = udR_Failure_;
+        *pContext->pResult = udR_Failure;
       break;
 
     case udIST_Max:
-      *pContext->pResult = udR_InvalidParameter_;
+      *pContext->pResult = udR_InvalidParameter;
   }
 }
 
@@ -125,9 +125,9 @@ udResult udImage_Save(const udImage *pImage, const char *pFilename, uint32_t *pS
   uint32_t count;
   stbiWriteContext writeContext;
 
-  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
-  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter_);
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
+  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter);
   count = pImage->width * pImage->height;
   pRGB = udAlloc(count * 3);
   UD_ERROR_NULL(pRGB, udR_MemoryAllocationFailure);
@@ -245,8 +245,8 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
   uint8_t *p24BitData = nullptr;
   uint8_t *pOut, *pIn;
 
-  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
-  UD_ERROR_NULL(pSaveSize, udR_InvalidParameter_);
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pSaveSize, udR_InvalidParameter);
 
   mipW = pImage->width;
   mipH = pImage->height;
@@ -354,7 +354,7 @@ udResult udImageStreaming_Load(udImageStreaming **ppImage, udFile *pFile, int64_
   udResult result;
   udImageStreaming *pImage = nullptr;
 
-  UD_ERROR_NULL(ppImage, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppImage, udR_InvalidParameter);
   UD_ERROR_CHECK(udImageStreaming_Reserve(&pImage, pFile, offset));
   UD_ERROR_CHECK(udImageStreaming_LoadCell(pImage, (uint32_t)-1));
   *ppImage = pImage;
@@ -374,8 +374,8 @@ udResult udImageStreaming_Reserve(udImageStreaming **ppImage, udFile *pFile, int
   udResult result;
   udImageStreaming *pImage = nullptr;
 
-  UD_ERROR_NULL(ppImage, udR_InvalidParameter_);
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
 
   pImage = udAllocType(udImageStreaming, 1, udAF_Zero);
   UD_ERROR_NULL(pImage, udR_MemoryAllocationFailure);
@@ -461,7 +461,7 @@ udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexD
   udMutex *pLocked = nullptr;
   uint8_t *pCellMem = nullptr;
 
-  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
 
   if (pImage->fourcc == 0)
   {
@@ -499,10 +499,10 @@ udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexD
     uint32_t cellX = (cellIndexData >> 8) & 0xff;
     uint32_t cellY = (cellIndexData >> 16) & 0xff;
 
-    UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter_);
+    UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter);
     udImageStreaming::Mip *pMip = &pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
-    UD_ERROR_IF(cellX >= pMip->gridW, udR_InvalidParameter_);
-    UD_ERROR_IF(cellY >= pMip->gridH, udR_InvalidParameter_);
+    UD_ERROR_IF(cellX >= pMip->gridW, udR_InvalidParameter);
+    UD_ERROR_IF(cellY >= pMip->gridH, udR_InvalidParameter);
 
     uint32_t cellIndex = cellY * pMip->gridW + cellX;
     uint32_t cellWidth = udMin(udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
@@ -550,9 +550,9 @@ udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename
   uint8_t *pRGB = nullptr; // Need to make a 24-bit copy for stbi
   stbiWriteContext writeContext;
 
-  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
-  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter_);
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
+  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter);
 
   // Ensure the header has been loaded by doing an initial dummy sample
   udImageStreaming_Sample(pImage, 0.f, 0.f);

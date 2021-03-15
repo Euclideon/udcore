@@ -17,7 +17,7 @@ void udUUID_Clear(udUUID *pUUID)
 udResult udUUID_SetFromString(udUUID *pUUID, const char *pStr)
 {
   if (!udUUID_IsValid(pStr))
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
   memset(pUUID, 0, sizeof(udUUID));
   memcpy(pUUID->internal_bytes, pStr, udMin((size_t)udUUID::udUUID_Length, udStrlen(pStr)));
@@ -71,11 +71,11 @@ bool udUUID_IsValid(const char *pUUIDStr)
 // Author: Paul Fox, April 2019
 udResult udUUID_GenerateFromRandom(udUUID *pUUID)
 {
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   uint8_t mem[16];
   int index = 0;
 
-  UD_ERROR_NULL(pUUID, udR_InvalidParameter_);
+  UD_ERROR_NULL(pUUID, udR_InvalidParameter);
   UD_ERROR_CHECK(udCrypto_Init());
   UD_ERROR_CHECK(udCrypto_Random(mem, udLengthOf(mem)));
   udCrypto_Deinit();
@@ -113,14 +113,14 @@ epilogue:
 udResult udUUID_GenerateFromString(udUUID *pUUID, const char *pStr)
 {
   udCryptoHashContext *pHashCtx = nullptr;
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   const char *pOutB64 = nullptr;
   uint8_t mem[20]; //SHA 1 is 160bits (20bytes)
   int index = 0;
 
   const uint8_t base[] = { 0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8 };
 
-  UD_ERROR_NULL(pUUID, udR_InvalidParameter_);
+  UD_ERROR_NULL(pUUID, udR_InvalidParameter);
 
   UD_ERROR_CHECK(udCryptoHash_Create(&pHashCtx, udCH_SHA1));
   UD_ERROR_CHECK(udCryptoHash_Digest(pHashCtx, base, udLengthOf(base)));
@@ -165,7 +165,7 @@ epilogue:
 udResult udUUID_GenerateFromInt(udUUID *pUUID, int64_t value)
 {
   const char *pStr = nullptr;
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
 
   UD_ERROR_CHECK(udSprintf(&pStr, "%" PRId64, value));
   UD_ERROR_CHECK(udUUID_GenerateFromString(pUUID, pStr));
