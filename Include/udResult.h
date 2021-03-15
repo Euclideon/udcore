@@ -46,12 +46,12 @@ constexpr unsigned udResultCalcHelpCode(const char filename[], const int line, u
 enum udResult
 {
   udR_Success,
-  udR_Failure_,
+  udR_Failure,
   udR_NothingToDo,
   udR_InternalError,
-  udR_NotInitialized_,
+  udR_NotInitialized,
   udR_InvalidConfiguration,
-  udR_InvalidParameter_,
+  udR_InvalidParameter,
   udR_OutstandingReferences,
   udR_MemoryAllocationFailure,
   udR_CountExceeded,

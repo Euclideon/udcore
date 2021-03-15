@@ -148,7 +148,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
   int slotIndex;
   udUnused(pThreadName);
 
-  UD_ERROR_NULL(threadStarter, udR_InvalidParameter_);
+  UD_ERROR_NULL(threadStarter, udR_InvalidParameter);
   for (slotIndex = 0; pThread == nullptr && slotIndex < MAX_CACHED_THREADS; ++slotIndex)
   {
     pThread = const_cast<udThread*>(s_pCachedThreads[slotIndex]);
@@ -271,7 +271,7 @@ void udThread_DestroyCached()
 udResult udThread_Join(udThread *pThread, int waitMs)
 {
   if (!pThread)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
 #if UDPLATFORM_WINDOWS
   UDCOMPILEASSERT(INFINITE == UDTHREAD_WAIT_INFINITE, "Infinite constants don't match");
@@ -282,7 +282,7 @@ udResult udThread_Join(udThread *pThread, int waitMs)
     if (result == WAIT_TIMEOUT)
       return udR_Timeout;
 
-    return udR_Failure_;
+    return udR_Failure;
   }
 #elif UDPLATFORM_LINUX
   if (waitMs == UDTHREAD_WAIT_INFINITE)
@@ -291,9 +291,9 @@ udResult udThread_Join(udThread *pThread, int waitMs)
     if (result)
     {
       if (result == EINVAL)
-        return udR_InvalidParameter_;
+        return udR_InvalidParameter;
 
-      return udR_Failure_;
+      return udR_Failure;
     }
   }
   else
@@ -308,9 +308,9 @@ udResult udThread_Join(udThread *pThread, int waitMs)
         return udR_Timeout;
 
       if (result == EINVAL)
-        return udR_InvalidParameter_;
+        return udR_InvalidParameter;
 
-      return udR_Failure_;
+      return udR_Failure;
     }
   }
 #else
@@ -319,9 +319,9 @@ udResult udThread_Join(udThread *pThread, int waitMs)
   if (result)
   {
     if (result == EINVAL)
-      return udR_InvalidParameter_;
+      return udR_InvalidParameter;
 
-    return udR_Failure_;
+    return udR_Failure;
   }
 #endif
 
@@ -363,11 +363,11 @@ udSemaphore *udCreateSemaphore()
 #if UD_USE_PLATFORM_SEMAPHORE
 # if UDPLATFORM_WINDOWS
   pSemaphore->handle = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
-  UD_ERROR_NULL(pSemaphore, udR_Failure_);
+  UD_ERROR_NULL(pSemaphore, udR_Failure);
 # elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
 #  error "Unsupported platform."
 # else
-  UD_ERROR_IF(sem_init(&pSemaphore->handle, 0, 0) == -1, udR_Failure_);
+  UD_ERROR_IF(sem_init(&pSemaphore->handle, 0, 0) == -1, udR_Failure);
 # endif
 #else
   pSemaphore->pMutex = udCreateMutex();

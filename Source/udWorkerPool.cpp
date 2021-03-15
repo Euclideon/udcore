@@ -81,11 +81,11 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
 // Author: Paul Fox, May 2015
 udResult udWorkerPool_Create(udWorkerPool **ppPool, uint8_t totalThreads, const char *pThreadNamePrefix /*= "udWorkerPool"*/)
 {
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   udWorkerPool *pPool = nullptr;
 
-  UD_ERROR_NULL(ppPool, udR_InvalidParameter_);
-  UD_ERROR_IF(totalThreads == 0, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppPool, udR_InvalidParameter);
+  UD_ERROR_IF(totalThreads == 0, udR_InvalidParameter);
 
   pPool = udAllocType(udWorkerPool, 1, udAF_Zero);
   UD_ERROR_NULL(pPool, udR_MemoryAllocationFailure);
@@ -160,13 +160,13 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
 // Author: Paul Fox, May 2015
 udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
 {
-  udResult result = udR_Failure_;
+  udResult result = udR_Failure;
   udWorkerPoolTask tempTask;
 
-  UD_ERROR_NULL(pPool, udR_InvalidParameter_);
-  UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized_);
-  UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized_);
-  UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized_);
+  UD_ERROR_NULL(pPool, udR_InvalidParameter);
+  UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized);
   UD_ERROR_IF(!pPool->isRunning, udR_NotAllowed);
 
   tempTask.function = func;
@@ -191,10 +191,10 @@ udResult udWorkerPool_DoPostWork(udWorkerPool *pPool, int processLimit /*= 0*/)
   udResult result = udR_Success;
   int processedItems = 0;
 
-  UD_ERROR_NULL(pPool, udR_InvalidParameter_);
-  UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized_);
-  UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized_);
-  UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized_);
+  UD_ERROR_NULL(pPool, udR_InvalidParameter);
+  UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized);
   UD_ERROR_IF(!pPool->isRunning, udR_NotAllowed);
 
   while (udSafeDeque_PopFront(pPool->pQueuedPostTasks, &currentTask) == udR_Success)

@@ -178,7 +178,7 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
   udResult result;
   size_t actualRead;
 
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
@@ -220,7 +220,7 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   size_t actualWritten;
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
 
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
   if (pFILE->pMutex)
     udLockMutex(pFILE->pMutex);
 
@@ -251,7 +251,7 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
 
   // Early-exit that doesn't involve locking the mutex
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
   if (!pFILE->pCrtFile)
     return udR_NothingToDo;
 

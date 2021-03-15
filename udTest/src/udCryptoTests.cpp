@@ -147,35 +147,35 @@ TEST(udCryptoTests, CipherErrorCodes)
   memset(&iv, 0, sizeof(iv));
   memset(buf, 0, sizeof(buf));
   result = udCryptoCipher_Create(nullptr, udCC_AES128, udCPM_None, pZeroKey, udCCM_CTR);
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, nullptr, udCCM_CTR);
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Create(&pCtx, udCC_AES128, udCPM_None, pZeroKey, udCCM_CTR);
   EXPECT_EQ(udR_Success, result);
 
   result = udCryptoCipher_Encrypt(nullptr, &iv, buf, sizeof(buf), buf, sizeof(buf)); // context
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Encrypt(pCtx, nullptr, buf, sizeof(buf), buf, sizeof(buf)); // iv
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, buf, 1, buf, sizeof(buf)); // input alignment
   EXPECT_EQ(udR_AlignmentRequirement, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Encrypt(pCtx, &iv, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
   EXPECT_EQ(udR_BufferTooSmall, result);
 
   result = udCryptoCipher_Decrypt(nullptr, &iv, buf, sizeof(buf), buf, sizeof(buf)); // context
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Decrypt(pCtx, nullptr, buf, sizeof(buf), buf, sizeof(buf)); // iv
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, nullptr, sizeof(buf), buf, sizeof(buf)); // input null
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, buf, 1, buf, sizeof(buf)); // input alignment
   EXPECT_EQ(udR_AlignmentRequirement, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, buf, sizeof(buf), nullptr, sizeof(buf)); // output null
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Decrypt(pCtx, &iv, buf, sizeof(buf), buf, sizeof(buf) - 1); // output size
   EXPECT_EQ(udR_BufferTooSmall, result);
 
@@ -184,9 +184,9 @@ TEST(udCryptoTests, CipherErrorCodes)
 
   // Additional destructions of non-existent objects
   result = udCryptoCipher_Destroy(&pCtx);
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
   result = udCryptoCipher_Destroy(nullptr);
-  EXPECT_EQ(udR_InvalidParameter_, result);
+  EXPECT_EQ(udR_InvalidParameter, result);
 }
 
 
@@ -579,17 +579,17 @@ TEST(udCryptoTests, Uninitialised)
   udCryptoCipher_Destroy(&pCipherCtx);
 
   // Random (and therefore) most signature functions don't work, other than importing and exporting
-  EXPECT_EQ(udR_NotInitialized_, udCrypto_Random(iv.iv, sizeof(iv.iv)));
-  EXPECT_EQ(udR_NotInitialized_, udCryptoSig_CreateKeyPair(&pPrivCtx, udCST_RSA2048));
+  EXPECT_EQ(udR_NotInitialized, udCrypto_Random(iv.iv, sizeof(iv.iv)));
+  EXPECT_EQ(udR_NotInitialized, udCryptoSig_CreateKeyPair(&pPrivCtx, udCST_RSA2048));
   EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPrivCtx, pPrivateKeyText));
-  EXPECT_EQ(udR_NotInitialized_, udCryptoSig_Sign(pPrivCtx, pHash, &pTempString, udCH_SHA1));
-  EXPECT_EQ(udR_NotInitialized_, udCryptoSig_Verify(pPrivCtx, pHash, pExpectedSignature, udCH_SHA1));
+  EXPECT_EQ(udR_NotInitialized, udCryptoSig_Sign(pPrivCtx, pHash, &pTempString, udCH_SHA1));
+  EXPECT_EQ(udR_NotInitialized, udCryptoSig_Verify(pPrivCtx, pHash, pExpectedSignature, udCH_SHA1));
   EXPECT_EQ(udR_Success, udCryptoSig_ExportKeyPair(pPrivCtx, &pTempString, false));
   udFree(pTempString);
   udCryptoSig_Destroy(&pPrivCtx);
 
   // Diffie-Hellman requires initialisation
-  EXPECT_EQ(udR_NotInitialized_, udCryptoKey_CreateDHM(&pDHMCtx, &pTempString, 64));
+  EXPECT_EQ(udR_NotInitialized, udCryptoKey_CreateDHM(&pDHMCtx, &pTempString, 64));
 
   udFree(pHash);
 }

@@ -39,8 +39,8 @@ udResult udFile_GenerateRawFilename(const char **ppResultFilename, const void *p
   size_t base64Len;
   size_t declareLen;
 
-  UD_ERROR_IF(!pBuffer && bufferLen, udR_InvalidParameter_);
-  UD_ERROR_IF(ct < 0 || ct >= udCT_Count, udR_InvalidParameter_);
+  UD_ERROR_IF(!pBuffer && bufferLen, udR_InvalidParameter);
+  UD_ERROR_IF(ct < 0 || ct >= udCT_Count, udR_InvalidParameter);
 
   if (ct != udCT_None && bufferLen)
   {
@@ -194,7 +194,7 @@ udResult udFileHandler_RawOpen(udFile **ppFile, const char *pFilename, udFileOpe
   pRaw = udAllocType(udFile_Raw, 1, udAF_Zero);
   UD_ERROR_NULL(pRaw, udR_MemoryAllocationFailure);
 
-  UD_ERROR_IF(!udFile_IsRaw(pFilename, &offsetToBase64, &pRaw->pOriginalFilename, &pRaw->dataLen, &pRaw->ct, &pRaw->allocationSize), udR_Failure_);
+  UD_ERROR_IF(!udFile_IsRaw(pFilename, &offsetToBase64, &pRaw->pOriginalFilename, &pRaw->dataLen, &pRaw->ct, &pRaw->allocationSize), udR_Failure);
 
   pRaw->pFilenameCopy = pFilename; // Just take a reference to the filename as it can't be duplicated
   pRaw->fpRead = udFileHandler_RawSeekRead;
@@ -253,7 +253,7 @@ static udResult udFileHandler_RawSeekRead(udFile *pFile, void *pBuffer, size_t b
   udFile_Raw *pRaw = static_cast<udFile_Raw*>(pFile);
   size_t actualRead;
 
-  UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pRaw->dataLen, udR_InvalidParameter_);
+  UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pRaw->dataLen, udR_InvalidParameter);
   actualRead = udMin(bufferLength, pRaw->dataLen - (size_t)seekOffset);
   memcpy(pBuffer, pRaw->pData + seekOffset, actualRead);
 
@@ -275,7 +275,7 @@ static udResult udFileHandler_RawSeekWrite(udFile *pFile, const void *pBuffer, s
   udResult result;
   udFile_Raw *pRaw = static_cast<udFile_Raw*>(pFile);
 
-  UD_ERROR_IF(seekOffset < 0, udR_InvalidParameter_);
+  UD_ERROR_IF(seekOffset < 0, udR_InvalidParameter);
   if ((seekOffset + bufferLength) > pRaw->dataLen)
   {
     // Need to extend the file

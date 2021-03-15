@@ -102,8 +102,8 @@ udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengt
   udResult result;
   udFile *pFile = nullptr;
 
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
-  UD_ERROR_NULL(ppMemory, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
+  UD_ERROR_NULL(ppMemory, udR_InvalidParameter);
   UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Read | udFOF_FastOpen)); // NOTE: Length can be zero. Chrome does this on cached files.
   UD_ERROR_CHECK(pFile->fpLoad(pFile, ppMemory, pFileLengthInBytes));
 
@@ -136,8 +136,8 @@ udResult udFile_Open(udFile **ppFile, const char *pFilename, udFileOpenFlags fla
 {
   UDTRACE();
   udResult result;
-  UD_ERROR_NULL(ppFile, udR_InvalidParameter_);
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppFile, udR_InvalidParameter);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
 
   *ppFile = nullptr;
   if (pFileLengthInBytes)
@@ -194,7 +194,7 @@ void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength)
 udResult udFile_SetSubFilename(udFile *pFile, const char *pSubFilename, int64_t *pFileLengthInBytes)
 {
   udResult result;
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
   UD_ERROR_NULL(pFile->fpSetSubFilename, udR_InvalidConfiguration);
 
   result = pFile->fpSetSubFilename(pFile, pSubFilename);
@@ -212,7 +212,7 @@ udResult udFile_SetEncryption(udFile *pFile, uint8_t *pKey, int keylen, uint64_t
   udResult result;
   const char *pKeyBase64 = nullptr;
 
-  UD_ERROR_IF(!pFile || !pKey, udR_InvalidParameter_);
+  UD_ERROR_IF(!pFile || !pKey, udR_InvalidParameter);
   UD_ERROR_IF(pFile->flagsCopy & udFOF_Write, udR_InvalidConfiguration); // Temp until a need for writing arises
 
   UD_ERROR_CHECK(udBase64Encode(&pKeyBase64, pKey, keylen));
@@ -245,7 +245,7 @@ udResult udFile_GetPerformance(udFile *pFile, udFilePerformance *pPerformance)
 {
   UDTRACE();
   if (!pFile || !pPerformance)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
   pPerformance->throughput = pFile->totalBytes;
   pPerformance->mbPerSec = pFile->mbPerSec;
@@ -277,7 +277,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
   int64_t offset;
   void *pCipherText = nullptr;
 
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
   UD_ERROR_NULL(pFile->fpRead, udR_InvalidConfiguration);
 
   switch (seekWhence)
@@ -286,7 +286,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
     case udFSW_SeekCur: offset = pFile->filePos + seekOffset; break;
     case udFSW_SeekEnd: offset = pFile->fileLength + seekOffset + pFile->seekBase; break;
     default:
-      UD_ERROR_SET(udR_InvalidParameter_);
+      UD_ERROR_SET(udR_InvalidParameter);
   }
 
   ++pFile->requestsInFlight;
@@ -355,7 +355,7 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
   size_t actualWritten = 0; // Assign to zero to avoid incorrect compiler warning;
   int64_t offset;
 
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
   UD_ERROR_NULL(pFile->fpRead, udR_InvalidConfiguration);
 
   switch (seekWhence)
@@ -364,7 +364,7 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
   case udFSW_SeekCur: offset = pFile->filePos + seekOffset; break;
   case udFSW_SeekEnd: offset = pFile->fileLength + seekOffset; break;
   default:
-    UD_ERROR_SET(udR_InvalidParameter_);
+    UD_ERROR_SET(udR_InvalidParameter);
   }
 
   ++pFile->requestsInFlight;
@@ -417,7 +417,7 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
 udResult udFile_Release(udFile *pFile)
 {
   udResult result;
-  UD_ERROR_NULL(pFile, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFile, udR_InvalidParameter);
 
   result = (pFile->fpRelease) ? pFile->fpRelease(pFile) : udR_Success;
 
@@ -432,7 +432,7 @@ udResult udFile_Close(udFile **ppFile)
 {
   UDTRACE();
   if (ppFile == nullptr)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
   udFile *pFile = *ppFile;
   if (pFile)
@@ -452,8 +452,8 @@ udResult udFile_Close(udFile **ppFile)
 udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath)
 {
   udResult result = udR_ObjectNotFound;
-  UD_ERROR_NULL(ppNewPath, udR_InvalidParameter_);
-  UD_ERROR_NULL(pPath, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppNewPath, udR_InvalidParameter);
+  UD_ERROR_NULL(pPath, udR_InvalidParameter);
 
   // TODO: Process environment variables when passed in via `%env%` and `$env`
   {

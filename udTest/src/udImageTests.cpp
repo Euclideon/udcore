@@ -22,9 +22,9 @@ TEST(udImageTests, SaveLoad)
 
   for (udImageSaveType saveType = (udImageSaveType)0; saveType < udIST_Max; saveType = (udImageSaveType)(saveType + 1))
   {
-    EXPECT_EQ(udR_InvalidParameter_, udImage_Save(nullptr, pRawOutput, nullptr, saveType));
-    EXPECT_EQ(udR_InvalidParameter_, udImage_Save(&testImage, nullptr, nullptr, saveType));
-    EXPECT_EQ(udR_InvalidParameter_, udImage_Save(&testImage, pRawOutput, nullptr, (udImageSaveType)(udIST_Max + saveType)));
+    EXPECT_EQ(udR_InvalidParameter, udImage_Save(nullptr, pRawOutput, nullptr, saveType));
+    EXPECT_EQ(udR_InvalidParameter, udImage_Save(&testImage, nullptr, nullptr, saveType));
+    EXPECT_EQ(udR_InvalidParameter, udImage_Save(&testImage, pRawOutput, nullptr, (udImageSaveType)(udIST_Max + saveType)));
     // Test with a null for the size for just the first type
     ASSERT_EQ(udR_Success, udImage_Save(&testImage, pRawOutput, &sz, saveType));
     EXPECT_EQ(udR_Success, udImage_Load(&pReload, pRawOutput));

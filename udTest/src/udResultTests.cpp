@@ -16,12 +16,12 @@ TEST(udResult, StringNamesMatch)
     switch (code)
     {
       CHECK_STR(udR_Success);
-      CHECK_STR(udR_Failure_);
+      CHECK_STR(udR_Failure);
       CHECK_STR(udR_NothingToDo);
       CHECK_STR(udR_InternalError);
-      CHECK_STR(udR_NotInitialized_);
+      CHECK_STR(udR_NotInitialized);
       CHECK_STR(udR_InvalidConfiguration);
-      CHECK_STR(udR_InvalidParameter_);
+      CHECK_STR(udR_InvalidParameter);
       CHECK_STR(udR_OutstandingReferences);
       CHECK_STR(udR_MemoryAllocationFailure);
       CHECK_STR(udR_CountExceeded);

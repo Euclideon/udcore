@@ -31,5 +31,5 @@ inline const udJSON *udJSON::GetMember(size_t index) const { return (type == T_O
 inline udJSONArray *udJSON::AsArray()     const { return (type == T_Array)   ? u.pArray  : nullptr; }
 inline udJSONObject *udJSON::AsObject()   const { return (type == T_Object)  ? u.pObject : nullptr; }
 inline udResult udJSON::ToString(const char **ppStr, bool escapeBackslashes) const { return ToString(ppStr, 0, "", "", "", escapeBackslashes); }
-inline udResult udJSON::ExtractAndVoid(const char **ppStr) { if (!ppStr) return udR_InvalidParameter_; if (type == T_String) { *ppStr = u.pStr; Clear(); return udR_Success; } return udR_ObjectTypeMismatch; }
+inline udResult udJSON::ExtractAndVoid(const char **ppStr) { if (!ppStr) return udR_InvalidParameter; if (type == T_String) { *ppStr = u.pStr; Clear(); return udR_Success; } return udR_ObjectTypeMismatch; }
 #endif // UDJSON_INL_H

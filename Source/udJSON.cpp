@@ -706,8 +706,8 @@ static udResult udJSON_GetVA(const udJSON *pRoot, udJSON **ppValue, const char *
   char *pDup = nullptr; // Allocated string for sprintf'd expression
   udJSONExpression exp;
 
-  UD_ERROR_NULL(pRoot, udR_InvalidParameter_);
-  UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter_);
+  UD_ERROR_NULL(pRoot, udR_InvalidParameter);
+  UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter);
   if (udStrchr(pKeyExpression, "%.["))
   {
     va_list apTemp;
@@ -789,8 +789,8 @@ static udResult udJSON_SetVA(udJSON *pRoot, udJSON *pSetToValue, const char *pKe
   udJSONExpression exp;
   udJSON setToValueFromOperator;
 
-  UD_ERROR_NULL(pRoot, udR_InvalidParameter_);
-  UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter_);
+  UD_ERROR_NULL(pRoot, udR_InvalidParameter);
+  UD_ERROR_NULL(pKeyExpression, udR_InvalidParameter);
 
   if (udStrchr(pKeyExpression, "%.[="))
   {
@@ -940,7 +940,7 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
   udResult result;
   int tempLineNumber;
   int totalCharCount = 0;
-  UD_ERROR_NULL(pString, udR_InvalidParameter_);
+  UD_ERROR_NULL(pString, udR_InvalidParameter);
   if (!pLineNumber)
     pLineNumber = &tempLineNumber;
   if (pLineNumber)
@@ -1290,7 +1290,7 @@ udResult udJSON::ExportXML(const char *pKey, udJSON::LineList *pLines, int inden
               result = pArray->GetElement(i)->ExportXML(pKey, pLines, indent, strip);
               break;
             default:
-              UD_ERROR_SET(udR_Failure_);
+              UD_ERROR_SET(udR_Failure);
           }
           UD_ERROR_HANDLE();
           if (pStr)
@@ -1414,7 +1414,7 @@ udResult udJSON::Export(const char **ppText, udJSONExportOption option) const
   char *pText = nullptr;
 
   lines.Init(32);
-  UD_ERROR_NULL(ppText, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppText, udR_InvalidParameter);
 
   if ((option & udJEO_XML))
   {

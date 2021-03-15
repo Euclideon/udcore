@@ -27,7 +27,7 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
   void *pTemp = nullptr;
   struct libdeflate_compressor *ldComp = nullptr;
 
-  UD_ERROR_IF(!ppDest || !pDestSize || !pSource, udR_InvalidParameter_);
+  UD_ERROR_IF(!ppDest || !pDestSize || !pSource, udR_InvalidParameter);
   if (!sourceSize)
   {
     // Special-case, when compressing zero bytes, result is zero bytes
@@ -102,7 +102,7 @@ udResult udCompression_Deflate(void **ppDest, size_t *pDestSize, const void *pSo
       break;
 
     default:
-      UD_ERROR_SET(udR_InvalidParameter_);
+      UD_ERROR_SET(udR_InvalidParameter);
   }
 
   result = udR_Success;
@@ -124,7 +124,7 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
   struct libdeflate_decompressor *ldComp = nullptr;
   libdeflate_result lresult;
 
-  UD_ERROR_IF(!pDest || !pSource, udR_InvalidParameter_);
+  UD_ERROR_IF(!pDest || !pSource, udR_InvalidParameter);
   if (!sourceSize)
   {
     // Special-case, when decompressing zero bytes, result is zero bytes
@@ -196,7 +196,7 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
     break;
 
   default:
-    UD_ERROR_SET(udR_InvalidParameter_);
+    UD_ERROR_SET(udR_InvalidParameter);
   }
 
   result = udR_Success;
@@ -317,7 +317,7 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
   UD_ERROR_NULL(pZip->pZipFile, udR_InvalidConfiguration);
   if (pZip->pFileData)
   {
-    UD_ERROR_IF(seekOffset < 0 || seekOffset >= pZip->fileLength, udR_InvalidParameter_);
+    UD_ERROR_IF(seekOffset < 0 || seekOffset >= pZip->fileLength, udR_InvalidParameter);
     bufferLength = udMin(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
 
     // Passive wait for the read to complete
@@ -357,7 +357,7 @@ epilogue:
 static udResult udFileHandler_MiniZClose(udFile **ppFile)
 {
   if (ppFile == nullptr)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
   udFile_Zip *pZip = static_cast<udFile_Zip *>(*ppFile);
   if (pZip)
   {
@@ -585,11 +585,11 @@ udResult udCompression_CreatePNG(void **ppPNG, size_t *pPNGLen, const uint8_t *p
   udResult result;
   void *pPNG = nullptr;
 
-  UD_ERROR_NULL(ppPNG, udR_InvalidParameter_);
-  UD_ERROR_NULL(pPNGLen, udR_InvalidParameter_);
-  UD_ERROR_NULL(pImage, udR_InvalidParameter_);
-  UD_ERROR_IF(width <= 0 || height <= 0, udR_InvalidParameter_);
-  UD_ERROR_IF(channels < 3 || channels > 4, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppPNG, udR_InvalidParameter);
+  UD_ERROR_NULL(pPNGLen, udR_InvalidParameter);
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_IF(width <= 0 || height <= 0, udR_InvalidParameter);
+  UD_ERROR_IF(channels < 3 || channels > 4, udR_InvalidParameter);
 
   pPNG = tdefl_write_image_to_png_file_in_memory((const void *)pImage, width, height, channels, pPNGLen);
   UD_ERROR_NULL(pPNG, udR_InvalidConfiguration); // Something went wrong, but we don't know what

@@ -276,7 +276,7 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
 udResult udGeoZone_UpdateDisplayName(udGeoZone *pZone)
 {
   if (pZone == nullptr)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
   const udGeoZoneGeodeticDatumDescriptor *pDesc = &g_udGZ_GeodeticDatumDescriptors[pZone->datum];
 
@@ -300,7 +300,7 @@ udResult udGeoZone_UpdateDisplayName(udGeoZone *pZone)
 udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
 {
   if (pZone == nullptr)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
   if (sridCode == -1) // Special case to help with unit tests
     udGeoZone_SetSpheroid(pZone);
@@ -1276,7 +1276,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
 udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
 {
   if (pZone == nullptr || pWKT == nullptr)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
   else
     memset(pZone, 0, sizeof(udGeoZone));
 
@@ -1290,7 +1290,7 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
 
   if (pZone->scaleFactor != 0 && !udStrEqual(pZone->datumShortName, "") && pZone->semiMajorAxis != 0 && pZone->srid != 0) // ensure some key variables are not null
     return udR_Success;
-  return udR_Failure_;
+  return udR_Failure;
 }
 
 // ----------------------------------------------------------------------------
@@ -1314,8 +1314,8 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   int meridianPrecision = ((zone.datum == udGZGD_MGI) ? 14 : 13);
   int scalePrecision = 10;
 
-  UD_ERROR_NULL(ppWKT, udR_InvalidParameter_);
-  UD_ERROR_IF(zone.srid == 0, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppWKT, udR_InvalidParameter);
+  UD_ERROR_IF(zone.srid == 0, udR_InvalidParameter);
 
   pDesc = &g_udGZ_GeodeticDatumDescriptors[zone.datum];
   pEllipsoid = &g_udGZ_StdEllipsoids[pDesc->ellipsoid];

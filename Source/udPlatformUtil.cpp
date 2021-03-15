@@ -261,8 +261,8 @@ udResult udBase64Decode(const char *pString, size_t length, uint8_t *pOutput, si
     UD_ERROR_SET(udR_Success);
   }
 
-  UD_ERROR_NULL(pString, udR_InvalidParameter_);
-  UD_ERROR_NULL(pOutput, udR_InvalidParameter_);
+  UD_ERROR_NULL(pString, udR_InvalidParameter);
+  UD_ERROR_NULL(pOutput, udR_InvalidParameter);
 
   for (size_t inputIndex = 0; inputIndex < length; )
   {
@@ -295,9 +295,9 @@ udResult udBase64Decode(uint8_t **ppOutput, size_t *pOutputLength, const char *p
   udResult result;
   uint8_t *pOutput = nullptr;
 
-  UD_ERROR_NULL(ppOutput, udR_InvalidParameter_);
-  UD_ERROR_NULL(pOutputLength, udR_InvalidParameter_);
-  UD_ERROR_NULL(pString, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppOutput, udR_InvalidParameter);
+  UD_ERROR_NULL(pOutputLength, udR_InvalidParameter);
+  UD_ERROR_NULL(pString, udR_InvalidParameter);
 
   result = udBase64Decode(pString, 0, nullptr, 0, pOutputLength);
   UD_ERROR_HANDLE();
@@ -331,8 +331,8 @@ udResult udBase64Encode(const void *pBinary, size_t binaryLength, char *pString,
     UD_ERROR_SET(udR_Success);
   }
 
-  UD_ERROR_NULL(pString, udR_InvalidParameter_);
-  UD_ERROR_IF(!pBinary && binaryLength, udR_InvalidParameter_);
+  UD_ERROR_NULL(pString, udR_InvalidParameter);
+  UD_ERROR_IF(!pBinary && binaryLength, udR_InvalidParameter);
 
   for (size_t inputIndex = 0; inputIndex < binaryLength; ++inputIndex)
   {
@@ -383,7 +383,7 @@ udResult udBase64Encode(const char **ppDestStr, const void *pBinary, size_t bina
   size_t expectedOutputLength = (binaryLength + 2) / 3 * 4 + 1; // +1 for nul terminator
   char *pStr = nullptr;
 
-  UD_ERROR_NULL(ppDestStr, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppDestStr, udR_InvalidParameter);
   pStr = udAllocType(char, expectedOutputLength, udAF_None);
   UD_ERROR_NULL(pStr, udR_MemoryAllocationFailure);
   result = udBase64Encode(pBinary, binaryLength, pStr, expectedOutputLength);
@@ -749,9 +749,9 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
   uint8_t *pLine = nullptr;
   int paddedLineSize;
 
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter_);
-  UD_ERROR_NULL(ppColorData, udR_InvalidParameter_);
-  UD_ERROR_IF(!pWidth || !pHeight, udR_InvalidParameter_);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
+  UD_ERROR_NULL(ppColorData, udR_InvalidParameter);
+  UD_ERROR_IF(!pWidth || !pHeight, udR_InvalidParameter);
 
   UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Read));
   UD_ERROR_CHECK(udFile_Read(pFile, &header, sizeof(header)));
@@ -931,7 +931,7 @@ udResult udFileDelete(const char *pFilename)
   if (udFile_TranslatePath((const char **)&pNewPath, pFilename) == udR_Success)
     pPath = pNewPath;
 
-  udResult result = remove(pPath) == -1 ? udR_Failure_ : udR_Success;
+  udResult result = remove(pPath) == -1 ? udR_Failure : udR_Success;
   udFree(pNewPath);
 
   return result;
@@ -986,7 +986,7 @@ epilogue:
 udResult udReadDir(udFindDir *pFindDir)
 {
   if (!pFindDir)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
 #if UDPLATFORM_WINDOWS
   udFindDirData *pFindData = static_cast<udFindDirData *>(pFindDir);
@@ -1012,7 +1012,7 @@ udResult udReadDir(udFindDir *pFindDir)
 udResult udCloseDir(udFindDir **ppFindDir)
 {
   if (!ppFindDir || !*ppFindDir)
-    return udR_InvalidParameter_;
+    return udR_InvalidParameter;
 
 #if UDPLATFORM_WINDOWS
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
@@ -1043,7 +1043,7 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
   int dirsCreatedCount = 0;
   char truncChar = 0; // Character at truncation point (currPathLen)
 
-  UD_ERROR_NULL(pDirPath, udR_InvalidParameter_);
+  UD_ERROR_NULL(pDirPath, udR_InvalidParameter);
   if (udFile_TranslatePath(const_cast<const char**>(&pPath), pDirPath) != udR_Success)
   {
     pPath = udStrdup(pDirPath);
@@ -1077,12 +1077,12 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
       // Directory creation failed, move back one folder and try there
       while (currPathLen > 0 && (pPath[currPathLen] != '\\' && pPath[currPathLen] != '/'))
         --currPathLen;
-      UD_ERROR_IF(currPathLen == 0, udR_Failure_); // Weren't able to make any of the folders
+      UD_ERROR_IF(currPathLen == 0, udR_Failure); // Weren't able to make any of the folders
       truncChar = pPath[currPathLen];
       pPath[currPathLen] = 0;
 
       // If directory already exists, user can't create folders here
-      UD_ERROR_IF(udDirectoryExists(pPath, nullptr) != udR_ObjectNotFound, udR_Failure_);
+      UD_ERROR_IF(udDirectoryExists(pPath, nullptr) != udR_ObjectNotFound, udR_Failure);
     }
     else if (currPathLen != fullPathLen)
     {
@@ -1117,7 +1117,7 @@ udResult udRemoveDir(const char *pDirPath, int removeCount)
   char *pPath = nullptr;
   size_t pathLen;
 
-  UD_ERROR_NULL(pDirPath, udR_InvalidParameter_);
+  UD_ERROR_NULL(pDirPath, udR_InvalidParameter);
   if (udFile_TranslatePath(const_cast<const char **>(&pPath), pDirPath) != udR_Success)
   {
     pPath = udStrdup(pDirPath);
@@ -1137,11 +1137,11 @@ udResult udRemoveDir(const char *pDirPath, int removeCount)
 #if UDPLATFORM_WINDOWS
     // Returns 0 on fail
     if (RemoveDirectoryW(udOSString(pPath)) == 0)
-      UD_ERROR_SET_NO_BREAK(udR_Failure_);
+      UD_ERROR_SET_NO_BREAK(udR_Failure);
 #else
     // Returns 0 on success
     if (rmdir(pPath) != 0)
-      UD_ERROR_SET_NO_BREAK(udR_Failure_);
+      UD_ERROR_SET_NO_BREAK(udR_Failure);
 #endif
 
     // Directory creation failed, move back one folder and try there
@@ -1168,8 +1168,8 @@ udResult udParseWKT(udJSON *pValue, const char *pString, int *pCharCount)
   int parameterNumber = 0;
   const char *pStartString = pString;
 
-  UD_ERROR_NULL(pValue, udR_InvalidParameter_);
-  UD_ERROR_NULL(pString, udR_InvalidParameter_);
+  UD_ERROR_NULL(pValue, udR_InvalidParameter);
+  UD_ERROR_NULL(pString, udR_InvalidParameter);
 
   pString = udStrSkipWhiteSpace(pString);
   while (*pString && *pString != ']')
@@ -1280,8 +1280,8 @@ udResult udExportWKT(const char **ppOutput, const udJSON *pValue)
   const char *pTemp = nullptr;
   size_t elemCount;
 
-  UD_ERROR_NULL(ppOutput, udR_InvalidParameter_);
-  UD_ERROR_NULL(pValue, udR_InvalidParameter_);
+  UD_ERROR_NULL(ppOutput, udR_InvalidParameter);
+  UD_ERROR_NULL(pValue, udR_InvalidParameter);
 
   elemCount = pValue->Get("values").ArrayLength();
   for (size_t i = 0; i < elemCount; ++i)

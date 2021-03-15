@@ -236,7 +236,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   pFile->wsInitialised = true;
 
   actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPHeaderString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain());
-  UD_ERROR_IF(actualHeaderLen < 0, udR_Failure_);
+  UD_ERROR_IF(actualHeaderLen < 0, udR_Failure);
 
   //udDebugPrintf("Sending:\n%s", pFile->recvBuffer);
   UD_ERROR_CHECK(udFileHandler_HTTPSendRequest(pFile, (int)actualHeaderLen));
