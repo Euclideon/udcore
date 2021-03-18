@@ -967,6 +967,33 @@ TEST(udGeoZone, WKT)
   }
 }
 
+TEST(udGeoZone, UpdateSphereoid)
+{
+  udGeoZone tempZone = {};
+
+  // Euclideon office as origin
+  tempZone.datum = udGZGD_WGS84;
+  tempZone.projection = udGZPT_TransverseMercator;
+  tempZone.zone = -1;
+  tempZone.srid = -1;
+  udStrcpy(tempZone.zoneName, "Custom Zone");
+  tempZone.meridian = 153.0396964;
+  tempZone.parallel = -27.4513279;
+  tempZone.falseNorthing = 0;
+  tempZone.falseEasting = 0;
+  tempZone.scaleFactor = 1.0;
+  tempZone.unitMetreScale = 1.0;
+
+  EXPECT_EQ(udR_Success, udGeoZone_UpdateSphereoidInfo(&tempZone));
+
+  udDouble3 oldOfficeLatLong = { -27.4603022, 153.0987687, 0.0 };
+
+  udDouble3 oldOfficeNewOfficeRef = udGeoZone_LatLongToCartesian(tempZone, oldOfficeLatLong);
+
+  EXPECT_DOUBLE_EQ(5839153, int(oldOfficeNewOfficeRef.x * 1000));
+  EXPECT_DOUBLE_EQ(-995836, int(oldOfficeNewOfficeRef.y * 1000));
+}
+
 TEST(udGeoZone, TransformMatrix)
 {
 
