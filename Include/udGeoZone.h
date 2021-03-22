@@ -181,4 +181,7 @@ udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sour
 // Transform a matrix from one zone to another
 udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone &sourceZone, const udGeoZone &destZone);
 
+// Complete setup of a udGeoZone
+udResult udGeoZone_UpdateSphereoidInfo(udGeoZone *pZone);
+
 #endif // UDGEOZONE_H

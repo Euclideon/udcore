@@ -1045,6 +1045,25 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
   return udR_Success;
 }
 
+udResult udGeoZone_UpdateSphereoidInfo(udGeoZone *pZone)
+{
+  if (pZone == nullptr)
+    return udR_InvalidParameter;
+
+  if (pZone->datum >= 0 && pZone->datum < udGZGD_Count)
+  {
+    udGeoZone_SetSpheroid(pZone);
+
+    udStrcpy(pZone->datumName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pDatumName);
+    udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[pZone->datum].pShortName);
+    udGeoZone_UpdateDisplayName(pZone);
+
+    return udR_Success;
+  }
+
+  return udR_Failure;
+}
+
 // ----------------------------------------------------------------------------
 // Author: Jon Kable, February 2019
 // Once unitMetreScale, semiMajorAxis and flattening have all been identified, this helper function can be called to perform all remaining calculations
