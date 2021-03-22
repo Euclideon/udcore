@@ -216,9 +216,6 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
     }
   }
 
-  if (pZone->flattening == 0.0)
-    return;
-
   pZone->semiMinorAxis = pZone->semiMajorAxis * (1 - pZone->flattening);
   pZone->thirdFlattening = pZone->flattening / (2 - pZone->flattening);
   pZone->eccentricitySq = pZone->flattening * (2 - pZone->flattening);
