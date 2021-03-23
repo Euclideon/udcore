@@ -1168,10 +1168,27 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         {
           const char *pItemName = wkt->Get("%s[%d].type", pVal, (int)j).AsString();
 
-          if (udStrEqual(pItemName, "UNIT"))
+          if (udStrEqual(pItemName, "UNIT") || udStrEqual(pItemName, "ANGLEUNIT"))
             pZone->scaleFactor = wkt->Get("%s[%d].values[0]", pVal, (int)j).AsDouble();
           else if (udStrEqual(pItemName, "AUTHORITY"))
             pZone->srid = wkt->Get("%s[%d].values[0]", pVal, (int)j).AsInt();
+          else if (udStrEqual(pItemName, "CS"))
+          {
+            size_t newIndex = j + 1;
+            const char* pNextItemType = wkt->Get("%s[%d].type", pVal, (int)newIndex).AsString();
+            if (udStrEqual(pNextItemType, "AXIS"))
+            {
+              const char* pNextItemName = wkt->Get("%s[%d].name", pVal, (int)newIndex).AsString();
+              // To find AXIS define longitude order. Name can be: "longitude", "longitude (lon)", "(lon)" and case insensitive
+              if (udStrBeginsWithi(pNextItemName, "lon") || udStrBeginsWithi(pNextItemName, "(lon)"))
+              {
+                const udJSON& order = wkt->Get("%s[%d].values[1]", pVal, (int)newIndex);
+                // To support both AXIS["(lon)",east], AXIS["Lon",east] and AXIS["longitude",east,ORDER[2]...]
+                if ((order.GetType() == udJSON::T_Void) || (order.GetType() != udJSON::T_Void && udStrEqual(order.Get("type").AsString(), "ORDER") && order.Get("values[0]").AsInt() == 1))
+                  pZone->projection = udGZPT_LongLat;
+              }
+            }
+          }
           else if (udStrEqual(pItemName, "AXIS") && udStrEqual(wkt->Get("%s[%d].name", pVal, (int)j).AsString(), "Lat") && udStrEqual(wkt->Get("%s[%d].values[0]", pVal, (int)j).AsString(), "Y"))
             pZone->projection = udGZPT_LongLat;
         }
