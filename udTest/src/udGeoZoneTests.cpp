@@ -221,6 +221,34 @@ TEST(udGeoZone, CassiniSoldnerHyperbolic)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+
+TEST(udGeoZone, HongKongGrid)
+{
+  // Test is from https://www.geodetic.gov.hk/common/data/parameter/7P_ITRF96_HK80_V1.pdf
+  // EPSG 2326: Hong Kong 1980 Grid System
+  // 22 29' 8.777176" N, 114 00' 1.079932" E
+  // lat = 22.485771
+  // long = 114.000300
+
+  //udDouble3 latLong = udDouble3::create(22.3193, 114.1694, 0.0);
+  udDouble3 latLong = udDouble3::create(22.485771, 114.000300, 0.0);
+
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 2326)); // Hong Kong 1980
+  EXPECT_EQ(geoZone.datum, udGZGD_HK1980);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  EXPECT_EQ(pos.x, 818097.267);
+  EXPECT_EQ(pos.y, 838477.970);
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, StereographicOblique)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.67
