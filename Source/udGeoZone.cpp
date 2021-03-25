@@ -115,9 +115,9 @@ udDouble3 udGeoZone_ApplyTransform(udDouble3 geoCentric, const udGeoZoneGeodetic
   double ds = transform.paramsHelmert7[6] / 1000000.0 + 1.0; // scale: normalise parts-per-million to (s+1)
 
   // apply transform
-  double x2 = transform.paramsHelmert7[0] + ds * (geoCentric.x - geoCentric.y*rz + geoCentric.z*ry);
-  double y2 = transform.paramsHelmert7[1] + ds * (geoCentric.x*rz + geoCentric.y - geoCentric.z*rx);
-  double z2 = transform.paramsHelmert7[2] + ds * (-geoCentric.x*ry + geoCentric.y*rx + geoCentric.z);
+  double x2 = transform.paramsHelmert7[0] + (ds * geoCentric.x - geoCentric.y*rz + geoCentric.z*ry);
+  double y2 = transform.paramsHelmert7[1] + (geoCentric.x*rz + ds * geoCentric.y - geoCentric.z*rx);
+  double z2 = transform.paramsHelmert7[2] + (-geoCentric.x*ry + geoCentric.y*rx + ds * geoCentric.z);
 
   return udDouble3::create(x2, y2, z2);
 }
@@ -136,13 +136,16 @@ udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum curre
   }
 
   const udGeoZoneGeodeticDatumDescriptor *pTransform = nullptr;
-  udGeoZoneGeodeticDatumDescriptor transform;
+  udGeoZoneGeodeticDatumDescriptor transform = {};
 
   if (currentDatum != udGZGD_WGS84 && newDatum != udGZGD_WGS84)
   {
     oldLatLon = udGeoZone_ConvertDatum(oldLatLon, currentDatum, udGZGD_WGS84);
     oldDatum = udGZGD_WGS84;
   }
+
+  udGeoZoneEllipsoid oldEllipsoid = g_udGZ_GeodeticDatumDescriptors[oldDatum].ellipsoid;
+  udGeoZoneEllipsoid newEllipsoid = g_udGZ_GeodeticDatumDescriptors[newDatum].ellipsoid;
 
   if (newDatum == udGZGD_WGS84) // converting to WGS84; use inverse transform
   {
@@ -157,9 +160,9 @@ udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum curre
   }
 
   // Chain functions and get result
-  udDouble3 geocentric = udGeoZone_LatLongToGeocentric(oldLatLon, g_udGZ_StdEllipsoids[pTransform->ellipsoid]);
+  udDouble3 geocentric = udGeoZone_LatLongToGeocentric(oldLatLon, g_udGZ_StdEllipsoids[oldEllipsoid]);
   udDouble3 transformed = udGeoZone_ApplyTransform(geocentric, *pTransform);
-  udDouble3 newLatLong = udGeoZone_GeocentricToLatLong(transformed, g_udGZ_StdEllipsoids[pTransform->ellipsoid]);
+  udDouble3 newLatLong = udGeoZone_GeocentricToLatLong(transformed, g_udGZ_StdEllipsoids[newEllipsoid]);
 
   if (flipToLongLat)
     return udDouble3::create(newLatLong.y, newLatLong.x, newLatLong.z);

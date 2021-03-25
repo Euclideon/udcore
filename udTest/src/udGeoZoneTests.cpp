@@ -428,18 +428,21 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_VANUA1915 / EPSG:3139
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_DEALUL1970/ EPSG:31700
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_SINGGRID/ EPSG:19920
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_MERC/ 
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_PCPF/ 
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MARS_MERC/ 
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MARS_PCPF/ 
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_MERC/ // These are derived from our own code and are not to be trusted
+    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_PCPF/ // These are derived from our own code and are not to be trusted
+    { -21.0370272,  149.1603855,  0.0 }, // udGZGD_MARS_MERC/ // These are derived from our own code and are not to be trusted
+    { -21.0370272,  149.1603855,  0.0 }, // udGZGD_MARS_PCPF/ // These are derived from our own code and are not to be trusted
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
 
-  const int64_t accuracy = 10; //TODO: Get this accuracy _way_ up. >1000 is expected
+  const int64_t accuracy = 10000000;
 
   for (size_t i = 0; i < udLengthOf(latLongPairs); ++i) // First iteration will convert 84 to 84 to confirm it works
   {
+    if (g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[i].ellipsoid].flattening == 0.0)
+      continue; // We aren't able to solve an ellipsoid with no flattening to the accuracy of this test (only affects the Moon which aren't valid anyway)
+
     udDouble3 wgs84Result = udGeoZone_ConvertDatum(latLongPairs[i], (udGeoZoneGeodeticDatum)i, udGZGD_WGS84);
     EXPECT_EQ(int64_t(udRound(latLongPairs[0].x * accuracy)), int64_t(udRound(wgs84Result.x * accuracy))) << "Iter" << i;
     EXPECT_EQ(int64_t(udRound(latLongPairs[0].y * accuracy)), int64_t(udRound(wgs84Result.y * accuracy))) << "Iter" << i;
