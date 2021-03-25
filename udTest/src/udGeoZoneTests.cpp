@@ -241,8 +241,8 @@ TEST(udGeoZone, HongKongGrid)
 
   udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
 
-  EXPECT_EQ(pos.x, 818097.267);
-  EXPECT_EQ(pos.y, 838477.970);
+  EXPECT_EQ(udRound(818097.267 * localPrecision), udRound(pos.x * localPrecision));
+  EXPECT_EQ(udRound(838477.970 * localPrecision), udRound(pos.y * localPrecision));
 
   udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
