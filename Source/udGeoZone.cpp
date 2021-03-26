@@ -88,7 +88,13 @@ udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEll
   double p = udSqrt(geoCentric.x * geoCentric.x + geoCentric.y * geoCentric.y);
   double q = udATan2(geoCentric.z * ellipsoid.semiMajorAxis, p * semiMinorAxis);
 
-  double lat = udATan2(geoCentric.z + e3 * semiMinorAxis * udSin(q) * udSin(q) * udSin(q), p - eSq * ellipsoid.semiMajorAxis * udCos(q) * udCos(q) * udCos(q));
+  double sinQ = udSin(q);
+  double cosQ = udCos(q);
+
+  double sinQ3 = sinQ * sinQ * sinQ;
+  double cosQ3 = cosQ * cosQ * cosQ;
+
+  double lat = udATan2(geoCentric.z + e3 * semiMinorAxis * sinQ3, p - eSq * ellipsoid.semiMajorAxis * cosQ3);
   double lon = udATan2(geoCentric.y, geoCentric.x);
 
   double v = ellipsoid.semiMajorAxis / udSqrt(1 - eSq * udSin(lat) * udSin(lat)); // length of the normal terminated by the minor axis
@@ -97,7 +103,7 @@ udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEll
   // This is an alternative method to generate the lat- don't merge until we confirm which one is 'correct'
   double lat2 = 0;
   double lat2Temp = 1;
-  while (lat2 != lat2Temp && !isnan(lat2))
+  while (lat2 != lat2Temp && isfinite(lat2))
   {
     lat2 = lat2Temp;
     lat2Temp = udATan((geoCentric.z + eSq*v*udSin(lat2)) / udSqrt(geoCentric.x * geoCentric.x + geoCentric.y * geoCentric.y));
