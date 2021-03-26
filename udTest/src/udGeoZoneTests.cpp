@@ -221,6 +221,34 @@ TEST(udGeoZone, CassiniSoldnerHyperbolic)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+
+TEST(udGeoZone, HongKongGrid)
+{
+  // Test is from https://www.geodetic.gov.hk/common/data/parameter/7P_ITRF96_HK80_V1.pdf
+  // EPSG 2326: Hong Kong 1980 Grid System
+  // 22 29' 8.777176" N, 114 00' 1.079932" E
+  // lat = 22.485771
+  // long = 114.000300
+
+  //udDouble3 latLong = udDouble3::create(22.3193, 114.1694, 0.0);
+  udDouble3 latLong = udDouble3::create(22.485771, 114.000300, 0.0);
+
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 2326)); // Hong Kong 1980
+  EXPECT_EQ(geoZone.datum, udGZGD_HK1980);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  EXPECT_EQ(udRound(818097.267 * localPrecision), udRound(pos.x * localPrecision));
+  EXPECT_EQ(udRound(838477.970 * localPrecision), udRound(pos.y * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, StereographicOblique)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.67
@@ -402,14 +430,14 @@ TEST(udGeoZone, ChangingCRSDatums)
   const udDouble3 latLongPairs[] = {
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_WGS84 / EPSG:4326
     { -21.1659057,  149.1591458,  0.0 }, // udGZGD_ED50 / EPSG:4230
-    { -21.1659055,  149.1591458,  0.0 }, // udGZDD_ETRS89 / EPSG:4258
-    { -21.168798,   149.1617787,  0.0 }, // udGZGD_TM75 / EPSG:4300
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NAD27 /EPSG:4267
+    { -21.1662907,  149.1603855,  0.0 }, // udGZDD_ETRS89 / EPSG:4258
+    { -21.1687980,  149.1617787,  0.0 }, // udGZGD_TM75 / EPSG:4300
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NAD27 /EPSG:4267
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NAD83 /EPSG:4269
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NAD83_2011 /EPSG:6318
     { -21.171477,   149.1590602,  0.0 }, // udGZGD_NTF / EPSG:4275
     { -21.1690001,  149.1613207,  0.0 }, // udGZGD_OSGB36 / EPSG:4277
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_Potsdam / EPSG:4746
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_Potsdam / EPSG:4746
     { -21.17287696, 149.16385735, 0.0 }, // udGZGD_Tokyo / EPSG:7414
     { -21.1663274,  149.1602316,  0.0 }, // udGZGD_WGS72 / EPSG:4322
     { -21.1662908,  149.1603855,  0.0 }, // udGZGD_JDG2000 / EPSG:4612
@@ -420,33 +448,41 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NAD83_HARN / EPSG:4152
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_CGCS2000 / EPSG:4490
     { -21.1649467,  149.1577442,  0.0 }, // udGZGD_HK1980 / EPSG:4611
-    { -21.1649467,  149.1577442,  0.0 }, // udGZGD_SVY21 / EPSG:4757
-    { -21.1649467,  149.1577442,  0.0 }, // udGZGD_MGI / EPSG:4312
+    { -21.1662908,  149.1603855,  0.0 }, // udGZGD_SVY21 / EPSG:4757
+    { -21.1694171,  149.1628993,  0.0 }, // udGZGD_MGI / EPSG:4312
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NZGD2000 / EPSG:4167
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_AMERSFOORT / EPSG:28992
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_TRI1903 / EPSG:30200
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_VANUA1915 / EPSG:3139
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_DEALUL1970/ EPSG:31700
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_SINGGRID/ EPSG:19920
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_MERC/ 
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MOON_PCPF/ 
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MARS_MERC/ 
-    { -21.1662907,  149.1603855,  0.0 }, // udGZGD_MARS_PCPF/ 
+    { -21.1683349,  149.1640584,  0.1 }, // udGZGD_AMERSFOORT / EPSG:4289
+    { -21.1726807,  149.1624330,  0.1 }, // udGZGD_TRI1903 / EPSG:4302
+    { -21.1686201,  149.1638699,  0.0 }, // udGZGD_VANUA1915 / EPSG:3139
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_DEALUL1970/ EPSG:4024
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_SINGGRID/ EPSG:19920
+    { -21.1662907,  149.1603855, -0.1 }, // udGZGD_MARS_MERC/ // These are derived from our own code and are not to be trusted
+    { -21.1662907,  149.1603855, -0.1 }, // udGZGD_MARS_PCPF/ // These are derived from our own code and are not to be trusted
+    { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_MERC/ // These are derived from our own code and are not to be trusted
+    { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_PCPF/ // These are derived from our own code and are not to be trusted
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
 
-  const int64_t accuracy = 10; //TODO: Get this accuracy _way_ up. >1000 is expected
+  const int64_t HighAccuracy = 108030; // 1m at equator
+  const int64_t LowAccuracy = 54; // 2km
 
   for (size_t i = 0; i < udLengthOf(latLongPairs); ++i) // First iteration will convert 84 to 84 to confirm it works
   {
+    if (latLongPairs[i].z < 0.0)
+      continue; // We aren't able to solve planetary bodies
+
+    int accuracy = HighAccuracy;
+    if (latLongPairs[i].z != 0.0) // Use low accuracy mode
+      accuracy = LowAccuracy;
+
     udDouble3 wgs84Result = udGeoZone_ConvertDatum(latLongPairs[i], (udGeoZoneGeodeticDatum)i, udGZGD_WGS84);
-    EXPECT_EQ(int64_t(udRound(latLongPairs[0].x * accuracy)), int64_t(udRound(wgs84Result.x * accuracy))) << "Iter" << i;
-    EXPECT_EQ(int64_t(udRound(latLongPairs[0].y * accuracy)), int64_t(udRound(wgs84Result.y * accuracy))) << "Iter" << i;
+    EXPECT_EQ(int64_t(udRound(latLongPairs[0].x * accuracy)), int64_t(udRound(wgs84Result.x * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[0].x * accuracy)) - int64_t(udRound(wgs84Result.x * accuracy)));
+    EXPECT_EQ(int64_t(udRound(latLongPairs[0].y * accuracy)), int64_t(udRound(wgs84Result.y * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[0].y * accuracy)) - int64_t(udRound(wgs84Result.y * accuracy)));
 
     udDouble3 curIResult = udGeoZone_ConvertDatum(latLongPairs[0], udGZGD_WGS84, (udGeoZoneGeodeticDatum)i);
-    EXPECT_EQ(int64_t(udRound(latLongPairs[i].x * accuracy)), int64_t(udRound(curIResult.x * accuracy))) << "PointSet:" << i;
-    EXPECT_EQ(int64_t(udRound(latLongPairs[i].y * accuracy)), int64_t(udRound(curIResult.y * accuracy))) << "PointSet:" << i;
+    EXPECT_EQ(int64_t(udRound(latLongPairs[i].x * accuracy)), int64_t(udRound(curIResult.x * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[i].x * accuracy)) - int64_t(udRound(curIResult.x * accuracy)));
+    EXPECT_EQ(int64_t(udRound(latLongPairs[i].y * accuracy)), int64_t(udRound(curIResult.y * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[i].y * accuracy)) - int64_t(udRound(curIResult.y * accuracy)));
   }
 }
 
