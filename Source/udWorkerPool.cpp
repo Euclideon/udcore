@@ -217,14 +217,21 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool)
+bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /*= nullptr*/, size_t *pQueuedTasks /*= nullptr*/)
 {
   if (pPool == nullptr)
     return false;
 
   udLockMutex(pPool->pQueuedTasks->pMutex);
-  bool isActive = (pPool->activeThreads > 0 || pPool->pQueuedTasks->chunkedArray.length > 0);
+  int32_t activeThreads = pPool->activeThreads;
+  size_t queuedTasks = pPool->pQueuedTasks->chunkedArray.length;
   udReleaseMutex(pPool->pQueuedTasks->pMutex);
 
-  return isActive;
+  if (pActiveThreads)
+    *pActiveThreads = (size_t)udMax(activeThreads, 0);
+
+  if (pQueuedTasks)
+    *pQueuedTasks = queuedTasks;
+
+  return (activeThreads > 0 || queuedTasks > 0);
 }
