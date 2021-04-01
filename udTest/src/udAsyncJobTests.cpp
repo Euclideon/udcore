@@ -4,7 +4,7 @@
 
 udResult udAsyncJobTestsFuncOld(int a, udAsyncJob *pAsyncJob)
 {
-  UDASYNC_CALL1(udAsyncJobTestsFuncOld, int, a);
+  UDASYNC_CALL(udAsyncJobTestsFuncOld(a, nullptr));
 
   return udR_Count;
 }
