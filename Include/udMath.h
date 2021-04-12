@@ -538,6 +538,9 @@ struct udMatrix4x4
   static udMatrix4x4<T> orthoNO(T left, T right, T bottom, T top, T znear = T(0), T zfar = T(1)); // Clip-Z is [-1, 1]. Comptaible with OpenGL coordinate system. Previously `ortho()`.
   static udMatrix4x4<T> orthoForScreen(T width, T height, T znear = T(0), T zfar = T(1));
 
+  static udMatrix4x4<T> frustumZO(T left, T right, T bottom, T top, T znear, T zfar); // Clip-Z is [0, 1].
+  static udMatrix4x4<T> frustumNO(T left, T right, T bottom, T top, T znear, T zfar); // Clip-Z is [-1, 1].
+
   static udMatrix4x4<T> lookAt(const udVector3<T> &from, const udVector3<T> &at, const udVector3<T> &up = udVector3<T>::create(T(0), T(0), T(1)));
 };
 template <typename T, typename U>
