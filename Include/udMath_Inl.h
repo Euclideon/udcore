@@ -984,20 +984,20 @@ udMatrix4x4<T> udMatrix4x4<T>::orthoForScreen(T width, T height, T znear, T zfar
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::frustumZO(T left, T right, T bottom, T top, T znear, T zfar)
 {
-  udMatrix4x4<T> r = { {{ T(2) * znear / (right - left),  T(0),                           T(0),                              T(0),
-                        (right + left) / (right - left), (top + bottom) / (top - bottom), zfar / (zfar - znear),             T(1),
-                        T(0),                            2 * znear / (top - bottom),      T(0),                              T(0),
-                        T(0),                            T(0),                            -(zfar * znear) / (zfar - znear),  T(0) }}};
+  udMatrix4x4<T> r = { {{ T(2) * znear / (right - left),  T(0),                              T(0),                              T(0),
+                        (right + left) / (right - left),  (top + bottom) / (top - bottom),   zfar / (zfar - znear),             T(1),
+                        T(0),                             T(2) * znear / (top - bottom),     T(0),                              T(0),
+                        T(0),                             T(0),                             -(zfar * znear) / (zfar - znear),   T(0) }}};
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::frustumNO(T left, T right, T bottom, T top, T znear, T zfar)
 {
-  udMatrix4x4<T> r = { {{ T(2) * znear / (right - left),  T(0),                           T(0),                                     T(0),
-                        (right + left) / (right - left), (top + bottom) / (top - bottom), (zfar + znear) / (zfar - znear),          T(1),
-                        T(0),                            2 * znear / (top - bottom),      T(0),                                     T(0),
-                        T(0),                            T(0),                            -(T(2) * zfar * znear) / (zfar - znear),  T(0) } } };
+  udMatrix4x4<T> r = { {{ T(2) * znear / (right - left),  T(0),                             T(0),                                     T(0),
+                        (right + left) / (right - left),  (top + bottom) / (top - bottom),  (zfar + znear) / (zfar - znear),          T(1),
+                        T(0),                             T(2) * znear / (top - bottom),    T(0),                                     T(0),
+                        T(0),                             T(0),                            -(T(2) * zfar * znear) / (zfar - znear),   T(0) } } };
   return r;
 }
 
