@@ -19,7 +19,8 @@ enum udSocketConnectionFlags
 {
   udSCF_None = 0,
   udSCF_IsServer = 1 << 0,
-  udSCF_UseTLS = 1 << 1
+  udSCF_UseTLS = 1 << 1,
+  udSCF_DisableVerification = 1 << 2
 };
 inline udSocketConnectionFlags operator |(udSocketConnectionFlags a, udSocketConnectionFlags b) { return (udSocketConnectionFlags)(((int)a) | ((int)b)); }
 
