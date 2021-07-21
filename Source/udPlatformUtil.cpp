@@ -422,20 +422,110 @@ int udGetHardwareThreadCount()
 }
 
 // *********************************************************************
+// Author: Samuel Surtees, July 2021
+udFilename::udFilename(const udFilename &o)
+{
+  if (o.pPath == o.path)
+    this->pPath = this->path;
+  else
+    this->pPath = udStrdup(o.pPath);
+
+  memcpy(this->path, o.path, udLengthOf(this->path));
+  this->filenameIndex = o.filenameIndex;
+  this->extensionIndex = o.extensionIndex;
+}
+
+// *********************************************************************
+// Author: Samuel Surtees, July 2021
+udFilename &udFilename::operator=(const udFilename &o)
+{
+  if (o.pPath == o.path)
+    this->pPath = this->path;
+  else
+    this->pPath = udStrdup(o.pPath);
+
+  memcpy(this->path, o.path, udLengthOf(this->path));
+  this->filenameIndex = o.filenameIndex;
+  this->extensionIndex = o.extensionIndex;
+  return *this;
+}
+
+// *********************************************************************
+// Author: Samuel Surtees, July 2021
+udFilename::udFilename(udFilename &&o) noexcept
+{
+  this->pPath = o.pPath;
+  o.pPath = nullptr;
+  memmove(this->path, o.path, udLengthOf(this->path));
+  this->filenameIndex = o.filenameIndex;
+  this->extensionIndex = o.extensionIndex;
+}
+
+// *********************************************************************
+// Author: Samuel Surtees, July 2021
+udFilename &udFilename::operator=(udFilename &&o) noexcept
+{
+  this->pPath = o.pPath;
+  o.pPath = nullptr;
+  memmove(this->path, o.path, udLengthOf(this->path));
+  this->filenameIndex = o.filenameIndex;
+  this->extensionIndex = o.extensionIndex;
+  return *this;
+}
+
+// *********************************************************************
 bool udFilename::SetFromFullPath(const char *pFormat, ...)
 {
-  *path = 0;
-  filenameIndex = 0;
-  extensionIndex = 0;
   if (pFormat)
   {
     va_list args;
     va_start(args, pFormat);
-    int len = udSprintfVA(path, pFormat, args);
+    int requiredLen = udSprintfVA(nullptr, 0, pFormat, args);
     va_end(args);
+
+    // Determine if allocation is required, otherwise use buffer
+    if (requiredLen >= (int)sizeof(path))
+    {
+      if (pPath != path)
+        udFree(pPath);
+
+      pPath = udAllocType(char, requiredLen + 1, udAF_None);
+      if (pPath == nullptr)
+        goto epilogue;
+
+      va_start(args, pFormat);
+      udSprintfVA(pPath, requiredLen + 1, pFormat, args);
+      va_end(args);
+    }
+    else
+    {
+      if (pPath != path)
+      {
+        udFree(pPath);
+        pPath = path;
+      }
+
+      va_start(args, pFormat);
+      udSprintfVA(path, pFormat, args);
+      va_end(args);
+    }
+
     CalculateIndices();
-    if (len > (int)sizeof(path))
-      return false;
+  }
+  else
+  {
+    *pPath = 0;
+    filenameIndex = 0;
+    extensionIndex = 0;
+  }
+
+epilogue:
+  if (pPath == nullptr)
+  {
+    pPath = path;
+    *pPath = 0;
+    filenameIndex = 0;
+    extensionIndex = 0;
   }
   return true;
 }
@@ -444,76 +534,118 @@ bool udFilename::SetFromFullPath(const char *pFormat, ...)
 // Author: Dave Pevreal, March 2014
 bool udFilename::SetFolder(const char *pFolder)
 {
-  char newPath[MaxPath];
-  size_t i = udStrcpy(newPath, pFolder);
-  if (!i)
-    return false;
+  char *pNewPath = nullptr;
+  char separator = '/';
+  size_t i = udStrlen(pFolder);
 
   // If the path doesn't have a trailing seperator, look for one so we can
   // append one already being used. That is c:\path\ or c:/path/
-  if (i > 2 && newPath[i-2] != '/' && newPath[i-2] != '\\' && newPath[i-2] != ':')
+  if (i > 2 && pFolder[i-2] != '/' && pFolder[i-2] != '\\' && pFolder[i-2] != ':')
   {
     for (--i; i > 0; --i)
     {
-      if (newPath[i-1] == '\\' || newPath[i-1] == ':')
+      if (pFolder[i-1] == '\\' || pFolder[i-1] == ':')
       {
-        udStrcat(newPath, "\\");
+        separator = '\\';
         break;
       }
-      if (newPath[i-1] == '/')
-      {
-        udStrcat(newPath, "/");
+
+      if (pFolder[i-1] == '/')
         break;
-      }
     }
-    // Nothing was found so add a /. TODO: Get correct separator from system
-    if (i == 0)
-      udStrcat(newPath, "/");
+    // TODO: Get correct separator from system when one isn't found
   }
 
-  if (!udStrcat(newPath, GetFilenameWithExt()))
+  if (udSprintf((const char **)&pNewPath, "%s%c%s", pFolder, separator, GetFilenameWithExt()) != udR_Success)
     return false;
-  return SetFromFullPath("%s", newPath);
+
+  if (pPath != path)
+    udFree(pPath);
+
+  pPath = pNewPath;
+  CalculateIndices();
+
+  return true;
 }
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 bool udFilename::SetFilenameNoExt(const char *pFilenameOnlyComponent)
 {
-  char newPath[MaxPath];
+  size_t requiredLength = udStrlen(pFilenameOnlyComponent) + udStrlen(GetExt()) + filenameIndex + 1;
+  char *pNewPath = udAllocType(char, requiredLength, udAF_None);
+  bool retVal = false;
 
-  ExtractFolder(newPath, sizeof(newPath));
-  if (!udStrcat(newPath, pFilenameOnlyComponent))
-    return false;
-  if (!udStrcat(newPath, GetExt()))
-    return false;
-  return SetFromFullPath("%s", newPath);
+  udStrncpy(pNewPath, requiredLength, pPath, filenameIndex);
+  if (!udStrcat(pNewPath, requiredLength, pFilenameOnlyComponent))
+    goto epilogue;
+  if (!udStrcat(pNewPath, requiredLength, GetExt()))
+    goto epilogue;
+
+  if (pPath != path)
+    udFree(pPath);
+
+  pPath = pNewPath;
+  pNewPath = nullptr;
+  CalculateIndices();
+
+  retVal = true;
+
+epilogue:
+  udFree(pNewPath);
+  return retVal;
 }
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 bool udFilename::SetFilenameWithExt(const char *pFilenameWithExtension)
 {
-  char newPath[MaxPath];
+  size_t requiredLength = udStrlen(pFilenameWithExtension) + filenameIndex + 1;
+  char *pNewPath = udAllocType(char, requiredLength, udAF_None);
+  bool retVal = false;
 
-  ExtractFolder(newPath, sizeof(newPath));
-  if (!udStrcat(newPath, pFilenameWithExtension))
-    return false;
-  return SetFromFullPath("%s", newPath);
+  udStrncpy(pNewPath, requiredLength, pPath, filenameIndex);
+  if (!udStrcat(pNewPath, requiredLength, pFilenameWithExtension))
+    goto epilogue;
+
+  if (pPath != path)
+    udFree(pPath);
+
+  pPath = pNewPath;
+  pNewPath = nullptr;
+  CalculateIndices();
+
+  retVal = true;
+
+epilogue:
+  udFree(pNewPath);
+  return retVal;
 }
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 bool udFilename::SetExtension(const char *pExtComponent)
 {
-  char newPath[MaxPath];
+  size_t requiredLength = udStrlen(pExtComponent) + extensionIndex + 1;
+  char *pNewPath = udAllocType(char, requiredLength, udAF_None);
+  bool retVal = false;
 
-  if (!udStrcpy(newPath, path))
-    return false;
-  newPath[extensionIndex] = 0; // Truncate the extension
-  if (!udStrcat(newPath, pExtComponent))
-    return false;
-  return SetFromFullPath("%s", newPath);
+  udStrncpy(pNewPath, requiredLength, pPath, extensionIndex);
+  if (!udStrcat(pNewPath, requiredLength, pExtComponent))
+    goto epilogue;
+
+  if (pPath != path)
+    udFree(pPath);
+
+  pPath = pNewPath;
+  pNewPath = nullptr;
+  CalculateIndices();
+
+  retVal = true;
+
+epilogue:
+  udFree(pNewPath);
+  return retVal;
 }
 
 // *********************************************************************
@@ -522,7 +654,7 @@ int udFilename::ExtractFolder(char *pFolder, int folderLen)
 {
   int folderChars = filenameIndex;
   if (pFolder)
-    udStrncpy(pFolder, folderLen, path, folderChars);
+    udStrncpy(pFolder, folderLen, pPath, folderChars);
   return folderChars + 1;
 }
 
@@ -533,7 +665,7 @@ int udFilename::ExtractFilenameOnly(char *pFilename, int filenameLen)
   int filenameChars = extensionIndex - filenameIndex;
   if (pFilename)
   {
-    udStrncpy(pFilename, filenameLen, path + filenameIndex, filenameChars);
+    udStrncpy(pFilename, filenameLen, pPath + filenameIndex, filenameChars);
   }
   return filenameChars + 1;
 }
@@ -542,24 +674,24 @@ int udFilename::ExtractFilenameOnly(char *pFilename, int filenameLen)
 // Author: Dave Pevreal, March 2014
 void udFilename::CalculateIndices()
 {
-  int len = (int)strlen(path);
+  int len = (int)strlen(pPath);
   // Set filename and extension indices to null terminator as a sentinal
   filenameIndex = -1;
   extensionIndex = len; // If no extension, point extension to nul terminator
 
   const char *pGetParams = nullptr;
 
-  if (udStrBeginsWithi(path, "http://") || udStrBeginsWithi(path, "https://"))
-    pGetParams = udStrchr(path, "?");
+  if (udStrBeginsWithi(pPath, "http://") || udStrBeginsWithi(pPath, "https://"))
+    pGetParams = udStrchr(pPath, "?");
 
   if (pGetParams != nullptr)
-    len = (int)(pGetParams - path);
+    len = (int)(pGetParams - pPath);
 
   for (--len; len >= 0 && (filenameIndex == -1 || extensionIndex == -1); --len)
   {
-    if (path[extensionIndex] == 0 && path[len] == '.') // Last period
+    if (pPath[extensionIndex] == 0 && pPath[len] == '.') // Last period
       extensionIndex = len;
-    if (filenameIndex == -1 && (path[len] == '/' || path[len] == '\\' || path[len] == ':'))
+    if (filenameIndex == -1 && (pPath[len] == '/' || pPath[len] == '\\' || pPath[len] == ':'))
       filenameIndex = len + 1;
   }
   // If no path indicators were found the filename is the beginning of the path
@@ -577,7 +709,7 @@ void udFilename::Debug()
 
   ExtractFolder(folder, sizeof(folder));
   ExtractFilenameOnly(name, sizeof(name));
-  udDebugPrintf("folder<%s> name<%s> ext<%s> filename<%s> -> %s\n", folder, name, GetExt(), GetFilenameWithExt(), path);
+  udDebugPrintf("folder<%s> name<%s> ext<%s> filename<%s> -> %s\n", folder, name, GetExt(), GetFilenameWithExt(), pPath);
 }
 
 

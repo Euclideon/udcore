@@ -208,22 +208,28 @@ int udGetHardwareThreadCount();
 
 
 // *********************************************************************
-// A helper class for dealing with filenames, no memory allocation
+// A helper class for dealing with filenames
 // If allocated rather than created with new, call Construct method
 // *********************************************************************
 class udFilename
 {
 public:
   // Construct either empty as default or from a path
-  // No destructor (or memory allocation) to keep the object simple and copyable
-  udFilename() { Construct(); }
-  udFilename(const char *path) { SetFromFullPath("%s", path); }
+  udFilename() : pPath(path) { Construct(); }
+  udFilename(const char *path) : pPath(this->path) { SetFromFullPath("%s", path); }
+  ~udFilename() { Destruct(); }
+
+  udFilename(const udFilename &o);
+  udFilename &operator=(const udFilename &o);
+  udFilename(udFilename &&o) noexcept;
+  udFilename &operator=(udFilename &&o) noexcept;
   void Construct() { SetFromFullPath(NULL); }
+  void Destruct() { if (pPath != path) udFree(pPath); }
 
   enum { MaxPath = 260 };
 
   //Cast operator for convenience
-  operator const char *() { return path; }
+  operator const char *() { return pPath; }
 
   //
   // Set methods: (set all or part of the internal fully pathed filename, return false if path too long)
@@ -243,9 +249,9 @@ public:
   //    GetPath             - Get the complete path (eg pass to fopen)
   //    GetFilenameWithExt  - Get the filename and extension, without the path
   //    GetExt              - Get just the extension (starting with the dot)
-  const char *GetPath() const            { return path; }
-  const char *GetFilenameWithExt() const { return path + filenameIndex; }
-  const char *GetExt() const             { return path + extensionIndex; }
+  const char *GetPath() const            { return pPath; }
+  const char *GetFilenameWithExt() const { return pPath + filenameIndex; }
+  const char *GetExt() const             { return pPath + extensionIndex; }
 
   //
   // Extract methods: (take portions from within the full path to a user supplied buffer, returning size required)
@@ -257,8 +263,8 @@ public:
 
   //
   // Test methods: to determine what is present in the filename
-  bool HasFilename() const              { return path[filenameIndex] != 0; }
-  bool HasExt() const                   { return path[extensionIndex] != 0; }
+  bool HasFilename() const              { return pPath[filenameIndex] != 0; }
+  bool HasExt() const                   { return pPath[extensionIndex] != 0; }
 
   // Temporary function to output debug info until unit tests are done to prove reliability
   void Debug();
@@ -268,6 +274,7 @@ protected:
   int filenameIndex;      // Index to starting character of filename
   int extensionIndex;     // Index to starting character of extension
   char path[MaxPath];         // Buffer for the path, set to 260 characters
+  char *pPath;            // Pointer to actual path, may point to path
 };
 
 
