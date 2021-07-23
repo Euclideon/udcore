@@ -141,6 +141,53 @@ TEST(udFilenameTests, Validate)
     EXPECT_STREQ(".ext", fn.GetExt());
   }
 
+  // Test copy assignment operator
+  {
+    udFilename fn = filenameWithFolderAndExt;
+    EXPECT_STREQ(filenameWithFolderAndExt, fn.GetPath());
+    udFilename fn2;
+    fn2 = fn;
+    EXPECT_STREQ(filenameWithFolderAndExt, fn2.GetPath());
+
+    // Confirm values are copied correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+    EXPECT_STRNE(fn.GetPath(), fn2.GetPath());
+  }
+
+  // Test copy constructor
+  {
+    udFilename fn = filenameWithFolderAndExt;
+    EXPECT_STREQ(filenameWithFolderAndExt, fn.GetPath());
+    udFilename fn2 = fn;
+    EXPECT_STREQ(filenameWithFolderAndExt, fn2.GetPath());
+
+    // Confirm values are copied correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+    EXPECT_STRNE(fn.GetPath(), fn2.GetPath());
+  }
+
+  // Test move assignment operator
+  {
+    udFilename fn = filenameWithFolderAndExt;
+    EXPECT_STREQ(filenameWithFolderAndExt, fn.GetPath());
+    udFilename fn2;
+    fn2 = std::move(fn);
+    EXPECT_STREQ(filenameWithFolderAndExt, fn2.GetPath());
+
+    // Confirm values are moved correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+  }
+
+  // Test move constructor
+  {
+    udFilename fn = filenameWithFolderAndExt;
+    EXPECT_STREQ(filenameWithFolderAndExt, fn.GetPath());
+    udFilename fn2 = std::move(fn);
+    EXPECT_STREQ(filenameWithFolderAndExt, fn2.GetPath());
+
+    // Confirm values are moved correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -178,5 +225,49 @@ TEST(udFilenameTests, LongFilenameValidate)
     EXPECT_STREQ(filenameSuperLongFilename, pFilename);
     EXPECT_EQ(requiredSize, udStrlen(pFilename) + 1);
     udFree(pFilename);
+  }
+
+  // Test copy assignment operator
+  {
+    udFilename fn2;
+    fn2 = fn;
+    EXPECT_STREQ(filenameSuperLong, fn2.GetPath());
+
+    // Confirm values are copied correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+    EXPECT_STRNE(fn.GetPath(), fn2.GetPath());
+  }
+
+  // Test copy constructor
+  {
+    udFilename fn2 = fn;
+    EXPECT_STREQ(filenameSuperLong, fn2.GetPath());
+
+    // Confirm values are copied correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+    EXPECT_STRNE(fn.GetPath(), fn2.GetPath());
+  }
+
+  // Test move assignment operator
+  {
+    udFilename fn1 = filenameSuperLong;
+    EXPECT_STREQ(filenameSuperLong, fn1.GetPath());
+    udFilename fn2;
+    fn2 = std::move(fn1);
+    EXPECT_STREQ(filenameSuperLong, fn2.GetPath());
+
+    // Confirm values are moved correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
+  }
+
+  // Test move constructor
+  {
+    udFilename fn1 = filenameSuperLong;
+    EXPECT_STREQ(filenameSuperLong, fn1.GetPath());
+    udFilename fn2 = std::move(fn1);
+    EXPECT_STREQ(filenameSuperLong, fn2.GetPath());
+
+    // Confirm values are moved correctly, should crash if `pPath` isn't set properly
+    EXPECT_TRUE(fn2.SetExtension(".test"));
   }
 }
