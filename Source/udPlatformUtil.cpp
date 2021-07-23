@@ -454,7 +454,11 @@ udFilename &udFilename::operator=(const udFilename &o)
 // Author: Samuel Surtees, July 2021
 udFilename::udFilename(udFilename &&o) noexcept
 {
-  this->pPath = o.pPath;
+  if (o.pPath == o.path)
+    this->pPath = this->path;
+  else
+    this->pPath = o.pPath;
+
   o.pPath = nullptr;
   memmove(this->path, o.path, udLengthOf(this->path));
   this->filenameIndex = o.filenameIndex;
@@ -465,7 +469,11 @@ udFilename::udFilename(udFilename &&o) noexcept
 // Author: Samuel Surtees, July 2021
 udFilename &udFilename::operator=(udFilename &&o) noexcept
 {
-  this->pPath = o.pPath;
+  if (o.pPath == o.path)
+    this->pPath = this->path;
+  else
+    this->pPath = o.pPath;
+
   o.pPath = nullptr;
   memmove(this->path, o.path, udLengthOf(this->path));
   this->filenameIndex = o.filenameIndex;
