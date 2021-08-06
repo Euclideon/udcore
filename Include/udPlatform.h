@@ -261,6 +261,36 @@ protected:
 # define UDCPP11 0
 #endif
 
+#if __cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L) || _MSC_VER >= 1900
+# define UDCPP14 1
+#else
+# define UDCPP14 0
+#endif
+
+#if __cplusplus >= 201704L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201704L)
+# define UDCPP17 1
+#else
+# define UDCPP17 0
+#endif
+
+#if __cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
+# define UDCPP20 1
+#else
+# define UDCPP20 0
+#endif
+
+#if UDCPP17
+# define UD_NO_DISCARD [[nodiscard]]
+#else
+# define UD_NO_DISCARD
+#endif
+
+#if UDCPP20
+# define UD_NO_DISCARD_(reason) [[nodiscard(reason)]]
+#else
+# define UD_NO_DISCARD_(reason)
+#endif
+
 #if defined(__clang__) || defined(__GNUC__)
 # if !UDCPP11 && !defined(nullptr)
 #   define nullptr NULL
