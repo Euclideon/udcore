@@ -6,11 +6,6 @@ stages:
   jobs:
   - template: azure-pipelines-jobs-linux.yml
     parameters:
-      name: ubuntu1604
-      displayName: 'Ubuntu 16.04'
-      container: euclideon/vault:dev-xenial-v1
-  - template: azure-pipelines-jobs-linux.yml
-    parameters:
       name: ubuntu1804
       displayName: 'Ubuntu 18.04'
       container: euclideon/vault:dev-bionic-v1
