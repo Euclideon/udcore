@@ -403,6 +403,39 @@ TEST(udCryptoTests, ECDSADigiSig)
   udCrypto_Deinit();
 }
 
+TEST(udCryptoTests, ECDSADigiSigFromudCloud)
+{
+  udCryptoSigContext *pPubCtx = nullptr;
+  static const char *pMessage = "No problem can be solved from the same level of consciousness that created it. -Einstein";
+  const char *pExpectedSignature = "MGQCMCnZx1A9ZVXLL0rHTDOwCtIRI8ml+YQEJ+DtpJAP1FS+b45OAiVUETtLqzfWGd0MiAIwblWTglFDHYPtVMfN6WNtlNd6JB3Kcg3OEDej4pNDZOibTixCyZaBaGRazit4tKWV";
+  const char *pHash = nullptr;
+
+  static const char *pPublicKeyText = R"key({
+    "Type": "ECDSA",
+    "Curve": "BP384R1",
+    "X": "CRsaWnhJdlED7s82LjUUvomBxU5frr2FcoEiKCbmuKlnjToyKMcGLtuhliIqsIaO",
+    "Y": "el3DpHAOA7bC7O/3TjN81STeOpOBOlQ7WIjPGHJxLbIhDlMm63GCMUPczB5S1IJi",
+    "Z": "AQ=="
+  })key";
+
+  EXPECT_EQ(udR_Success, udCrypto_Init());
+  EXPECT_EQ(udR_Success, udCryptoHash_Hash(udCH_SHA256, pMessage, udStrlen(pMessage), &pHash));
+
+  // Import the public key only
+  EXPECT_EQ(udR_Success, udCryptoSig_ImportKeyPair(&pPubCtx, pPublicKeyText));
+
+  // Verify the message
+  EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pExpectedSignature, udCH_SHA256));
+
+  // Change the hash slightly to ensure the message isn't verified
+  ((char*)pHash)[1] ^= 1;
+  EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pExpectedSignature, udCH_SHA1));
+
+  udCryptoSig_Destroy(&pPubCtx);
+  udFree(pHash);
+  udCrypto_Deinit();
+}
+
 TEST(udCryptoTests, DHM)
 {
   udResult result;
