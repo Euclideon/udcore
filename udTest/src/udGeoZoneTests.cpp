@@ -221,6 +221,60 @@ TEST(udGeoZone, CassiniSoldnerHyperbolic)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+TEST(udGeoZone, HongKongGrid)
+{
+  // Test is from https://www.geodetic.gov.hk/common/data/parameter/7P_ITRF96_HK80_V1.pdf
+  // EPSG 2326: Hong Kong 1980 Grid System
+  // 22 29' 8.777176" N, 114 00' 1.079932" E
+  // lat = 22.485771
+  // long = 114.000300
+
+  //udDouble3 latLong = udDouble3::create(22.3193, 114.1694, 0.0);
+  udDouble3 latLong = udDouble3::create(22.485771, 114.000300, 0.0);
+
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 2326)); // Hong Kong 1980
+  EXPECT_EQ(geoZone.datum, udGZGD_HK1980);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  EXPECT_EQ(udRound(818097.267 * localPrecision), udRound(pos.x * localPrecision));
+  EXPECT_EQ(udRound(838477.970 * localPrecision), udRound(pos.y * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
+TEST(udGeoZone, Lambert93)
+{
+  // Test is from https://moonbooks.org/Articles/How-to-convert-Lambert-93-to-longitude-and-latitude-with-python-3/
+  // EPSG 2154: Lambert-93
+  // 882408.3, 6543019.6
+  // lat = 45.96240165432614
+  // long = 5.355651287573366
+
+  //udDouble3 latLong = udDouble3::create(22.3193, 114.1694, 0.0);
+  udDouble3 latLong = udDouble3::create(45.96240165432614, 5.355651287573366, 0.0);
+
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 2154)); // Lambert-93
+  EXPECT_EQ(geoZone.datum, udGZGD_RGF93);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  EXPECT_EQ(udRound(882408.3 * localPrecision), udRound(pos.x * localPrecision));
+  EXPECT_EQ(udRound(6543019.6 * localPrecision), udRound(pos.y * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, StereographicOblique)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.67
@@ -522,6 +576,8 @@ struct
 {
   // This is the non-official CRS84 zone which does NOT have an official WKT implementation; This should be able to be handled by other systems but ISO6709 makes this entire thing invalid
   { 84, "GEOGCS[\"WGS 84\",\nDATUM[\"WGS_1984\",\nSPHEROID[\"WGS 84\",6378137,298.257223563,\nAUTHORITY[\"EPSG\",\"7030\"]],\nAUTHORITY[\"EPSG\",\"6326\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAXIS[\"Lon\",X],\nAXIS[\"Lat\",Y],\nAUTHORITY[\"CRS\",\"84\"]]" },
+
+  { 2154, "PROJCS[\"RGF93 / Lambert-93\",\nGEOGCS[\"RGF93\",\nDATUM[\"Reseau_Geodesique_Francais_1993\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6171\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4171\"]],\nPROJECTION[\"Lambert_Conformal_Conic_2SP\"],\nPARAMETER[\"standard_parallel_1\",49],\nPARAMETER[\"standard_parallel_2\",44],\nPARAMETER[\"latitude_of_origin\",46.5],\nPARAMETER[\"central_meridian\",3],\nPARAMETER[\"false_easting\",700000],\nPARAMETER[\"false_northing\",6600000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH],\nAUTHORITY[\"EPSG\",\"2154\"]]" },
 
   { 2193, "PROJCS[\"NZGD2000 / New Zealand Transverse Mercator 2000\",\nGEOGCS[\"NZGD2000\",\nDATUM[\"New_Zealand_Geodetic_Datum_2000\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6167\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4167\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",173],\nPARAMETER[\"scale_factor\",0.9996],\nPARAMETER[\"false_easting\",1600000],\nPARAMETER[\"false_northing\",10000000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"2193\"]]"},
 
