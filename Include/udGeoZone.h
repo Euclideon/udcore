@@ -66,7 +66,6 @@ enum udGeoZoneGeodeticDatum
   udGZGD_MARS_PCPF,  //EPSG:8705
   udGZGD_MOON_MERC,  //EPSG:30174,30175
   udGZGD_MOON_PCPF,  //EPSG:30100,30100
-  //udGZGD_RGF93_L93,      //EPSG:2154
 
   udGZGD_Count
 };
