@@ -27,6 +27,6 @@ udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, vo
 udResult udWorkerPool_DoPostWork(udWorkerPool *pPool, int processLimit = 0);
 
 // Returns true if there are workers currently processing tasks or if workers should be processing tasks
-bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool);
+bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads = nullptr, size_t *pQueuedTasks = nullptr);
 
 #endif // udWorkerPool_h__
