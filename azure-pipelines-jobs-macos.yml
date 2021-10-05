@@ -26,6 +26,7 @@ jobs:
       sdk: ${{ parameters.sdk }}
       configuration: $(configuration)
       packageApp: false
+      useXcpretty: false
   - task: Xcode@5
     displayName: 'Build Projects'
     condition: and(succeeded(), eq('${{ parameters.name }}', 'macos'))
@@ -34,6 +35,7 @@ jobs:
       sdk: ${{ parameters.sdk }}
       configuration: $(configuration)
       packageApp: false
+      useXcpretty: false
   - script: Output/bin/$(configuration)_x64/udTest --gtest_output=xml
     displayName: 'Run Tests'
     condition: and(succeeded(), eq('${{ parameters.name }}', 'macos'))

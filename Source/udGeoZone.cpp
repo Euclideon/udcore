@@ -634,6 +634,21 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-90, -180);
       pZone->latLongBoundMax = udDouble2::create(90, 180);
       break;
+    case 2154: // RGF93 / Lambert-93
+      pZone->datum = udGZGD_RGF93;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      udStrcpy(pZone->zoneName, "Lambert-93");
+      pZone->meridian = 3;
+      pZone->parallel = 46.5;
+      pZone->firstParallel = 49;
+      pZone->secondParallel = 44;
+      pZone->falseNorthing = 6600000;
+      pZone->falseEasting = 700000;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(41.1800 , -9.6200);
+      pZone->latLongBoundMax = udDouble2::create(51.5400, 10.3000);
+      break;
     case 2193: // NZGD2000
       pZone->datum = udGZGD_NZGD2000;
       pZone->projection = udGZPT_TransverseMercator;
