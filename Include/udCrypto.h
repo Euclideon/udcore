@@ -129,6 +129,7 @@ udResult udCryptoHash_SelfTest(udCryptoHashes hash);
 // **** Key derivation/exchange functions, generated keys are encoded into a string ****
 
 struct udCryptoDHMContext;
+struct udCryptoECDHContext;
 
 // Generate a key from a plain-text password (max 40 bytes, compatible with CryptDeriveKey KDF)
 udResult udCryptoKey_DeriveFromPassword(const char **ppKeyBase64, size_t keyLen, const char *pPassword);
@@ -151,6 +152,19 @@ udResult udCryptoKey_DeriveFromPartyB(udCryptoDHMContext *pDHMCtx, const char *p
 // Destroy the DHM context
 void udCryptoKey_DestroyDHM(udCryptoDHMContext **ppDHMCtx);
 
+// **** ECDH Key exchange functions, generated keys are encoded into a string ****
+
+// Create a ECDH context
+udResult udCryptoKeyECDH_CreateContextPartyA(udCryptoECDHContext **ppECDHCtx, const char **ppPublicValueA);
+
+// Get PartB from PartA (and shared key)
+udResult udCryptoKeyECDH_DeriveFromPartyA(const char *pPublicValueA, const char **ppPublicValueB, const char **ppKey);
+
+// Get Shared Key from PartB
+udResult udCryptoKeyECDH_DeriveFromPartyB(udCryptoECDHContext *ppECDHCtx, const char *pPublicValueB, const char **ppKey);
+
+// Tidy Up for PartA
+void udCryptoKeyECDH_Destroy(udCryptoECDHContext **ppECDHCtx);
 
 // **** Digital signature functions ****
 
