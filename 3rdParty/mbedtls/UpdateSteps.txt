@@ -1,0 +1,4 @@
+1. Delete everything in library and include
+2. Copy from the release package
+3. Restore threading_alt.h
+4. Enable MBEDTLS_THREADING_ALT and MBEDTLS_THREADING_C in config.h

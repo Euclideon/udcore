@@ -18,6 +18,8 @@
 #include <sys/time.h>
 #endif
 
+#include "mbedtls/platform_util.h"
+
 #include "mbedtls/aes.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
