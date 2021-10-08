@@ -491,6 +491,46 @@ TEST(udCryptoTests, DHM)
   udCrypto_Deinit();
 }
 
+TEST(udCryptoTests, ECDH)
+{
+  udJSON publicA, publicB;
+  udCryptoECDHContext *pECDH = nullptr;
+  const char *pPublicValueA = nullptr;
+  const char *pPublicValueB = nullptr;
+  const char *pSecretA = nullptr;
+  const char *pSecretB = nullptr;
+
+  EXPECT_EQ(udR_Success, udCrypto_Init());
+
+  EXPECT_EQ(udR_Success, udCryptoKeyECDH_CreateContextPartyA(&pECDH, &pPublicValueA));
+
+  EXPECT_EQ(udR_Success, udCryptoKeyECDH_DeriveFromPartyA(pPublicValueA, &pPublicValueB, &pSecretB));
+  EXPECT_EQ(udR_Success, udCryptoKeyECDH_DeriveFromPartyB(pECDH, pPublicValueB, &pSecretA));
+  
+  EXPECT_STRCASEEQ(pSecretA, pSecretB);
+
+  udFree(pPublicValueA);
+  udFree(pPublicValueB);
+  udCryptoKeyECDH_Destroy(&pECDH);
+
+  // Finally, generate another secret (just to secretB) and make sure it's different from the previous one
+  EXPECT_EQ(udR_Success, udCryptoKeyECDH_CreateContextPartyA(&pECDH, &pPublicValueA));
+  udFree(pSecretB);
+  EXPECT_EQ(udR_Success, udCryptoKeyECDH_DeriveFromPartyA(pPublicValueA, &pPublicValueB, &pSecretB));
+  udFree(pPublicValueA);
+  udFree(pPublicValueB);
+  udCryptoKeyECDH_Destroy(&pECDH);
+  EXPECT_STRCASENE(pSecretA, pSecretB);
+  udFree(pSecretA);
+  udFree(pSecretB);
+
+  // Additional destructions of non-existent objects
+  udCryptoKeyECDH_Destroy(&pECDH);
+  udCryptoKeyECDH_Destroy(nullptr);
+
+  udCrypto_Deinit();
+}
+
 TEST(udCryptoTests, Utilities)
 {
   static const char *pZeros = "AAAAAAAAAAAAAAAAAAAAAA=="; // 16-bytes of zeros

@@ -27,6 +27,7 @@
 #include "mbedtls/md5.h"
 
 #include "mbedtls/dhm.h"
+#include "mbedtls/ecdh.h"
 
 #include "mbedtls/rsa.h"
 #include "mbedtls/ecdsa.h"
@@ -1137,6 +1138,155 @@ void udCryptoKey_DestroyDHM(udCryptoDHMContext **ppDHMCtx)
   {
     (*ppDHMCtx)->Destroy();
     udFreeSecure((*ppDHMCtx), sizeof(**ppDHMCtx));
+  }
+}
+
+
+struct udCryptoECDHContext
+{
+  mbedtls_ecdh_context ecdh;
+  mbedtls_ctr_drbg_context ctr_drbg;
+  mbedtls_entropy_context entropy;
+};
+
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2021
+udResult udCryptoKeyECDH_CreateContextPartyA(udCryptoECDHContext **ppECDHCtx, const char **ppPublicValueA)
+{
+  udResult result;
+  udJSON v;
+  udCryptoECDHContext *pCtx = nullptr;
+
+  size_t len;
+  unsigned char buf[1000] = {};
+
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+
+  UD_ERROR_NULL(ppECDHCtx, udR_InvalidParameter);
+  UD_ERROR_NULL(ppPublicValueA, udR_InvalidParameter);
+
+  pCtx = udAllocType(udCryptoECDHContext, 1, udAF_Zero);
+  UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
+
+  mbedtls_ctr_drbg_init(&pCtx->ctr_drbg);
+  mbedtls_entropy_init(&pCtx->entropy);
+
+  mbedtls_ecdh_init(&pCtx->ecdh);
+  mbedtls_ecdh_setup(&pCtx->ecdh, MBEDTLS_ECP_DP_BP384R1);
+
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&pCtx->ctr_drbg, mbedtls_entropy_func, &pCtx->entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+
+  // Write the public key
+  //UD_ERROR_IF(mbedtls_ecdh_make_public(&pCtx->dhm, &len, buf, udLengthOf(buf), mbedtls_ctr_drbg_random, &pCtx->ctr_drbg) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ecdh_make_params(&pCtx->ecdh, &len, buf, udLengthOf(buf), &mbedtls_entropy_func, &pCtx->entropy) != 0, udR_InternalCryptoError);
+  UD_ERROR_CHECK(udBase64Encode(ppPublicValueA, buf, len));
+
+  // Success, so transfer ownership of the context to caller
+  *ppECDHCtx = pCtx;
+  pCtx = nullptr;
+  result = udR_Success;
+
+epilogue:
+  udCryptoKeyECDH_Destroy(&pCtx);
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2021
+udResult udCryptoKeyECDH_DeriveFromPartyA(const char *pPublicValueA, const char **ppPublicValueB, const char **ppKey)
+{
+  udResult result = udR_InternalCryptoError;
+  udCryptoECDHContext *pCtx = nullptr;
+
+  size_t len;
+  unsigned char buf[1000] = {};
+  const unsigned char *pBuf = buf;
+
+  unsigned char res_buf[1000];
+  size_t res_len;
+
+  size_t written = 0;
+
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+
+  UD_ERROR_NULL(pPublicValueA, udR_InvalidParameter);
+  UD_ERROR_NULL(ppPublicValueB, udR_InvalidParameter);
+  UD_ERROR_NULL(ppKey, udR_InvalidParameter);
+
+  pCtx = udAllocType(udCryptoECDHContext, 1, udAF_Zero);
+  UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
+
+  mbedtls_ctr_drbg_init(&pCtx->ctr_drbg);
+  mbedtls_entropy_init(&pCtx->entropy);
+
+  mbedtls_ecdh_init(&pCtx->ecdh);
+
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&pCtx->ctr_drbg, mbedtls_entropy_func, &pCtx->entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+
+  UD_ERROR_CHECK(udBase64Decode(pPublicValueA, udStrlen(pPublicValueA), buf, udLengthOf(buf), &written));
+
+  // Read party A's public key
+  UD_ERROR_IF(mbedtls_ecdh_read_params(&pCtx->ecdh, &pBuf, pBuf+written) != 0, udR_InternalCryptoError);
+  memset(buf, 0x00, sizeof(buf));
+
+  // Write the public key for Party B
+  UD_ERROR_IF(mbedtls_ecdh_make_public(&pCtx->ecdh, &len, buf, udLengthOf(buf), mbedtls_ctr_drbg_random, &pCtx->ctr_drbg) != 0, udR_InternalCryptoError);
+  UD_ERROR_CHECK(udBase64Encode(ppPublicValueB, buf, len));
+
+  // Get the secret key
+  UD_ERROR_IF(mbedtls_ecdh_calc_secret(&pCtx->ecdh, &res_len, res_buf, udLengthOf(res_buf), NULL, NULL) != 0, udR_InternalCryptoError);
+  UD_ERROR_CHECK(udCryptoHash_Hash(udCH_SHA256, res_buf, res_len, ppKey));
+
+  // Intentionally not giving the ECDH context back to the caller- it can just be cleaned up now
+  result = udR_Success;
+
+epilogue:
+  udCryptoKeyECDH_Destroy(&pCtx);
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2021
+udResult udCryptoKeyECDH_DeriveFromPartyB(udCryptoECDHContext *pECDHCtx, const char *pPublicValueB, const char **ppKey)
+{
+  udResult result = udR_Failure;
+
+  size_t len;
+  unsigned char buf[1000] = {};
+  size_t written = 0;
+
+  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+
+  UD_ERROR_NULL(pECDHCtx, udR_InvalidParameter);
+  UD_ERROR_NULL(pPublicValueB, udR_InvalidParameter);
+  UD_ERROR_NULL(ppKey, udR_InvalidParameter);
+
+  UD_ERROR_CHECK(udBase64Decode(pPublicValueB, udStrlen(pPublicValueB), buf, udLengthOf(buf), &written));
+  UD_ERROR_IF(mbedtls_ecdh_read_public(&pECDHCtx->ecdh, buf, written) != 0, udR_InternalCryptoError);
+
+  UD_ERROR_IF(mbedtls_ecdh_calc_secret(&pECDHCtx->ecdh, &len, buf, udLengthOf(buf), mbedtls_ctr_drbg_random, &pECDHCtx->ctr_drbg) != 0, udR_InternalCryptoError);
+  UD_ERROR_CHECK(udCryptoHash_Hash(udCH_SHA256, buf, len, ppKey));
+
+epilogue:
+  return result;
+}
+
+// ***************************************************************************************
+// Author: Paul Fox, October 2021
+void udCryptoKeyECDH_Destroy(udCryptoECDHContext **ppECDHCtx)
+{
+  if (ppECDHCtx && *ppECDHCtx)
+  {
+    udCryptoECDHContext *pECDHCtx = *ppECDHCtx;
+    *ppECDHCtx = nullptr;
+
+    mbedtls_ecdh_free(&pECDHCtx->ecdh);
+    mbedtls_ctr_drbg_free(&pECDHCtx->ctr_drbg);
+    mbedtls_entropy_free(&pECDHCtx->entropy);
+    memset(pECDHCtx, 0, sizeof(*pECDHCtx));
+
+    udFreeSecure(pECDHCtx, sizeof(*pECDHCtx));
   }
 }
 
