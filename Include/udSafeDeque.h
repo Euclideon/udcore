@@ -138,7 +138,8 @@ inline udResult udSafeDeque_PopFront(udSafeDeque<T> *pDeque, T *pData)
   pMutex = udLockMutex(pDeque->pMutex);
 
   UD_ERROR_NULL(pMutex, udR_NotInitialized);
-  UD_ERROR_IF(!pDeque->chunkedArray.PopFront(pData), udR_NotFound);
+  if (!pDeque->chunkedArray.PopFront(pData))
+    result = udR_NotFound;
 
 epilogue:
   udReleaseMutex(pMutex);
