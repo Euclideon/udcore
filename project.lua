@@ -44,4 +44,9 @@ project ("udCore" .. (projectSuffix or ""))
 		targetdir "Lib/%{cfg.system}_%{cfg.shortname}"
 		symbolspath "$(TargetDir)/$(ProjectName).pdb"
 
+	filter { "system:uwp" }
+		staticruntime "Off"
+		exceptionhandling "On"
+		cppdialect "C++17"
+
 	filter {}

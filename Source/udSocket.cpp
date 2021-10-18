@@ -89,7 +89,11 @@ udResult udSocket_LoadCACerts()
   // Open a scope to prevent various initialisation warnings
   {
 #if UDPLATFORM_WINDOWS
+# if UDPLATFORM_UWP
+    HCERTSTORE store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_SYSTEM_STORE_CURRENT_USER, "Root");
+# else
     HCERTSTORE store = CertOpenSystemStoreA(0, "Root");
+# endif
     UD_ERROR_NULL(store, udR_Failure);
     for (PCCERT_CONTEXT cert = CertEnumCertificatesInStore(store, nullptr); cert; cert = CertEnumCertificatesInStore(store, cert))
     {

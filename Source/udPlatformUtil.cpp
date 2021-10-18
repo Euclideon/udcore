@@ -69,7 +69,9 @@ void udUpdateCamera(float camera[16], float yawRadians, float pitchRadians, floa
 // Author: Dave Pevreal, March 2014
 uint32_t udGetTimeMs()
 {
-#if UDPLATFORM_WINDOWS
+#if UDPLATFORM_UWP
+  return GetTickCount();
+#elif UDPLATFORM_WINDOWS
   return timeGetTime();
 #else
   //struct timeval now;

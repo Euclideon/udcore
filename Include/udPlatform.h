@@ -54,6 +54,10 @@
 #elif defined(_MSC_VER) || defined(__MINGW32__)
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
+# include <winapifamily.h>
+# if WINAPI_FAMILY == WINAPI_FAMILY_PC_APP
+#   define UDPLATFORM_UWP 1
+# endif
 #elif defined(__ANDROID__)
 # include <stddef.h>
 # include <limits.h>
@@ -82,6 +86,10 @@
 
 #ifndef UDPLATFORM_WINDOWS
 # define UDPLATFORM_WINDOWS 0
+#endif
+
+#ifndef UDPLATFORM_UWP
+# define UDPLATFORM_UWP 0
 #endif
 
 #ifndef UDPLATFORM_ANDROID
@@ -305,9 +313,11 @@ protected:
 
 #if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_EMSCRIPTEN
 #include <alloca.h>
+#elif UDPLATFORM_UWP
+#include <malloc.h>
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(_M_ARM64)
   UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { __stosd((unsigned long*)pDest, val, size); }
 #else
   UDFORCE_INLINE void udMemset32(void *pDest, uint32_t val, size_t size) { uint32_t *p = (uint32_t*)pDest; while (size--) *p++ = val; }
