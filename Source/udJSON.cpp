@@ -1010,7 +1010,7 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
     int64_t i = udStrAtoi64(pString, &charCount);
     if (charCount)
     {
-      if (pString[charCount] == '.' || pString[charCount] == 'e')
+      if (pString[charCount] == '.' || pString[charCount] == 'e' || pString[charCount] == 'E')
       {
         int integralCharCount = charCount + 1;
         u.dVal = udStrAtof64(pString, &charCount);
