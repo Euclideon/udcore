@@ -216,6 +216,10 @@ udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory)
   return udR_Failure;
 }
 
+#if ((defined(_WIN32) || defined(_WIN64)) && (_M_IX86 || _M_X64)) || defined(__i386__) || defined(__amd64__)
+# define UD_HASCPUID
+#endif
+
 class udCPUFeatureDetection
 {
 public:
@@ -227,7 +231,7 @@ public:
   static void DetectFeatures();
 
 private:
-#if defined(_WIN32) || defined(__i386__)  || defined(_WIN64) || defined(__amd64__)
+#if defined(UD_HASCPUID)
   static void cpuid(int out[4], int eax, int ecx);
 #endif
 };
@@ -254,7 +258,7 @@ void udCPUFeatureDetection::DetectFeatures()
   if (s_udCPUFeaturesDetected)
     return;
 
-#if defined(_WIN32) || defined(__i386__)  || defined(_WIN64) || defined(__amd64__)
+#if defined(UD_HASCPUID)
   int info[4] = {};
 
   // Get highest valid function ID
@@ -279,7 +283,7 @@ void udCPUFeatureDetection::DetectFeatures()
   s_udCPUFeaturesDetected = true;
 }
 
-#if defined(_WIN32) || defined(__i386__)  || defined(_WIN64) || defined(__amd64__)
+#if defined(UD_HASCPUID)
 void udCPUFeatureDetection::cpuid(int out[4], int eax, int ecx)
 {
 #if UDPLATFORM_WINDOWS

@@ -9,7 +9,9 @@
 #include "udStringUtil.h"
 #include "udCrypto.h"
 
-#if UDPLATFORM_WINDOWS
+#if UDPLATFORM_UWP
+# include <winrt/Windows.Storage.h>
+#elif UDPLATFORM_WINDOWS
 # include <ShlObj.h>
 #else
 # include <pwd.h>
@@ -457,7 +459,11 @@ udResult udFile_TranslatePath(const char **ppNewPath, const char *pPath)
 
   // TODO: Process environment variables when passed in via `%env%` and `$env`
   {
-#if UDPLATFORM_WINDOWS
+#if UDPLATFORM_UWP
+    std::wstring_view pHomeDirStr = winrt::Windows::Storage::UserDataPaths::GetDefault().Profile();
+    udOSString temp(pHomeDirStr.data());
+    const char *pHomeDir = temp;
+#elif UDPLATFORM_WINDOWS
     PWSTR pHomeDirW = nullptr;
     UD_ERROR_IF(SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &pHomeDirW) != S_OK, udR_NotFound);
     udOSString temp(pHomeDirW);

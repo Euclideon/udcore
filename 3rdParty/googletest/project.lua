@@ -12,6 +12,10 @@ project "googletest"
 	files { "include/gtest/*.h" }
 	files { "project.lua" }
 
+	filter { "system:uwp" }
+		staticruntime "Off"
+	filter {}
+
 	-- include common stuff
 	dofile "../../bin/premake-bin/common-proj.lua"
 
