@@ -2,3 +2,5 @@
 2. Copy from the release package
 3. Restore threading_alt.h
 4. Enable MBEDTLS_THREADING_ALT and MBEDTLS_THREADING_C in config.h
+5. Enable MBEDTLS_HAVE_INT64 in bignum.h for Windows ARM64 builds using _M_ARM64 macro
+6. Disable optimisations for mbedtls_mpi_safe_cond_assign in Windows ARM64 builds using _MSC_VER and _M_ARM64 macro

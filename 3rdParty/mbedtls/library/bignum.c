@@ -334,6 +334,9 @@ static void mpi_safe_cond_assign( size_t n,
  * about whether the assignment was made or not.
  * (Leaking information about the respective sizes of X and Y is ok however.)
  */
+#if defined(_MSC_VER) && defined(_M_ARM64)
+#pragma optimize("", off)
+#endif
 int mbedtls_mpi_safe_cond_assign( mbedtls_mpi *X, const mbedtls_mpi *Y, unsigned char assign )
 {
     int ret = 0;
@@ -370,6 +373,9 @@ int mbedtls_mpi_safe_cond_assign( mbedtls_mpi *X, const mbedtls_mpi *Y, unsigned
 cleanup:
     return( ret );
 }
+#if defined(_MSC_VER) && defined(_M_ARM64)
+#pragma optimize("", on)
+#endif
 
 /*
  * Conditionally swap X and Y, without leaking information
