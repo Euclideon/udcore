@@ -531,6 +531,25 @@ TEST(GeometryTests, GeometryTrianglesGeneral)
 
 TEST(GeometryTests, GeometryAABB)
 {
+  // Merging AABB
+  {
+    udAABB3<double> aabb0 = {};
+    udAABB3<double> aabb1 = {};
+
+    EXPECT_EQ(aabb0.Set({0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}), udR_Success);
+    EXPECT_EQ(aabb1.Set({-1.0, -2.0, -1.0}, {1.0, 2.0, 0.0}), udR_Success);
+
+    aabb0.Merge(aabb1);
+
+    EXPECT_EQ(aabb0.minPoint.x, -1.0);
+    EXPECT_EQ(aabb0.minPoint.y, -2.0);
+    EXPECT_EQ(aabb0.minPoint.z, -1.0);
+
+    EXPECT_EQ(aabb0.maxPoint.x, 1.0);
+    EXPECT_EQ(aabb0.maxPoint.y, 2.0);
+    EXPECT_EQ(aabb0.maxPoint.z, 1.0);
+  }
+
   // Point vs AABB
   {
     udAABB3<double> aabb = {};

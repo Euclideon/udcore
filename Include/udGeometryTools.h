@@ -52,6 +52,7 @@ class udAABB
 public:
 
   udResult Set(const VECTOR_T &minPt, const VECTOR_T &maxPt);
+  void Merge(udAABB const &other);
 
   VECTOR_T minPoint;
   VECTOR_T maxPoint;
@@ -87,6 +88,7 @@ class udSegment
 public:
 
   udResult Set(const VECTOR_T &_p0, const VECTOR_T &_p1);
+  udResult GetCenteredForm(VECTOR_T *pCentre, VECTOR_T *pDirection, VECTOR_T *pExtent) const;
 
   VECTOR_T p0;
   VECTOR_T p1;

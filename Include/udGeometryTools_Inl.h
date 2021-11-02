@@ -75,6 +75,16 @@ epilogue:
   return result;
 }
 
+template<typename T, int R>
+void udAABB<T, R>::Merge(udAABB<T, R> const &other)
+{
+  for (int i = 0; i < R; i++)
+  {
+    minPoint[i] = udMin(minPoint[i], other.minPoint[i]);
+    maxPoint[i] = udMax(maxPoint[i], other.maxPoint[i]);
+  }
+}
+
 //------------------------------------------------------------------------------------
 // udLine
 //------------------------------------------------------------------------------------
@@ -179,6 +189,28 @@ udResult udSegment<T, R>::Set(const VECTOR_T &_p0, const VECTOR_T &_p1)
 
   p0 = _p0;
   p1 = _p1;
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
+template<typename T, int R>
+udResult udSegment<T, R>::GetCenteredForm(VECTOR_T *pCentre, VECTOR_T *pDirection, VECTOR_T *pExtent) const
+{
+  udResult result;
+
+  UD_ERROR_NULL(pCentre, udR_InvalidParamter);
+  UD_ERROR_NULL(pDirection, udR_InvalidParamter);
+  UD_ERROR_NULL(pExtent, udR_InvalidParamter);
+
+  *pCenter = T(0.5) * (p0 + p1);
+  *pDirection = p1 - p0;
+
+  T lenSq = udMagSq(direction);
+  UD_ERROR_IF(udIsZero(lenSq), udR_Failure);
+
+  *pExtent = T(0.5) * (direction / udSqrt(lenSq));
 
   result = udR_Success;
 epilogue:
