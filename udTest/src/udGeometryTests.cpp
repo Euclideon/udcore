@@ -56,6 +56,51 @@ TEST(GeometryTests, GeometryConstruction)
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}, {1.0, 2.0, 3.0}), udR_Failure);
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.1}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}), udR_Failure);
 }
+
+TEST(GeometryTests, GeometryPlanes)
+{
+  // Segment Plane
+  {
+    FI3SegmentPlaneResult<double> result = {};
+    udPlane<double> plane = {};
+    udSegment3<double> seg = {};
+
+    EXPECT_EQ(plane.Set({0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}), udR_Success);
+
+    EXPECT_EQ(seg.Set({0.0, 0.0, -2.0}, {0.0, 0.0, -1.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_NotIntersecting);
+
+    EXPECT_EQ(seg.Set({0.0, 0.0, -1.0}, {0.0, 0.0, -2.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_NotIntersecting);
+
+    EXPECT_EQ(seg.Set({0.0, 0.0, 2.0}, {0.0, 0.0, 3.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_NotIntersecting);
+
+    EXPECT_EQ(seg.Set({0.0, 0.0, 3.0}, {0.0, 0.0, 2.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_NotIntersecting);
+
+    EXPECT_EQ(seg.Set({0.0, 0.0, 0.0}, {0.0, 0.0, 2.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_Intersecting);
+    EXPECT_EQ(result.u, 0.5);
+
+    EXPECT_EQ(seg.Set({0.0, 0.0, 2.0}, {0.0, 0.0, 0.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_Intersecting);
+    EXPECT_EQ(result.u, 0.5);
+
+    EXPECT_EQ(seg.Set({1.0, 1.0, 1.0}, {2.0, 2.0, 1.0}), udR_Success);
+    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+    EXPECT_EQ(result.code, udGC_Overlapping);
+    EXPECT_EQ(result.u, 0.0);
+    EXPECT_EQ(result.point, seg.p0);
+  }
+}
+
 TEST(GeometryTests, GeometryLines)
 {
   //point vs line

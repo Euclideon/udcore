@@ -89,6 +89,7 @@ public:
 
   udResult Set(const VECTOR_T &_p0, const VECTOR_T &_p1);
   udResult GetCenteredForm(VECTOR_T *pCentre, VECTOR_T *pDirection, VECTOR_T *pExtent) const;
+  VECTOR_T Direction() const { return p1 - p0; }
 
   VECTOR_T p0;
   VECTOR_T p1;
@@ -157,10 +158,24 @@ template<typename T> T udGeometry_SignedDistance(const udPlane<T> &plane, const 
 //--------------------------------------------------------------------------------
 // Intersection Test Queries
 //--------------------------------------------------------------------------------
+
 template<typename T, int R> udResult udGeometry_TIPointAABB(const VECTOR_T &point, const udAABB<T, R> &box, udGeometryCode *pCode);
 template<typename T, int R> udResult udGeometry_TIAABBAABB(const udAABB<T, R> &box0, const udAABB<T, R> &box1, udGeometryCode *pCode);
 template<typename T> udResult udGeometry_TI2SegmentAABB(const udSegment<T, 2> &box0, const udAABB<T, 2> &box1, udGeometryCode *pCode);
 template<typename T> udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T> *pPolygon, size_t count, udGeometryCode *pCode);
+
+//--------------------------------------------------------------------------------
+// Find Intersection Queries
+//--------------------------------------------------------------------------------
+
+template<typename T>
+struct FI3SegmentPlaneResult
+{
+  udGeometryCode code;
+  udVector3<T> point;
+  T u;
+};
+template<typename T> udResult udGeometry_FI3SegmentPlane(const udSegment3<T> &seg, const udPlane<T> &plane, FI3SegmentPlaneResult<T> *pData);
 
 //--------------------------------------------------------------------------------
 // Closest Points Queries

@@ -390,6 +390,57 @@ T udGeometry_SignedDistance(const udPlane<T> &plane, const udVector3<T> &point)
 }
 
 //--------------------------------------------------------------------------------
+// Find Intersection Queries
+//--------------------------------------------------------------------------------
+
+template<typename T> udResult udGeometry_FI3SegmentPlane(const udSegment3<T> &seg, const udPlane<T> &plane, FI3SegmentPlaneResult<T> *pData)
+{
+  udResult result;
+
+  UD_ERROR_NULL(pData, udR_InvalidParameter);
+
+  T denom = udDot(plane.normal, seg.Direction());
+
+  //check if line is parallel to plane
+  if (udIsZero(denom))
+  {
+    pData->u = T(0);
+
+    //check if line is on the plane
+    T dist = udAbs(udGeometry_SignedDistance(plane, seg.p0));
+
+    if (udIsZero(dist))
+      pData->code = udGC_Overlapping;
+    else
+      pData->code = udGC_NotIntersecting;
+  }
+  else
+  {
+    pData->u = (-(udDot(seg.p0, plane.normal) + plane.offset) / denom);
+    if (pData->u < T(0))
+    {
+      pData->u = T(0);
+      pData->code = udGC_NotIntersecting;
+    }
+    else if (pData->u > T(1))
+    {
+      pData->u = T(1);
+      pData->code = udGC_NotIntersecting;
+    }
+    else
+    {
+      pData->code = udGC_Intersecting;
+    }
+  }
+
+  pData->point = seg.p0 + pData->u * seg.Direction();
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
+//--------------------------------------------------------------------------------
 // Intersection Test Queries
 //--------------------------------------------------------------------------------
 
