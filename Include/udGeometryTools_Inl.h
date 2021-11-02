@@ -63,7 +63,9 @@ udResult udAABB<T, R>::Set(const VECTOR_T &minPt, const VECTOR_T &maxPt)
 {
   udResult result;
 
-  UD_ERROR_IF((udAreEqual<T, R>(minPt, maxPt)), udR_Failure);
+  UD_ERROR_IF(minPt.x > maxPt.x, udR_Failure);
+  UD_ERROR_IF(minPt.y > maxPt.y, udR_Failure);
+  UD_ERROR_IF(minPt.z > maxPt.z, udR_Failure);
 
   minPoint = minPt;
   maxPoint = maxPt;
@@ -585,7 +587,7 @@ epilogue:
 template<typename T, int R>
 udResult udGeometry_TIPointAABB(const VECTOR_T &point, const udAABB<T, R> &box, udGeometryCode *pCode)
 {
-  udResult resut;
+  udResult result;
 
   UD_ERROR_NULL(pCode, udR_InvalidParameter);
 
@@ -610,7 +612,7 @@ epilogue:
 template<typename T, int R>
 udResult udGeometry_TIAABBAABB(const udAABB<T, R> &box0, const udAABB<T, R> &box1, udGeometryCode *pCode)
 {
-  udResult resut;
+  udResult result;
 
   UD_ERROR_NULL(pCode, udR_InvalidParameter);
 

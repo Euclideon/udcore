@@ -29,7 +29,7 @@ TEST(GeometryTests, GeometryConstruction)
 
   udAABB3<double> aabb = {};
   EXPECT_EQ(aabb.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}), udR_Success);
-  EXPECT_EQ(aabb.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}), udR_Failure);
+  EXPECT_EQ(aabb.Set({1.0, 2.1, 3.0}, {1.0, 2.0, 3.0}), udR_Failure);
 
   udSegment3<double> seg = {};
   EXPECT_EQ(seg.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}), udR_Success);
@@ -526,5 +526,57 @@ TEST(GeometryTests, GeometryTrianglesGeneral)
 
     EXPECT_TRUE((udAreEqual<double>(tri.GetArea(), area)));
     EXPECT_TRUE((udAreEqual<double>(tri.GetArea(), area)));
+  }
+}
+
+TEST(GeometryTests, GeometryAABB)
+{
+  // Point vs AABB
+  {
+    udAABB3<double> aabb = {};
+    udGeometryCode code = udGC_Success;
+    EXPECT_EQ(aabb.Set({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0}), udR_Success);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, 0.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_Intersecting);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({-2.0, 0.0, 0.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({2.0, 0.0, 0.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({0.0, -2.0, 0.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 2.0, 0.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, -2.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+
+    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, 2.0}, aabb, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+  }
+
+  // AABB vs AABB
+  {
+    udAABB3<double> aabb0 = {};
+    udAABB3<double> aabb1 = {};
+    udGeometryCode code = udGC_Success;
+
+    EXPECT_EQ(aabb0.Set({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0}), udR_Success);
+    EXPECT_EQ(aabb1.Set({2.0, 2.0, 2.0}, {3.0, 3.0, 3.0}), udR_Success);
+
+    EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
+    EXPECT_EQ(code, udGC_NotIntersecting);
+
+    EXPECT_EQ(aabb1.Set({1.0, 0.0, 0.0}, {3.0, 3.0, 3.0}), udR_Success);
+    EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
+    EXPECT_EQ(code, udGC_Intersecting);
+
+    EXPECT_EQ(aabb1.Set({0.0, 0.0, 0.0}, {3.0, 3.0, 3.0}), udR_Success);
+    EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
+    EXPECT_EQ(code, udGC_Intersecting);
   }
 }
