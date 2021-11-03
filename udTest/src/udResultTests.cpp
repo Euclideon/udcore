@@ -66,6 +66,7 @@ TEST(udResult, StringNamesMatch)
       CHECK_STR(udR_ExceededAllowedLimit);
       CHECK_STR(udR_RateLimited);
       CHECK_STR(udR_PremiumOnly);
+      CHECK_STR(udR_InProgress);
       CHECK_STR(udR_Count);
     }
   }
