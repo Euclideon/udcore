@@ -41,7 +41,7 @@ constexpr unsigned udResultCalcHelpCode(const char filename[], const int line, u
 #define UD_ERROR_CHECK(funcCall)    do { result = funcCall; if (result) goto epilogue; } while(0)
 #define UD_ERROR_SET_NO_BREAK(code) do { result = code;                 goto epilogue; } while(0)
 
-#define UD_RESULT_VERSION 2103121440U
+#define UD_RESULT_VERSION 2111031245U
 
 enum udResult
 {
