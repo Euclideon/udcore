@@ -72,6 +72,7 @@ udResultInfo udResultInfoArray[] =
 
   RESULTINFO(udR_RateLimited),
   RESULTINFO(udR_PremiumOnly),
+  RESULTINFO(udR_InProgress),
 };
 
 UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), "Result code not entered in strings table");
