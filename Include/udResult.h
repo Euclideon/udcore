@@ -100,6 +100,7 @@ enum udResult
 
   udR_RateLimited,
   udR_PremiumOnly,
+  udR_InProgress,
 
   udR_Count
 };
