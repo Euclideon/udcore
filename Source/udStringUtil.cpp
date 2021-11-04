@@ -369,6 +369,7 @@ const char *udStrstr_Internal(const char *pStr, size_t sLen, const char *pSubStr
     }
     else
     {
+      i -= subStringIndex;
       subStringIndex = 0;
     }
   }
