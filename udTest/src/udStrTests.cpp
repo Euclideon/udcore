@@ -130,6 +130,13 @@ TEST(udStrTests, udStrstr)
   EXPECT_EQ(&input[24], udStrstr(input, UDARRAYSIZE(input), "special"));
   EXPECT_STREQ(input, udStrstri(input, udLengthOf(input), "th"));
   EXPECT_STREQ(input, udStrstri(input, udLengthOf(input), "TH"));
+
+  // Special cases
+  const char specialInput[] = "]]]]>";
+  // Partial match overlapping with actual match
+  EXPECT_STREQ(&specialInput[1], udStrstr(specialInput, udLengthOf(specialInput), "]]]>"));
+  // Partial match immediately before actual match
+  EXPECT_STREQ(&specialInput[2], udStrstr(specialInput, udLengthOf(specialInput), "]]>"));
 }
 
 TEST(udStrTests, udStrAto)
