@@ -17,13 +17,7 @@ void udDebugPrintf(const char *format, ...)
 
   static bool multiThreads = false;
   static int lastThread = -1;
-  static unsigned reportedHelpCode = 0;
 
-  if (reportedHelpCode != g_udLastErrorHelpCode)
-  {
-    reportedHelpCode = g_udLastErrorHelpCode;
-    udSprintf(pBuffer, bufferLen, "UD_ERROR help code: 0x%08x", reportedHelpCode);
-  }
   if (!multiThreads)
   {
     multiThreads = (lastThread!=-1) && (lastThread != udTrace::GetThreadId());
