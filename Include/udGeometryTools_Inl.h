@@ -59,7 +59,7 @@ epilogue:
 //------------------------------------------------------------------------------------
 
 template<typename T, int R>
-udResult udAABB<T, R>::Set(const VECTOR_T &minPt, const VECTOR_T &maxPt)
+udResult udAABB<T, R>::Set(const udVector_t &minPt, const udVector_t &maxPt)
 {
   udResult result;
 
@@ -92,10 +92,10 @@ void udAABB<T, R>::Merge(udAABB<T, R> const &other)
 // ****************************************************************************
 // Author: Frank Hart, August 2020
 template<typename T, int R>
-udResult udLine<T, R>::SetFromEndPoints(const VECTOR_T &p0, const VECTOR_T &p1)
+udResult udLine<T, R>::SetFromEndPoints(const udVector_t &p0, const udVector_t &p1)
 {
   udResult result;
-  VECTOR_T v = p1 - p0;
+  udVector_t v = p1 - p0;
 
   //normalise for cheap distance checks
   T lensq = udMagSq(v);
@@ -113,7 +113,7 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, August 2020
 template<typename T, int R>
-udResult udLine<T, R>::SetFromDirection(const VECTOR_T &p0, const VECTOR_T &dir)
+udResult udLine<T, R>::SetFromDirection(const udVector_t &p0, const udVector_t &dir)
 {
   udResult result;
 
@@ -137,10 +137,10 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, November 2021
 template<typename T, int R>
-udResult udRay<T, R>::SetFromEndPoints(const VECTOR_T &p0, const VECTOR_T &p1)
+udResult udRay<T, R>::SetFromEndPoints(const udVector_t &p0, const udVector_t &p1)
 {
   udResult result;
-  VECTOR_T v = p1 - p0;
+  udVector_t v = p1 - p0;
 
   //normalise for cheap distance checks
   T lensq = udMagSq(v);
@@ -158,7 +158,7 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, November 2021
 template<typename T, int R>
-udResult udRay<T, R>::SetFromDirection(const VECTOR_T &p0, const VECTOR_T &dir)
+udResult udRay<T, R>::SetFromDirection(const udVector_t &p0, const udVector_t &dir)
 {
   udResult result;
 
@@ -180,7 +180,7 @@ epilogue:
 //------------------------------------------------------------------------------------
 
 template<typename T, int R>
-udResult udSegment<T, R>::Set(const VECTOR_T &_p0, const VECTOR_T &_p1)
+udResult udSegment<T, R>::Set(const udVector_t &_p0, const udVector_t &_p1)
 {
   udResult result;
 
@@ -195,7 +195,7 @@ epilogue:
 }
 
 template<typename T, int R>
-udResult udSegment<T, R>::GetCenteredForm(VECTOR_T *pCentre, VECTOR_T *pDirection, VECTOR_T *pExtent) const
+udResult udSegment<T, R>::GetCenteredForm(udVector_t *pCentre, udVector_t *pDirection, udVector_t *pExtent) const
 {
   udResult result;
 
@@ -221,7 +221,7 @@ epilogue:
 //------------------------------------------------------------------------------------
 
 template<typename T, int R>
-udResult udHyperSphere<T, R>::Set(const VECTOR_T & _centre, T _radius)
+udResult udHyperSphere<T, R>::Set(const udVector_t & _centre, T _radius)
 {
   udResult result;
 
@@ -240,7 +240,7 @@ epilogue:
 //------------------------------------------------------------------------------------
 
 template<typename T, int R>
-udResult udTriangle<T, R>::Set(const VECTOR_T &_p0, const VECTOR_T &_p1, const VECTOR_T &_p2)
+udResult udTriangle<T, R>::Set(const udVector_t &_p0, const udVector_t &_p1, const udVector_t &_p2)
 {
   udResult result;
 
@@ -311,7 +311,7 @@ bool udAreEqual(T a, T b)
 // ****************************************************************************
 // Author: Frank Hart, July 2020
 template<typename T, int R>
-bool udAreEqual(const VECTOR_T &v0, const VECTOR_T &v1)
+bool udAreEqual(const udVector_t &v0, const udVector_t &v1)
 {
   for (int i = 0; i < R; i++)
   {
@@ -359,7 +359,7 @@ udVector3<T> udGeometry_SortLowToHigh(const udVector3<T> &a)
 // ****************************************************************************
 // Author: Frank Hart, August 2020
 template<typename T, int R>
-T udGeometry_Sum(const VECTOR_T &v)
+T udGeometry_Sum(const udVector_t &v)
 {
   T total = v[0];
   for (int i = 1; i < R; i++)
@@ -371,13 +371,13 @@ T udGeometry_Sum(const VECTOR_T &v)
 // Author: Frank Hart, July 2020
 // Based on Real Time Collision Detection, Christer Ericson p184
 template<typename T, int R>
-udResult udGeometry_Barycentric(const udTriangle<T, R> &tri, const VECTOR_T &p, udVector3<T> *pUVW)
+udResult udGeometry_Barycentric(const udTriangle<T, R> &tri, const udVector_t &p, udVector3<T> *pUVW)
 {
   udResult result;
 
-  VECTOR_T v0 = tri.p1 - tri.p0;
-  VECTOR_T v1 = tri.p2 - tri.p0;
-  VECTOR_T v2 = p - tri.p0;
+  udVector_t v0 = tri.p1 - tri.p0;
+  udVector_t v1 = tri.p2 - tri.p0;
+  udVector_t v2 = p - tri.p0;
 
   T d00 = udDot(v0, v0);
   T d01 = udDot(v0, v1);
@@ -493,10 +493,10 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, June 2020
 template<typename T, int R>
-udResult udGeometry_CPPointLine(const VECTOR_T &point, const udLine<T, R> &line, udCPPointLineResult<T, R> *pData)
+udResult udGeometry_CPPointLine(const udVector_t &point, const udLine<T, R> &line, udCPPointLineResult<T, R> *pData)
 {
   udResult result;
-  VECTOR_T w = {};
+  udVector_t w = {};
 
   UD_ERROR_NULL(pData, udR_InvalidParameter);
 
@@ -512,11 +512,11 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, June 2020
 template<typename T, int R>
-udResult udGeometry_CPPointSegment(const VECTOR_T &point, const udSegment<T, R> &seg, udCPPointSegmentResult<T, R> *pResult)
+udResult udGeometry_CPPointSegment(const udVector_t &point, const udSegment<T, R> &seg, udCPPointSegmentResult<T, R> *pResult)
 {
   udResult result;
-  VECTOR_T w = {};
-  VECTOR_T axis = {};
+  udVector_t w = {};
+  udVector_t axis = {};
   T proj;
   T vsq;
 
@@ -555,7 +555,7 @@ template<typename T, int R>
 udResult udGeometry_CPLineLine(const udLine<T, R> & line_a, const udLine<T, R> & line_b, udCPLineLineResult<T, R> *pResult)
 {
   udResult result;
-  VECTOR_T w0 = {};
+  udVector_t w0 = {};
   T a, b, c, d;
 
   UD_ERROR_NULL(pResult, udR_InvalidParameter);
@@ -598,8 +598,8 @@ template<typename T, int R>
 udResult udGeometry_CPLineSegment(const udLine<T, R> & line, const udSegment<T, R> & seg, udCPLineSegmentResult<T, R> *pResult)
 {
   udResult result;
-  VECTOR_T segDir = seg.Direction();
-  VECTOR_T w0 = {};
+  udVector_t segDir = seg.Direction();
+  udVector_t w0 = {};
   T a, b, c, d, denom;
 
   UD_ERROR_NULL(pResult, udR_InvalidParameter);
@@ -663,9 +663,9 @@ template<typename T, int R>
 udResult udGeometry_CPSegmentSegment(const udSegment<T, R> &seg_a, const udSegment<T, R> &seg_b, udCPSegmentSegmentResult<T, R> *pResult)
 {
   udResult result;
-  VECTOR_T da = {};
-  VECTOR_T db = {};
-  VECTOR_T w0 = {};
+  udVector_t da = {};
+  udVector_t db = {};
+  udVector_t w0 = {};
   T a, b, c, d, e, denom, sn, sd, tn, td;
 
   UD_ERROR_NULL(pResult, udR_InvalidParameter);
@@ -769,7 +769,7 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, October 2021
 template<typename T, int R>
-udResult udGeometry_TIPointAABB(const VECTOR_T &point, const udAABB<T, R> &box, udGeometryCode *pCode)
+udResult udGeometry_TIPointAABB(const udVector_t &point, const udAABB<T, R> &box, udGeometryCode *pCode)
 {
   udResult result;
 
@@ -899,12 +899,12 @@ epilogue:
 }
 
 template<typename T, int R>
-udResult udGeometry_CPPointTriangle(const VECTOR_T &point, const udTriangle<T, R> &tri, VECTOR_T *pOut)
+udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T, R> &tri, udVector_t *pOut)
 {
   udResult result;
-  VECTOR_T v01 = {};
-  VECTOR_T v02 = {};
-  VECTOR_T v0p = {};
+  udVector_t v01 = {};
+  udVector_t v02 = {};
+  udVector_t v0p = {};
   T d1, d2;
 
   UD_ERROR_NULL(pOut, udR_InvalidParameter);
