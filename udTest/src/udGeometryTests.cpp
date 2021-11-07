@@ -8,6 +8,9 @@ EXPECT_NEAR(v0.z, v1.z, e)
 
 TEST(GeometryTests, GeometryUtility)
 {
+  EXPECT_EQ(udQuickPowd<4>(2.0), 16.0);
+  EXPECT_EQ(udQuickPowf<16>(2.0), 65536.f);
+
   double a = 2.0, b = 1.0;
   udGeometry_SortLowToHigh(a, b);
   EXPECT_EQ(a, 1.0);
@@ -48,284 +51,373 @@ TEST(GeometryTests, GeometryConstruction)
 
   EXPECT_EQ(ray.SetFromDirection({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}), udR_Success);
   EXPECT_EQ(ray.SetFromDirection({1.0, 2.0, 3.0}, {0.0, 0.0, 0.0}), udR_Failure);
+  
+  udSphere<double> sphere = {};
+  EXPECT_EQ(sphere.Set({0.0, 0.0, 0.0}, 1.0), udR_Success);
+  EXPECT_EQ(sphere.Set({0.0, 0.0, 0.0}, 0.0), udR_Failure);
+  EXPECT_EQ(sphere.Set({0.0, 0.0, 0.0}, -1.0), udR_Failure);
 
   udTriangle3<double> tri = {};
-  EXPECT_EQ(tri.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}, {1.0, 2.0, 3.2}), udR_Success);
+  EXPECT_EQ(tri.Set({1.1, 2.0, 3.0}, {1.0, 2.1, 3.1}, {1.0, 2.0, 3.2}), udR_Success);
+  EXPECT_EQ(tri.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}, {1.0, 2.0, 3.2}), udR_Failure);
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}), udR_Failure);
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}), udR_Failure);
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.0}, {1.0, 2.0, 3.1}, {1.0, 2.0, 3.0}), udR_Failure);
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.1}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}), udR_Failure);
 }
 
-TEST(GeometryTests, GeometryPlanes)
+TEST(GeometryTests, Query_Segment_Plane)
 {
-  // Segment Plane
-  {
-    FI3SegmentPlaneResult<double> result = {};
-    udPlane<double> plane = {};
-    udSegment3<double> seg = {};
+  udFI3SegmentPlaneResult<double> result = {};
+  udPlane<double> plane = {};
+  udSegment3<double> seg = {};
 
-    EXPECT_EQ(plane.Set({0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}), udR_Success);
+  EXPECT_EQ(plane.Set({0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}), udR_Success);
 
-    EXPECT_EQ(seg.Set({0.0, 0.0, -2.0}, {0.0, 0.0, -1.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_NotIntersecting);
+  EXPECT_EQ(seg.Set({0.0, 0.0, -2.0}, {0.0, 0.0, -1.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_NotIntersecting);
 
-    EXPECT_EQ(seg.Set({0.0, 0.0, -1.0}, {0.0, 0.0, -2.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_NotIntersecting);
+  EXPECT_EQ(seg.Set({0.0, 0.0, -1.0}, {0.0, 0.0, -2.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_NotIntersecting);
 
-    EXPECT_EQ(seg.Set({0.0, 0.0, 2.0}, {0.0, 0.0, 3.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_NotIntersecting);
+  EXPECT_EQ(seg.Set({0.0, 0.0, 2.0}, {0.0, 0.0, 3.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_NotIntersecting);
 
-    EXPECT_EQ(seg.Set({0.0, 0.0, 3.0}, {0.0, 0.0, 2.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_NotIntersecting);
+  EXPECT_EQ(seg.Set({0.0, 0.0, 3.0}, {0.0, 0.0, 2.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_NotIntersecting);
 
-    EXPECT_EQ(seg.Set({0.0, 0.0, 0.0}, {0.0, 0.0, 2.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_Intersecting);
-    EXPECT_EQ(result.u, 0.5);
+  EXPECT_EQ(seg.Set({0.0, 0.0, 0.0}, {0.0, 0.0, 2.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_Intersecting);
+  EXPECT_EQ(result.u, 0.5);
 
-    EXPECT_EQ(seg.Set({0.0, 0.0, 2.0}, {0.0, 0.0, 0.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_Intersecting);
-    EXPECT_EQ(result.u, 0.5);
+  EXPECT_EQ(seg.Set({0.0, 0.0, 2.0}, {0.0, 0.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_Intersecting);
+  EXPECT_EQ(result.u, 0.5);
 
-    EXPECT_EQ(seg.Set({1.0, 1.0, 1.0}, {2.0, 2.0, 1.0}), udR_Success);
-    EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-    EXPECT_EQ(result.code, udGC_Overlapping);
-    EXPECT_EQ(result.u, 0.0);
-    EXPECT_EQ(result.point, seg.p0);
-  }
+  EXPECT_EQ(seg.Set({1.0, 1.0, 1.0}, {2.0, 2.0, 1.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_Overlapping);
+  EXPECT_EQ(result.u, 0.0);
+  EXPECT_EQ(result.point, seg.p0);
 }
 
-TEST(GeometryTests, GeometryLines)
+TEST(GeometryTests, Query_Point_Line)
 {
-  //point vs line
-  {
-    udLine3<double> line;
-    EXPECT_EQ(line.SetFromDirection({1.0, 1.0, 1.0}, {1.0, 0.0, 0.0}), udR_Success);
-    CPPointLineResult<double, 3> cpResult = {};
-    udDouble3 point = {};
+  udLine3<double> line;
+  EXPECT_EQ(line.SetFromDirection({1.0, 1.0, 1.0}, {1.0, 0.0, 0.0}), udR_Success);
+  udCPPointLineResult<double, 3> cpResult ={};
+  udDouble3 point ={};
 
-    //Point lies 'before' line origin
-    point = {-3.0, 1.0, 2.0};
-    EXPECT_EQ(udGeometry_CPPointLine(point, line, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.u, -4.0);
-    EXPECT_EQ(cpResult.point, udDouble3::create(-3.0, 1.0, 1.0));
+  //Point lies 'before' line origin
+  point ={-3.0, 1.0, 2.0};
+  EXPECT_EQ(udGeometry_CPPointLine(point, line, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.u, -4.0);
+  EXPECT_EQ(cpResult.point, udDouble3::create(-3.0, 1.0, 1.0));
 
-    //Point lies perpendicular to line origin
-    point = {1.0, 1.0, 2.0};
-    EXPECT_EQ(udGeometry_CPPointLine(point, line, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.u, 0.0);
-    EXPECT_EQ(cpResult.point, udDouble3::create(1.0, 1.0, 1.0));
+  //Point lies perpendicular to line origin
+  point ={1.0, 1.0, 2.0};
+  EXPECT_EQ(udGeometry_CPPointLine(point, line, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.u, 0.0);
+  EXPECT_EQ(cpResult.point, udDouble3::create(1.0, 1.0, 1.0));
 
-    //Point lies 'after' line origin
-    point = {7.0, 1.0, 2.0};
-    EXPECT_EQ(udGeometry_CPPointLine(point, line, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.u, 6.0);
-    EXPECT_EQ(cpResult.point, udDouble3::create(7.0, 1.0, 1.0));
-  }
+  //Point lies 'after' line origin
+  point ={7.0, 1.0, 2.0};
+  EXPECT_EQ(udGeometry_CPPointLine(point, line, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.u, 6.0);
+  EXPECT_EQ(cpResult.point, udDouble3::create(7.0, 1.0, 1.0));
+}
 
-  //point v segment
-  {
-    udSegment<double, 3> seg = {};
-    seg.p0 = {1.0, 1.0, 1.0};
-    seg.p1 = {3.0, 1.0, 1.0};
-    CPPointSegmentResult<double, 3> cpPointSegmentResult = {};
-    udDouble3 point = {};
+TEST(GeometryTests, Query_Line_Line)
+{
+  udLine3<double> line_a ={};
+  udLine3<double> line_b ={};
+  udCPLineLineResult<double, 3> cpResult ={};
 
-    //Point lies 'before' segment 0
-    point = {-1.0, 1.0, 1.0};
-    EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
-    EXPECT_EQ(cpPointSegmentResult.u, 0.0);
-    EXPECT_EQ(cpPointSegmentResult.point, seg.p0);
+  EXPECT_EQ(line_a.SetFromDirection({0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}), udR_Success);
 
-    //Point lies 'after' segment 1
-    point = {5.0, 1.0, 1.0};
-    EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
-    EXPECT_EQ(cpPointSegmentResult.u, 1.0);
-    EXPECT_EQ(cpPointSegmentResult.point, seg.p1);
+  //Lines coincident
+  EXPECT_EQ(line_b.SetFromDirection({42.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_CPLineLine(line_a, line_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Coincident);
+  EXPECT_EQ(cpResult.cp_a, line_a.origin);
+  EXPECT_EQ(cpResult.cp_b, line_a.origin);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 42.0);
 
-    //Point lies along the segment line
-    point = {2.0, 10.0, 42.0};
-    EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
-    EXPECT_EQ(cpPointSegmentResult.u, 0.5);
-    EXPECT_EQ(cpPointSegmentResult.point, udDouble3::create(2.0, 1.0, 1.0));
-  }
+  //Lines parallel
+  EXPECT_EQ(line_b.SetFromDirection({42.0, 1.0, 1.0}, {1.0, 0.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_CPLineLine(line_a, line_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Parallel);
+  EXPECT_EQ(cpResult.cp_a, line_a.origin);
+  EXPECT_EQ(cpResult.cp_b, udDouble3::create(0.0, 1.0, 1.0));
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, -42.0);
 
-  //segment v segment
-  {
-    udSegment<double, 3> seg_a = {};
-    udSegment<double, 3> seg_b = {};
-    CPSegmentSegmentResult<double, 3> cpResult = {};
+  //Lines not parallel
+  EXPECT_EQ(line_b.SetFromDirection({42.0, 0.0, 1.0}, {0.0, 0.0, 1.0}), udR_Success);
+  EXPECT_EQ(udGeometry_CPLineLine(line_a, line_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.cp_a, udDouble3::create(42.0, 0.0, 0.0));
+  EXPECT_EQ(cpResult.cp_b, udDouble3::create(42.0, 0.0, 0.0));
+  EXPECT_EQ(cpResult.u_a, 42.0);
+  EXPECT_EQ(cpResult.u_b, -1.0);
+}
 
-    //Segments have zero length
-    seg_a.p0 = seg_b.p0 = {1.0, 4.0, 12.0};
-    seg_a.p1 = seg_b.p1 = {1.0, 4.0, 12.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+TEST(GeometryTests, Query_Line_Segment)
+{
+  udCPLineSegmentResult<double, 3> cpLineSegmentResult;
+  udSegment<double, 3> seg ={};
+  udLine3<double> line;
 
-    seg_a.p0 = {2.0, 0.0, 0.0};
-    seg_a.p1 = {6.0, 0.0, 0.0};
+  seg.Set({2.0, 0.0, 0.0}, {6.0, 0.0, 0.0});
 
-    //LineSegs parallel, no overlap, closest points a0, seg_b.p0
-    seg_b.p0 = {-1.0, -4.0, 12.0};
-    seg_b.p1 = {-5.0, -4.0, 12.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+  //Segment and line coincident
+  line.SetFromDirection({13.0, 0.0, 0.0}, {1.0, 0.0, 0.0});
+  EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Coincident);
+  EXPECT_EQ(cpLineSegmentResult.u_l, -11.0);
+  EXPECT_EQ(cpLineSegmentResult.u_s, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, seg.p0)));
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_l, udDouble3::create(2.0, 0.0, 0.0))));
 
-    //LineSegs parallel, no overlap, closest points a0, seg_b.p1
-    seg_b.p0 = {-5.0, -4.0, 12.0};
-    seg_b.p1 = {-1.0, -4.0, 12.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 1.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+  //Segment parallel to line
+  line.SetFromDirection({3.0, 3.0, 4.0}, {1.0, 0.0, 0.0});
+  EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Parallel);
+  EXPECT_EQ(cpLineSegmentResult.u_l, -1.0);
+  EXPECT_EQ(cpLineSegmentResult.u_s, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, seg.p0)));
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_l, udDouble3::create(2.0, 3.0, 4.0))));
 
-    //LineSegs parallel, no overlap, closest points a1, seg_b.p0
-    seg_b.p0 = {9.0, -4.0, 12.0};
-    seg_b.p1 = {18.0, -4.0, 12.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 1.0);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p1);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+  //Segment parallel to line, opposite direction
+  line.SetFromDirection({3.0, 3.0, 4.0}, {-1.0, 0.0, 0.0});
+  EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Parallel);
+  EXPECT_EQ(cpLineSegmentResult.u_l, 1.0);
+  EXPECT_EQ(cpLineSegmentResult.u_s, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, seg.p0)));
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_l, udDouble3::create(2.0, 3.0, 4.0))));
 
-    //LineSegs parallel, no overlap, closest points a1, seg_b.p1
-    seg_b.p0 = {10.0, -4.0, 12.0};
-    seg_b.p1 = {9.0, -4.0, 12.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 1.0);
-    EXPECT_EQ(cpResult.u_b, 1.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p1);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+  //Segment-p0 closest point
+  line.SetFromDirection({-1.0, 4.0, 3.0}, {0.0, 0.0, -1.0});
+  EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Success);
+  EXPECT_EQ(cpLineSegmentResult.u_l, 3.0);
+  EXPECT_EQ(cpLineSegmentResult.u_s, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, seg.p0)));
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_l, udDouble3::create(-1.0, 4.0, 0.0))));
 
-    //LineSegs parallel, overlap, a0---seg_b.p0---a1---seg_b.p1
-    seg_b.p0 = {4.0, -3.0, 4.0};
-    seg_b.p1 = {10.0, -3.0, 4.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    //Why udQCOverlapping and not udQC_Parallel? Because overlapping segments are already parallel.
-    EXPECT_EQ(cpResult.code, udGC_Overlapping);
-    EXPECT_EQ(cpResult.u_a, 0.5);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+  //Segment-p1 closest point
+  line.SetFromDirection({9.0, 4.0, 3.0}, {0.0, 0.0, -1.0});
+  EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Success);
+  EXPECT_EQ(cpLineSegmentResult.u_l, 3.0);
+  EXPECT_EQ(cpLineSegmentResult.u_s, 1.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, seg.p1)));
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_l, udDouble3::create(9.0, 4.0, 0.0))));
 
-    //LineSegs parallel, overlap, a1---seg_b.p0---a0---seg_b.p1
-    seg_b.p0 = {4.0, -3.0, 4.0};
-    seg_b.p1 = {0.0, -3.0, 4.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Overlapping);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 0.5);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, udDouble3::create(2.0, -3.0, 4.0));
+  //Closest point along Segment
+  line.SetFromDirection({3.0, 4.0, 3.0}, {0.0, 0.0, 1.0});
+  EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Success);
+  EXPECT_EQ(cpLineSegmentResult.u_l, -3.0);
+  EXPECT_EQ(cpLineSegmentResult.u_s, 0.25);
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, udDouble3::create(3.0, 0.0, 0.0))));
+  EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_l, udDouble3::create(3.0, 4.0, 0.0))));
+}
 
-    //LineSegs parallel, overlap, a0---seg_b.p0---seg_b.p1---a1
-    seg_b.p0 = {4.0, -3.0, 4.0};
-    seg_b.p1 = {5.0, -3.0, 4.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Overlapping);
-    EXPECT_EQ(cpResult.u_a, 0.5);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+TEST(GeometryTests, Query_Point_Segment)
+{
+  udSegment<double, 3> seg ={};
+  seg.p0 ={1.0, 1.0, 1.0};
+  seg.p1 ={3.0, 1.0, 1.0};
+  udCPPointSegmentResult<double, 3> cpPointSegmentResult ={};
+  udDouble3 point ={};
 
-    //LineSegs parallel, overlap, a1---seg_b.p0---seg_b.p1---a0
-    seg_b.p0 = {4.0, -3.0, 4.0};
-    seg_b.p1 = {8.0, -3.0, 4.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Overlapping);
-    EXPECT_EQ(cpResult.u_a, 0.5);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+  //Point lies 'before' segment 0
+  point ={-1.0, 1.0, 1.0};
+  EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
+  EXPECT_EQ(cpPointSegmentResult.u, 0.0);
+  EXPECT_EQ(cpPointSegmentResult.point, seg.p0);
 
-    //LineSegs not parallel, closest points: a0, seg_b.p0
-    seg_b.p0 = {-2.0, -5.0, 20.0};
-    seg_b.p1 = {-2.0, -5.0, 23.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+  //Point lies 'after' segment 1
+  point ={5.0, 1.0, 1.0};
+  EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
+  EXPECT_EQ(cpPointSegmentResult.u, 1.0);
+  EXPECT_EQ(cpPointSegmentResult.point, seg.p1);
 
-    //LineSegs not parallel, closest points: a0, seg_b.p1
-    seg_b.p0 = {-2.0, -5.0, 23.0};
-    seg_b.p1 = {-2.0, -5.0, 20.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 1.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+  //Point lies along the segment line
+  point ={2.0, 10.0, 42.0};
+  EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
+  EXPECT_EQ(cpPointSegmentResult.u, 0.5);
+  EXPECT_EQ(cpPointSegmentResult.point, udDouble3::create(2.0, 1.0, 1.0));
+}
 
-    //LineSegs not parallel, closest points: a1, seg_b.p0
-    seg_b.p0 = {10.0, -5.0, 20.0};
-    seg_b.p1 = {10.0, -5.0, 23.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 1.0);
-    EXPECT_EQ(cpResult.u_b, 0.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p1);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+TEST(GeometryTests, Query_Segment_Segment)
+{
+  udSegment<double, 3> seg_a = {};
+  udSegment<double, 3> seg_b = {};
+  udCPSegmentSegmentResult<double, 3> cpResult = {};
 
-    //LineSegs not parallel, closest points: a1, seg_b.p1
-    seg_b.p0 = {10.0, -5.0, 23.0};
-    seg_b.p1 = {10.0, -5.0, 20.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 1.0);
-    EXPECT_EQ(cpResult.u_b, 1.0);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p1);
-    EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+  seg_a.p0 = {2.0, 0.0, 0.0};
+  seg_a.p1 = {6.0, 0.0, 0.0};
 
-    //LineSegs not parallel, closest points: a0, ls1-along ls
-    seg_b.p0 = {-1.0, 4.0, -3.0};
-    seg_b.p1 = {-1.0, 4.0, 3.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.0);
-    EXPECT_EQ(cpResult.u_b, 0.5);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p0);
-    EXPECT_EQ(cpResult.cp_b, udDouble3::create(-1.0, 4.0, 0.0));
+  //Segments parallel, no overlap, closest points a0, seg_b.p0
+  seg_b.p0 = {-1.0, -4.0, 12.0};
+  seg_b.p1 = {-5.0, -4.0, 12.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p0);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
 
-    //LineSegs not parallel, closest points: a1, ls1-along ls
-    seg_b.p0 = {9.0, 4.0, -3.0};
-    seg_b.p1 = {9.0, 4.0, 3.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 1.0);
-    EXPECT_EQ(cpResult.u_b, 0.5);
-    EXPECT_EQ(cpResult.cp_a, seg_a.p1);
-    EXPECT_EQ(cpResult.cp_b, udDouble3::create(9.0, 4.0, 0.0));
+  //Segments parallel, no overlap, closest points a0, seg_b.p1
+  seg_b.p0 = {-5.0, -4.0, 12.0};
+  seg_b.p1 = {-1.0, -4.0, 12.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 1.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p0);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p1);
 
-    //LineSegs not parallel, closest points: ls0-along ls, ls1-along ls
-    seg_b.p0 = {4.0, 4.0, -3.0};
-    seg_b.p1 = {4.0, -4.0, -3.0};
-    EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
-    EXPECT_EQ(cpResult.code, udGC_Success);
-    EXPECT_EQ(cpResult.u_a, 0.5);
-    EXPECT_EQ(cpResult.u_b, 0.5);
-    EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
-    EXPECT_EQ(cpResult.cp_b, udDouble3::create(4.0, 0.0, -3.0));
-  }
+  //Segments parallel, no overlap, closest points a1, seg_b.p0
+  seg_b.p0 = {9.0, -4.0, 12.0};
+  seg_b.p1 = {18.0, -4.0, 12.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 1.0);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p1);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+
+  //Segments parallel, no overlap, closest points a1, seg_b.p1
+  seg_b.p0 = {10.0, -4.0, 12.0};
+  seg_b.p1 = {9.0, -4.0, 12.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 1.0);
+  EXPECT_EQ(cpResult.u_b, 1.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p1);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+
+  //Segments parallel, overlap, a0---seg_b.p0---a1---seg_b.p1
+  seg_b.p0 = {4.0, -3.0, 4.0};
+  seg_b.p1 = {10.0, -3.0, 4.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  //Why udQCOverlapping and not udQC_Parallel? Because overlapping segments are already parallel.
+  EXPECT_EQ(cpResult.code, udGC_Overlapping);
+  EXPECT_EQ(cpResult.u_a, 0.5);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+
+  //Segments parallel, overlap, a1---seg_b.p0---a0---seg_b.p1
+  seg_b.p0 = {4.0, -3.0, 4.0};
+  seg_b.p1 = {0.0, -3.0, 4.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Overlapping);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 0.5);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p0);
+  EXPECT_EQ(cpResult.cp_b, udDouble3::create(2.0, -3.0, 4.0));
+
+  //Segments parallel, overlap, a0---seg_b.p0---seg_b.p1---a1
+  seg_b.p0 = {4.0, -3.0, 4.0};
+  seg_b.p1 = {5.0, -3.0, 4.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Overlapping);
+  EXPECT_EQ(cpResult.u_a, 0.5);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+
+  //Segments parallel, overlap, a1---seg_b.p0---seg_b.p1---a0
+  seg_b.p0 = {4.0, -3.0, 4.0};
+  seg_b.p1 = {8.0, -3.0, 4.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Overlapping);
+  EXPECT_EQ(cpResult.u_a, 0.5);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+
+  //Segments not parallel, closest points: a0, seg_b.p0
+  seg_b.p0 = {-2.0, -5.0, 20.0};
+  seg_b.p1 = {-2.0, -5.0, 23.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p0);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+
+  //Segments not parallel, closest points: a0, seg_b.p1
+  seg_b.p0 = {-2.0, -5.0, 23.0};
+  seg_b.p1 = {-2.0, -5.0, 20.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 1.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p0);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+
+  //Segments not parallel, closest points: a1, seg_b.p0
+  seg_b.p0 = {10.0, -5.0, 20.0};
+  seg_b.p1 = {10.0, -5.0, 23.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 1.0);
+  EXPECT_EQ(cpResult.u_b, 0.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p1);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p0);
+
+  //Segments not parallel, closest points: a1, seg_b.p1
+  seg_b.p0 = {10.0, -5.0, 23.0};
+  seg_b.p1 = {10.0, -5.0, 20.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 1.0);
+  EXPECT_EQ(cpResult.u_b, 1.0);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p1);
+  EXPECT_EQ(cpResult.cp_b, seg_b.p1);
+
+  //Segments not parallel, closest points: a0, ls1-along ls
+  seg_b.p0 = {-1.0, 4.0, -3.0};
+  seg_b.p1 = {-1.0, 4.0, 3.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 0.0);
+  EXPECT_EQ(cpResult.u_b, 0.5);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p0);
+  EXPECT_EQ(cpResult.cp_b, udDouble3::create(-1.0, 4.0, 0.0));
+
+  //Segments not parallel, closest points: a1, ls1-along ls
+  seg_b.p0 = {9.0, 4.0, -3.0};
+  seg_b.p1 = {9.0, 4.0, 3.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 1.0);
+  EXPECT_EQ(cpResult.u_b, 0.5);
+  EXPECT_EQ(cpResult.cp_a, seg_a.p1);
+  EXPECT_EQ(cpResult.cp_b, udDouble3::create(9.0, 4.0, 0.0));
+
+  //Segments not parallel, closest points: ls0-along ls, ls1-along ls
+  seg_b.p0 = {4.0, 4.0, -3.0};
+  seg_b.p1 = {4.0, -4.0, -3.0};
+  EXPECT_EQ(udGeometry_CPSegmentSegment(seg_a, seg_b, &cpResult), udR_Success);
+  EXPECT_EQ(cpResult.code, udGC_Success);
+  EXPECT_EQ(cpResult.u_a, 0.5);
+  EXPECT_EQ(cpResult.u_b, 0.5);
+  EXPECT_EQ(cpResult.cp_a, udDouble3::create(4.0, 0.0, 0.0));
+  EXPECT_EQ(cpResult.cp_b, udDouble3::create(4.0, 0.0, -3.0));
 }
 
 TEST(GeometryTests, GeometryEquivalence)
@@ -431,7 +523,7 @@ TEST(GeometryTests, Planes)
 }
 
 // TODO this needs many more tests!
-TEST(GeometryTests, CPPointTriangle)
+TEST(GeometryTests, Query_Point_Triangle)
 {
   udDouble3 cp = {};
   udTriangle<double, 3> tri = {};
@@ -445,11 +537,55 @@ TEST(GeometryTests, CPPointTriangle)
   EXPECT_EQ(cp, udDouble3::create(1.0, 0.0, 0.5));
 }
 
-TEST(GeometryTests, GeometrySegmentTriangle)
+TEST(GeometryTests, Query_Point_Polygon)
+{
+  // Point in triangle
+  {
+    udGeometryCode code;
+    udDouble2 points[] = { {-1.0, -1.0}, {-1.0, 1.0}, {1.0, 0.0} };
+    udDouble2 point = {0.0, 0.0};
+    EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
+    EXPECT_EQ(code, udGC_CompletelyInside);
+  }
+
+  // Point in triangle, point aligned with triangle vertex
+  {
+    udGeometryCode code;
+    udDouble2 points[] ={{-1.0, 0.0}, {1.0, 1.0}, {1.0, -1.0}};
+    udDouble2 point ={0.0, 0.0};
+    EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
+    EXPECT_EQ(code, udGC_CompletelyInside);
+  }
+
+  // Point in triangle, point aligned with triangle vertices
+  {
+    udGeometryCode code;
+    udDouble2 points[] =
+    {
+      {-3.0, 0.0}, {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0}, {1.0, -1.0}, {-3.0, -1.0}
+    };
+    udDouble2 point ={0.0, 0.0};
+    EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
+    EXPECT_EQ(code, udGC_CompletelyInside);
+  }
+
+  // Point in triangle, point aligned with triangle vertices
+  {
+    udGeometryCode code;
+    udDouble2 points[] =
+    {
+      {-3.0, 0.0}, {-2.0, 0.0}, {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0}, {1.0, -1.0}, {-3.0, -1.0}
+    };
+    udDouble2 point ={0.0, 0.0};
+    EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
+    EXPECT_EQ(code, udGC_CompletelyInside);
+  }
+}
+TEST(GeometryTests, Query_Segment_Triangle)
 {
   udTriangle3<double> tri = {};
   udSegment3<double> seg = {};
-  FI3SegmentTriangleResult<double> data = {};
+  udFI3SegmentTriangleResult<double> data = {};
 
   //------------------------------------------------------------------------
   // Intersecting
@@ -574,6 +710,55 @@ TEST(GeometryTests, GeometryTrianglesGeneral)
   }
 }
 
+TEST(GeometryTests, Query_Point_AABB)
+{
+  udAABB3<double> aabb ={};
+  udGeometryCode code = udGC_Success;
+  EXPECT_EQ(aabb.Set({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0}), udR_Success);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, 0.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_Intersecting);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({-2.0, 0.0, 0.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({2.0, 0.0, 0.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({0.0, -2.0, 0.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({0.0, 2.0, 0.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, -2.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+
+  EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, 2.0}, aabb, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+}
+
+TEST(GeometryTests, Query_AABB_AABB)
+{
+  udAABB3<double> aabb0 ={};
+  udAABB3<double> aabb1 ={};
+  udGeometryCode code = udGC_Success;
+
+  EXPECT_EQ(aabb0.Set({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0}), udR_Success);
+  EXPECT_EQ(aabb1.Set({2.0, 2.0, 2.0}, {3.0, 3.0, 3.0}), udR_Success);
+
+  EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
+  EXPECT_EQ(code, udGC_NotIntersecting);
+
+  EXPECT_EQ(aabb1.Set({1.0, 0.0, 0.0}, {3.0, 3.0, 3.0}), udR_Success);
+  EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
+  EXPECT_EQ(code, udGC_Intersecting);
+
+  EXPECT_EQ(aabb1.Set({0.0, 0.0, 0.0}, {3.0, 3.0, 3.0}), udR_Success);
+  EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
+  EXPECT_EQ(code, udGC_Intersecting);
+}
+
 TEST(GeometryTests, GeometryAABB)
 {
   // Merging AABB
@@ -593,54 +778,5 @@ TEST(GeometryTests, GeometryAABB)
     EXPECT_EQ(aabb0.maxPoint.x, 1.0);
     EXPECT_EQ(aabb0.maxPoint.y, 2.0);
     EXPECT_EQ(aabb0.maxPoint.z, 1.0);
-  }
-
-  // Point vs AABB
-  {
-    udAABB3<double> aabb = {};
-    udGeometryCode code = udGC_Success;
-    EXPECT_EQ(aabb.Set({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0}), udR_Success);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, 0.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_Intersecting);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({-2.0, 0.0, 0.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({2.0, 0.0, 0.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({0.0, -2.0, 0.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 2.0, 0.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, -2.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-
-    EXPECT_EQ(udGeometry_TIPointAABB({0.0, 0.0, 2.0}, aabb, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-  }
-
-  // AABB vs AABB
-  {
-    udAABB3<double> aabb0 = {};
-    udAABB3<double> aabb1 = {};
-    udGeometryCode code = udGC_Success;
-
-    EXPECT_EQ(aabb0.Set({-1.0, -1.0, -1.0}, {1.0, 1.0, 1.0}), udR_Success);
-    EXPECT_EQ(aabb1.Set({2.0, 2.0, 2.0}, {3.0, 3.0, 3.0}), udR_Success);
-
-    EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
-    EXPECT_EQ(code, udGC_NotIntersecting);
-
-    EXPECT_EQ(aabb1.Set({1.0, 0.0, 0.0}, {3.0, 3.0, 3.0}), udR_Success);
-    EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
-    EXPECT_EQ(code, udGC_Intersecting);
-
-    EXPECT_EQ(aabb1.Set({0.0, 0.0, 0.0}, {3.0, 3.0, 3.0}), udR_Success);
-    EXPECT_EQ(udGeometry_TIAABBAABB(aabb0, aabb1, &code), udR_Success);
-    EXPECT_EQ(code, udGC_Intersecting);
   }
 }

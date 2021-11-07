@@ -134,7 +134,6 @@ epilogue:
 // udRay
 //------------------------------------------------------------------------------------
 
-
 // ****************************************************************************
 // Author: Frank Hart, November 2021
 template<typename T, int R>
@@ -218,6 +217,25 @@ epilogue:
 }
 
 //------------------------------------------------------------------------------------
+// udHyperSphere
+//------------------------------------------------------------------------------------
+
+template<typename T, int R>
+udResult udHyperSphere<T, R>::Set(const VECTOR_T & _centre, T _radius)
+{
+  udResult result;
+
+  UD_ERROR_IF(_radius < udGetEpsilon<T>(), udR_Failure);
+
+  centre = _centre;
+  radius = _radius;
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
+//------------------------------------------------------------------------------------
 // udTriangle
 //------------------------------------------------------------------------------------
 
@@ -226,9 +244,15 @@ udResult udTriangle<T, R>::Set(const VECTOR_T &_p0, const VECTOR_T &_p1, const V
 {
   udResult result;
 
-  UD_ERROR_IF((udAreEqual<T, R>(_p0, _p1)), udR_Failure);
-  UD_ERROR_IF((udAreEqual<T, R>(_p0, _p2)), udR_Failure);
-  UD_ERROR_IF((udAreEqual<T, R>(_p1, _p2)), udR_Failure);
+  udTriangle<T, R> temp;
+
+  temp.p0 = _p0;
+  temp.p1 = _p1;
+  temp.p2 = _p2;
+
+  udVector3<T> sideLengths = udGeometry_SortLowToHigh(temp.GetSideLengths());
+
+  UD_ERROR_IF(udIsZero(sideLengths[2] - (sideLengths[0] + sideLengths[1])), udR_Failure);
 
   p0 = _p0;
   p1 = _p1;
@@ -393,7 +417,7 @@ T udGeometry_SignedDistance(const udPlane<T> &plane, const udVector3<T> &point)
 // Find Intersection Queries
 //--------------------------------------------------------------------------------
 
-template<typename T> udResult udGeometry_FI3SegmentPlane(const udSegment3<T> &seg, const udPlane<T> &plane, FI3SegmentPlaneResult<T> *pData)
+template<typename T> udResult udGeometry_FI3SegmentPlane(const udSegment3<T> &seg, const udPlane<T> &plane, udFI3SegmentPlaneResult<T> *pData)
 {
   udResult result;
 
@@ -469,7 +493,7 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, June 2020
 template<typename T, int R>
-udResult udGeometry_CPPointLine(const VECTOR_T &point, const udLine<T, R> &line, CPPointLineResult<T, R> *pData)
+udResult udGeometry_CPPointLine(const VECTOR_T &point, const udLine<T, R> &line, udCPPointLineResult<T, R> *pData)
 {
   udResult result;
   VECTOR_T w = {};
@@ -488,7 +512,7 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, June 2020
 template<typename T, int R>
-udResult udGeometry_CPPointSegment(const VECTOR_T &point, const udSegment<T, R> &seg, CPPointSegmentResult<T, R> *pResult)
+udResult udGeometry_CPPointSegment(const VECTOR_T &point, const udSegment<T, R> &seg, udCPPointSegmentResult<T, R> *pResult)
 {
   udResult result;
   VECTOR_T w = {};
@@ -528,7 +552,115 @@ epilogue:
 // Author: Frank Hart, June 2020
 // Based of the work of James M. Van Verth and Lars M. Biship, taken from 'Essential Mathematics for Games and Interactive Applications: A Programmer's Guide, Second Edition
 template<typename T, int R>
-udResult udGeometry_CPSegmentSegment(const udSegment<T, R> &seg_a, const udSegment<T, R> &seg_b, CPSegmentSegmentResult<T, R> *pResult)
+udResult udGeometry_CPLineLine(const udLine<T, R> & line_a, const udLine<T, R> & line_b, udCPLineLineResult<T, R> *pResult)
+{
+  udResult result;
+  VECTOR_T w0 = {};
+  T a, b, c, d;
+
+  UD_ERROR_NULL(pResult, udR_InvalidParameter);
+
+  //compute intermediate parameters
+  w0 = line_a.origin - line_b.origin;
+  a = udDot(line_a.direction, line_b.direction);
+  b = udDot(line_a.direction, w0);
+  c = udDot(line_b.direction, w0);
+  d = static_cast<T>(1) - a*a;
+
+  if (udIsZero(d))
+  {
+    pResult->u_a = static_cast<T>(0);
+    pResult->u_b = c;
+    pResult->code = udGC_Parallel;
+  }
+  else
+  {
+    pResult->u_a = ((a*c - b) / d);
+    pResult->u_b = ((c - a*b) / d);
+    pResult->code = udGC_Success;
+  }
+
+  pResult->cp_a = line_a.origin + pResult->u_a * line_a.direction;
+  pResult->cp_b = line_b.origin + pResult->u_b * line_b.direction;
+
+  if (pResult->code == udGC_Parallel && udAreEqual<T, R>(pResult->cp_a, pResult->cp_b))
+    pResult->code = udGC_Coincident;
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Frank Hart, November 2021
+// Based of the work of James M. Van Verth and Lars M. Biship, taken from 'Essential Mathematics for Games and Interactive Applications: A Programmer's Guide, Second Edition
+template<typename T, int R>
+udResult udGeometry_CPLineSegment(const udLine<T, R> & line, const udSegment<T, R> & seg, udCPLineSegmentResult<T, R> *pResult)
+{
+  udResult result;
+  VECTOR_T segDir = seg.Direction();
+  VECTOR_T w0 = {};
+  T a, b, c, d, denom;
+
+  UD_ERROR_NULL(pResult, udR_InvalidParameter);
+
+  //compute intermediate parameters
+  w0 = (seg.p0 - line.origin);
+  a = udDot(segDir, segDir);
+  b = udDot(segDir, line.direction);
+  c = udDot(segDir, w0);
+  d = udDot(line.direction, w0);
+  denom = a - b*b;
+
+  // if denom is zero, try finding closest point on line to segment origin
+  if (udIsZero(denom))
+  {
+    pResult->u_s = static_cast<T>(0);
+    pResult->u_l = d;
+    pResult->code = udGC_Parallel;
+  }
+  else
+  {
+    pResult->code = udGC_Success;
+
+    // clamp pResult.uls within [0,1]
+    T sn = b*d - c;
+
+    // clamp pResult.uls to 0
+    if (sn < static_cast<T>(0))
+    {
+      pResult->u_s = static_cast<T>(0);
+      pResult->u_l = d;
+    }
+    // clamp pResult.uls to 1
+    else if (sn > denom)
+    {
+      pResult->u_s = static_cast<T>(1);
+      pResult->u_l = (d + b);
+    }
+    else
+    {
+      pResult->u_s = sn / denom;
+      pResult->u_l = (a*d - b*c) / denom;
+    }
+  }
+
+  pResult->cp_s = seg.p0 + pResult->u_s*segDir;
+  pResult->cp_l = line.origin + pResult->u_l*line.direction;
+
+  if (pResult->code == udGC_Parallel && udAreEqual<T, R>(pResult->cp_l, pResult->cp_s))
+    pResult->code = udGC_Coincident;
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
+// Author: Frank Hart, June 2020
+// Based of the work of James M. Van Verth and Lars M. Biship, taken from 'Essential Mathematics for Games and Interactive Applications: A Programmer's Guide, Second Edition
+template<typename T, int R>
+udResult udGeometry_CPSegmentSegment(const udSegment<T, R> &seg_a, const udSegment<T, R> &seg_b, udCPSegmentSegmentResult<T, R> *pResult)
 {
   udResult result;
   VECTOR_T da = {};
@@ -556,37 +688,6 @@ udResult udGeometry_CPSegmentSegment(const udSegment<T, R> &seg_a, const udSegme
   // if denom is zero, try finding closest point on segment1 to origin0
   if (udIsZero(denom))
   {
-    if (udIsZero(a)) //length of a is 0
-    {
-      if (udIsZero(c)) //length of b is also 0
-      {
-        pResult->u_a = T(0);
-        pResult->u_b = T(0);
-        pResult->cp_a = seg_a.p0;
-        pResult->cp_b = seg_b.p0;
-      }
-      else
-      {
-        CPPointSegmentResult<T, R> tempResult = {};
-        UD_ERROR_CHECK(udGeometry_CPPointSegment(seg_a.p0, seg_b, &tempResult));
-        pResult->cp_a = seg_a.p0;
-        pResult->cp_b = tempResult.point;
-        pResult->u_a = T(0);
-        pResult->u_b = tempResult.u;
-      }
-      UD_ERROR_SET_NO_BREAK(udR_Success);
-    }
-    else if (udIsZero(c)) //length of b is 0
-    {
-      CPPointSegmentResult<T, R> tempResult = {};
-      UD_ERROR_CHECK(udGeometry_CPPointSegment(seg_b.p0, seg_a, &tempResult));
-      pResult->cp_a = tempResult.point;
-      pResult->cp_b = seg_b.p0;
-      pResult->u_a = tempResult.u;
-      pResult->u_b = T(0);
-      UD_ERROR_SET_NO_BREAK(udR_Success);
-    }
-
     // clamp pResult->u_a to 0
     sd = td = c;
     sn = T(0);
@@ -717,28 +818,33 @@ epilogue:
 // ****************************************************************************
 // Author: Frank Hart, October 2021
 template<typename T>
-udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T> *pPolygon, size_t count, udGeometryCode *pCode)
+udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T> *pPoints, size_t count, udGeometryCode *pCode)
 {
   udResult result;
-  /*size_t total = 0;
-  udLine<T, 2> line = {};
-  line.CreateFromDirection(point, udVector3::create(T(1), T(0), T(0)));
-  for (size_t i = 0; i < count; i++)
+  size_t total = 0;
+  size_t _count = count;
+  udLine<T, 2> line_a = {};
+
+  UD_ERROR_NULL(pPoints, udR_InvalidParameter);
+  UD_ERROR_NULL(pCode, udR_InvalidParameter);
+
+  line_a.SetFromDirection(point, {T(1), T(0)});
+  for (size_t i = 0; i < _count; i++)
   {
-    j = (i + 1) % count;
-    udSegment<T, 2> seg;
-    seg.p0 = pPolygon[i];
-    seg.p1 = pPolygon[j];
+    size_t j = (i + 1) % count;
+    udLine<T, 2> line_b = {};
+    udCPLineLineResult<double, 2> data = {};
 
-    CPLineSegmentResult data = {};
-    UD_ERROR_CHECK(CPLineSegmentResult(line, seg, &data), result);
+    UD_ERROR_CHECK(line_b.SetFromEndPoints(pPoints[i], pPoints[j]));
+    UD_ERROR_CHECK(udGeometry_CPLineLine(line_a, line_b, &data));
 
-    if ((result.u_s > T(0) && result.u_s < T(1)) && u_l < T(0))
+    if ((data.u_b >= T(0) && (data.u_b * data.u_b) < (udMagSq(pPoints[i] - pPoints[j]) - udGetEpsilon<T>())) && data.u_a < T(0))
       total++;
   }
-
-  result = (total % 2 == 0) ? udR_CompletelyOutside : udR_CompletelyInside;
-epilogue:*/
+  
+  *pCode = (total % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
+  result = udR_Success;
+epilogue:
   return result;
 }
 
@@ -746,7 +852,7 @@ epilogue:*/
 // Author: Frank Hart, July 2020
 // Based on Real Time Collision Detection, Christer Ericson p184
 template<typename T>
-udResult udGeometry_FI3SegmentTriangle(const udSegment3<T> &seg, const udTriangle3<T> &tri, FI3SegmentTriangleResult<T> *pResult)
+udResult udGeometry_FI3SegmentTriangle(const udSegment3<T> &seg, const udTriangle3<T> &tri, udFI3SegmentTriangleResult<T> *pResult)
 {
   udResult result;
 
