@@ -66,6 +66,49 @@ TEST(GeometryTests, GeometryConstruction)
   EXPECT_EQ(tri.Set({1.0, 2.0, 3.1}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}), udR_Failure);
 }
 
+TEST(GeometryTests, Query_Ray_Plane)
+{
+  udFI3RayPlaneResult<double> result = {};
+  udPlane<double> plane = {};
+  udRay3<double> ray = {};
+
+  EXPECT_EQ(ray.SetFromDirection({1.0, 2.0, 3.0}, {1.0, 0.0, 0.0}), udR_Success);
+
+  //Ray not intersecting plane, pointing away from plane
+  EXPECT_EQ(plane.Set({-1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3RayPlane(ray, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_NotIntersecting);
+  EXPECT_EQ(result.u, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(result.point, ray.origin)));
+
+  //Ray not intersecting plane, parallel to plane
+  EXPECT_EQ(plane.Set({0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3RayPlane(ray, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_NotIntersecting);
+  EXPECT_EQ(result.u, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(result.point, ray.origin)));
+
+  //Ray lies on the plane
+  EXPECT_EQ(plane.Set({1.0, 2.0, 3.0}, {0.0, 1.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3RayPlane(ray, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_Coincident);
+  EXPECT_EQ(result.u, 0.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(result.point, ray.origin)));
+
+  //Ray intersects plane
+  EXPECT_EQ(plane.Set({3.0, 0.0, 0.0}, {1.0, 0.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3RayPlane(ray, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_Intersecting);
+  EXPECT_EQ(result.u, 2.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(result.point, udDouble3::create(3.0, 2.0, 3.0))));
+
+  //Ray intersects plane
+  EXPECT_EQ(plane.Set({6.0, 2.3, -5.6}, {-1.0, 0.0, 0.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3RayPlane(ray, plane, &result), udR_Success);
+  EXPECT_EQ(result.code, udGC_Intersecting);
+  EXPECT_EQ(result.u, 5.0);
+  EXPECT_TRUE((udAreEqual<double, 3>(result.point, udDouble3::create(6.0, 2.0, 3.0))));
+}
 TEST(GeometryTests, Query_Segment_Plane)
 {
   udFI3SegmentPlaneResult<double> result = {};

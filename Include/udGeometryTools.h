@@ -18,6 +18,7 @@ Notes:
  * A query with a degenerate type will have undefined behaviour
 */
 
+// These should be separate form udResult as they are not really error codes, but more describe the interaction between objects
 enum udGeometryCode
 {
   udGC_Success,
@@ -30,6 +31,7 @@ enum udGeometryCode
   udGC_CompletelyOutside,
 };
 
+// Many geometry queries can use the same algotirhm for both 2D and 3D, so we abstract away the dimension...
 #define udVector_t typename udSpace<T, R>::vector_t
 
 template<typename T, int R> struct udSpace;
@@ -176,6 +178,8 @@ template<typename T> T udGeometry_ScalarTripleProduct(const udVector3<T> &u, con
 // Compute the barycentric coordinates of a point wrt a triangle.
 template<typename T, int R> udResult udGeometry_Barycentric(const udTriangle<T, R> &tri, const udVector_t &p, udVector3<T> *pUVW);
 
+template<typename T> udResult SetRotationAround(const udRay3<T> & ray, const udVector3<T> & center, const udVector3<T> & axis, const T & angle, udRay3<T> *pOut);
+
 //--------------------------------------------------------------------------------
 // Distance Queries
 //--------------------------------------------------------------------------------
@@ -293,6 +297,15 @@ struct udFI3SegmentTriangleResult
   udVector3<T> point;
 };
 template<typename T> udResult udGeometry_FI3SegmentTriangle(const udSegment3<T> &seg, const udTriangle3<T> &tri, udFI3SegmentTriangleResult<T> *pResult);
+
+template<typename T>
+struct udFI3RayPlaneResult
+{
+  udGeometryCode code;
+  udVector3<T> point;
+  T u;
+};
+template<typename T> udResult udGeometry_FI3RayPlane(const udRay3<T> & ray, const udPlane<T> & plane, udFI3RayPlaneResult<T> * pResult);
 
 #include "udGeometryTools_Inl.h"
 

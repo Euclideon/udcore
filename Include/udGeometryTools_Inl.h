@@ -401,6 +401,28 @@ epilogue:
   return result;
 }
 
+template <typename T>
+udResult SetRotationAround(const udRay3<T> & ray, const udVector3<T> & center, const udVector3<T> & axis, const T & angle, udRay3<T> * pOut)
+{
+  udResult result;
+  udVector3<T> origin = {};
+  udVector3<T> direction = {};
+
+  UD_ERROR_NULL(pOut, udR_InvalidParameter);
+
+  udQuaternion<T> rotation = udQuaternion<T>::create(axis, angle);
+
+  udVector3<T> direction = ray.origin - center; // find current direction relative to center
+  origin = center + rotation.apply(direction); // define new position
+  direction = udDirectionFromYPR((rotation * udQuaternion<T>::create(udDirectionToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
+
+  UD_ERROR_CHECK(pOut->SetFromDirection(origin, direction));
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
 //--------------------------------------------------------------------------------
 // Distance Queries
 //--------------------------------------------------------------------------------
@@ -972,6 +994,50 @@ udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T,
     *pOut = tri.p0 + v01 * v + v02 * w;
 
   } while (false);
+
+  result = udR_Success;
+epilogue:
+  return result;
+}
+
+template<typename T>
+udResult udGeometry_FI3RayPlane(const udRay3<T> & ray, const udPlane<T> & plane, udFI3RayPlaneResult<T> * pResult)
+{
+  udResult result;
+  T denom;
+
+  UD_ERROR_NULL(pResult, udR_InvalidParameter);
+
+  denom = udDot(plane.normal, ray.direction);
+
+  //check if ray is parallel to plane
+  if (udIsZero(denom))
+  {
+    pResult->u = T(0);
+
+    //check if ray is on the plane
+    if (udIsZero(udGeometry_SignedDistance(plane, ray.origin)))
+      pResult->code = udGC_Coincident;
+    else
+      pResult->code = udGC_NotIntersecting;
+  }
+  else
+  {
+    pResult->u = (-(udDot(ray.origin, plane.normal) + plane.offset) / denom);
+
+    //ray points away from plane
+    if (pResult->u < T(0))
+    {
+      pResult->code = udGC_NotIntersecting;
+      pResult->u = T(0);
+    }
+    else
+    {
+      pResult->code = udGC_Intersecting;
+    }
+  }
+
+  pResult->point = ray.origin + pResult->u * ray.direction;
 
   result = udR_Success;
 epilogue:
