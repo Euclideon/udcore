@@ -59,6 +59,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Mars 2000 / ECEF",                      "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
   { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
+  { "DB_REF",                                "DB_REF",          "Deutsche_Bahn_Reference_System",               udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              5681, 1081, true,     false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -618,6 +619,20 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     udGeoZone_SetSpheroid(pZone);
     pZone->latLongBoundMin = udDouble2::create(pZone->parallel - 1.0, -2.0); // Longitude here not perfect, differs greatly in different zones
     pZone->latLongBoundMax = udDouble2::create(pZone->parallel + 1.0, 10.00);
+  }
+  else if (sridCode >= 5682 && sridCode <= 5685)
+  {
+    // DB_REF
+    pZone->datum = udGZGD_DBREF;
+    pZone->projection = udGZPT_TransverseMercator;
+    pZone->zone = sridCode - 5680; // Starts at zone 2
+    udSprintf(pZone->zoneName, "3-degree Gauss-Kruger zone %d (E-N)", pZone->zone);
+    pZone->meridian = 3.0 * pZone->zone;
+    pZone->parallel = 0;
+    pZone->falseEasting = 500000 + 1000000 * pZone->zone;
+    pZone->falseNorthing = 0;
+    pZone->scaleFactor = 1.0;
+    udGeoZone_SetSpheroid(pZone);
   }
   else //unordered codes
   {
