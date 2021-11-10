@@ -2,6 +2,7 @@
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udJSON.h"
+#include "udFile.h"
 
 const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   // WKT Sphere name      semiMajor    flattening           authority epsg
@@ -63,6 +64,140 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
+
+udChunkedArray<udGeoZone> g_InternalGeoZoneList = {};
+
+int udGeoZone_InternalIndexOf(int srid)
+{
+  int left = 0;
+  int right = (int)g_InternalGeoZoneList.length - 1;
+  int m = (left + right) / 2;
+  int compare = 0;
+
+  while (left <= right)
+  {
+    m = (left + right) / 2;
+    compare = g_InternalGeoZoneList[m].srid - srid;
+
+    if (compare < 0)
+      left = m + 1;
+    else if (compare > 0)
+      right = m - 1;
+    else
+      return m;
+  }
+
+  if (compare < 0)
+    return ~(m + 1);
+
+  return ~m;
+}
+
+udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pFailed)
+{
+  udResult result = udR_Failure;
+  udJSON zones = {};
+
+  int loaded = 0;
+  int mismatched = 0;
+  int failed = 0;
+
+  int highestLoaded = 0;
+  udChunkedArray<udJSONKVPair> *pMembers = nullptr;
+
+  if (g_InternalGeoZoneList.chunkCount == 0)
+    UD_ERROR_CHECK(g_InternalGeoZoneList.Init(64));
+
+  UD_ERROR_CHECK(zones.Parse(pJSONStr));
+  UD_ERROR_IF(!zones.IsObject(), udR_FormatVariationNotSupported);
+
+  if (g_InternalGeoZoneList.length > 0)
+    highestLoaded = g_InternalGeoZoneList[g_InternalGeoZoneList.length - 1].srid;
+
+  pMembers = zones.AsObject();
+  for (udJSONKVPair &item : *pMembers)
+  {
+    const udJSON *pWKT = &item.value;
+
+    const char *pOutputWKT = nullptr;
+    udGeoZone zone = {};
+
+    int expectedSRID = 0;
+    const char *pSRIDStr = nullptr;
+
+    if (!pWKT->IsString())
+    {
+      ++failed;
+      continue;
+    }
+
+    if (udGeoZone_SetFromWKT(&zone, pWKT->AsString()) != udR_Success)
+    {
+      ++failed;
+      continue;
+    }
+
+    pSRIDStr = udStrstr(item.pKey, 0, ":");
+    if (pSRIDStr != nullptr)
+      expectedSRID = udStrAtoi(pSRIDStr+1);
+    else
+      expectedSRID = udStrAtoi(item.pKey);
+
+    if (expectedSRID != zone.srid)
+    {
+      ++failed;
+      continue;
+    }
+
+    if (udGeoZone_GetWellKnownText(&pOutputWKT, zone) == udR_Success)
+    {
+      if (!udStrEquali(pWKT->AsString(), pOutputWKT))
+        ++mismatched; // This test is stupid because of all sorts of "valid" combinations here...
+
+      udFree(pOutputWKT);
+    }
+    else
+    {
+      ++mismatched;
+    }
+
+    if (zone.srid > highestLoaded)
+    {
+      g_InternalGeoZoneList.PushBack(zone);
+      highestLoaded = zone.srid;
+    }
+    else
+    {
+      int index = udGeoZone_InternalIndexOf(expectedSRID);
+
+      if (index >= 0) // Already exists? Might be a different authority?
+        UD_ERROR_SET(udR_Unsupported);
+      else
+        g_InternalGeoZoneList.Insert(~index, &zone);
+    }
+
+    ++loaded;
+  }
+
+  result = udR_Success;
+
+epilogue:
+  if (pLoaded != nullptr)
+    *pLoaded = loaded;
+
+  if (pFailed != nullptr)
+    *pFailed = failed;
+
+  return result;
+}
+
+udResult udGeoZone_UnloadZones()
+{
+  if (g_InternalGeoZoneList.chunkCount == 0)
+    return udR_Success;
+
+  return g_InternalGeoZoneList.Deinit();
+}
 
 udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllipsoidInfo &ellipsoid)
 {
@@ -1068,7 +1203,11 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       break;
 
     default:
-      return udR_NotFound;
+      int index = udGeoZone_InternalIndexOf(sridCode);
+      if (index >= 0)
+        *pZone = g_InternalGeoZoneList[index];
+      else
+        return udR_NotFound;
     }
   }
 
