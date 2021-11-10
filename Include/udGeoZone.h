@@ -151,6 +151,12 @@ struct udGeoZoneEllipsoidInfo
 extern const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
 extern const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count];
 
+// Loads a set of zones from a JSON file where each member is defined as "AUTHORITY:SRID" (eg. "EPSG:32756")
+udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pFailed);
+
+// Unloads all loaded zones (only needs to be called once to unload all)
+udResult udGeoZone_UnloadZones();
+
 // Find an appropriate SRID code for a given lat/long within UTM/WGS84 (for example as a default value)
 udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
 

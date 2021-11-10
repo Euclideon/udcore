@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 #include "udGeoZone.h"
 #include "udStringUtil.h"
+#include "udFile.h"
+#include "udPlatformUtil.h"
 
 // Don't forget to read this PDF!- http://www.epsg.org/Portals/0/373-07-2.pdf
 
@@ -15,6 +17,32 @@ TEST(udGeoZone, Init)
   udGeoZone_SetFromSRID(&zone1, 32756);
   udGeoZone_SetFromSRID(&zone2, 32756);
   EXPECT_EQ(0, memcmp(&zone1, &zone2, sizeof(zone1)));
+}
+
+TEST(udGeoZone, LoadingZones)
+{
+  const char *pFilename = "zip://testfiles/spatialref.zip:spatialref.json";
+  if (udFileExists("../../../testfiles/spatialref.zip") == udR_Success)
+    pFilename = "zip://../../../testfiles/spatialref.zip:spatialref.json";
+
+  const int ZoneIDInSpatialRefButNotEmbedded = 2121; // NZGD2000 / Hokitika 2000
+
+  const char *pBuffer = nullptr;
+  int64_t fsize = 0;
+  ASSERT_EQ(udR_Success, udFile_Load(pFilename, &pBuffer, &fsize)) << "Could not open spatial reference file";
+
+  udGeoZone zone = {};
+  EXPECT_EQ(udR_NotFound, udGeoZone_SetFromSRID(&zone, ZoneIDInSpatialRefButNotEmbedded)) << "This zone should exist in the spatial ref but doesn't exist in the embedded set";
+
+  int goodReads = 0;
+  int badReads = 0;
+  EXPECT_EQ(udR_Success, udGeoZone_LoadZonesFromJSON(pBuffer, &goodReads, &badReads));
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, ZoneIDInSpatialRefButNotEmbedded));
+  EXPECT_EQ(udR_Success, udGeoZone_UnloadZones());
+
+  EXPECT_EQ(udR_NotFound, udGeoZone_SetFromSRID(&zone, ZoneIDInSpatialRefButNotEmbedded)) << "This zone should now be unavailable again";
+
+  udFree(pBuffer);
 }
 
 TEST(udGeoZone, FindSRID)
