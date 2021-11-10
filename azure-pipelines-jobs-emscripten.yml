@@ -38,6 +38,7 @@ jobs:
       mkdir www
       cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
       cp udTest/udTest.html www
+      cp -r testfiles www/testfiles
       pushd www
       python3 -m http.server 8000 </dev/null &>/dev/null &
       popd
@@ -47,6 +48,7 @@ jobs:
       mkdir www
       cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
       cp udTest/udTest.html www
+      cp -r testfiles www/testfiles
       pushd www
       python3 -m http.server 8000 </dev/null &>/dev/null &
       popd
