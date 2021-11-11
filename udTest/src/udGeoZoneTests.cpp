@@ -21,15 +21,19 @@ TEST(udGeoZone, Init)
 
 TEST(udGeoZone, LoadingZones)
 {
+  const int ZoneIDInSpatialRefButNotEmbedded = 2121; // NZGD2000 / Hokitika 2000
+
+#if UDPLATFORM_EMSCRIPTEN
+  const char *pBuffer = udStrdup(R"json({"EPSG:2121":"PROJCS[\"NZGD2000 / Hokitika 2000\", GEOGCS[\"NZGD2000\", DATUM[\"New_Zealand_Geodetic_Datum_2000\", SPHEROID[\"GRS 1980\", 6378137, 298.257222101, AUTHORITY[\"EPSG\", \"7019\"]], TOWGS84[0, 0, 0, 0, 0, 0, 0], AUTHORITY[\"EPSG\", \"6167\"]], PRIMEM[\"Greenwich\", 0, AUTHORITY[\"EPSG\", \"8901\"]], UNIT[\"degree\", 0.0174532925199433, AUTHORITY[\"EPSG\", \"9122\"]], AUTHORITY[\"EPSG\", \"4167\"]], PROJECTION[\"Transverse_Mercator\"], PARAMETER[\"latitude_of_origin\", -42.88611111111111], PARAMETER[\"central_meridian\", 170.9797222222222], PARAMETER[\"scale_factor\", 1], PARAMETER[\"false_easting\", 400000], PARAMETER[\"false_northing\", 800000], UNIT[\"metre\", 1, AUTHORITY[\"EPSG\", \"9001\"]], AUTHORITY[\"EPSG\", \"2121\"]]"})json");
+#else
   const char *pFilename = "zip://testfiles/spatialref.zip:spatialref.json";
   if (udFileExists("../../../testfiles/spatialref.zip") == udR_Success)
     pFilename = "zip://../../../testfiles/spatialref.zip:spatialref.json";
 
-  const int ZoneIDInSpatialRefButNotEmbedded = 2121; // NZGD2000 / Hokitika 2000
-
   const char *pBuffer = nullptr;
   int64_t fsize = 0;
   ASSERT_EQ(udR_Success, udFile_Load(pFilename, &pBuffer, &fsize)) << "Could not open spatial reference file";
+#endif
 
   udGeoZone zone = {};
   EXPECT_EQ(udR_NotFound, udGeoZone_SetFromSRID(&zone, ZoneIDInSpatialRefButNotEmbedded)) << "This zone should exist in the spatial ref but doesn't exist in the embedded set";
@@ -121,8 +125,7 @@ TEST(udGeoZone, RoundTripPrecision)
     //{ 27700, 52.7545342, 0.2885422 }, // This test fails. See udGeoZone.OSGB below for a specific test for 27700 dataset, the InaccuracyScalar should be increased to 1.0 for this line to work
   };
 
-  size_t i = 0;
-  //for (size_t i = 0; i < UDARRAYSIZE(data); ++i)
+  for (size_t i = 0; i < udLengthOf(data); ++i)
   {
     EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, data[i].srid));
 
