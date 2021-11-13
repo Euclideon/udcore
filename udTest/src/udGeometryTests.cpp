@@ -585,10 +585,19 @@ TEST(GeometryTests, Query_Point_Polygon)
   // Point in triangle
   {
     udGeometryCode code;
-    udDouble2 points[] = { {-1.0, -1.0}, {-1.0, 1.0}, {1.0, 0.0} };
-    udDouble2 point = {0.0, 0.0};
+    udDouble2 points[] ={{-1.0, -1.0}, {-1.0, 1.0}, {1.0, 0.0}};
+    udDouble2 point ={0.0, 0.0};
     EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
     EXPECT_EQ(code, udGC_CompletelyInside);
+  }
+
+  // Point outside triangle
+  {
+    udGeometryCode code;
+    udDouble2 points[] ={{-1.0, -1.0}, {-1.0, 1.0}, {1.0, 0.0}};
+    udDouble2 point ={2.0, 1.0};
+    EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
+    EXPECT_EQ(code, udGC_CompletelyOutside);
   }
 
   // Point in triangle, point aligned with triangle vertex

@@ -839,56 +839,158 @@ epilogue:
 
 // ****************************************************************************
 // Author: Frank Hart, October 2021
+//template<typename T>
+//udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T> *pPoints, size_t count, udGeometryCode *pCode)
+//{
+//  udResult result;
+//  size_t total = 0;
+//  size_t _count = count;
+//  udLine<T, 2> line_a = {};
+//
+//  UD_ERROR_NULL(pPoints, udR_InvalidParameter);
+//  UD_ERROR_NULL(pCode, udR_InvalidParameter);
+//
+//  *pCode = udGC_Success;
+//
+//  line_a.SetFromDirection(point, {T(1), T(0)});
+//  for (size_t i = 0; i < _count; i++)
+//  {
+//    size_t j = (i + 1) % count;
+//    udLine<T, 2> line_b = {};
+//    udSegment<T, 2> seg_b = {};
+//    udCPLineLineResult<double, 2> lineLineRes = {};
+//    udCPPointSegmentResult<double, 2> segLineRes = {};
+//    bool intersects;
+//
+//    // Check if point is on the boundary 
+//    UD_ERROR_CHECK(seg_b.Set(pPoints[i], pPoints[j]));
+//    UD_ERROR_CHECK(udGeometry_CPPointSegment(point, seg_b, &segLineRes));
+//
+//    if (udIsZero(udMagSq(segLineRes.point - point)))
+//    {
+//      *pCode = udGC_OnBoundary;
+//      break;
+//    }
+//
+//    // Check is segment crosses line
+//    intersects = pPoints[i].y <= point.y && pPoints[j].y > point.y;
+//    intersects = intersects || (pPoints[i].y >= point.y && pPoints[j].y < point.y);
+//
+//    if (!intersects)
+//      continue;
+//
+//    // In-out test
+//    UD_ERROR_CHECK(line_b.SetFromEndPoints(pPoints[i], pPoints[j]));
+//    UD_ERROR_CHECK(udGeometry_CPLineLine(line_a, line_b, &lineLineRes)); // TODO should use a cheaper TI test
+//
+//    if (lineLineRes.u_a < T(0))
+//        total++;
+//  }
+//
+//  if (*pCode != udGC_OnBoundary)
+//    *pCode = (total % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
+//
+//  result = udR_Success;
+//epilogue:
+//  return result;
+//}
+
+// ****************************************************************************
+// Adapted from "Optimal Reliable Point-in-Polygon Test and Differential Coding Boolean Operations on Polygons"
+// Authors: Jianqiang Hao, Jianzhi Sun, Yi Chen, Qiang Cai and Li Tan
 template<typename T>
-udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T> *pPoints, size_t count, udGeometryCode *pCode)
+udResult udGeometry_TI2PointPolygon(const udVector2<T> & point, const udVector2<T> * pPoints, size_t count, udGeometryCode * pCode)
 {
   udResult result;
-  size_t total = 0;
-  size_t _count = count;
-  udLine<T, 2> line_a = {};
+
+  size_t k = 0;
+  T f = T(0);
+  T u1 = T(0);
+  T v1 = T(0);
+  T u2 = T(0);
+  T v2 = T(0);
 
   UD_ERROR_NULL(pPoints, udR_InvalidParameter);
   UD_ERROR_NULL(pCode, udR_InvalidParameter);
 
-  *pCode = udGC_Success;
-
-  line_a.SetFromDirection(point, {T(1), T(0)});
-  for (size_t i = 0; i < _count; i++)
+  for (size_t i = 0; i < count; i++)
   {
     size_t j = (i + 1) % count;
-    udLine<T, 2> line_b = {};
-    udSegment<T, 2> seg_b = {};
-    udCPLineLineResult<double, 2> lineLineRes = {};
-    udCPPointSegmentResult<double, 2> segLineRes = {};
-    bool intersects;
+    T xi = pPoints[i].x;
+    T yi = pPoints[i].y;
+    T xj = pPoints[j].x;
+    T yj = pPoints[j].y;
 
-    // Check if point is on the boundary 
-    UD_ERROR_CHECK(seg_b.Set(pPoints[i], pPoints[j]));
-    UD_ERROR_CHECK(udGeometry_CPPointSegment(point, seg_b, &segLineRes));
+    v1 = yi - point.y;
+    v2 = yj - point.y;
 
-    if (udIsZero(udMagSq(segLineRes.point - point)))
-    {
-      *pCode = udGC_OnBoundary;
-      break;
-    }
-
-    // Check is segment crosses line
-    intersects = pPoints[i].y <= point.y && pPoints[j].y > point.y;
-    intersects = intersects || (pPoints[i].y >= point.y && pPoints[j].y < point.y);
-
-    if (!intersects)
+    if (((v1 < T(0)) && (v2 < T(0))) || ((v1 > T(0)) && (v2 > T(0))))
       continue;
 
-    // In-out test
-    UD_ERROR_CHECK(line_b.SetFromEndPoints(pPoints[i], pPoints[j]));
-    UD_ERROR_CHECK(udGeometry_CPLineLine(line_a, line_b, &lineLineRes)); // TODO should use a cheaper TI test
+    u1 = xi - point.x;
+    u2 = xj - point.x;
 
-    if (lineLineRes.u_a < T(0))
-        total++;
+    if ((v2 > T(0)) && (v1 <= T(0)))
+    {
+      f = u1 * v2 - u2 * v1;
+      if (f > 0)
+      {
+        k++;
+      }
+      else if (f == 0)
+      {
+        *pCode = udGC_OnBoundary;
+        break;
+      }
+    }
+    else if ((v1 > T(0)) && (v2 <= T(0)))
+    {
+      f = u1 * v2 - u2 * v1;
+      if (f < 0)
+      {
+        k++;
+      }
+      else if (f == 0)
+      {
+        *pCode = udGC_OnBoundary;
+        break;
+      }
+    }
+    else if ((v2 == T(0)) && (v1 < T(0)))
+    {
+      f = u1 * v2 - u2 * v1;
+      if (f == 0)
+      {
+        *pCode = udGC_OnBoundary;
+        break;
+      }
+    }
+    else if ((v1 == T(0)) && (v2 < T(0)))
+    {
+      f = u1 * v2 - u2 * v1;
+      if (f == 0)
+      {
+        *pCode = udGC_OnBoundary;
+        break;
+      }
+    }
+    else if ((v1 == T(0)) && (v2 == T(0)))
+    {
+      if ((u2 <= T(0)) && (u1 >= T(0)))
+      {
+        *pCode = udGC_OnBoundary;
+        break;
+      }
+      else if ((u1 <= T(0)) && (u2 >= T(0)))
+      {
+        *pCode = udGC_OnBoundary;
+        break;
+      }
+    }
   }
 
   if (*pCode != udGC_OnBoundary)
-    *pCode = (total % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
+    *pCode = (k % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
 
   result = udR_Success;
 epilogue:
