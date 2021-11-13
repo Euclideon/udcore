@@ -913,6 +913,8 @@ udResult udGeometry_TI2PointPolygon(const udVector2<T> & point, const udVector2<
   UD_ERROR_NULL(pPoints, udR_InvalidParameter);
   UD_ERROR_NULL(pCode, udR_InvalidParameter);
 
+  *pCode = udGC_Success;
+
   for (size_t i = 0; i < count; i++)
   {
     size_t j = (i + 1) % count;

@@ -284,13 +284,8 @@ template<typename T, int R> udResult udGeometry_CPPointTriangle(const udVector_t
 
 // Intersection test between line segment and triangle.
 //
-// If the segment does not lie on the plane of the triangle
-//   Returns: udGC_Intersecting, intersect0 set
+//   Returns: udGC_Intersecting
 //            udGC_NotIntersecting
-//
-// If the segment lies on the plane of the triangle
-//   Returns: udGC_Intersecting, intersect0 and intersect1 set (intersection will be a segment)
-//            udGC_NotIntersectingtemplate<typename T, int R>
 template<typename T>
 struct udFI3SegmentTriangleResult
 {
