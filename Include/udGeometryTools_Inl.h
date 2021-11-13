@@ -850,21 +850,46 @@ udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T
   UD_ERROR_NULL(pPoints, udR_InvalidParameter);
   UD_ERROR_NULL(pCode, udR_InvalidParameter);
 
+  *pCode = udGC_Success;
+
   line_a.SetFromDirection(point, {T(1), T(0)});
   for (size_t i = 0; i < _count; i++)
   {
     size_t j = (i + 1) % count;
     udLine<T, 2> line_b = {};
-    udCPLineLineResult<double, 2> data = {};
+    udSegment<T, 2> seg_b = {};
+    udCPLineLineResult<double, 2> lineLineRes = {};
+    udCPPointSegmentResult<double, 2> segLineRes = {};
+    bool intersects;
 
+    // Check if point is on the boundary 
+    UD_ERROR_CHECK(seg_b.Set(pPoints[i], pPoints[j]));
+    UD_ERROR_CHECK(udGeometry_CPPointSegment(point, seg_b, &segLineRes));
+
+    if (udIsZero(udMagSq(segLineRes.point - point)))
+    {
+      *pCode = udGC_OnBoundary;
+      break;
+    }
+
+    // Check is segment crosses line
+    intersects = pPoints[i].y <= point.y && pPoints[j].y > point.y;
+    intersects = intersects || (pPoints[i].y >= point.y && pPoints[j].y < point.y);
+
+    if (!intersects)
+      continue;
+
+    // In-out test
     UD_ERROR_CHECK(line_b.SetFromEndPoints(pPoints[i], pPoints[j]));
-    UD_ERROR_CHECK(udGeometry_CPLineLine(line_a, line_b, &data));
+    UD_ERROR_CHECK(udGeometry_CPLineLine(line_a, line_b, &lineLineRes)); // TODO should use a cheaper TI test
 
-    if ((data.u_b >= T(0) && (data.u_b * data.u_b) < (udMagSq(pPoints[i] - pPoints[j]) - udGetEpsilon<T>())) && data.u_a < T(0))
-      total++;
+    if (lineLineRes.u_a < T(0))
+        total++;
   }
-  
-  *pCode = (total % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
+
+  if (*pCode != udGC_OnBoundary)
+    *pCode = (total % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
+
   result = udR_Success;
 epilogue:
   return result;

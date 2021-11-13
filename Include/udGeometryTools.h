@@ -29,6 +29,7 @@ enum udGeometryCode
   udGC_NotIntersecting,
   udGC_CompletelyInside,
   udGC_CompletelyOutside,
+  udGC_OnBoundary,
 };
 
 // Many geometry queries can use the same algotirhm for both 2D and 3D, so we abstract away the dimension...
