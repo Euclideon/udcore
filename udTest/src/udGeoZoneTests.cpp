@@ -279,6 +279,27 @@ TEST(udGeoZone, HongKongGrid)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+
+TEST(udGeoZone, ETRS89)
+{
+  udDouble3 latLong = udDouble3::create(48.520804, 0.040925, 0.0);
+
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 4936)); // ETRS89 EPSG:4936
+  EXPECT_EQ(geoZone.datum, udGZGD_ETRS89);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  EXPECT_EQ(udRound(4232504.94 * localPrecision), udRound(pos.x * localPrecision));
+  EXPECT_EQ(udRound(3023.18 * localPrecision), udRound(pos.y * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, Lambert93)
 {
   // Test is from https://moonbooks.org/Articles/How-to-convert-Lambert-93-to-longitude-and-latitude-with-python-3/
@@ -699,6 +720,8 @@ struct
   { 4552, "PROJCS[\"CGCS2000 / 3-degree Gauss-Kruger CM 129E\",\nGEOGCS[\"China Geodetic Coordinate System 2000\",\nDATUM[\"China_2000\",\nSPHEROID[\"CGCS2000\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"1024\"]],\nAUTHORITY[\"EPSG\",\"1043\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4490\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",129],\nPARAMETER[\"scale_factor\",1],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"4552\"]]" },
   { 4553, "PROJCS[\"CGCS2000 / 3-degree Gauss-Kruger CM 132E\",\nGEOGCS[\"China Geodetic Coordinate System 2000\",\nDATUM[\"China_2000\",\nSPHEROID[\"CGCS2000\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"1024\"]],\nAUTHORITY[\"EPSG\",\"1043\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4490\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",132],\nPARAMETER[\"scale_factor\",1],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"4553\"]]" },
   { 4554, "PROJCS[\"CGCS2000 / 3-degree Gauss-Kruger CM 135E\",\nGEOGCS[\"China Geodetic Coordinate System 2000\",\nDATUM[\"China_2000\",\nSPHEROID[\"CGCS2000\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"1024\"]],\nAUTHORITY[\"EPSG\",\"1043\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4490\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",135],\nPARAMETER[\"scale_factor\",1],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"4554\"]]" },
+
+  { 4936, "GEOCCS[\"ETRS89\",\nDATUM[\"European_Terrestrial_Reference_System_1989\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6258\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH],\nAUTHORITY[\"EPSG\",\"4936\"]]"},
 
   { 4978, "GEOCCS[\"WGS 84\",\nDATUM[\"WGS_1984\",\nSPHEROID[\"WGS 84\",6378137,298.257223563,\nAUTHORITY[\"EPSG\",\"7030\"]],\nAUTHORITY[\"EPSG\",\"6326\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH],\nAUTHORITY[\"EPSG\",\"4978\"]]" },
 
