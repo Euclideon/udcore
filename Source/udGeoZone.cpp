@@ -1042,6 +1042,17 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-90, -180);
       pZone->latLongBoundMax = udDouble2::create(90, 180);
       break;
+    case 4936: // ETRS89
+      pZone->datum = udGZGD_ETRS89;
+      pZone->projection = udGZPT_ECEF;
+      pZone->zone = 0;
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 1.0;
+      udStrcpy(pZone->zoneName, "");
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(34.5, -10.67);
+      pZone->latLongBoundMax = udDouble2::create(71.05, 31.55);
+      break;
     case 4978: // ECEF
       pZone->datum = udGZGD_WGS84;
       pZone->projection = udGZPT_ECEF;

@@ -36,7 +36,7 @@ enum udGeoZoneGeodeticDatum
 {
   udGZGD_WGS84,      //EPSG:4326
   udGZGD_ED50,       //EPSG:4230
-  udGZGD_ETRS89,     //EPSG:4258
+  udGZGD_ETRS89,     //EPSG:4258,4936
   udGZGD_TM75,       //EPSG:4300
   udGZGD_NAD27,      //EPSG:4267
   udGZGD_NAD83,      //EPSG:4269
