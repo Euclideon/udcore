@@ -430,6 +430,28 @@ TEST(udGeoZone, WebMercator)
   }
 }
 
+TEST(udGeoZone, Krovak)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.31-33
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 8353 : S-JTSK [JTSK03]
+
+  udDouble3 latLong = udDouble3::create(50.20901167, 16.84977194, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 8353)); // Amersfoort
+  EXPECT_EQ(geoZone.datum, udGZGD_SJTSK03);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  //EXPECT_EQ(udRound(pos.x * localPrecision), udRound(-1050538.64 * localPrecision));
+  //EXPECT_EQ(udRound(pos.y * localPrecision), udRound(-568991.00 * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, OSGB)
 {
   // 27700 - UK
@@ -539,6 +561,7 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_MERC/ // These are derived from our own code and are not to be trusted
     { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_PCPF/ // These are derived from our own code and are not to be trusted
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_DBREF / EPSG:5681
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_SJTK03 / EPSG:8353
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
@@ -767,6 +790,9 @@ struct
   { 7857, "PROJCS[\"GDA2020 / MGA zone 57\",\nGEOGCS[\"GDA2020\",\nDATUM[\"Geocentric_Datum_of_Australia_2020\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nAUTHORITY[\"EPSG\",\"1168\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"7844\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",159],\nPARAMETER[\"scale_factor\",0.9996],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",10000000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Easting\",EAST],\nAXIS[\"Northing\",NORTH],\nAUTHORITY[\"EPSG\",\"7857\"]]" },
   { 7858, "PROJCS[\"GDA2020 / MGA zone 58\",\nGEOGCS[\"GDA2020\",\nDATUM[\"Geocentric_Datum_of_Australia_2020\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nAUTHORITY[\"EPSG\",\"1168\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"7844\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",165],\nPARAMETER[\"scale_factor\",0.9996],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",10000000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Easting\",EAST],\nAXIS[\"Northing\",NORTH],\nAUTHORITY[\"EPSG\",\"7858\"]]" },
   { 7859, "PROJCS[\"GDA2020 / MGA zone 59\",\nGEOGCS[\"GDA2020\",\nDATUM[\"Geocentric_Datum_of_Australia_2020\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nAUTHORITY[\"EPSG\",\"1168\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"7844\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",171],\nPARAMETER[\"scale_factor\",0.9996],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",10000000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Easting\",EAST],\nAXIS[\"Northing\",NORTH],\nAUTHORITY[\"EPSG\",\"7859\"]]" },
+
+    // Made up WKT for 8353 (latitude of origin should also be 78.5000000000003)
+  { 8353, "PROJCS[\"JTSK03\",\nGEOGCS[\"System of the Unified Trigonometrical Cadastral Network [JTSK03]\",\nDATUM[\"S-JTSK [JTSK03]\",\nSPHEROID[\"Bessel 1841\",6377397.155,299.1528128,\nAUTHORITY[\"EPSG\",\"7004\"]],\nAUTHORITY[\"EPSG\",\"8351\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"8353\"]],\nPROJECTION[\"Krovak (North Orientated)\"],\nPARAMETER[\"latitude_projection_centre\",49.5000000000003],\nPARAMETER[\"latitude_of_origin\",78.5],\nPARAMETER[\"colatitude_cone_axis\",30.2881397527781],\nPARAMETER[\"central_meridian\",24.8333333333336],\nPARAMETER[\"scale_factor\",0.9999],\nPARAMETER[\"false_easting\",0],\nPARAMETER[\"false_northing\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Easting(X)\",east],AXIS[\"Northing(Y)\",north],\nAUTHORITY[\"EPSG\",\"8353\"]]" },
 
   { 8705, "GEOCCS[\"Mars 2000 / ECEF\",\nDATUM[\"D_Mars_2000\",\nSPHEROID[\"Mars_2000_IAU_IAG\",3396190,169.894447224,\nAUTHORITY[\"EPSG\",\"49900\"]],\nAUTHORITY[\"EPSG\",\"490001\"]],\nPRIMEM[\"AIRY-0\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH],\nAUTHORITY[\"EPSG\",\"8705\"]]"},
 
