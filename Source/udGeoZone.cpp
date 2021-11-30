@@ -61,6 +61,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
   { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
   { "DB_REF",                                "DB_REF",          "Deutsche_Bahn_Reference_System",               udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              5681, 1081, true,     false },
+  { "System of the Unified Trigonometrical Cadastral Network [JTSK03]", "JTSK03", "S-JTSK [JTSK03]",            udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              8353, 8351, true,     false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -1096,6 +1097,22 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-43.7, 112.85);
       pZone->latLongBoundMax = udDouble2::create(-9.86, 153.69);
       break;
+    case 8353: // Slovakia Krovak
+      pZone->datum = udGZGD_SJTSK03;
+      pZone->projection = udGZPT_KrovakNorthOrientated;
+      pZone->zone = 0;
+      udStrcpy(pZone->zoneName, "JTSK03");
+      pZone->latProjCentre = 49.5000000000003;
+      pZone->coLatConeAxis = 30.2881397527781;
+      pZone->meridian = 24.8333333333336;
+      pZone->parallel = 78.5; //78.5000000000003
+      pZone->falseNorthing = 0;
+      pZone->falseEasting = 0;
+      pZone->scaleFactor = 0.9999;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(1.13, 103.59);
+      pZone->latLongBoundMax = udDouble2::create(1.47, 104.07);
+      break;
     case 8705: // Mars PF
       pZone->datum = udGZGD_MARS_PCPF;
       pZone->projection = udGZPT_ECEF;
@@ -1304,6 +1321,10 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->firstParallel = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "standard_parallel_2"))
         pZone->secondParallel = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "colatitude_cone_axis"))
+        pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "latitude_projection_centre"))
+        pZone->latProjCentre = wkt->Get("%s.values[0]", pElem).AsDouble();
     }
     else if (udStrEqual(pType, "UNIT"))
     {
@@ -1459,6 +1480,18 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->projection = udGZPT_SterographicPolar_vB;
           if (pZone->scaleFactor == 0) // default for Polar Stereo is 1.0
             pZone->scaleFactor = 1.0;
+      }
+      else if (udStrstr(pName, 0, "Krovak (North Orientated)"))
+      {
+        pZone->projection = udGZPT_KrovakNorthOrientated;
+        if (pZone->scaleFactor == 0) // default for Krovak
+          pZone->scaleFactor = 0.9999;
+      }
+      else if (udStrstr(pName, 0, "Krovak"))
+      {
+        pZone->projection = udGZPT_SterographicPolar_vB;
+        if (pZone->scaleFactor == 0) // default for Krovak
+          pZone->scaleFactor = 0.999;
       }
     }
     else if (udStrEqual(pType, "SPHEROID"))
@@ -1617,6 +1650,18 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
+  else if (zone.projection == udGZPT_Krovak)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Krovak\"],\nPARAMETER[\"latitude_projection_centre\",%s],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"colatitude_cone_axis\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_KrovakNorthOrientated)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Krovak (North Orientated)\"],\nPARAMETER[\"latitude_projection_centre\",%s],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"colatitude_cone_axis\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
   if (pDesc->exportAxisInfo)
@@ -1628,6 +1673,10 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
       udSprintf(&pWKTProjection, "AXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH]");
     else if (zone.projection == udGZPT_LambertConformalConic2SP || zone.projection == udGZPT_WebMercator || zone.projection == udGZPT_CassiniSoldner || zone.projection == udGZPT_SterographicObliqueNEquatorial)
       udSprintf(&pWKTProjection, "%s,\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH]", pWKTProjection);
+    else if (zone.projection == udGZPT_Krovak)
+      udSprintf(&pWKTProjection, "%s,\nAXIS[\"latitude(Lat)\",north],AXIS[\"longitude(Lon)\",east]", pWKTProjection);
+    else if (zone.projection == udGZPT_KrovakNorthOrientated)
+      udSprintf(&pWKTProjection, "%s,\nAXIS[\"Easting(X)\",east],AXIS[\"Northing(Y)\",north]", pWKTProjection);
   }
 
   // Hong Kong doesn't seem to have actual zones, so we detect by testing if short name and zone name are the same
@@ -1927,6 +1976,42 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(E, N, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_Krovak || zone.projection == udGZPT_KrovakNorthOrientated)
+  {
+    double phiC = UD_DEG2RAD(zone.latProjCentre); // latitude of projection centre
+    double alphaC = UD_DEG2RAD(zone.coLatConeAxis);// rotation in plane of meridian of origin || co latitude of the cone axis
+    double phiP = UD_DEG2RAD(zone.parallel); // latitude of pseudo standard parallel
+    double kP = zone.scaleFactor; // scale factor on pseudo standard parallel
+    double lambda0 = UD_DEG2RAD(zone.meridian);
+    phi = UD_DEG2RAD(phi);
+
+    double a = zone.semiMajorAxis;
+    double eSq = zone.eccentricitySq;
+
+    double A = a * udSqrt(1 - eSq) / (1 - eSq * udPow(udSin(phiC), 2));
+    double B = udSqrt(1 + (eSq * udPow(udCos(phiC), 4) / (1 - eSq)));
+    double gamma0 = udASin(udSin(phiC) / B);
+    double t0 = udTan(UD_PI / 4.0 + gamma0 / 2.0) * udPow((1 + e * udSin(phiC)) / (1 - e * udSin(phiC)), e * B / 2.0) / udPow(udTan(UD_PI / 4.0 + phiC / 2.0), B);
+    double n = udSin(phiP);
+    double r0 = kP * A / udTan(phiP);
+
+    double U = 2.0 * (udATan(t0 * udPow(udTan(phi / 2 + UD_PI / 4.0), B) / udPow((1 + e * udSin(phi)) / (1 - e * udSin(phi)), e * B / 2.0)) - UD_PI / 4.0);
+    double V = B * (lambda0 - UD_DEG2RAD(omega));
+    double T = udASin(udCos(alphaC) * udSin(U) + udSin(alphaC) * udCos(U) * udCos(V));
+    double D = udASin(udCos(U) * udSin(V) / udCos(T));
+    double theta = n * D;
+    double r = r0 * udPow(udTan(UD_PI / 4.0 + phiP / 2.0), n) / udPow(udTan(T / 2.0 + UD_PI / 4.0), n);
+    double Xp = r * udCos(theta);
+    double Yp = r * udSin(theta);
+
+    double W = Yp + zone.falseEasting;
+    double S = Xp + zone.falseNorthing;
+
+    if (zone.projection == udGZPT_KrovakNorthOrientated)
+      return udDouble3::create(-S, -W, ellipsoidHeight);
+
+    return udDouble3::create(S, W, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -2166,6 +2251,54 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
       if (isNorthPole) // north pole
         latLong.y = zone.meridian + UD_RAD2DEG(udATan2(zone.falseEasting - position.x, zone.falseNorthing - position.y));
     }
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_Krovak || zone.projection == udGZPT_KrovakNorthOrientated)
+  {
+    double southing = position.x;
+    double westing = position.y;
+    if (zone.projection == udGZPT_KrovakNorthOrientated)
+    {
+      southing *= -1.0;
+      westing *= -1.0;
+    }
+
+    double phiC = UD_DEG2RAD(zone.latProjCentre); // latitude of projection centre
+    double alphaC = UD_DEG2RAD(zone.coLatConeAxis);// rotation in plane of meridian of origin || co latitude of the cone axis
+    double phiP = UD_DEG2RAD(zone.parallel); // latitude of pseudo standard parallel
+    double kP = zone.scaleFactor; // scale factor on pseudo standard parallel
+
+    double a = zone.semiMajorAxis;
+    double eSq = zone.eccentricitySq;
+
+    double A = a * udSqrt(1 - eSq) / (1 - eSq * udPow(udSin(phiC), 2));
+    double B = udSqrt(1 + (eSq * udPow(udCos(phiC), 4) / (1 - eSq)));
+    double gamma0 = udASin(udSin(phiC) / B);
+    double t0 = udTan(UD_PI / 4.0 + gamma0 / 2.0) * udPow((1 + e * udSin(phiC)) / (1 - e * udSin(phiC)), e * B / 2.0) / udPow(udTan(UD_PI / 4.0 + phiC / 2.0), B);
+    double n = udSin(phiP);
+    double r0 = kP * A / udTan(phiP);
+
+    double Xpp = southing - zone.falseNorthing;
+    double Ypp = westing - zone.falseEasting;
+
+    double rP = udSqrt(udPow(Xpp, 2) + udPow(Ypp, 2));
+    double thetaP = udATan2(Ypp, Xpp);
+    double Dp = thetaP / udSin(phiP);
+    double Tp = 2 * (udATan(udPow(r0 / rP, 1.0 / n) * udTan(UD_PI / 4.0 + phiP / 2.0)) - UD_PI / 4.0);
+    double Up = udASin(udCos(alphaC) * udSin(Tp) - udSin(alphaC) * udCos(Tp) * udCos(Dp));
+    double Vp = udASin(udCos(Tp) * udSin(Dp) / udCos(Up));
+
+    double phi = Up;
+    double phiTmp = 2 * (udATan(udPow(t0, -1.0 / B) * udPow(udTan(Up / 2.0 + UD_PI / 4.0), 1.0 / B) * udPow((1.0 + e * udSin(phi)), e / 2.0)) - UD_PI / 4.0);
+    double epsilon = udPow(10.0, -14.0);
+    while (fabs(phi - phiTmp) > epsilon && !isnan(phi))
+    {
+      phi = phiTmp;
+      phiTmp = 2 * (udATan(udPow(t0, -1.0 / B) * udPow(udTan(Up / 2.0 + UD_PI / 4.0), 1.0 / B) * udPow((1.0 + e * udSin(phi)), e / 2.0)) - UD_PI / 4.0);
+    }
+
+    latLong.x = UD_RAD2DEG(phi);
+    latLong.y = UD_RAD2DEG(UD_DEG2RAD(zone.meridian) - Vp / B);
     latLong.z = position.z;
   }
 
