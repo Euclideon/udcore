@@ -1489,7 +1489,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       }
       else if (udStrstr(pName, 0, "Krovak"))
       {
-        pZone->projection = udGZPT_SterographicPolar_vB;
+        pZone->projection = udGZPT_Krovak;
         if (pZone->scaleFactor == 0) // default for Krovak
           pZone->scaleFactor = 0.999;
       }
