@@ -1230,13 +1230,8 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
     {
       // Directory creation succeeded on a sub-path, replace truncation character and move forward
       pPath[currPathLen++] = truncChar;
-      while (currPathLen != fullPathLen && (pPath[currPathLen] != '\\' && pPath[currPathLen] != '/'))
+      while (currPathLen != fullPathLen && pPath[currPathLen] != '\0')
         ++currPathLen;
-      if (currPathLen != fullPathLen)
-      {
-        truncChar = pPath[currPathLen];
-        pPath[currPathLen] = 0;
-      }
     }
     else
     {
