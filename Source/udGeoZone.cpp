@@ -153,6 +153,9 @@ udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pF
     if (udGeoZone_SetFromWKT(&zone, pWKT->AsString()) != udR_Success)
     {
       ++failed;
+#if UD_DEBUG
+      udDebugPrintf("%s\n", pWKT->AsString());
+#endif
       continue;
     }
 
@@ -1398,6 +1401,10 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "rectified_grid_angle"))
         pZone->parallel = wkt->Get("%s.values[0]", pElem).AsDouble();
+#if UD_DEBUG
+      else
+        udDebugPrintf("Unknown PARAMETER: %s\n", pName);
+#endif
     }
     else if (udStrEqual(pType, "UNIT"))
     {
@@ -1460,7 +1467,8 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         }
       }
 
-      for (int j = 0; j < udGZGD_Count; ++j)
+      int j = 0;
+      for (j = 0; j < udGZGD_Count; ++j)
       {
         if (udStrEqual(g_udGZ_GeodeticDatumDescriptors[j].pFullName, pName))
         {
@@ -1469,6 +1477,11 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
           break;
         }
       }
+
+#if UD_DEBUG
+      if (j == udGZGD_Count)
+        udDebugPrintf("Unknown Datum: %s\n", pName);
+#endif
     }
     else if (udStrEqual(pType, "GEOCCS"))
     {
@@ -1590,6 +1603,12 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for EquiCylindrical is 1.0
           pZone->scaleFactor = 1.0;
       }
+#if UD_DEBUG
+      else
+      {
+        udDebugPrintf("Unsupported Projection: %s\n", pName);
+      }
+#endif
     }
     else if (udStrEqual(pType, "SPHEROID"))
     {
