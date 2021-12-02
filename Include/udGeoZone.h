@@ -40,6 +40,8 @@ enum udGeoZoneGeodeticDatum
   udGZGD_TM75,       //EPSG:4300
   udGZGD_NAD27,      //EPSG:4267
   udGZGD_NAD83,      //EPSG:4269
+  udGZGD_NAD83_1996, //EPSG:6307
+  udGZGD_NAD83_CSRS, //EPSG:2955
   udGZGD_NAD83_2011, //EPSG:6318
   udGZGD_NTF,        //EPSG:4275
   udGZGD_OSGB36,     //EPSG:4277
