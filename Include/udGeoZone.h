@@ -73,6 +73,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_SJTSK03,    //EPSG:8353
   udGZGD_PULK1942,   //EPSG:4284
   udGZGD_PULK1995,   //EPSG:20004
+  udGZGD_WGS_72BE,   //EPSG:32401
 
   udGZGD_Count
 };
