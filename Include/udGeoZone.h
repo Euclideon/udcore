@@ -74,6 +74,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_PULK1942,   //EPSG:4284
   udGZGD_PULK1995,   //EPSG:20004
   udGZGD_WGS_72BE,   //EPSG:32401
+  udGZGD_BEIJING1954,//EPSG:21413
 
   udGZGD_Count
 };
