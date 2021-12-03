@@ -22,6 +22,7 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Everest 1830 Modified",6377304.063, 1.0 / 300.8017,    7018 }, // udGZE_Everest1930M
   { "Mars_2000_IAU_IAG",  3396190.000, 1.0 / 169.894447224, 49900 },// udGZE_MARS
   { "Moon_2000_IAU_IAG",  1737400.000, 0.0,                 39064 },// udGZE_MOON
+  { "IAG 1975",           6378140.000, 1.0 / 298.257,       7049 }, // udGZE_IAG1975
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -69,6 +70,8 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Pulkovo 1995",                          "Pulkovo_1995",    "Pulkovo_1995",                                 udGZE_Krassowsky1940,{ 24.47, -130.89, -81.56, 0, 0, 0.13, -0.22 },                      20004, 4200, true,    true  },
   { "WGS 72BE",                              "WGS_72BE",        "WGS_1972_Transit_Broadcast_Ephemeris",         udGZE_WGS72,         { 0, 0, 1.9, 0, 0, 0.814, -0.38 },                                  4324, 6324, true,     true  },
   { "Beijing 1954",                          "Beijing_1954",    "Beijing_1954",                                 udGZE_Krassowsky1940,{ 15.8, -154.4, -82.3, 0, 0, 0, 0 },                                4214, 6214, false,    true  },
+  { "New Beijing",                           "New_Beijing",     "New_Beijing",                                  udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4555, 1045, false,    false },
+  { "Xiang 1980",                            "Xiang_1980",      "Xiang_1980",                                   udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
