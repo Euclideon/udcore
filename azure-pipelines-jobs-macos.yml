@@ -7,7 +7,7 @@ jobs:
 - job: ${{ parameters.name }}
   displayName: ${{ parameters.displayName }}
   pool:
-    vmImage: 'macOS-latest'
+    vmImage: 'macOS-10.15'
   strategy:
     matrix:
       Debug:
