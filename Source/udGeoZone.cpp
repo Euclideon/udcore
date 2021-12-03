@@ -71,7 +71,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "WGS 72BE",                              "WGS_72BE",        "WGS_1972_Transit_Broadcast_Ephemeris",         udGZE_WGS72,         { 0, 0, 1.9, 0, 0, 0.814, -0.38 },                                  4324, 6324, true,     true  },
   { "Beijing 1954",                          "Beijing_1954",    "Beijing_1954",                                 udGZE_Krassowsky1940,{ 15.8, -154.4, -82.3, 0, 0, 0, 0 },                                4214, 6214, false,    true  },
   { "New Beijing",                           "New_Beijing",     "New_Beijing",                                  udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4555, 1045, false,    false },
-  { "Xiang 1980",                            "Xiang_1980",      "Xiang_1980",                                   udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
+  { "Xian 1980",                             "Xian_1980",       "Xian_1980",                                    udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
