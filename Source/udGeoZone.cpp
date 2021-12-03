@@ -57,7 +57,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Amersfoort",                            "Amersfoort",      "Amersfoort",                                   udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4289, 6289, true,     false },
   { "Trinidad 1903",                         "Trinidad_1903",   "Trinidad_1903",                                udGZE_Clarke1858,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4302, 6302, true,     false },
   { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua_Levu_1915",                              udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         4748, 6748, false,    true  },
-  { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 28,-121,-77,0,0,0,0 },                                            4317, 6317, false,    true  },
+  { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 28,-121,-77, 0, 0, 0, 0 },                                        4317, 6317, false,    true  },
   { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,    false },
   { "Mars 2000 Mercator",                    "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
   { "Mars 2000 / ECEF",                      "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
@@ -65,6 +65,9 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
   { "DB_REF",                                "DB_REF",          "Deutsche_Bahn_Reference_System",               udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              5681, 1081, true,     false },
   { "System of the Unified Trigonometrical Cadastral Network [JTSK03]", "JTSK03", "S-JTSK [JTSK03]",            udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              8353, 8351, true,     false },
+  { "Pulkovo 1942",                          "Pulkovo_1942",    "Pulkovo_1942",                                 udGZE_Krassowsky1940,{ 23.92, -141.27, -80.9, 0, 0.35, 0.82, -0.12 },                    4284, 6284, true,     true  },
+  { "Pulkovo 1995",                          "Pulkovo_1995",    "Pulkovo_1995",                                 udGZE_Krassowsky1940,{ 24.47, -130.89, -81.56, 0, 0, 0.13, -0.22 },                      20004, 4200, true,    true  },
+  { "WGS 72BE",                              "WGS_72BE",        "WGS_1972_Transit_Broadcast_Ephemeris",         udGZE_WGS72,         { 0, 0, 1.9, 0, 0, 0.814, -0.38 },                                  4324, 6324, true,    true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");

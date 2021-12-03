@@ -71,6 +71,9 @@ enum udGeoZoneGeodeticDatum
   udGZGD_MOON_PCPF,  //EPSG:30100,30100
   udGZGD_DBREF,      //EPSG:5681
   udGZGD_SJTSK03,    //EPSG:8353
+  udGZGD_PULK1942,   //EPSG:4284
+  udGZGD_PULK1995,   //EPSG:20004
+  udGZGD_WGS_72BE,   //EPSG:32401
 
   udGZGD_Count
 };

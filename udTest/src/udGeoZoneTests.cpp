@@ -565,6 +565,9 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_PCPF/ // These are derived from our own code and are not to be trusted
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_DBREF / EPSG:5681
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_SJTK03 / EPSG:8353
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_PULK1942 / EPSG:4284
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_PULK1995 / EPSG:20004
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_WGS_72BE / EPSG:32401
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
