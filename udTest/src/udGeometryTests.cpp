@@ -145,7 +145,7 @@ TEST(GeometryTests, Query_Segment_Plane)
 
   EXPECT_EQ(seg.Set({1.0, 1.0, 1.0}, {2.0, 2.0, 1.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentPlane(seg, plane, &result), udR_Success);
-  EXPECT_EQ(result.code, udGC_Overlapping);
+  EXPECT_EQ(result.code, udGC_Coincident);
   EXPECT_EQ(result.u, 0.0);
   EXPECT_EQ(result.point, seg.p0);
 }
@@ -187,7 +187,7 @@ TEST(GeometryTests, Query_Line_Line)
   //Lines coincident
   EXPECT_EQ(line_b.SetFromDirection({42.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}), udR_Success);
   EXPECT_EQ(udGeometry_CPLineLine(line_a, line_b, &cpResult), udR_Success);
-  EXPECT_EQ(cpResult.code, udGC_Coincident);
+  EXPECT_EQ(cpResult.code, udGC_Parallel);
   EXPECT_EQ(cpResult.cp_a, line_a.origin);
   EXPECT_EQ(cpResult.cp_b, line_a.origin);
   EXPECT_EQ(cpResult.u_a, 0.0);
@@ -223,7 +223,7 @@ TEST(GeometryTests, Query_Line_Segment)
   //Segment and line coincident
   line.SetFromDirection({13.0, 0.0, 0.0}, {1.0, 0.0, 0.0});
   EXPECT_EQ(udGeometry_CPLineSegment(line, seg, &cpLineSegmentResult), udR_Success);
-  EXPECT_EQ(cpLineSegmentResult.code, udGC_Coincident);
+  EXPECT_EQ(cpLineSegmentResult.code, udGC_Parallel);
   EXPECT_EQ(cpLineSegmentResult.u_l, -11.0);
   EXPECT_EQ(cpLineSegmentResult.u_s, 0.0);
   EXPECT_TRUE((udAreEqual<double, 3>(cpLineSegmentResult.cp_s, seg.p0)));
@@ -278,12 +278,11 @@ TEST(GeometryTests, Query_Line_Segment)
 TEST(GeometryTests, Query_Point_Segment)
 {
   udSegment<double, 3> seg ={};
-  seg.p0 ={1.0, 1.0, 1.0};
-  seg.p1 ={3.0, 1.0, 1.0};
   udCPPointSegmentResult<double, 3> cpPointSegmentResult ={};
   udDouble3 point ={};
 
   //Point lies 'before' segment 0
+  seg.Set({1.0, 1.0, 1.0}, {3.0, 1.0, 1.0});
   point ={-1.0, 1.0, 1.0};
   EXPECT_EQ(udGeometry_CPPointSegment(point, seg, &cpPointSegmentResult), udR_Success);
   EXPECT_EQ(cpPointSegmentResult.u, 0.0);
@@ -572,10 +571,7 @@ TEST(GeometryTests, Query_Point_Triangle)
   udTriangle<double, 3> tri = {};
   udDouble3 point = {2.0, 0.0, 0.5};
 
-  tri.p0 = {1.0, -1.0, -1.0};
-  tri.p1 = {1.0, 1.0, -1.0};
-  tri.p2 = {1.0, 0.0, 10.0};
-
+  EXPECT_EQ(tri.Set({1.0, -1.0, -1.0}, {1.0, 1.0, -1.0}, {1.0, 0.0, 10.0}), udR_Success);
   EXPECT_EQ(udGeometry_CPPointTriangle(point, tri, &cp), udR_Success);
   EXPECT_EQ(cp, udDouble3::create(1.0, 0.0, 0.5));
 }
@@ -642,86 +638,60 @@ TEST(GeometryTests, Query_Segment_Triangle)
   //------------------------------------------------------------------------
   // Intersecting
   //------------------------------------------------------------------------
-  tri.p0 = {0.0, -1.0, 0.0};
-  tri.p1 = {-1.0, 1.0, 0.0};
-  tri.p2 = {1.0, 1.0, 0.0};
-  seg.p0 = {0.5, 0.5, 1.0};
-  seg.p1 = {0.5, 0.5, -1.0};
-  EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
-  EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.5, 0.5, 0.0))));
 
-  tri.p0 = {0.0, -1.0, 0.0};
-  tri.p1 = {1.0, 1.0, 0.0};
-  tri.p2 = {-1.0, 1.0, 0.0};
-  seg.p0 = {0.5, 0.5, 1.0};
-  seg.p1 = {0.5, 0.5, -1.0};
+  EXPECT_EQ(seg.Set({0.5, 0.5, 1.0}, {0.5, 0.5, -1.0}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.5, 0.5, 0.0))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.5, 0.5, 0.0))));
 
-  tri.p0 = {0.0, -1.0, 0.0};
-  tri.p1 = {-1.0, 1.0, 0.0};
-  tri.p2 = {1.0, 1.0, 0.0};
-  seg.p0 = {0.5, 0.5, -1.0};
-  seg.p1 = {0.5, 0.5, 1.0};
+  EXPECT_EQ(seg.Set({0.5, 0.5, 1.0}, {0.5, 0.5, -1.0}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, -1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.5, 0.5, 0.0))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.5, 0.5, 0.0))));
 
-  tri.p0 = {0.0, -1.0, 0.0};
-  tri.p1 = {1.0, 1.0, 0.0};
-  tri.p2 = {-1.0, 1.0, 0.0};
-  seg.p0 = {0.5, 0.5, -1.0};
-  seg.p1 = {0.5, 0.5, 1.0};
+  EXPECT_EQ(seg.Set({0.5, 0.5, -1.0}, {0.5, 0.5, 1.0}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.5, 0.5, 0.0))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.5, 0.5, 0.0))));
 
-  tri.p0 = {0.0, 0.0, -1.0};
-  tri.p1 = {0.0, -1.0, 1.0};
-  tri.p2 = {0.0, 1.0, 1.0};
-  seg.p0 = {-2.0, -0.25, 0.25};
-  seg.p1 = {2.0, -0.25, 0.25};
+  EXPECT_EQ(seg.Set({0.5, 0.5, -1.0}, {0.5, 0.5, 1.0}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, -1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.0, -0.25, 0.25))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.5, 0.5, 0.0))));
 
-  tri.p0 = {0.0, 0.0, -1.0};
-  tri.p1 = {0.0, 1.0, 1.0};
-  tri.p2 = {0.0, -1.0, 1.0};
-  seg.p0 = {-2.0, -0.25, 0.25};
-  seg.p1 = {2.0, -0.25, 0.25};
+  EXPECT_EQ(seg.Set({-2.0, -0.25, 0.25}, {2.0, -0.25, 0.25}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, 0.0, -1.0}, {0.0, -1.0, 1.0}, {0.0, 1.0, 1.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.0, -0.25, 0.25))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.0, -0.25, 0.25))));
 
-  tri.p0 = {0.0, 0.0, -1.0};
-  tri.p1 = {0.0, -1.0, 1.0};
-  tri.p2 = {0.0, 1.0, 1.0};
-  seg.p0 = {2.0, -0.25, 0.25};
-  seg.p1 = {-2.0, -0.25, 0.25};
+  EXPECT_EQ(seg.Set({-2.0, -0.25, 0.25}, {2.0, -0.25, 0.25}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, 0.0, -1.0}, {0.0, 1.0, 1.0}, {0.0, -1.0, 1.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.0, -0.25, 0.25))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.0, -0.25, 0.25))));
 
-  tri.p0 = {0.0, 0.0, -1.0};
-  tri.p1 = {0.0, 1.0, 1.0};
-  tri.p2 = {0.0, -1.0, 1.0};
-  seg.p0 = {2.0, -0.25, 0.25};
-  seg.p1 = {-2.0, -0.25, 0.25};
+  EXPECT_EQ(seg.Set({2.0, -0.25, 0.25}, {-2.0, -0.25, 0.25}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, 0.0, -1.0}, {0.0, -1.0, 1.0}, {0.0, 1.0, 1.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_Intersecting);
-  EXPECT_TRUE((udAreEqual<double, 3>(data.point, udDouble3::create(0.0, -0.25, 0.25))));
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.0, -0.25, 0.25))));
+
+  EXPECT_EQ(seg.Set({2.0, -0.25, 0.25}, {-2.0, -0.25, 0.25}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, 0.0, -1.0}, {0.0, 1.0, 1.0}, {0.0, -1.0, 1.0}), udR_Success);
+  EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
+  EXPECT_EQ(data.code, udGC_Intersecting);
+  EXPECT_TRUE((udAreEqual<double, 3>(data.intersecting.point, udDouble3::create(0.0, -0.25, 0.25))));
 
   //------------------------------------------------------------------------
   // Non intersecting
   //------------------------------------------------------------------------
-  tri.p0 = {0.0, -1.0, 0.0};
-  tri.p1 = {-1.0, 1.0, 0.0};
-  tri.p2 = {1.0, 1.0, 0.0};
-  seg.p0 = {10.0, 0.5, 1.0};
-  seg.p1 = {10.0, 0.5, -1.0};
+  EXPECT_EQ(seg.Set({10.0, 0.5, 1.0}, {10.0, 0.5, -1.0}), udR_Success);
+  EXPECT_EQ(tri.Set({0.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, 1.0, 0.0}), udR_Success);
   EXPECT_EQ(udGeometry_FI3SegmentTriangle(seg, tri, &data), udR_Success);
   EXPECT_EQ(data.code, udGC_NotIntersecting);
 

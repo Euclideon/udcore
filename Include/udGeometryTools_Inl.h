@@ -246,17 +246,17 @@ udResult udTriangle<T, R>::Set(const udVector_t &_p0, const udVector_t &_p1, con
 
   udTriangle<T, R> temp;
 
-  temp.p0 = _p0;
-  temp.p1 = _p1;
-  temp.p2 = _p2;
+  temp.pt.p0 = _p0;
+  temp.pt.p1 = _p1;
+  temp.pt.p2 = _p2;
 
   udVector3<T> sideLengths = udGeometry_SortLowToHigh(temp.GetSideLengths());
 
   UD_ERROR_IF(udIsZero(sideLengths[2] - (sideLengths[0] + sideLengths[1])), udR_Failure);
 
-  p0 = _p0;
-  p1 = _p1;
-  p2 = _p2;
+  pt.p0 = _p0;
+  pt.p1 = _p1;
+  pt.p2 = _p2;
 
   result = udR_Success;
 epilogue:
@@ -270,30 +270,39 @@ T udTriangle<T, R>::GetArea() const
 {
   udVector3<T> sideLengths = GetSideLengths();
   T p = (sideLengths[0] + sideLengths[1] + sideLengths[2]) / T(2);
-
-  // Theoritically these values should not be below zero, but due to floting point
-  // error, they can be. So we need to check.
   T a = (p - sideLengths[0]);
-  if (a <= T(0))
-    return T(0);
-
   T b = (p - sideLengths[1]);
-  if (b <= T(0))
-    return T(0);
-
   T c = (p - sideLengths[2]);
-  if (c <= T(0))
-    return T(0);
+
+  // Floating point error, but should not occur if triangle created with Set()
+  UDASSERT(a > T(0), "Floating piont error");
+  UDASSERT(b > T(0), "Floating piont error");
+  UDASSERT(c > T(0), "Floating piont error");
 
   return udSqrt(p * a * b * c);
 }
 
 // ****************************************************************************
-// Author: Frank Hart, August 2020
+// Author: Frank Hart, November 2021
 template<typename T, int R>
 udVector3<T> udTriangle<T, R>::GetSideLengths() const
 {
-  return udVector3<T>::create(udMag(p0 - p1), udMag(p0 - p2), udMag(p1 - p2));
+  return udVector3<T>::create(udMag(pt.p0 - pt.p1), udMag(pt.p0 - pt.p2), udMag(pt.p1 - pt.p2));
+}
+
+// ****************************************************************************
+// Author: Frank Hart, August 2020
+template<typename T, int R>
+udResult udTriangle<T, R>::GetSide(uint32_t i, udSegment<T, R> * pSeg) const
+{
+  udResult result;
+
+  UD_ERROR_IF(i > 2 || pSeg == nullptr, udR_InvalidParameter);
+  UD_ERROR_CHECK(pSeg->Set(ary[i], ary[(i + 1) % 3]));
+
+  result = udR_Success;
+epilogue:
+  return result;
 }
 
 //------------------------------------------------------------------------------------
@@ -375,9 +384,9 @@ udResult udGeometry_Barycentric(const udTriangle<T, R> &tri, const udVector_t &p
 {
   udResult result;
 
-  udVector_t v0 = tri.p1 - tri.p0;
-  udVector_t v1 = tri.p2 - tri.p0;
-  udVector_t v2 = p - tri.p0;
+  udVector_t v0 = tri.pt.p1 - tri.pt.p0;
+  udVector_t v1 = tri.pt.p2 - tri.pt.p0;
+  udVector_t v2 = p - tri.pt.p0;
 
   T d00 = udDot(v0, v0);
   T d01 = udDot(v0, v1);
@@ -456,7 +465,7 @@ template<typename T> udResult udGeometry_FI3SegmentPlane(const udSegment3<T> &se
     T dist = udAbs(udGeometry_SignedDistance(plane, seg.p0));
 
     if (udIsZero(dist))
-      pData->code = udGC_Overlapping;
+      pData->code = udGC_Coincident;
     else
       pData->code = udGC_NotIntersecting;
   }
@@ -605,9 +614,6 @@ udResult udGeometry_CPLineLine(const udLine<T, R> & line_a, const udLine<T, R> &
   pResult->cp_a = line_a.origin + pResult->u_a * line_a.direction;
   pResult->cp_b = line_b.origin + pResult->u_b * line_b.direction;
 
-  if (pResult->code == udGC_Parallel && udAreEqual<T, R>(pResult->cp_a, pResult->cp_b))
-    pResult->code = udGC_Coincident;
-
   result = udR_Success;
 epilogue:
   return result;
@@ -669,9 +675,6 @@ udResult udGeometry_CPLineSegment(const udLine<T, R> & line, const udSegment<T, 
 
   pResult->cp_s = seg.p0 + pResult->u_s*segDir;
   pResult->cp_l = line.origin + pResult->u_l*line.direction;
-
-  if (pResult->code == udGC_Parallel && udAreEqual<T, R>(pResult->cp_l, pResult->cp_s))
-    pResult->code = udGC_Coincident;
 
   result = udR_Success;
 epilogue:
@@ -838,64 +841,6 @@ epilogue:
 }
 
 // ****************************************************************************
-// Author: Frank Hart, October 2021
-//template<typename T>
-//udResult udGeometry_TI2PointPolygon(const udVector2<T> &point, const udVector2<T> *pPoints, size_t count, udGeometryCode *pCode)
-//{
-//  udResult result;
-//  size_t total = 0;
-//  size_t _count = count;
-//  udLine<T, 2> line_a = {};
-//
-//  UD_ERROR_NULL(pPoints, udR_InvalidParameter);
-//  UD_ERROR_NULL(pCode, udR_InvalidParameter);
-//
-//  *pCode = udGC_Success;
-//
-//  line_a.SetFromDirection(point, {T(1), T(0)});
-//  for (size_t i = 0; i < _count; i++)
-//  {
-//    size_t j = (i + 1) % count;
-//    udLine<T, 2> line_b = {};
-//    udSegment<T, 2> seg_b = {};
-//    udCPLineLineResult<double, 2> lineLineRes = {};
-//    udCPPointSegmentResult<double, 2> segLineRes = {};
-//    bool intersects;
-//
-//    // Check if point is on the boundary 
-//    UD_ERROR_CHECK(seg_b.Set(pPoints[i], pPoints[j]));
-//    UD_ERROR_CHECK(udGeometry_CPPointSegment(point, seg_b, &segLineRes));
-//
-//    if (udIsZero(udMagSq(segLineRes.point - point)))
-//    {
-//      *pCode = udGC_OnBoundary;
-//      break;
-//    }
-//
-//    // Check is segment crosses line
-//    intersects = pPoints[i].y <= point.y && pPoints[j].y > point.y;
-//    intersects = intersects || (pPoints[i].y >= point.y && pPoints[j].y < point.y);
-//
-//    if (!intersects)
-//      continue;
-//
-//    // In-out test
-//    UD_ERROR_CHECK(line_b.SetFromEndPoints(pPoints[i], pPoints[j]));
-//    UD_ERROR_CHECK(udGeometry_CPLineLine(line_a, line_b, &lineLineRes)); // TODO should use a cheaper TI test
-//
-//    if (lineLineRes.u_a < T(0))
-//        total++;
-//  }
-//
-//  if (*pCode != udGC_OnBoundary)
-//    *pCode = (total % 2 == 0) ? udGC_CompletelyOutside : udGC_CompletelyInside;
-//
-//  result = udR_Success;
-//epilogue:
-//  return result;
-//}
-
-// ****************************************************************************
 // Adapted from "Optimal Reliable Point-in-Polygon Test and Differential Coding Boolean Operations on Polygons"
 // Authors: Jianqiang Hao, Jianzhi Sun, Yi Chen, Qiang Cai and Li Tan
 template<typename T>
@@ -1010,9 +955,9 @@ udResult udGeometry_FI3SegmentTriangle(const udSegment3<T> &seg, const udTriangl
   UD_ERROR_NULL(pResult, udR_InvalidParameter);
 
   udVector3<T> s0s1 = seg.p1 - seg.p0;
-  udVector3<T> s0t0 = tri.p0 - seg.p0;
-  udVector3<T> s0t1 = tri.p1 - seg.p0;
-  udVector3<T> s0t2 = tri.p2 - seg.p0;
+  udVector3<T> s0t0 = tri.pt.p0 - seg.p0;
+  udVector3<T> s0t1 = tri.pt.p1 - seg.p0;
+  udVector3<T> s0t2 = tri.pt.p2 - seg.p0;
 
   T u = udGeometry_ScalarTripleProduct(s0s1, s0t2, s0t1);
   T v = udGeometry_ScalarTripleProduct(s0s1, s0t0, s0t2);
@@ -1041,7 +986,7 @@ udResult udGeometry_FI3SegmentTriangle(const udSegment3<T> &seg, const udTriangl
   v *= denom;
   w *= denom;
 
-  pResult->point = u * tri.p0 + v * tri.p1 + w * tri.p2;
+  pResult->intersecting.point = u * tri.pt.p0 + v * tri.pt.p1 + w * tri.pt.p2;
   pResult->code = udGC_Intersecting;
 
   result = udR_Success;
@@ -1060,9 +1005,9 @@ udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T,
 
   UD_ERROR_NULL(pOut, udR_InvalidParameter);
 
-  v01 = tri.p1 - tri.p0;
-  v02 = tri.p2 - tri.p0;
-  v0p = point - tri.p0;
+  v01 = tri.pt.p1 - tri.pt.p0;
+  v02 = tri.pt.p2 - tri.pt.p0;
+  v0p = point - tri.pt.p0;
 
   d1 = udDot(v01, v0p);
   d2 = udDot(v02, v0p);
@@ -1071,16 +1016,16 @@ udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T,
   {
     if (d1 <= T(0) && d2 <= T(0))
     {
-      *pOut = tri.p0;
+      *pOut = tri.pt.p0;
       break;
     }
 
-    udVector3<T> v1p = point - tri.p1;
+    udVector3<T> v1p = point - tri.pt.p1;
     T d3 = udDot(v01, v1p);
     T d4 = udDot(v02, v1p);
     if (d3 >= T(0) && d4 <= d3)
     {
-      *pOut = tri.p1;
+      *pOut = tri.pt.p1;
       break;
     }
 
@@ -1088,16 +1033,16 @@ udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T,
     if (v2 <= T(0) && d1 >= T(0) && d3 <= T(0))
     {
       T v = d1 / (d1 - d3);
-      *pOut = tri.p0 + v * v01;
+      *pOut = tri.pt.p0 + v * v01;
       break;
     }
 
-    udVector3<T> v2p = point - tri.p2;
+    udVector3<T> v2p = point - tri.pt.p2;
     T d5 = udDot(v01, v2p);
     T d6 = udDot(v02, v2p);
     if (d6 >= T(0) && d5 <= d6)
     {
-      *pOut = tri.p2;
+      *pOut = tri.pt.p2;
       break;
     }
 
@@ -1105,7 +1050,7 @@ udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T,
     if (v1 <= T(0) && d2 >= T(0) && d6 <= T(0))
     {
       T w = d2 / (d2 - d6);
-      *pOut = tri.p0 + w * v02;
+      *pOut = tri.pt.p0 + w * v02;
       break;
     }
 
@@ -1113,14 +1058,14 @@ udResult udGeometry_CPPointTriangle(const udVector_t &point, const udTriangle<T,
     if (v0 <= T(0) && (d4 - d3) >= T(0) && (d5 - d6) >= T(0))
     {
       T w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-      *pOut = tri.p1 + w * (tri.p2 - tri.p1);
+      *pOut = tri.pt.p1 + w * (tri.pt.p2 - tri.pt.p1);
       break;
     }
 
     T denom = T(1) / (v0 + v1 + v2);
     T v = v1 * denom;
     T w = v2 * denom;
-    *pOut = tri.p0 + v01 * v + v02 * w;
+    *pOut = tri.pt.p0 + v01 * v + v02 * w;
 
   } while (false);
 
