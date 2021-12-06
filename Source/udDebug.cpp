@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 
+#if UDPLATFORM_ANDROID
+#include <android/log.h>
+#endif
+
 void (*gpudDebugPrintfOutputCallback)(const char *pString) = nullptr;
 
 // *********************************************************************
@@ -57,6 +61,8 @@ void udDebugPrintf(const char *format, ...)
   {
 #ifdef _WIN32
     OutputDebugStringA(pBuffer);
+#elif UDPLATFORM_ANDROID
+    __android_log_print(ANDROID_LOG_INFO, "udStream", pBuffer);
 #else
     fprintf(stderr, "%s", pBuffer);
 #endif
