@@ -2119,10 +2119,12 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
       u -= (udAbs(uC) * sign);
       double signLambda = (lambdaC - UD_DEG2RAD(omega)) < 0 ? -1.0 : 1.0;
       if (alphaC == 90.0)
+      {
         if (UD_DEG2RAD(omega) == lambdaC)
           u = 0;
         else
           u = (A * udATan2(S * udCos(gamma0) + V * udSin(gamma0), udCos(B * (UD_DEG2RAD(omega) - lambda0))) / B) - (udAbs(uC) * sign * signLambda);
+      }
     }
     double E = v * udCos(gammaC) + u * udSin(gammaC) + zone.falseEasting;
     double N = u * udCos(gammaC) - v * udSin(gammaC) + zone.falseNorthing;
