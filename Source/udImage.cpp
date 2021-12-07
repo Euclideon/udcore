@@ -319,11 +319,25 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
       {
         uint8_t *pA = p24BitData + (y * mipW * 3);
         uint8_t *pB = pA + (mipW * 3); // Line immediately under pA's line
+
+        if (y + 1 == mipH)
+          pB = pA; // Just use the same line again
+
         for (uint32_t x = 0; x < mipW; x += 2)
         {
-          // Loop for each of the components r,g,b
-          for (uint32_t c = 0; c < 3; ++c)
-            *pO++ = (unsigned(pA[c + 0]) + unsigned(pA[c + 3]) + unsigned(pB[c + 0]) + unsigned(pB[c + 3])) >> 2;
+          if (x + 1 == mipW) // Last line on an "odd" sized image
+          {
+            // Loop for each of the components r,g,b
+            for (uint32_t c = 0; c < 3; ++c)
+              *pO++ = (unsigned(pA[c + 0]) + unsigned(pA[c + 0]) + unsigned(pB[c + 0]) + unsigned(pB[c + 0])) >> 2;
+          }
+          else
+          {
+            // Loop for each of the components r,g,b
+            for (uint32_t c = 0; c < 3; ++c)
+              *pO++ = (unsigned(pA[c + 0]) + unsigned(pA[c + 3]) + unsigned(pB[c + 0]) + unsigned(pB[c + 3])) >> 2;
+          }
+
           // Source A and B pointers advance by 2 pixels (6 bytes)
           pA += 3 * 2;
           pB += 3 * 2;
