@@ -29,6 +29,7 @@ enum udGeoZoneEllipsoid
   udGZE_Mars,
   udGZE_Moon,
   udGZE_IAG1975,
+  udGZE_Everest1830,
 
   udGZE_Count
 };
@@ -78,6 +79,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_BEIJING1954,//EPSG:21413
   udGZGD_NEWBEIJING, //EPSG:4555
   udGZGD_XIAN1980,   //EPSG:4610
+  udGZGD_TIMB1948,   //EPSG:28973
 
   udGZGD_Count
 };

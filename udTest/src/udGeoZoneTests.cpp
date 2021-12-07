@@ -452,6 +452,26 @@ TEST(udGeoZone, Krovak)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+TEST(udGeoZone, HotineObliqueMercator)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.67-68
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 29873 : Timbala 1948
+
+  udDouble3 latLong = udDouble3::create(5.38725358, 115.80550544, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 29873)); // Amersfoort
+  EXPECT_EQ(geoZone.datum, udGZGD_TIMB1948);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, OSGB)
 {
   // 27700 - UK
@@ -571,6 +591,7 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_BEIJING1954 / EPSG:21413
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NEWBEIJING / EPSG:4555
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_XIANG1980 / EPSG:4610
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_TIMB1948 / EPSG:29873
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
@@ -856,6 +877,9 @@ struct
   { 28356, "PROJCS[\"GDA94 / MGA zone 56\",\nGEOGCS[\"GDA94\",\nDATUM[\"Geocentric_Datum_of_Australia_1994\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6283\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4283\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",153],\nPARAMETER[\"scale_factor\",0.9996],\nPARAMETER[\"false_easting\",500000],\nPARAMETER[\"false_northing\",10000000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Easting\",EAST],\nAXIS[\"Northing\",NORTH],\nAUTHORITY[\"EPSG\",\"28356\"]]" },
 
   { 28992, "PROJCS[\"Amersfoort\",\nGEOGCS[\"Amersfoort\",\nDATUM[\"Amersfoort\",\nSPHEROID[\"Bessel 1841\",6377397.155,299.1528128,\nAUTHORITY[\"EPSG\",\"7004\"]],\nAUTHORITY[\"EPSG\",\"6289\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4289\"]],\nPROJECTION[\"Oblique_Stereographic\"],\nPARAMETER[\"latitude_of_origin\",52.15616055555556],\nPARAMETER[\"central_meridian\",5.3876388888889],\nPARAMETER[\"scale_factor\",0.9999079],\nPARAMETER[\"false_easting\",155000],\nPARAMETER[\"false_northing\",463000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH],\nAUTHORITY[\"EPSG\",\"28992\"]]" },
+
+  { 29873, "PROJCS[\"Timbalai 1948\",\nGEOGCS[\"Timbalai 1948 / Tso Borneo (m)\",\nDATUM[\"Timbalai_1948\",\nSPHEROID[\"Everest 1830 (1967 Definition)\",6377298.556,300.8017,\nAUTHORITY[\"EPSG\",\"7016\"]],\nAUTHORITY[\"EPSG\",\"6298\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"29873\"]],\nPROJECTION[\"Hotine_Oblique_Mercator_Azimuth_Center\"],\nPARAMETER[\"latitude_of_center\",4],\nPARAMETER[\"longitude_of_center\",115],\nPARAMETER[\"azimuth\",53.31582047222222],\nPARAMETER[\"rectified_grid_angle\",53.13010236111112],\nPARAMETER[\"scale_factor\",0.99984],\nPARAMETER[\"false_easting\",590476.87],\nPARAMETER[\"false_northing\",442857.65],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"29873\"]]" },
+
   { 30200, "PROJCS[\"Trinidad_1903 / Trinidad 1903\",\nGEOGCS[\"Trinidad 1903\",\nDATUM[\"Trinidad_1903\",\nSPHEROID[\"Clarke 1858\",6378293.64520876,294.260676369,\nAUTHORITY[\"EPSG\",\"7007\"]],\nAUTHORITY[\"EPSG\",\"6302\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4302\"]],\nPROJECTION[\"Cassini_Soldner\"],\nPARAMETER[\"latitude_of_origin\",10.44166666666667],\nPARAMETER[\"central_meridian\",-61.3333333333333],\nPARAMETER[\"scale_factor\",1],\nPARAMETER[\"false_easting\",430000],\nPARAMETER[\"false_northing\",325000],\nUNIT[\"Clarke's link\",0.201166195164,\nAUTHORITY[\"EPSG\",\"9039\"]],\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH],\nAUTHORITY[\"EPSG\",\"30200\"]]" },
 
   //{ 30100, "GEOCCS[\"Moon 2000 Planetocentric\",\nDATUM[\"D_Moon_2000\",\nSPHEROID[\"Moon_2000_IAU_IAG\",1737400,0.0,\nAUTHORITY[\"EPSG\",\"39064\"]],\nAUTHORITY[\"EPSG\",\"39065\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH],\nAUTHORITY[\"EPSG\",\"30100\"]]"},

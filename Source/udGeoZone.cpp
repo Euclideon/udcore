@@ -23,6 +23,7 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Mars_2000_IAU_IAG",  3396190.000, 1.0 / 169.894447224, 49900 },// udGZE_MARS
   { "Moon_2000_IAU_IAG",  1737400.000, 0.0,                 39064 },// udGZE_MOON
   { "IAG 1975",           6378140.000, 1.0 / 298.257,       7049 }, // udGZE_IAG1975
+  { "Everest 1830 (1967 Definition)",6377298.556, 1.0 / 300.8017,    7016 }, // udGZE_Everest1830
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -72,6 +73,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Beijing 1954",                          "Beijing_1954",    "Beijing_1954",                                 udGZE_Krassowsky1940,{ 15.8, -154.4, -82.3, 0, 0, 0, 0 },                                4214, 6214, false,    true  },
   { "New Beijing",                           "New_Beijing",     "New_Beijing",                                  udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4555, 1045, false,    false },
   { "Xian 1980",                             "Xian_1980",       "Xian_1980",                                    udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
+  { "Timbalai 1948 / Tso Borneo (m)",        "Timbalai 1948",   "Timbalai_1948",                                udGZE_Everest1830,   { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              29873, 6298, true,    false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -1172,6 +1174,22 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(3.37,50.75);
       pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
       break;
+    case 29873: // Timbalai 1948 / Hotine Oblique Mercator Variant B Projection Test
+      pZone->datum = udGZGD_TIMB1948;
+      pZone->projection = udGZPT_HotineObliqueMercatorvB;
+      pZone->zone = 0;
+      udStrcpy(pZone->zoneName, "Timbalai 1948");
+      pZone->meridian = 115.0;
+      pZone->parallel = 53.13010236111111;
+      pZone->coLatConeAxis = 53.31582047222222;
+      pZone->latProjCentre = 4.0;
+      pZone->falseNorthing = 442857.65;
+      pZone->falseEasting = 590476.87;
+      pZone->scaleFactor = 0.99984;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(0.85, 109.55);
+      pZone->latLongBoundMax = udDouble2::create(7.35, 119.26);
+      break;
     //case 30100:
     case 30101: //Moon PF
       pZone->datum = udGZGD_MOON_PCPF;
@@ -1335,9 +1353,9 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "latitude_projection_centre"))
         pZone->latProjCentre = wkt->Get("%s.values[0]", pElem).AsDouble();
-      else if (udStrEqual(pName, "latitude_of_centre"))
+      else if (udStrEqual(pName, "latitude_of_center"))
         pZone->latProjCentre = wkt->Get("%s.values[0]", pElem).AsDouble();
-      else if (udStrEqual(pName, "longitude_of_centre"))
+      else if (udStrEqual(pName, "longitude_of_center"))
         pZone->meridian = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "azimuth"))
         pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
@@ -1487,12 +1505,6 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for lambert is 1.0
           pZone->scaleFactor = 1;
       }
-      else if (udStrstr(pName, 0, "Mercator"))
-      {
-        pZone->projection = udGZPT_Mercator;
-        if (pZone->scaleFactor == 0) // default for Mercator is 1.0
-          pZone->scaleFactor = 1.0;
-      }
       else if (udStrstr(pName, 0, "Polar_Stereographic"))
       {
         pZone->projection = udGZPT_SterographicPolar_vB;
@@ -1521,6 +1533,12 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       {
         pZone->projection = udGZPT_HotineObliqueMercatorvA;
         if (pZone->scaleFactor == 0) // default for Hotine Oblique Mercator
+          pZone->scaleFactor = 1.0;
+      }
+      else if (udStrstr(pName, 0, "Mercator"))
+      {
+        pZone->projection = udGZPT_Mercator;
+        if (pZone->scaleFactor == 0) // default for Mercator is 1.0
           pZone->scaleFactor = 1.0;
       }
     }
@@ -1694,13 +1712,13 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   }
   else if (zone.projection == udGZPT_HotineObliqueMercatorvA)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator\"],\nPARAMETER[\"latitude_of_centre\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_HotineObliqueMercatorvB)
   {
-    udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator_Azimuth_Center\"],\nPARAMETER[\"latitude_of_centre\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+    udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator_Azimuth_Center\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
@@ -2107,7 +2125,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
           u = (A * udATan2(S * udCos(gamma0) + V * udSin(gamma0), udCos(B * (UD_DEG2RAD(omega) - lambda0))) / B) - (udAbs(uC) * sign * signLambda);
     }
     double E = v * udCos(gammaC) + u * udSin(gammaC) + zone.falseEasting;
-    double N = u * udCos(gammaC) + v * udSin(gammaC) + zone.falseNorthing;
+    double N = u * udCos(gammaC) - v * udSin(gammaC) + zone.falseNorthing;
 
     return udDouble3::create(E, N, ellipsoidHeight);
   }
