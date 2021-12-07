@@ -329,7 +329,7 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
           {
             // Loop for each of the components r,g,b
             for (uint32_t c = 0; c < 3; ++c)
-              *pO++ = (unsigned(pA[c + 0]) + unsigned(pA[c + 0]) + unsigned(pB[c + 0]) + unsigned(pB[c + 0])) >> 2;
+              *pO++ = (unsigned(pA[c]) + unsigned(pB[c])) >> 1;
           }
           else
           {
