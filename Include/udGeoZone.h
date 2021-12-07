@@ -105,6 +105,9 @@ enum udGeoZoneProjectionType
   udGZPT_Krovak,
   udGZPT_KrovakNorthOrientated,
 
+  udGZPT_HotineObliqueMercatorvA,
+  udGZPT_HotineObliqueMercatorvB,
+
   udGZPT_Count
 };
 

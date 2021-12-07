@@ -1335,6 +1335,14 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "latitude_projection_centre"))
         pZone->latProjCentre = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "latitude_of_centre"))
+        pZone->latProjCentre = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "longitude_of_centre"))
+        pZone->meridian = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "azimuth"))
+        pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
+      else if (udStrEqual(pName, "rectified_grid_angle"))
+        pZone->parallel = wkt->Get("%s.values[0]", pElem).AsDouble();
     }
     else if (udStrEqual(pType, "UNIT"))
     {
@@ -1503,6 +1511,18 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for Krovak
           pZone->scaleFactor = 0.999;
       }
+      else if (udStrstr(pName, 0, "Hotine_Oblique_Mercator_Azimuth_Center"))
+      {
+        pZone->projection = udGZPT_HotineObliqueMercatorvB;
+        if (pZone->scaleFactor == 0) // default for Hotine Oblique Mercator
+          pZone->scaleFactor = 1.0;
+      }
+      else if (udStrstr(pName, 0, "Hotine_Oblique_Mercator"))
+      {
+        pZone->projection = udGZPT_HotineObliqueMercatorvA;
+        if (pZone->scaleFactor == 0) // default for Hotine Oblique Mercator
+          pZone->scaleFactor = 1.0;
+      }
     }
     else if (udStrEqual(pType, "SPHEROID"))
     {
@@ -1670,6 +1690,18 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Krovak (North Orientated)\"],\nPARAMETER[\"latitude_projection_centre\",%s],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"colatitude_cone_axis\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_HotineObliqueMercatorvA)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator\"],\nPARAMETER[\"latitude_of_centre\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_HotineObliqueMercatorvB)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator_Azimuth_Center\"],\nPARAMETER[\"latitude_of_centre\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
 
@@ -2022,6 +2054,63 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(S, W, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_HotineObliqueMercatorvA || zone.projection == udGZPT_HotineObliqueMercatorvB)
+  {
+    phi = UD_DEG2RAD(phi);
+
+    double a = zone.semiMajorAxis;
+    double eSq = zone.eccentricitySq;
+
+    double alphaC = UD_DEG2RAD(zone.coLatConeAxis);
+    double phiC = UD_DEG2RAD(zone.latProjCentre);
+    double lambdaC = UD_DEG2RAD(zone.meridian);
+    double gammaC = UD_DEG2RAD(zone.parallel);
+
+    double B = udSqrt(1 + (eSq * udPow(udCos(phiC), 4) / (1 - eSq)));
+    double A = a * B * zone.scaleFactor * udSqrt(1 - eSq) / (1 - eSq * udPow(udSin(phiC), 2));
+    double t0 = udTan(UD_PI / 4.0 - phiC / 2.0) / udPow((1 - e * udSin(phiC)) / (1 + e * udSin(phiC)), e / 2.0);
+    double D = B * udSqrt(1 - eSq) / (udCos(phiC) * udSqrt(1 - eSq * udPow(udSin(phiC), 2)));
+    double DSq = D < 1.0 ? 1.0 : D * D;
+    double sign = phiC < 0 ? -1.0 : 1.0;
+    double F = D + udSqrt(DSq - 1) * sign;
+    double H = F * udPow(t0, B);
+    double G = (F - 1.0 / F) / 2.0;
+    double gamma0 = udASin(udSin(alphaC) / D);
+    double lambda0 = UD_DEG2RAD(zone.meridian) - (udASin(G * udTan(gamma0))) / B;
+
+    double uC = 0.0;
+    if (alphaC == 90)
+      uC = A * (lambdaC - lambda0);
+    else 
+      uC = (A / B) * udATan2(udSqrt(D * D - 1), udCos(alphaC)) * sign;
+
+    double t = udTan(UD_PI / 4.0 - phi / 2.0) / udPow((1 - e * udSin(phi)) / (1 + e * udSin(phi)), e / 2.0);
+    double Q = H / udPow(t, B);
+    double S = (Q - 1 / Q) / 2;
+    double T = (Q + 1 / Q) / 2.0;
+    double V = udSin(B * (UD_DEG2RAD(omega) - lambda0));
+    double U = (-V * udCos(gamma0) + S * udSin(gamma0)) / T;
+    double v = A * udLogN((1 - U) / (1 + U)) / (2 * B);
+
+    //Variant A
+    double u = A * udATan2((S * udCos(gamma0) + V * udSin(gamma0)), udCos(B * (UD_DEG2RAD(omega) - lambda0))) / B;
+
+    if (zone.projection == udGZPT_HotineObliqueMercatorvB)
+    {
+      //Variant B
+      u -= (udAbs(uC) * sign);
+      double signLambda = (lambdaC - UD_DEG2RAD(omega)) < 0 ? -1.0 : 1.0;
+      if (alphaC == 90.0)
+        if (UD_DEG2RAD(omega) == lambdaC)
+          u = 0;
+        else
+          u = (A * udATan2(S * udCos(gamma0) + V * udSin(gamma0), udCos(B * (UD_DEG2RAD(omega) - lambda0))) / B) - (udAbs(uC) * sign * signLambda);
+    }
+    double E = v * udCos(gammaC) + u * udSin(gammaC) + zone.falseEasting;
+    double N = u * udCos(gammaC) + v * udSin(gammaC) + zone.falseNorthing;
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -2309,6 +2398,63 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG(UD_DEG2RAD(zone.meridian) - Vp / B);
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_HotineObliqueMercatorvA || zone.projection == udGZPT_HotineObliqueMercatorvB)
+  {
+    double a = zone.semiMajorAxis;
+    double eSq = zone.eccentricitySq;
+
+    double alphaC = UD_DEG2RAD(zone.coLatConeAxis);
+    double phiC = UD_DEG2RAD(zone.latProjCentre);
+    double lambdaC = UD_DEG2RAD(zone.meridian);
+    double gammaC = UD_DEG2RAD(zone.parallel);
+
+    double B = udSqrt(1 + (eSq * udPow(udCos(phiC), 4) / (1 - eSq)));
+    double A = a * B * zone.scaleFactor * udSqrt(1 - eSq) / (1 - eSq * udPow(udSin(phiC), 2));
+    double t0 = udTan(UD_PI / 4.0 - phiC / 2.0) / udPow((1 - e * udSin(phiC)) / (1 + e * udSin(phiC)), e / 2.0);
+    double D = B * udSqrt(1 - eSq) / (udCos(phiC) * udSqrt(1 - eSq * udPow(udSin(phiC), 2)));
+    double DSq = D < 1.0 ? 1.0 : D * D;
+    double sign = phiC < 0 ? -1.0 : 1.0;
+    double F = D + udSqrt(DSq - 1) * sign;
+    double H = F * udPow(t0, B);
+    double G = (F - 1.0 / F) / 2.0;
+    double gamma0 = udASin(udSin(alphaC) / D);
+    double lambda0 = UD_DEG2RAD(zone.meridian) - (udASin(G * udTan(gamma0))) / B;
+
+    double uC = 0.0;
+    if (alphaC == 90)
+      uC = A * (lambdaC - lambda0);
+    else
+      uC = (A / B) * udATan2(udSqrt(D * D - 1), udCos(alphaC)) * sign;
+
+    //Variant A
+    double vP = (position.x - zone.falseEasting) * udCos(gammaC) - (position.y - zone.falseNorthing) * udSin(gammaC);
+    double uP = (position.y - zone.falseNorthing) * udCos(gammaC) + (position.x - zone.falseEasting) * udSin(gammaC);
+
+    if (zone.projection == udGZPT_HotineObliqueMercatorvB)
+    {
+      //Variant B
+      uP += udAbs(uC) * sign;
+    }
+
+    double Qp = udExp(-(B * vP / A));
+    double Sp = (Qp - 1 / Qp) / 2.0;
+    double Tp = (Qp + 1 / Qp) / 2.0;
+    double Vp = udSin(B * uP / A);
+    double Up = (Vp * udCos(gamma0) + Sp * udSin(gamma0)) / Tp;
+    double tP = udPow(H / udSqrt((1 + Up) / (1 - Up)), 1 / B);
+    double chi = UD_HALF_PI - 2.0 * udATan(tP);
+
+    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
+      + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
+      + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
+      + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
+
+    double lambda = lambda0 - udATan2(Sp * udCos(gamma0) - Vp * udSin(gamma0), udCos(B * uP / A)) / B;
+
+    latLong.x = UD_RAD2DEG(phi);
+    latLong.y = UD_RAD2DEG(lambda);
     latLong.z = position.z;
   }
 
