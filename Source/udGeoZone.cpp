@@ -74,6 +74,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "New Beijing",                           "New_Beijing",     "New_Beijing",                                  udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4555, 1045, false,    false },
   { "Xian 1980",                             "Xian_1980",       "Xian_1980",                                    udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
   { "Timbalai 1948 / Tso Borneo (m)",        "Timbalai 1948",   "Timbalai_1948",                                udGZE_Everest1830,   { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              29873, 6298, true,    false },
+  { "NZGD49",                                "NZGD49",          "New_Zealand_Geodetic_Datum_1949",              udGZE_Intl1924,      { 59.47, -5.04, 187.44, 0.47, -0.1, 1.024, -4.5993 },               4272, 6272, true,     true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
