@@ -628,6 +628,17 @@ TEST(GeometryTests, Query_Point_Polygon)
     EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
     EXPECT_EQ(code, udGC_CompletelyInside);
   }
+
+  {
+    udGeometryCode code;
+    udDouble2 points[] =
+    {
+      {-334.89, -373.76}, {-335.37, -371.04}, {-337.69, -371.28}, {-337.39, -372.97}
+    };
+    udDouble2 point ={-336.5, -372.0};
+    EXPECT_EQ(udGeometry_TI2PointPolygon(point, points, UDARRAYSIZE(points), &code), udR_Success);
+    EXPECT_EQ(code, udGC_CompletelyInside);
+  }
 }
 TEST(GeometryTests, Query_Segment_Triangle)
 {
