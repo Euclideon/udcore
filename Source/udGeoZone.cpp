@@ -988,6 +988,23 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       pZone->latLongBoundMin = udDouble2::create(-179.5, -17.05);
       pZone->latLongBoundMax = udDouble2::create(178.25, -16.0);
       break;
+    case 3174: // Great Lakes Albers / ALbers Conis Equal Area Projection Test
+      pZone->datum = udGZGD_NAD83;
+      pZone->projection = udGZPT_AlbersEqualArea;
+      udStrcpy(pZone->zoneName, "Great Lakes Albers");
+      pZone->meridian = -84.455955;
+      pZone->latProjCentre = 45.568977;
+      pZone->falseNorthing = 1662888.5;
+      pZone->firstParallel = 42.122774;
+      pZone->secondParallel = 49.01518;
+      pZone->falseEasting = 1000000;
+      pZone->falseNorthing = 1000000;
+      pZone->scaleFactor = 1.0;
+      pZone->unitMetreScale = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(40.4, -93.21);
+      pZone->latLongBoundMax = udDouble2::create(50.74, -74.50);
+      break;
     case 3414: // Singapore TM
       pZone->datum = udGZGD_SVY21;
       pZone->projection = udGZPT_TransverseMercator;
@@ -1541,6 +1558,12 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for Mercator is 1.0
           pZone->scaleFactor = 1.0;
       }
+      else if (udStrstr(pName, 0, "Albers_Conic_Equal_Area"))
+      {
+        pZone->projection = udGZPT_AlbersEqualArea;
+        if (pZone->scaleFactor == 0)
+          pZone->scaleFactor = 1.0;
+      }
     }
     else if (udStrEqual(pType, "SPHEROID"))
     {
@@ -1720,6 +1743,12 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator_Azimuth_Center\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
       udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+  }
+  else if (zone.projection == udGZPT_AlbersEqualArea)
+  {
+    udSprintf(&pWKTProjection, "PROJECTION[\"Albers_Conic_Equal_Area\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"standard_parallel_1\",%s],\nPARAMETER[\"standard_parallel_2\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
+      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision),
       udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
 
@@ -2131,6 +2160,37 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
     return udDouble3::create(E, N, ellipsoidHeight);
   }
+  else if (zone.projection == udGZPT_AlbersEqualArea)
+  {
+    phi = UD_DEG2RAD(phi);
+    omega = -UD_DEG2RAD(omega); // West Axis
+    //double phi0 = UD_DEG2RAD(zone.latProjCentre - zone.falseEasting);
+    //double lambda0 = UD_DEG2RAD(zone.meridian - zone.falseNorthing);
+    double phi0 = UD_DEG2RAD(zone.latProjCentre);
+    double lambda0 = UD_DEG2RAD(zone.meridian);
+    double a = zone.semiMajorAxis;
+    double eSq = zone.eccentricitySq;
+
+    double OneMeSq = (1 - eSq);
+    double alpha = OneMeSq * ((udSin(phi) / (1 - eSq * udPow(udSin(phi), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(phi)) / (1 + e * udSin(phi))));
+    double alpha0 = OneMeSq * ((udSin(phi0) / (1 - eSq * udPow(udSin(phi0), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(phi0)) / (1 + e * udSin(phi0))));
+    double alpha1 = OneMeSq * ((udSin(UD_DEG2RAD(zone.firstParallel)) / (1 - eSq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(UD_DEG2RAD(zone.firstParallel))) / (1 + e * udSin(UD_DEG2RAD(zone.firstParallel)))));
+    double alpha2 = OneMeSq * ((udSin(UD_DEG2RAD(zone.secondParallel)) / (1 - eSq * udPow(udSin(UD_DEG2RAD(zone.secondParallel)), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(UD_DEG2RAD(zone.secondParallel))) / (1 + e * udSin(UD_DEG2RAD(zone.secondParallel)))));
+
+    double m1 = udCos(UD_DEG2RAD(zone.firstParallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2));
+    double m2 = udCos(UD_DEG2RAD(zone.secondParallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.secondParallel)), 2));
+    double n = (udPow(m1, 2) - udPow(m2, 2)) / (alpha2 - alpha1);
+    double C = udPow(m1, 2) + n * alpha1;
+
+    double rho = (a * udSqrt(C - n * alpha)) / n;
+    double rho0 = (a * udSqrt(C - n * alpha0)) / n;
+    double theta = n * (omega - lambda0);
+
+    double E = zone.falseEasting + rho * udSin(theta);;
+    double N = zone.falseNorthing + rho0 - rho * udCos(theta);
+
+    return udDouble3::create(E, N, ellipsoidHeight);
+  }
 
   return udDouble3::zero(); // Unsupported projection
 }
@@ -2475,6 +2535,45 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG(lambda);
+    latLong.z = position.z;
+  }
+  else if (zone.projection == udGZPT_AlbersEqualArea)
+  {
+    double a = zone.semiMajorAxis;
+    double eSq = zone.eccentricitySq;
+
+    double phi0 = UD_DEG2RAD(zone.latProjCentre);
+    //double lambda0 = UD_DEG2RAD(zone.meridian);
+
+    double OneMeSq = (1 - eSq);
+    double alpha0 = OneMeSq * ((udSin(phi0) / (1 - eSq * udPow(udSin(phi0), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(phi0)) / (1 + e * udSin(phi0))));
+    double alpha1 = OneMeSq * ((udSin(UD_DEG2RAD(zone.firstParallel)) / (1 - eSq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(UD_DEG2RAD(zone.firstParallel))) / (1 + e * udSin(UD_DEG2RAD(zone.firstParallel)))));
+    double alpha2 = OneMeSq * ((udSin(UD_DEG2RAD(zone.secondParallel)) / (1 - eSq * udPow(udSin(UD_DEG2RAD(zone.secondParallel)), 2))) - (1 / (2 * e)) * udLogN((1 - e * udSin(UD_DEG2RAD(zone.secondParallel))) / (1 + e * udSin(UD_DEG2RAD(zone.secondParallel)))));
+
+    double m1 = udCos(UD_DEG2RAD(zone.firstParallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2));
+    double m2 = udCos(UD_DEG2RAD(zone.secondParallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.secondParallel)), 2));
+    double n = (udPow(m1, 2) - udPow(m2, 2)) / (alpha2 - alpha1);
+    double C = udPow(m1, 2) + n * alpha1;
+
+    double rho0 = (a * udSqrt(C - n * alpha0)) / n;
+    double theta = 0.0;
+    if (n > 0.0)
+      theta = udATan2((position.x - zone.falseEasting), (rho0 - (position.y - zone.falseNorthing)));
+    else
+      theta = udATan2(-(position.x - zone.falseEasting), -(rho0 - (position.y - zone.falseNorthing)));
+
+    double rhoP = udSqrt(udPow(position.x - zone.falseEasting,2) + udPow(rho0 - (position.y - zone.falseNorthing), 2));
+    double alphaP = (C - (udPow(rhoP, 2) * udPow(n,2) / udPow(a,2))) / n;
+    double betaP = udASin(alphaP / (1 - ((1 - eSq) / (2 * e)) * udLogN ((1 - e) / (1 + e))));
+
+    double phi = betaP
+      + ((eSq / 3.0 + 31 * udPow(e, 4) / 180 + 517 * udPow(e, 6) / 5040) * udSin(2 * betaP))
+      + ((23 * udPow(e, 4) / 360 + 251 * udPow(e, 6) / 3780) * udSin(4 * betaP))
+      + ((761 * udPow(e, 6) / 45360) * udSin(6 * betaP));
+    double lambda = UD_DEG2RAD(zone.meridian) + (theta / n);
+
+    latLong.x = UD_RAD2DEG(phi);
+    latLong.y = UD_RAD2DEG(-lambda);// West Axis
     latLong.z = position.z;
   }
 

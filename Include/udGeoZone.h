@@ -110,6 +110,8 @@ enum udGeoZoneProjectionType
   udGZPT_HotineObliqueMercatorvA,
   udGZPT_HotineObliqueMercatorvB,
 
+  udGZPT_AlbersEqualArea,
+
   udGZPT_Count
 };
 
