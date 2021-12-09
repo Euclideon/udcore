@@ -1,5 +1,7 @@
 #include "udThread.h"
 
+#include <atomic>
+
 #if UDPLATFORM_WINDOWS
 //
 // SetThreadName function taken from https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code
@@ -68,7 +70,7 @@ struct udThread
   udThreadStart threadStarter;
   void *pThreadData;
   udSemaphore *pCacheSemaphore; // Semaphore is non-null only while on the cached thread list
-  volatile int32_t refCount;
+  std::atomic<int32_t> refCount;
 };
 
 #if UDPLATFORM_WINDOWS
@@ -171,7 +173,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
 #endif
     pThread->threadStarter = threadStarter;
     pThread->pThreadData = pThreadData;
-    udInterlockedExchange(&pThread->refCount, 1);
+    pThread->refCount = 1;
 # if UDPLATFORM_WINDOWS
     pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
 #else
@@ -191,7 +193,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
   {
     // Since we're returning a handle, increment the ref count because the caller is now expected to destroy it
     *ppThread = pThread;
-    udInterlockedPreIncrement(&pThread->refCount);
+    ++pThread->refCount;
   }
   result = udR_Success;
 
@@ -233,7 +235,7 @@ void udThread_Destroy(udThread **ppThread)
   {
     udThread *pThread = *ppThread;
     *ppThread = nullptr;
-    if (pThread && udInterlockedPreDecrement(&pThread->refCount) == 0)
+    if (pThread && (--pThread->refCount) == 0)
     {
       udDestroySemaphore(&pThread->pCacheSemaphore);
 #if UDPLATFORM_WINDOWS

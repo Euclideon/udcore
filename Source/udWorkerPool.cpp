@@ -7,6 +7,7 @@
 #include "udThread.h"
 #include "udMath.h"
 #include "udStringUtil.h"
+#include <atomic>
 
 struct udWorkerPoolThread
 {
@@ -28,12 +29,12 @@ struct udWorkerPool
   udSafeDeque<udWorkerPoolTask> *pQueuedPostTasks;
 
   udSemaphore *pSemaphore;
-  volatile int32_t activeThreads;
+  std::atomic<int32_t> activeThreads;
 
   uint8_t totalThreads;
   udWorkerPoolThread *pThreadData;
 
-  udInterlockedBool isRunning;
+  std::atomic<bool> isRunning;
 };
 
 // ----------------------------------------------------------------------------
@@ -55,11 +56,11 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
     if (waitValue != 0)
       continue;
 
-    udInterlockedPreIncrement(&pPool->activeThreads);
+    ++pPool->activeThreads;
 
     if (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) != udR_Success)
     {
-      udInterlockedPreIncrement(&pPool->activeThreads);
+      --pPool->activeThreads;
       continue;
     }
 
@@ -71,7 +72,7 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
     else if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);
 
-    udInterlockedPreDecrement(&pPool->activeThreads);
+    --pPool->activeThreads;
   }
 
   return 0;

@@ -2,6 +2,7 @@
 #include "udStringUtil.h"
 
 #include <stdio.h>
+#include <atomic>
 
 void (*gpudDebugPrintfOutputCallback)(const char *pString) = nullptr;
 
@@ -66,7 +67,7 @@ void udDebugPrintf(const char *format, ...)
 UDTHREADLOCAL udTrace *udTrace::head = NULL;
 UDTHREADLOCAL int udTrace::depth = 0;
 UDTHREADLOCAL int udTrace::threadId = -1;
-static udInterlockedInt32 nextThreadId;
+static std::atomic<int32_t> nextThreadId;
 
 // ***************************************************************************************
 int udTrace::GetThreadId()

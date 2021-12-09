@@ -1,5 +1,6 @@
 #include "udAsyncJob.h"
 #include "udThread.h"
+#include <atomic>
 
 #define RESULT_SENTINAL -1 // A sentinal value used to determine when valid result has been written
 #define RESULT_PENDING  -2 // A sentinal value used to determine when async call has been made and not returned
@@ -7,8 +8,8 @@
 struct udAsyncJob
 {
   udSemaphore *pSemaphore;
-  volatile int32_t returnResult;
-  udInterlockedBool pending;
+  std::atomic<int32_t> returnResult;
+  std::atomic<bool> pending;
 };
 
 // ****************************************************************************
@@ -22,7 +23,7 @@ udResult udAsyncJob_Create(udAsyncJob **ppJobHandle)
   UD_ERROR_NULL(pJob, udR_MemoryAllocationFailure);
   pJob->pSemaphore = udCreateSemaphore();
   UD_ERROR_NULL(pJob->pSemaphore, udR_MemoryAllocationFailure);
-  udInterlockedExchange(&pJob->returnResult, RESULT_SENTINAL);
+  pJob->returnResult = RESULT_SENTINAL;
   pJob->pending = false;
   *ppJobHandle = pJob;
   pJob = nullptr;
@@ -40,7 +41,7 @@ void udAsyncJob_SetResult(udAsyncJob *pJobHandle, udResult returnResult)
 {
   if (pJobHandle)
   {
-    udInterlockedExchange(&pJobHandle->returnResult, returnResult);
+    pJobHandle->returnResult = returnResult;
     udIncrementSemaphore(pJobHandle->pSemaphore);
   }
 }
@@ -54,7 +55,7 @@ udResult udAsyncJob_GetResult(udAsyncJob *pJobHandle)
     if (pJobHandle->pending)
     {
       udWaitSemaphore(pJobHandle->pSemaphore);
-      udResult result = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
+      udResult result = (udResult)pJobHandle->returnResult.exchange(RESULT_SENTINAL);
       pJobHandle->pending = false;
       return result;
     }
@@ -76,7 +77,7 @@ bool udAsyncJob_GetResultTimeout(udAsyncJob *pJobHandle, udResult *pResult, int 
     if (pJobHandle->returnResult != RESULT_SENTINAL)
     {
       if (pResult)
-        *pResult = (udResult)udInterlockedExchange(&pJobHandle->returnResult, RESULT_SENTINAL);
+        *pResult = (udResult)pJobHandle->returnResult.exchange(RESULT_SENTINAL);
       pJobHandle->pending = false;
       return true;
     }
@@ -100,8 +101,7 @@ void udAsyncJob_SetPending(udAsyncJob *pJobHandle)
 // Author: Dave Pevreal, June 2018
 bool udAsyncJob_IsPending(udAsyncJob *pJobHandle)
 {
-  udMemoryBarrier();
-  return (pJobHandle) ? pJobHandle->pending : false;
+  return (pJobHandle) ? pJobHandle->pending.load() : false;
 }
 
 // ****************************************************************************

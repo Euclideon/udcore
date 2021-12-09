@@ -29,6 +29,7 @@
 #include "udStringUtil.h"
 #include <stdio.h>
 #include <sys/stat.h>
+#include <atomic>
 
 #if UDPLATFORM_NACL
 # define fseeko fseek
@@ -42,7 +43,7 @@ static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
 static udFile_SeekWriteHandlerFunc  udFileHandler_FILESeekWrite;
 static udFile_ReleaseHandlerFunc    udFileHandler_FILERelease;
 static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
-volatile int32_t g_udFileHandler_FILEHandleCount;
+std::atomic<int32_t> g_udFileHandler_FILEHandleCount;
 #if FILE_DEBUG
 #pragma optimize("", off)
 #endif
@@ -79,7 +80,7 @@ static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
 #endif
 
   if (pFile)
-    udInterlockedPreIncrement(&g_udFileHandler_FILEHandleCount);
+    ++g_udFileHandler_FILEHandleCount;
 #if FILE_DEBUG
   if (pFile)
     udDebugPrintf("Opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount);
@@ -159,7 +160,7 @@ epilogue:
     if (pFile->pCrtFile)
     {
       fclose(pFile->pCrtFile);
-      udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
+      --g_udFileHandler_FILEHandleCount;
     }
     udFree(pFile->pFilenameCopy);
     udFree(pFile);
@@ -269,7 +270,7 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
 #endif
   fclose(pFILE->pCrtFile);
   pFILE->pCrtFile = nullptr;
-  udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
+  --g_udFileHandler_FILEHandleCount;
 
   result = udR_Success;
 
@@ -297,7 +298,7 @@ static udResult udFileHandler_FILEClose(udFile **ppFile)
     {
       result = (fclose(pFILE->pCrtFile) != 0) ? udR_CloseFailure : udR_Success;
       pFILE->pCrtFile = nullptr;
-      udInterlockedPreDecrement(&g_udFileHandler_FILEHandleCount);
+      --g_udFileHandler_FILEHandleCount;
     }
 
     if (pFILE->pMutex)

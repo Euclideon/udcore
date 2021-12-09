@@ -12,6 +12,8 @@
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/error.h"
 
+#include <atomic>
+
 #if UDPLATFORM_WINDOWS
 # include <windows.h>
 # include <Wincrypt.h>
@@ -43,13 +45,18 @@
 # define SOCKET_ERROR            (-1)
 #endif //INVALID_SOCKET
 
-static struct
+struct udSocketSharedData
 {
-  volatile int32_t loadCount = 0; // ref count for loaded certs; must be zero
-  volatile int32_t initialised = 0; // set to 1 once initialisation is complete
-  mbedtls_entropy_context entropy;
-  mbedtls_x509_crt certificateChain;
-} g_udSocketSharedData;
+  static std::atomic<int32_t> loadCount; // ref count for loaded certs; must be zero
+  static std::atomic<int32_t> initialised; // set to 1 once initialisation is complete
+  static mbedtls_entropy_context entropy;
+  static mbedtls_x509_crt certificateChain;
+};
+
+std::atomic<int32_t> udSocketSharedData::loadCount(0);
+std::atomic<int32_t> udSocketSharedData::initialised(0);
+mbedtls_entropy_context udSocketSharedData::entropy;
+mbedtls_x509_crt udSocketSharedData::certificateChain;
 
 struct udSocket
 {
@@ -83,8 +90,8 @@ udResult udSocket_LoadCACerts()
   udResult result;
   bool certParsed = false;
 
-  mbedtls_entropy_init(&g_udSocketSharedData.entropy);
-  mbedtls_x509_crt_init(&g_udSocketSharedData.certificateChain);
+  mbedtls_entropy_init(&udSocketSharedData::entropy);
+  mbedtls_x509_crt_init(&udSocketSharedData::certificateChain);
 
   // Open a scope to prevent various initialisation warnings
   {
@@ -97,7 +104,7 @@ udResult udSocket_LoadCACerts()
     UD_ERROR_NULL(store, udR_Failure);
     for (PCCERT_CONTEXT cert = CertEnumCertificatesInStore(store, nullptr); cert; cert = CertEnumCertificatesInStore(store, cert))
     {
-      if (mbedtls_x509_crt_parse_der(&g_udSocketSharedData.certificateChain, (unsigned char *)cert->pbCertEncoded, cert->cbCertEncoded) == 0)
+      if (mbedtls_x509_crt_parse_der(&udSocketSharedData::certificateChain, (unsigned char *)cert->pbCertEncoded, cert->cbCertEncoded) == 0)
         certParsed = true;
     }
     CertCloseStore(store, 0);
@@ -129,7 +136,7 @@ udResult udSocket_LoadCACerts()
         dat = SecCertificateCopyData(item);
         if (dat)
         {
-          if (mbedtls_x509_crt_parse_der(&g_udSocketSharedData.certificateChain, (unsigned char*)CFDataGetBytePtr(dat), CFDataGetLength(dat)) == 0)
+          if (mbedtls_x509_crt_parse_der(&udSocketSharedData::certificateChain, (unsigned char*)CFDataGetBytePtr(dat), CFDataGetLength(dat)) == 0)
             certParsed = true;
           CFRelease(dat);
         }
@@ -159,7 +166,7 @@ udResult udSocket_LoadCACerts()
     {
       if (udFileExists(certFiles[i]) == udR_Success)
       {
-        if (mbedtls_x509_crt_parse_file(&g_udSocketSharedData.certificateChain, certFiles[i]) == 0)
+        if (mbedtls_x509_crt_parse_file(&udSocketSharedData::certificateChain, certFiles[i]) == 0)
           certParsed = true;
       }
     }
@@ -172,7 +179,7 @@ udResult udSocket_LoadCACerts()
 
       do
       {
-        if (mbedtls_x509_crt_parse_file(&g_udSocketSharedData.certificateChain, certFiles[i]) == 0)
+        if (mbedtls_x509_crt_parse_file(&udSocketSharedData::certificateChain, certFiles[i]) == 0)
           certParsed = true;
       } while (udReadDir(pDir) == udR_Success);
 
@@ -194,7 +201,8 @@ udResult udSocket_InitSystem()
   udResult result;
 
   // LOAD CA CERTIFICATES
-  if (udInterlockedPostIncrement(&g_udSocketSharedData.loadCount) == 0)
+  int32_t loadCount = udSocketSharedData::loadCount++;
+  if (loadCount == 0)
   {
     UD_ERROR_CHECK(udCrypto_Init());
     UD_ERROR_CHECK(udSocket_LoadCACerts());
@@ -203,12 +211,12 @@ udResult udSocket_InitSystem()
     WSADATA wsa_data;
     WSAStartup(MAKEWORD(1, 1), &wsa_data);
 #endif
-    udInterlockedExchange(&g_udSocketSharedData.initialised, 1);
+    udSocketSharedData::initialised = 1;
   }
   else
   {
     // If another thread has begun initialisation, wait for it to complete
-    while (!g_udSocketSharedData.initialised)
+    while (!udSocketSharedData::initialised.load())
       udSleep(1);
   }
 
@@ -222,11 +230,12 @@ epilogue:
 // Author: Paul Fox, October 2018
 void udSocket_DeinitSystem()
 {
-  if (udInterlockedPreDecrement(&g_udSocketSharedData.loadCount) == 0)
+  int32_t loadCount = --udSocketSharedData::loadCount;
+  if (loadCount == 0)
   {
-    g_udSocketSharedData.initialised = 0;
-    mbedtls_entropy_free(&g_udSocketSharedData.entropy);
-    mbedtls_x509_crt_free(&g_udSocketSharedData.certificateChain);
+    udSocketSharedData::initialised = 0;
+    mbedtls_entropy_free(&udSocketSharedData::entropy);
+    mbedtls_x509_crt_free(&udSocketSharedData::certificateChain);
     udCrypto_Deinit();
 
 #if UDPLATFORM_WINDOWS
@@ -293,7 +302,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
     mbedtls_x509_crt_init(&pSocket->tlsClient.certificateServer);
 
     //Set up encryption things
-    retVal = mbedtls_ctr_drbg_seed(&pSocket->tlsClient.ctr_drbg, mbedtls_entropy_func, &g_udSocketSharedData.entropy, nullptr, 0);
+    retVal = mbedtls_ctr_drbg_seed(&pSocket->tlsClient.ctr_drbg, mbedtls_entropy_func, &udSocketSharedData::entropy, nullptr, 0);
     if (retVal != 0)
     {
       udDebugPrintf(" failed! mbedtls_ctr_drbg_seed returned %d\n", retVal);
@@ -348,7 +357,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
       }
 
       // Link certificate chains
-      mbedtls_ssl_conf_ca_chain(&pSocket->tlsClient.conf, &g_udSocketSharedData.certificateChain, NULL);
+      mbedtls_ssl_conf_ca_chain(&pSocket->tlsClient.conf, &udSocketSharedData::certificateChain, NULL);
       retVal = mbedtls_ssl_conf_own_cert(&pSocket->tlsClient.conf, &pSocket->tlsClient.certificateServer, &pSocket->tlsClient.publicKey);
       if (retVal != 0)
       {

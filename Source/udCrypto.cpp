@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <atomic>
 #include "udCrypto.h"
 #include "udJSON.h"
 #include "udThread.h"
@@ -84,11 +85,14 @@ struct udCryptoSigContext
   };
 };
 
-static struct
+struct udCryptoSharedData
 {
-  volatile int32_t loadCount = 0;
-  volatile int32_t initialised = 0;
-} g_udCryptoSharedData;
+  static std::atomic<int32_t> loadCount;
+  static std::atomic<int32_t> initialised;
+};
+
+std::atomic<int32_t> udCryptoSharedData::loadCount(0);
+std::atomic<int32_t> udCryptoSharedData::initialised(0);
 
 // ***************************************************************************************
 // Author: Dave Pevreal, September 2017
@@ -179,7 +183,7 @@ udResult udCrypto_Random(void *pMem, size_t len)
 
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   // Seed the random number generator
   UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
@@ -234,15 +238,16 @@ int udCrypto_ThreadingMutexUnlock(mbedtls_threading_mutex_t *pMutexCtx)
 // Author: Paul Fox, October 2018
 udResult udCrypto_Init()
 {
-  if (udInterlockedPostIncrement(&g_udCryptoSharedData.loadCount) == 0)
+  int32_t loadCount = udCryptoSharedData::loadCount++;
+  if (loadCount == 0)
   {
     mbedtls_threading_set_alt(udCrypto_ThreadingMutexInit, udCrypto_ThreadingMutexFree, udCrypto_ThreadingMutexLock, udCrypto_ThreadingMutexUnlock);
-    udInterlockedExchange(&g_udCryptoSharedData.initialised, 1);
+    udCryptoSharedData::initialised = 1;
   }
   else
   {
     // If another thread has begun initialisation, wait for it to complete
-    while (!g_udCryptoSharedData.initialised)
+    while (!udCryptoSharedData::initialised.load())
       udSleep(1);
   }
 
@@ -253,9 +258,10 @@ udResult udCrypto_Init()
 // Author: Paul Fox, October 2018
 void udCrypto_Deinit()
 {
-  if (udInterlockedPreDecrement(&g_udCryptoSharedData.loadCount) == 0)
+  int32_t loadCount = --udCryptoSharedData::loadCount;
+  if (loadCount == 0)
   {
-    g_udCryptoSharedData.initialised = 0;
+    udCryptoSharedData::initialised = 0;
     mbedtls_threading_free_alt();
   }
 }
@@ -1062,7 +1068,7 @@ udResult udCryptoKey_CreateDHM(udCryptoDHMContext **ppDHMCtx, const char **ppPub
   udJSON v;
   udCryptoDHMContext *pCtx = nullptr;
 
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
   pCtx = udAllocType(udCryptoDHMContext, 1, udAF_Zero);
   UD_ERROR_NULL(pCtx, udR_MemoryAllocationFailure);
   UD_ERROR_CHECK(pCtx->Init(keyLen));
@@ -1161,7 +1167,7 @@ udResult udCryptoKeyECDH_CreateContextPartyA(udCryptoECDHContext **ppECDHCtx, co
   size_t len;
   unsigned char buf[1000] = {};
 
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   UD_ERROR_NULL(ppECDHCtx, udR_InvalidParameter);
   UD_ERROR_NULL(ppPublicValueA, udR_InvalidParameter);
@@ -1208,7 +1214,7 @@ udResult udCryptoKeyECDH_DeriveFromPartyA(const char *pPublicValueA, const char 
 
   size_t written = 0;
 
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   UD_ERROR_NULL(pPublicValueA, udR_InvalidParameter);
   UD_ERROR_NULL(ppPublicValueB, udR_InvalidParameter);
@@ -1256,7 +1262,7 @@ udResult udCryptoKeyECDH_DeriveFromPartyB(udCryptoECDHContext *pECDHCtx, const c
   unsigned char buf[1000] = {};
   size_t written = 0;
 
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   UD_ERROR_NULL(pECDHCtx, udR_InvalidParameter);
   UD_ERROR_NULL(pPublicValueB, udR_InvalidParameter);
@@ -1302,7 +1308,7 @@ udResult udCryptoSig_CreateKeyPair(udCryptoSigContext **ppSigCtx, udCryptoSigTyp
 
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   pSigCtx = udAllocType(udCryptoSigContext, 1, udAF_Zero);
   UD_ERROR_NULL(pSigCtx, udR_MemoryAllocationFailure);
@@ -1542,7 +1548,7 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter);
   UD_ERROR_NULL(ppSignatureBase64, udR_InvalidParameter);
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
@@ -1585,7 +1591,7 @@ udResult udCryptoSig_Verify(udCryptoSigContext *pSigCtx, const char *pHashBase64
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter);
   UD_ERROR_NULL(pSignatureBase64, udR_InvalidParameter);
-  UD_ERROR_IF(!g_udCryptoSharedData.initialised, udR_NotInitialized);
+  UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
