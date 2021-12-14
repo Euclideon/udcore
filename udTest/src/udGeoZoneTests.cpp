@@ -472,6 +472,28 @@ TEST(udGeoZone, HotineObliqueMercator)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
+TEST(udGeoZone, AlbersConicEqualArea)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.37-38
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 3174 : Great Lakes Albers
+
+  udDouble3 latLong = udDouble3::create(42.75, 78.75, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 3174)); // Amersfoort
+  EXPECT_EQ(geoZone.datum, udGZGD_NAD83);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  EXPECT_EQ(udRound(pos.x * localPrecision), udRound(1466493.492 * localPrecision));
+  EXPECT_EQ(udRound(pos.y * localPrecision), udRound(702903.006 * localPrecision));
+
+  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
+  EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
+}
+
 TEST(udGeoZone, OSGB)
 {
   // 27700 - UK
@@ -733,6 +755,8 @@ struct
   { 3113, "PROJCS[\"GDA94 / BCSG02\",\nGEOGCS[\"GDA94\",\nDATUM[\"Geocentric_Datum_of_Australia_1994\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6283\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4283\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",-28],\nPARAMETER[\"central_meridian\",153],\nPARAMETER[\"scale_factor\",0.99999],\nPARAMETER[\"false_easting\",50000],\nPARAMETER[\"false_northing\",100000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Easting\",EAST],\nAXIS[\"Northing\",NORTH],\nAUTHORITY[\"EPSG\",\"3113\"]]" },
 
   { 3139, "PROJCS[\"Vanua_Levu_1915 / Vanua Levu 1915\",\nGEOGCS[\"Vanua Levu 1915\",\nDATUM[\"Vanua_Levu_1915\",\nSPHEROID[\"Clarke 1880 (international foot)\",6378306.369,293.466307656,\nAUTHORITY[\"EPSG\",\"7055\"]],\nTOWGS84[51,391,-36,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6748\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4748\"]],\nPROJECTION[\"Hyperbolic_Cassini_Soldner\"],\nPARAMETER[\"latitude_of_origin\",-16.25],\nPARAMETER[\"central_meridian\",179.3333333333333],\nPARAMETER[\"scale_factor\",1],\nPARAMETER[\"false_easting\",1251331.8],\nPARAMETER[\"false_northing\",1662888.5],\nUNIT[\"link\",0.201168,\nAUTHORITY[\"EPSG\",\"9098\"]],\nAUTHORITY[\"EPSG\",\"3139\"]]" },
+
+  { 3174, "PROJCS[\"NAD83 / Great Lakes Albers\",\nGEOGCS[\"NAD83\",\nDATUM[\"North_American_Datum_1983\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6269\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4269\"]],\nPROJECTION[\"Albers_Conic_Equal_Area\"],\nPARAMETER[\"latitude_of_center\",45.568977],\nPARAMETER[\"longitude_of_center\",-84.455955],\nPARAMETER[\"standard_parallel_1\",42.122774],\nPARAMETER[\"standard_parallel_2\",49.01518],\nPARAMETER[\"false_easting\",1000000],\nPARAMETER[\"false_northing\",1000000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"3174\"]]"},
 
   { 3414, "PROJCS[\"SVY21 / Singapore TM\",\nGEOGCS[\"SVY21\",\nDATUM[\"SVY21\",\nSPHEROID[\"WGS 84\",6378137,298.257223563,\nAUTHORITY[\"EPSG\",\"7030\"]],\nAUTHORITY[\"EPSG\",\"6757\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4757\"]],\nPROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",1.366666666666667],\nPARAMETER[\"central_meridian\",103.8333333333333],\nPARAMETER[\"scale_factor\",1],\nPARAMETER[\"false_easting\",28001.642],\nPARAMETER[\"false_northing\",38744.572],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"3414\"]]" },
 
