@@ -472,7 +472,7 @@ TEST(udGeoZone, HotineObliqueMercator)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
-  TEST(udGeoZone, AlbersConicEqualArea)
+TEST(udGeoZone, AlbersConicEqualArea)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.37-38
   // update available here https://epsg.org/guidance-notes.html
@@ -489,7 +489,8 @@ TEST(udGeoZone, HotineObliqueMercator)
   EXPECT_EQ(udRound(pos.x * localPrecision), udRound(1466493.492 * localPrecision));
   EXPECT_EQ(udRound(pos.y * localPrecision), udRound(702903.006 * localPrecision));
 }
-  TEST(udGeoZone, EquidistantCylindrical)
+
+TEST(udGeoZone, EquidistantCylindrical)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.72-73
   // update available here https://epsg.org/guidance-notes.html
