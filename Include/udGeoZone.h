@@ -80,6 +80,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_NEWBEIJING, //EPSG:4555
   udGZGD_XIAN1980,   //EPSG:4610
   udGZGD_TIMB1948,   //EPSG:28973
+  udGZGD_NZGD49,     //EPSG:4272
 
   udGZGD_Count
 };
