@@ -472,7 +472,7 @@ TEST(udGeoZone, HotineObliqueMercator)
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
 
-TEST(udGeoZone, AlbersConicEqualArea)
+  TEST(udGeoZone, AlbersConicEqualArea)
 {
   // Test is from 373-07-02.pdf  Guidance Note 7-2 p.37-38
   // update available here https://epsg.org/guidance-notes.html
@@ -488,6 +488,21 @@ TEST(udGeoZone, AlbersConicEqualArea)
   udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
   EXPECT_EQ(udRound(pos.x * localPrecision), udRound(1466493.492 * localPrecision));
   EXPECT_EQ(udRound(pos.y * localPrecision), udRound(702903.006 * localPrecision));
+}
+  TEST(udGeoZone, EquidistantCylindrical)
+{
+  // Test is from 373-07-02.pdf  Guidance Note 7-2 p.72-73
+  // update available here https://epsg.org/guidance-notes.html
+  // EPSG 4087 : World Equidistant Cylindrical
+
+  udDouble3 latLong = udDouble3::create(55.0, 10.0, 0.0);
+  uint64_t  localPrecision = 1; // 1m
+  udGeoZone geoZone = {};
+
+  EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 4087)); // Amersfoort
+  EXPECT_EQ(geoZone.datum, udGZGD_WGS84);
+
+  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
 
   udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
@@ -773,6 +788,8 @@ struct
   { 3948, "PROJCS[\"RGF93 / CC48\",\nGEOGCS[\"RGF93\",\nDATUM[\"Reseau_Geodesique_Francais_1993\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6171\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4171\"]],\nPROJECTION[\"Lambert_Conformal_Conic_2SP\"],\nPARAMETER[\"standard_parallel_1\",47.25],\nPARAMETER[\"standard_parallel_2\",48.75],\nPARAMETER[\"latitude_of_origin\",48],\nPARAMETER[\"central_meridian\",3],\nPARAMETER[\"false_easting\",1700000],\nPARAMETER[\"false_northing\",7200000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH],\nAUTHORITY[\"EPSG\",\"3948\"]]" },
   { 3949, "PROJCS[\"RGF93 / CC49\",\nGEOGCS[\"RGF93\",\nDATUM[\"Reseau_Geodesique_Francais_1993\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6171\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4171\"]],\nPROJECTION[\"Lambert_Conformal_Conic_2SP\"],\nPARAMETER[\"standard_parallel_1\",48.25],\nPARAMETER[\"standard_parallel_2\",49.75],\nPARAMETER[\"latitude_of_origin\",49],\nPARAMETER[\"central_meridian\",3],\nPARAMETER[\"false_easting\",1700000],\nPARAMETER[\"false_northing\",8200000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH],\nAUTHORITY[\"EPSG\",\"3949\"]]" },
   { 3950, "PROJCS[\"RGF93 / CC50\",\nGEOGCS[\"RGF93\",\nDATUM[\"Reseau_Geodesique_Francais_1993\",\nSPHEROID[\"GRS 1980\",6378137,298.257222101,\nAUTHORITY[\"EPSG\",\"7019\"]],\nTOWGS84[0,0,0,0,0,0,0],\nAUTHORITY[\"EPSG\",\"6171\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4171\"]],\nPROJECTION[\"Lambert_Conformal_Conic_2SP\"],\nPARAMETER[\"standard_parallel_1\",49.25],\nPARAMETER[\"standard_parallel_2\",50.75],\nPARAMETER[\"latitude_of_origin\",50],\nPARAMETER[\"central_meridian\",3],\nPARAMETER[\"false_easting\",1700000],\nPARAMETER[\"false_northing\",9200000],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"X\",EAST],\nAXIS[\"Y\",NORTH],\nAUTHORITY[\"EPSG\",\"3950\"]]" },
+
+  { 4087, "PROJCS[\"WGS 84 / World Equidistant Cylindrical\",\nGEOGCS[\"WGS 84\",\nDATUM[\"WGS_1984\",\nSPHEROID[\"WGS 84\",6378137,298.257223563,\nAUTHORITY[\"EPSG\",\"7030\"]],\nAUTHORITY[\"EPSG\",\"6326\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4326\"]],\nPROJECTION[\"Equirectangular\"],\nPARAMETER[\"latitude_of_origin\",0],\nPARAMETER[\"central_meridian\",0],\nPARAMETER[\"false_easting\",0],\nPARAMETER[\"false_northing\",0],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAUTHORITY[\"EPSG\",\"4087\"]]" },
 
   { 4326, "GEOGCS[\"WGS 84\",\nDATUM[\"WGS_1984\",\nSPHEROID[\"WGS 84\",6378137,298.257223563,\nAUTHORITY[\"EPSG\",\"7030\"]],\nAUTHORITY[\"EPSG\",\"6326\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"degree\",0.0174532925199433,\nAUTHORITY[\"EPSG\",\"9122\"]],\nAUTHORITY[\"EPSG\",\"4326\"]]" },
   { 4328, "GEOCCS[\"WGS 84\",\nDATUM[\"WGS_1984\",\nSPHEROID[\"WGS 84\",6378137,298.257223563,\nAUTHORITY[\"EPSG\",\"7030\"]],\nAUTHORITY[\"EPSG\",\"6326\"]],\nPRIMEM[\"Greenwich\",0,\nAUTHORITY[\"EPSG\",\"8901\"]],\nUNIT[\"metre\",1,\nAUTHORITY[\"EPSG\",\"9001\"]],\nAXIS[\"Geocentric X\",OTHER],\nAXIS[\"Geocentric Y\",OTHER],\nAXIS[\"Geocentric Z\",NORTH],\nAUTHORITY[\"EPSG\",\"4328\"]]" },
