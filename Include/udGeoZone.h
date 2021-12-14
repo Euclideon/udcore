@@ -112,6 +112,7 @@ enum udGeoZoneProjectionType
   udGZPT_HotineObliqueMercatorvB,
 
   udGZPT_AlbersEqualArea,
+  udGZPT_EquidistantCylindrical,
 
   udGZPT_Count
 };
