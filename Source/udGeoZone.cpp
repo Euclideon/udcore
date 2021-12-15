@@ -24,6 +24,7 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Moon_2000_IAU_IAG",  1737400.000, 0.0,                 39064 },// udGZE_MOON
   { "IAG 1975",           6378140.000, 1.0 / 298.257,       7049 }, // udGZE_IAG1975
   { "Everest 1830 (1967 Definition)",6377298.556, 1.0 / 300.8017,    7016 }, // udGZE_Everest1830
+  { "GRS 1967",           6378160.000, 1.0 / 298.247167427, 7036 }, // udGZE_GRS67
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -75,6 +76,8 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Xian 1980",                             "Xian_1980",       "Xian_1980",                                    udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
   { "Timbalai 1948 / Tso Borneo (m)",        "Timbalai 1948",   "Timbalai_1948",                                udGZE_Everest1830,   { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              29873, 6298, true,    false },
   { "NZGD49",                                "NZGD49",          "New_Zealand_Geodetic_Datum_1949",              udGZE_Intl1924,      { 59.47, -5.04, 187.44, 0.47, -0.1, 1.024, -4.5993 },               4272, 6272, true,     true  },
+  { "SWEREF99",                              "SWEREF99",        "SWEREF99",                                     udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4619, 6619, true,     true  },
+  { "SAD69",                                 "SAD69",           "South_American_Datum_1969",                    udGZE_GRS67,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4291, 6291, false,    false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");

@@ -631,6 +631,8 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_XIANG1980 / EPSG:4610
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_TIMB1948 / EPSG:29873
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NZGD49 / EPSG:4272
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_SWEREF99
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_SAD69
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");
