@@ -80,6 +80,8 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "SAD69",                                 "SAD69",           "South_American_Datum_1969",                    udGZE_GRS67,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4291, 6291, true,     false },
   { "GR96",                                  "GR96",            "Greenland_1996",                               udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4747, 6747, false,    true  },
   { "DGN95",                                 "DGN95",           "Datum_Geodesi_Nasional_1995",                  udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4755, 6755, false,    true  },
+  { "UCS-2000",                              "UCS-2000",        "Ukraine_2000",                                 udGZE_Krassowsky1940,{ 25.0, -141.0, -78.5, 0.0, 0.35, 0.736, 0 },                       5561, 1077, true,     true  },
+  { "Hartebeesthoek94",                      "Hartebeesthoek94","Hartebeesthoek94",                             udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4148, 6148, false,    true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
