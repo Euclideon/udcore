@@ -77,7 +77,9 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Timbalai 1948 / Tso Borneo (m)",        "Timbalai 1948",   "Timbalai_1948",                                udGZE_Everest1830,   { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              29873, 6298, true,    false },
   { "NZGD49",                                "NZGD49",          "New_Zealand_Geodetic_Datum_1949",              udGZE_Intl1924,      { 59.47, -5.04, 187.44, 0.47, -0.1, 1.024, -4.5993 },               4272, 6272, true,     true  },
   { "SWEREF99",                              "SWEREF99",        "SWEREF99",                                     udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4619, 6619, true,     true  },
-  { "SAD69",                                 "SAD69",           "South_American_Datum_1969",                    udGZE_GRS67,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4291, 6291, false,    false },
+  { "SAD69",                                 "SAD69",           "South_American_Datum_1969",                    udGZE_GRS67,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4291, 6291, true,     false },
+  { "GR96",                                  "GR96",            "Greenland_1996",                               udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4747, 6747, false,    true  },
+  { "DGN95",                                 "DGN95",           "Datum_Geodesi_Nasional_1995",                  udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4755, 6755, false,    true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
