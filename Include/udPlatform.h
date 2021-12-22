@@ -311,6 +311,16 @@ void _udFree(T *&pMemory, const char *pFile, int line)
     _udFreeInternal((void*)pActualPtr, pFile, line);
   }
 }
+#include <atomic>
+template<typename T>
+void _udFree(std::atomic<T *> &pMemory, const char *pFile, int line)
+{
+  T *pActualPtr = pMemory;
+  if (pActualPtr && pMemory.compare_exchange_strong(pActualPtr, nullptr))
+  {
+    _udFreeInternal((void *)pActualPtr, pFile, line);
+  }
+}
 #define udFree(pMemory) _udFree(pMemory, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 // A secure free will overwrite the memory (to the size specified) with a random 32-bit

@@ -276,7 +276,7 @@ epilogue:
 struct udFile_Zip : public udFile
 {
   mz_zip_archive mz;
-  udFile * volatile pZipFile;
+  std::atomic<udFile *> pZipFile;
   uint8_t *pFileData;
   int index; // Index within the zip of the current file
   std::atomic<int32_t> lengthRead;
@@ -364,7 +364,7 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
   {
     AbortRead(pZip);
     udFile *pZipFile = pZip->pZipFile;
-    if (pZipFile && udInterlockedCompareExchangePointer((void**)&pZip->pZipFile, nullptr, pZipFile) == pZipFile)
+    if (pZipFile && pZip->pZipFile.compare_exchange_strong(pZipFile, nullptr))
       udFile_Close(&pZipFile);
     udDestroyRWLock(&pZip->pRWLock);
     mz_zip_reader_end(&pZip->mz);
@@ -490,6 +490,7 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
 {
   udResult result;
   udFile_Zip *pFile = nullptr;
+  udFile *pZipFile = nullptr;
   char *pSubFilename = nullptr;
   char *pZipName = nullptr;
   const char *pFolderDelim = nullptr;
@@ -522,7 +523,8 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
     *pSubFilename++ = 0; // Skip and null the colon
 
   // Now open the underlying zip file
-  UD_ERROR_CHECK(udFile_Open((udFile**)&pFile->pZipFile, pZipName, udFOF_Read, &zipLen));
+  UD_ERROR_CHECK(udFile_Open(&pZipFile, pZipName, udFOF_Read, &zipLen));
+  pFile->pZipFile = pZipFile;
 
   // Initialise the zip reader
   UD_ERROR_IF(!mz_zip_reader_init(&pFile->mz, (mz_uint64)zipLen, 0), udR_OpenFailure);

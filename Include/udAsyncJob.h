@@ -20,7 +20,7 @@ struct udAsyncJob;
 // A helper for pausing ASync jobs, ensure all fields are zero to be initialised into non-paused state
 struct udAsyncPause
 {
-  udSemaphore *volatile pSema;         // Created locked by initiator of pause, released and destroyed by handler of pause when incremented to release pause
+  std::atomic<udSemaphore *> pSema;         // Created locked by initiator of pause, released and destroyed by handler of pause when incremented to release pause
   udResult errorCausingPause; // If an error condition (eg disk full) initiated a pause, the error code is here
   enum Context
   {

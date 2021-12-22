@@ -123,7 +123,8 @@ void udAsyncPause_RequestPause(udAsyncPause *pPause)
   {
     // Only attempt to pause if a pause is not already in progress
     udSemaphore *pSema = udCreateSemaphore();
-    if (udInterlockedCompareExchangePointer(&pPause->pSema, pSema, nullptr) != nullptr)
+    udSemaphore *pExpected = nullptr;
+    if (!pPause->pSema.compare_exchange_strong(pExpected, pSema))
     {
       // CompareExchange failed, so another thread initiated a pause, just destroy
       udDestroySemaphore(&pSema);
@@ -155,7 +156,7 @@ void udAsyncPause_HandlePause(udAsyncPause *pPause)
     udWaitSemaphore(pSema);
     // Once the wait is over the pause has been released, so destroy the semaphore
     pPause->isPaused = false;
-    udInterlockedExchangePointer(&pPause->pSema, nullptr);
+    pPause->pSema = nullptr;
     udDestroySemaphore(&pSema);
   }
 }

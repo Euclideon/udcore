@@ -57,7 +57,7 @@ void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
 #define DEBUG_CACHE 0
 #define MAX_CACHED_THREADS 16
 #define CACHE_WAIT_SECONDS 30
-static volatile udThread *s_pCachedThreads[MAX_CACHED_THREADS ? MAX_CACHED_THREADS : 1];
+static std::atomic<udThread *> s_pCachedThreads[MAX_CACHED_THREADS ? MAX_CACHED_THREADS : 1];
 
 struct udThread
 {
@@ -96,7 +96,7 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
     threadReturnValue = pThread->threadStarter ? pThread->threadStarter(pThread->pThreadData) : 0;
 
     pThread->threadStarter = nullptr;
-    udInterlockedExchangePointer(&pThread->pThreadData, nullptr);
+    pThread->pThreadData = nullptr;
     reclaimed = false;
 
     if (pThread->refCount == 1)
@@ -104,14 +104,16 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
       // Instead of letting this thread go to waste, see if we can cache it to be recycled
       for (int slotIndex = 0; slotIndex < MAX_CACHED_THREADS; ++slotIndex)
       {
-        if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], pThread, nullptr) == nullptr)
+        udThread *pExpected = nullptr;
+        if (s_pCachedThreads[slotIndex].compare_exchange_strong(pExpected, pThread))
         {
 #if DEBUG_CACHE
           udDebugPrintf("Making thread %p available for cache (slot %d)\n", pThread, slotIndex);
 #endif
           // Successfully added to the cache, now wait to see if anyone wants to dance
           int timeoutWakeup = udWaitSemaphore(pThread->pCacheSemaphore, CACHE_WAIT_SECONDS * 1000);
-          if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) == pThread)
+          pExpected = pThread;
+          if (s_pCachedThreads[slotIndex].compare_exchange_strong(pExpected, nullptr))
           {
 #if DEBUG_CACHE
             udDebugPrintf("Allowing thread %p to die\n", pThread);
@@ -153,14 +155,14 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
   UD_ERROR_NULL(threadStarter, udR_InvalidParameter);
   for (slotIndex = 0; pThread == nullptr && slotIndex < MAX_CACHED_THREADS; ++slotIndex)
   {
-    pThread = const_cast<udThread*>(s_pCachedThreads[slotIndex]);
-    if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) != pThread)
+    pThread = s_pCachedThreads[slotIndex];
+    if (!s_pCachedThreads[slotIndex].compare_exchange_strong(pThread, nullptr))
       pThread = nullptr;
   }
   if (pThread)
   {
     pThread->threadStarter = threadStarter;
-    udInterlockedExchangePointer(&pThread->pThreadData, pThreadData);
+    pThread->pThreadData = pThreadData;
     udIncrementSemaphore(pThread->pCacheSemaphore);
   }
   else
@@ -255,7 +257,7 @@ void udThread_DestroyCached()
     bool anyThreadsLeft = false;
     for (int slotIndex = 0; slotIndex < MAX_CACHED_THREADS; ++slotIndex)
     {
-      volatile udThread *pThread = udInterlockedExchangePointer(&s_pCachedThreads[slotIndex], nullptr);
+      udThread *pThread = s_pCachedThreads[slotIndex].exchange(nullptr);
       if (pThread)
       {
         udIncrementSemaphore(pThread->pCacheSemaphore);
