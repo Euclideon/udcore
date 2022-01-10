@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <atomic>
 
 static char s_udStrEmptyString[] = "";
 
@@ -858,13 +859,13 @@ int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const 
 #define SMALLSTRING_BUFFER_COUNT 32
 #define SMALLSTRING_BUFFER_SIZE 64
 static char s_smallStringBuffers[SMALLSTRING_BUFFER_COUNT][SMALLSTRING_BUFFER_SIZE]; // 32 cycling buffers of 64 characters
-static volatile int32_t s_smallStringBufferIndex = 0;  // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
+static std::atomic<int32_t> s_smallStringBufferIndex(0);  // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
 
                                                        // ****************************************************************************
                                                        // Author: Dave Pevreal, May 2018
 const char *udTempStr(const char *pFormat, ...)
 {
-  int32_t bufIndex = udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1);
+  int32_t bufIndex = (s_smallStringBufferIndex++) & (SMALLSTRING_BUFFER_COUNT - 1);
   size_t bufferSize = SMALLSTRING_BUFFER_SIZE;
 
 retry:
@@ -882,14 +883,15 @@ retry:
     // To keep things simple, attempt to undo the allocation done on the first line of the function
     int previous = bufIndex | (s_smallStringBufferIndex & ~(SMALLSTRING_BUFFER_COUNT - 1));
     // Reset to previous iff current value is exactly previous + 1
-    udInterlockedCompareExchange(&s_smallStringBufferIndex, previous, previous + 1);
+    int expectedPrev = previous + 1;
+    s_smallStringBufferIndex.compare_exchange_strong(expectedPrev, previous);
 
     int requiredBufferCount = udMin(SMALLSTRING_BUFFER_COUNT, (charCount + SMALLSTRING_BUFFER_SIZE) / SMALLSTRING_BUFFER_SIZE);
     bufferSize = requiredBufferCount * SMALLSTRING_BUFFER_SIZE;
     // Try to allocate a number of sequential buffers, understanding that another thread can allocate one also
     while ((((bufIndex = s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)) + requiredBufferCount) <= SMALLSTRING_BUFFER_COUNT)
     {
-      if (udInterlockedCompareExchange(&s_smallStringBufferIndex, bufIndex + requiredBufferCount, bufIndex) == bufIndex)
+      if (s_smallStringBufferIndex.compare_exchange_strong(bufIndex, bufIndex + requiredBufferCount))
       {
         // The bufIndex has upper bits set for the compareExchange, clear them before retrying
         bufIndex &= (SMALLSTRING_BUFFER_COUNT - 1);
@@ -910,7 +912,7 @@ retry:
 // Author: Dave Pevreal, October 2015
 const char *udTempStr_CommaInt(int64_t n)
 {
-  char *pBuf = s_smallStringBuffers[udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)];
+  char *pBuf = s_smallStringBuffers[(s_smallStringBufferIndex++) & (SMALLSTRING_BUFFER_COUNT - 1)];
   uint64_t v = (uint64_t)n;
 
   int i = 0;
@@ -946,7 +948,7 @@ const char *udTempStr_CommaInt(int64_t n)
 // Author: Dave Pevreal, September 2018
 const char *udTempStr_TrimDouble(double v, int maxDecimalPlaces, int minDecimalPlaces, bool undoRounding)
 {
-  char *pBuf = s_smallStringBuffers[udInterlockedPostIncrement(&s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)];
+  char *pBuf = s_smallStringBuffers[(s_smallStringBufferIndex++) & (SMALLSTRING_BUFFER_COUNT - 1)];
   udStrFtoa(pBuf, SMALLSTRING_BUFFER_SIZE, v, maxDecimalPlaces + (undoRounding ? 1 : 0));
   size_t pointIndex;
   if (udStrchr(pBuf, ".", &pointIndex))

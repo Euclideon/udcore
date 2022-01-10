@@ -3,6 +3,7 @@
 #include "udFileHandler.h"
 #include "udMath.h"
 #include "libdeflate.h"
+#include <atomic>
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
@@ -278,9 +279,9 @@ struct udFile_Zip : public udFile
   udFile * volatile pZipFile;
   uint8_t *pFileData;
   int index; // Index within the zip of the current file
-  volatile int32_t lengthRead;
-  udInterlockedBool readComplete;
-  udInterlockedBool abortRead; // Set to true and wait for readComplete
+  std::atomic<int32_t> lengthRead;
+  std::atomic<bool> readComplete;
+  std::atomic<bool> abortRead; // Set to true and wait for readComplete
   udRWLock *pRWLock;
 };
 
@@ -396,7 +397,7 @@ static size_t udMiniZ_ReadFileFromZipCallback(void *pOpaque, mz_uint64 file_ofs,
   if (pFile->pFileData)
     memcpy(pFile->pFileData + file_ofs, pBuf, n);
   udWriteUnlockRWLock(pFile->pRWLock);
-  udInterlockedAdd(&pFile->lengthRead, (int32_t)n);
+  pFile->lengthRead += (int32_t)n;
   return n;
 }
 

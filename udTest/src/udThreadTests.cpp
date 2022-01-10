@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "udThread.h"
+#include <atomic>
 
 TEST(udThreadTests, Mutex)
 {
@@ -113,7 +114,7 @@ TEST(udThreadTests, ThreadSemaphore)
     udSemaphore *pSemaphore;
     udSemaphore *pModified;
     udSemaphore *p500;
-    volatile int32_t value;
+    std::atomic<int32_t> value;
   };
   udThread *pThread1, *pThread2, *pThread3;
   TestStruct data;
@@ -129,7 +130,7 @@ TEST(udThreadTests, ThreadSemaphore)
     {
       //printf("1: pData->pSemaphore wait: %d\n", udWaitSemaphore(pData->pSemaphore));
       udWaitSemaphore(pData->pSemaphore);
-      udInterlockedPreIncrement(&pData->value);
+      ++pData->value;
       if (pData->value > 1000)
         running = false;
 
@@ -150,7 +151,7 @@ TEST(udThreadTests, ThreadSemaphore)
     {
       //printf("2: pData->pSemaphore wait: %d\n", udWaitSemaphore(pData->pSemaphore));
       udWaitSemaphore(pData->pSemaphore);
-      udInterlockedPreIncrement(&pData->value);
+      ++pData->value;
       if (pData->value > 2000)
         running = false;
 
@@ -175,7 +176,7 @@ TEST(udThreadTests, ThreadSemaphore)
     {
       //printf("3: pData->pSemaphore wait: %d\n", udWaitSemaphore(pData->pSemaphore));
       udWaitSemaphore(pData->pSemaphore);
-      udInterlockedPreIncrement(&pData->value);
+      ++pData->value;
       if (pData->value > 3000)
         running = false;
 

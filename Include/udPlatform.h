@@ -149,12 +149,6 @@
 # endif
 #include <Windows.h>
 #include <Intrin.h>
-inline int32_t udInterlockedPreIncrement(volatile int32_t *p)  { return (int32_t)_InterlockedIncrement((long*)p); }
-inline int32_t udInterlockedPostIncrement(volatile int32_t *p) { return (int32_t)_InterlockedIncrement((long*)p) - 1; }
-inline int32_t udInterlockedPreDecrement(volatile int32_t *p) { return (int32_t)_InterlockedDecrement((long*)p); }
-inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return (int32_t)_InterlockedDecrement((long*)p) + 1; }
-inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return (int32_t)_InterlockedExchange((volatile long*)dest, exchange); }
-inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return (int32_t)_InterlockedCompareExchange((volatile long*)dest, exchange, comparand); }
 # if UD_32BIT
 template <typename T, typename U>
 inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return (T*)_InterlockedExchange((volatile long*)dest, (long)exchange); }
@@ -174,12 +168,6 @@ inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U
 #include <unistd.h>
 #include <sched.h>
 #include <cstddef> // Required for std::nullptr_t below
-inline int32_t udInterlockedPreIncrement(volatile int32_t *p)  { return __sync_add_and_fetch(p, 1); }
-inline int32_t udInterlockedPostIncrement(volatile int32_t *p) { return __sync_fetch_and_add(p, 1); }
-inline int32_t udInterlockedPreDecrement(volatile int32_t *p)  { return __sync_sub_and_fetch(p, 1); }
-inline int32_t udInterlockedPostDecrement(volatile int32_t *p) { return __sync_fetch_and_sub(p, 1); }
-inline int32_t udInterlockedExchange(volatile int32_t *dest, int32_t exchange) { return __sync_lock_test_and_set(dest, exchange); }
-inline int32_t udInterlockedCompareExchange(volatile int32_t *dest, int32_t exchange, int32_t comparand) { return __sync_val_compare_and_swap(dest, comparand, exchange); }
 #if UDPLATFORM_LINUX && !defined(__clang__) && __GNUC__ < 5
 // We're just trying to ignore pedantic warnings on CentOS7 GCC due to function pointers being used in this function below
 # pragma GCC diagnostic push
@@ -213,46 +201,6 @@ template <typename T> T             udMax(T a, T b) { return (a > b) ? a : b; }
 template <typename T> T             udMin(T a, T b) { return (a < b) ? a : b; }
 template <typename T, typename U> T udMax(T a, U b) { return (a > (T)b) ? a : (T)b; }
 template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T)b; }
-
-// Helpers to perform various interlocked functions based on the platform-wrapped primitives
-inline int32_t udInterlockedAdd(volatile int32_t *p, int32_t amount) { int32_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchange(p, after, prev) != prev); return after; }
-inline ptrdiff_t udInterlockedAddPtrDiff(volatile ptrdiff_t *p, ptrdiff_t amount) { ptrdiff_t prev, after; do { prev = *p; after = prev + amount; } while (udInterlockedCompareExchangePointer((void*volatile*)p, (void*)after, (void*)prev) != (void*)prev); return after; }
-inline int32_t udInterlockedMin(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue < newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
-inline int32_t udInterlockedMax(volatile int32_t *dest, int32_t newValue) { for (;;) { int32_t oldValue = *dest; if (oldValue > newValue) return oldValue; if (udInterlockedCompareExchange(dest, newValue, oldValue) == oldValue) return newValue; } }
-
-class udInterlockedInt32
-{
-public:
-  // Get the value
-  int32_t Get()                 { return m_value; }
-  // Set a new value, returning the previous value
-  int32_t Set(int32_t v)        { return udInterlockedExchange(&m_value, v); }
-  // Compare exchange to a new value, returning true if set was successful
-  bool TestAndSet(int32_t v, int32_t expected) { return udInterlockedCompareExchange(&m_value, v, expected) == expected; }
-  // Set to the minimum of the existing or new value
-  void SetMin(int32_t v)        { udInterlockedMin(&m_value, v); }
-  // Set to the maximum of the existing or new value
-  void SetMax(int32_t v)        { udInterlockedMax(&m_value, v); }
-  // Add an integer
-  void Add(int32_t v)           { udInterlockedAdd(&m_value, v); }
-  // Increment operators
-  int32_t operator++()          { return udInterlockedPreIncrement(&m_value);       }
-  int32_t operator++(int)       { return udInterlockedPostIncrement(&m_value);      }
-  int32_t operator--()          { return udInterlockedPreDecrement(&m_value);       }
-  int32_t operator--(int)       { return udInterlockedPostDecrement(&m_value);      }
-protected:
-  volatile int32_t m_value;
-};
-
-class udInterlockedBool
-{
-public:
-  operator bool() { return udInterlockedCompareExchange(&m_value, 0, 0) == 1; }
-  udInterlockedBool &operator=(bool v) { udInterlockedExchange(&m_value, v ? 1 : 0); return *this; }
-protected:
-  volatile int32_t m_value;
-};
-
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
