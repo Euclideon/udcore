@@ -10,6 +10,7 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "Airy 1830",          6377563.396, 1.0 / 299.3249646,   7001 }, // udGZE_Airy1830
   { "Airy Modified 1849", 6377340.189, 1.0 / 299.3249646,   7002 }, // udGZE_AiryModified
   { "Bessel 1841",        6377397.155, 1.0 / 299.1528128,   7004 }, // udGZE_Bessel1841
+  { "Bessel Modified",    6377492.018, 1.0 / 299.1528128,   7005 }, // udGZE_BesselModified
   { "Clarke 1866",        6378206.400, 1.0 / 294.978698214, 7008 }, // udGZE_Clarke1866
   { "Clarke 1880 (IGN)",  6378249.200, 1.0 / 293.466021294, 7011 }, // udGZE_Clarke1880IGN
   { "GRS 1980",           6378137.000, 1.0 / 298.257222101, 7019 }, // udGZE_GRS80
@@ -25,6 +26,8 @@ const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   { "IAG 1975",           6378140.000, 1.0 / 298.257,       7049 }, // udGZE_IAG1975
   { "Everest 1830 (1967 Definition)",6377298.556, 1.0 / 300.8017,    7016 }, // udGZE_Everest1830
   { "GRS 1967",           6378160.000, 1.0 / 298.247167427, 7036 }, // udGZE_GRS67
+  { "Australian National Spheroid",6378160, 1.0 / 298.25,   7003 }, //udGZE_ANS
+  { "Indonesian National Spheroid",6378160, 1.0 / 298.247,  7021 }, //udGZE_INS 
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
@@ -36,6 +39,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "ETRS89",                                "ETRS89",          "European_Terrestrial_Reference_System_1989",   udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4258, 6258, true,     true  },
   { "TM75",                                  "TM75",            "Geodetic_Datum_of_1965",                       udGZE_AiryModified,  { 482.5, -130.6, 564.6, -1.042, -0.214, -0.631, 8.15 },             4300, 6300, true,     true  },
   { "NAD27",                                 "NAD27",           "North_American_Datum_1927",                    udGZE_Clarke1866,    { -8.0, 160.0, 176.0, 0.0, 0.0, 0.0, 0.0 },                         4267, 6267, true,     true  },
+  { "NAD27(CGQ77)",                          "NAD27(CGQ77)",    "North_American_Datum_1927_CGQ77",              udGZE_Clarke1866,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4609, 6609, true,     false  },
   { "NAD83",                                 "NAD83",           "North_American_Datum_1983",                    udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4269, 6269, true,     true  },
   { "NAD83(CORS96)",                         "NAD83(CORS96)",   "NAD83_National_Spatial_Reference_System_1996", udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              6783, 1133, true,     false },
   { "NAD83(CSRS)",                           "NAD83(CSRS)",     "NAD83_Canadian_Spatial_Reference_System",      udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              2955, 4617, true,     true  },
@@ -67,8 +71,11 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
   { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
   { "DB_REF",                                "DB_REF",          "Deutsche_Bahn_Reference_System",               udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              5681, 1081, true,     false },
+  { "DHDN",                                  "DHDN",            "Deutsches_Hauptdreiecksnetz",                  udGZE_Bessel1841,    { 598.1, 73.7, 418.2, 0.202, 0.045, -2.455, 6.7 },                  4314, 6314, false,    true  },
   { "System of the Unified Trigonometrical Cadastral Network [JTSK03]", "JTSK03", "S-JTSK [JTSK03]",            udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              8353, 8351, true,     false },
   { "Pulkovo 1942",                          "Pulkovo_1942",    "Pulkovo_1942",                                 udGZE_Krassowsky1940,{ 23.92, -141.27, -80.9, 0, 0.35, 0.82, -0.12 },                    4284, 6284, true,     true  },
+  { "Pulkovo 1942(58)",                      "Pulkovo_1942_58", "Pulkovo_1942_58",                              udGZE_Krassowsky1940,{ 33.4, -146.6, -76.3, -0.359, -0.053, 0.844, -0.84 },              4179, 6179, true,     true  },
+  { "Pulkovo 1942(83)",                      "Pulkovo_1942_83", "Pulkovo_1942_83",                              udGZE_Krassowsky1940,{ 26.0, -121.0, -78.0, 0.0, 0.0, 0.0, 0 },                          4178, 6178, true,     true  },
   { "Pulkovo 1995",                          "Pulkovo_1995",    "Pulkovo_1995",                                 udGZE_Krassowsky1940,{ 24.47, -130.89, -81.56, 0, 0, 0.13, -0.22 },                      20004, 4200, true,    true  },
   { "WGS 72BE",                              "WGS_72BE",        "WGS_1972_Transit_Broadcast_Ephemeris",         udGZE_WGS72,         { 0, 0, 1.9, 0, 0, 0.814, -0.38 },                                  4324, 6324, true,     true  },
   { "Beijing 1954",                          "Beijing_1954",    "Beijing_1954",                                 udGZE_Krassowsky1940,{ 15.8, -154.4, -82.3, 0, 0, 0, 0 },                                4214, 6214, false,    true  },
@@ -82,9 +89,30 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "DGN95",                                 "DGN95",           "Datum_Geodesi_Nasional_1995",                  udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4755, 6755, false,    true  },
   { "UCS-2000",                              "UCS-2000",        "Ukraine_2000",                                 udGZE_Krassowsky1940,{ 25.0, -141.0, -78.5, 0.0, 0.35, 0.736, 0 },                       5561, 1077, true,     true  },
   { "Hartebeesthoek94",                      "Hartebeesthoek94","Hartebeesthoek94",                             udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4148, 6148, false,    true  },
+  { "ID74",                                  "ID74",            "Indonesian_Datum_1974",                        udGZE_INS,           { -24.0, -15.0, 5.0, 0.0, 0.0, 0.0, 0 },                            4238, 6238, true,     true  },
+  { "NGO 1948",                              "NGO_1948",        "NGO_1948",                                     udGZE_BesselModified,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4273, 6273, true,     false },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
+
+//Temp Datum descriptor table to support unknown Datum
+// chunkArray ? static index ?
+
+udChunkedArray<udGeoZoneGeodeticDatumDescriptor> g_InternalDatumList = {};
+
+const udGeoZoneDatumAlias g_udGZ_DatumAlias[] = {
+  { "NTF (Paris)", udGZGD_NTF },
+  { "RGRDC 2005", udGZGD_ETRS89 },
+  { "SIRGAS 2000", udGZGD_JGD2000 },
+  { "NAD83(PA11)", udGZGD_NAD83_2011 },
+  { "DRUKREF 03", udGZGD_SWEREF99 },
+  { "SIRGAS 1995", udGZGD_NAD83_1996 },
+  { "NAD83(CSRS98)", udGZGD_JGD2000 },
+  { "GCS_ETRF_1989", udGZGD_WGS84 },
+  { "Korean 1985", udGZGD_AMERSFOORT },
+  { "TUREF", udGZGD_JGD2000 },
+  { "Korea 2000", udGZGD_NAD83_2011 },
+};
 
 udChunkedArray<udGeoZone> g_InternalGeoZoneList = {};
 
@@ -128,6 +156,9 @@ udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pF
 
   if (g_InternalGeoZoneList.chunkCount == 0)
     UD_ERROR_CHECK(g_InternalGeoZoneList.Init(64));
+
+  if (g_InternalDatumList.chunkCount == 0)
+    UD_ERROR_CHECK(g_InternalDatumList.Init(64));
 
   UD_ERROR_CHECK(zones.Parse(pJSONStr));
   UD_ERROR_IF(!zones.IsObject(), udR_FormatVariationNotSupported);
@@ -217,10 +248,14 @@ epilogue:
 
 udResult udGeoZone_UnloadZones()
 {
-  if (g_InternalGeoZoneList.chunkCount == 0)
+  if (g_InternalGeoZoneList.chunkCount == 0 && g_InternalDatumList.chunkCount == 0)
     return udR_Success;
 
-  return g_InternalGeoZoneList.Deinit();
+  udResult result = g_InternalGeoZoneList.Deinit();
+  if (result != udR_Success)
+    return result;
+
+  return g_InternalDatumList.Deinit();
 }
 
 udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllipsoidInfo &ellipsoid)
@@ -383,6 +418,13 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
       pZone->semiMajorAxis = ellipsoidInfo.semiMajorAxis / pZone->unitMetreScale;
       pZone->flattening = ellipsoidInfo.flattening;
     }
+  }
+
+  if (pZone->knownDatum)
+  {
+    udGeoZoneGeodeticDatumDescriptor datumDescriptor = g_udGZ_GeodeticDatumDescriptors[pZone->datum];
+    for (int i = 0; i < 7; ++i)
+      pZone->paramsHelmert7[i] = datumDescriptor.paramsHelmert7[i];
   }
 
   pZone->semiMinorAxis = pZone->semiMajorAxis * (1 - pZone->flattening);
@@ -1310,6 +1352,7 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
   }
 
   pZone->srid = sridCode;
+  pZone->knownDatum = true;
 
   if (sridCode != 0)
   {
@@ -1474,9 +1517,25 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       {
         if (udStrEqual(g_udGZ_GeodeticDatumDescriptors[j].pFullName, pName))
         {
+          pZone->knownDatum = true;
           pZone->datum = (udGeoZoneGeodeticDatum)j; // enum ordering corresponds to GDD dataset ordering
           udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[j].pShortName);
           break;
+        }
+      }
+
+      if (j == udGZGD_Count)
+      {
+        for (int aliasIndex = 0; aliasIndex < udLengthOf(g_udGZ_DatumAlias); ++aliasIndex)
+        {
+          if (udStrEqual(g_udGZ_DatumAlias[aliasIndex].pAlias, pName))
+          {
+            pZone->knownDatum = true;
+            pZone->datum = (udGeoZoneGeodeticDatum)g_udGZ_DatumAlias[aliasIndex].datumIndex; // enum ordering corresponds to GDD dataset ordering
+            udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[g_udGZ_DatumAlias[aliasIndex].datumIndex].pShortName);
+            j = g_udGZ_DatumAlias[aliasIndex].datumIndex;
+            break;
+          }
         }
       }
 
@@ -1505,13 +1564,30 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         }
       }
 
-      for (int j = 0; j < udGZGD_Count; ++j)
+      int j = 0;
+      for (j = 0; j < udGZGD_Count; ++j)
       {
         if (udStrEqual(g_udGZ_GeodeticDatumDescriptors[j].pFullName, pName))
         {
+          pZone->knownDatum = true;
           pZone->datum = (udGeoZoneGeodeticDatum)j; // enum ordering corresponds to GDD dataset ordering
           udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[j].pShortName);
           break;
+        }
+      }
+
+      if (j == udGZGD_Count)
+      {
+        for (int aliasIndex = 0; aliasIndex < udLengthOf(g_udGZ_DatumAlias); ++aliasIndex)
+        {
+          if (udStrEqual(g_udGZ_DatumAlias[aliasIndex].pAlias, pName))
+          {
+            pZone->knownDatum = true;
+            pZone->datum = (udGeoZoneGeodeticDatum)g_udGZ_DatumAlias[aliasIndex].datumIndex; // enum ordering corresponds to GDD dataset ordering
+            udStrcpy(pZone->datumShortName, g_udGZ_GeodeticDatumDescriptors[g_udGZ_DatumAlias[aliasIndex].datumIndex].pShortName);
+            j = g_udGZ_DatumAlias[aliasIndex].datumIndex;
+            break;
+          }
         }
       }
     }
@@ -1614,11 +1690,38 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
     }
     else if (udStrEqual(pType, "SPHEROID"))
     {
+      // is this even used ?
+      //-----
       pZone->semiMajorAxis = wkt->Get("%s.values[0]", pElem).AsDouble(); // in feet or metres
       double f = wkt->Get("%s.values[1]", pElem).AsDouble();
       pZone->flattening = f == 0.0 ? 0.0 : 1.0 / wkt->Get("%s.values[1]", pElem).AsDouble(); // inverse flattening
       if (pZone->unitMetreScale != 0)
         udGeoZone_MetreScaleSpheroidMaths(pZone);
+      //-----
+
+      int32_t epsg = wkt->Get("%s.values[2].values[0]", pElem).AsInt();
+      pZone->datumSrid = epsg;
+      for (int epsgIndex = 0; epsgIndex < udGZE_Count; ++epsgIndex)
+      {
+        if (epsg == g_udGZ_StdEllipsoids[epsgIndex].authorityEpsg)
+          pZone->zoneSpheroid = (udGeoZoneEllipsoid)epsgIndex;
+      }
+    }
+    else if (udStrEqual(pType, "TOWGS84") && !pZone->knownDatum)
+    {
+      pZone->paramsHelmert7[0] = wkt->Get("%s.values[0]", pElem).AsDouble();
+      pZone->paramsHelmert7[1] = wkt->Get("%s.values[1]", pElem).AsDouble();
+      pZone->paramsHelmert7[2] = wkt->Get("%s.values[2]", pElem).AsDouble();
+      pZone->paramsHelmert7[3] = wkt->Get("%s.values[3]", pElem).AsDouble();
+      pZone->paramsHelmert7[4] = wkt->Get("%s.values[4]", pElem).AsDouble();
+      pZone->paramsHelmert7[5] = wkt->Get("%s.values[5]", pElem).AsDouble();
+      pZone->paramsHelmert7[6] = wkt->Get("%s.values[6]", pElem).AsDouble();
+
+      pZone->toWGS84 = true;
+    }
+    else if (udStrEqual(pType, "AXIS"))
+    {
+      pZone->axisInfo = true;
     }
 
     // Recursive Iteration (or Iterative Recursion)
@@ -1642,8 +1745,16 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
   udJSON wkt;
   udParseWKT(&wkt, pWKT);
 
+  pZone->zoneSpheroid = udGZE_Count;
   // recursive helper function
   udGeoZone_JSONTreeSearch(pZone, &wkt, "values");
+
+  // if unknown Datum and known spheroid -> fill datumDescriptor table with parameters read from the JSON
+  if (!pZone->knownDatum && pZone->zoneSpheroid != udGZE_Count)
+  {
+    //                                                             Full Name,        Short  name,      Datum name,       Ellipsoid index,     ToWGS84 parameters,                                                                                                                                                                      epsg,        auth,             AxisInfo,        ToWGS84  
+    g_InternalDatumList.PushBack(udGeoZoneGeodeticDatumDescriptor{ pZone->datumName, pZone->datumName, pZone->datumName, pZone->zoneSpheroid, {pZone->paramsHelmert7[0], pZone->paramsHelmert7[1], pZone->paramsHelmert7[2], pZone->paramsHelmert7[3], pZone->paramsHelmert7[4], pZone->paramsHelmert7[5], pZone->paramsHelmert7[6]}, pZone->srid, pZone->datumSrid, pZone->axisInfo, pZone->toWGS84 });
+  }
 
   udGeoZone_UpdateDisplayName(pZone);
 

@@ -41,6 +41,8 @@ TEST(udGeoZone, LoadingZones)
   int goodReads = 0;
   int badReads = 0;
   EXPECT_EQ(udR_Success, udGeoZone_LoadZonesFromJSON(pBuffer, &goodReads, &badReads));
+  double percent = double(goodReads) / double(goodReads + badReads);
+  udDebugPrintf("%f\n", percent);
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, ZoneIDInSpatialRefButNotEmbedded));
   EXPECT_EQ(udR_Success, udGeoZone_UnloadZones());
 
@@ -591,6 +593,7 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.0 }, // udGZDD_ETRS89 / EPSG:4258
     { -21.1687980,  149.1617787,  0.0 }, // udGZGD_TM75 / EPSG:4300
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NAD27 /EPSG:4267
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NAD27CGQ77 /EPSG:4609
     { -21.1662907,  149.1603855,  0.0 }, // udGZGD_NAD83 /EPSG:4269
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NAD_83_1996 / EPSG:6307
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NAD_83_CSRS / EPSG:2955
@@ -622,8 +625,11 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_MERC/ // These are derived from our own code and are not to be trusted
     { -21.0370272,  149.1603855, -0.1 }, // udGZGD_MOON_PCPF/ // These are derived from our own code and are not to be trusted
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_DBREF / EPSG:5681
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_DHDN / EPSG:4314
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_SJTK03 / EPSG:8353
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_PULK1942 / EPSG:4284
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_PULK194258 / EPSG:4179
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_PULK194283 / EPSG:4178
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_PULK1995 / EPSG:20004
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_WGS_72BE / EPSG:32401
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_BEIJING1954 / EPSG:21413
@@ -637,6 +643,8 @@ TEST(udGeoZone, ChangingCRSDatums)
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_DGN95 / EPSG:4755
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_UCS2000 / EPSG:5561
     { -21.1662907,  149.1603855,  0.1 }, // udGZGD_H94 / EPSG:4148
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_ID74 / EPSG:4238
+    { -21.1662907,  149.1603855,  0.1 }, // udGZGD_NGO1948 / EPSG:4273
   };
 
   UDCOMPILEASSERT(UDARRAYSIZE(latLongPairs) == udGZGD_Count, "Please Update the Datums!");

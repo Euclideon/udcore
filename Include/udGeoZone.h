@@ -16,6 +16,7 @@ enum udGeoZoneEllipsoid
   udGZE_Airy1830,       //EPSG:7001
   udGZE_AiryModified,   //EPSG:7002
   udGZE_Bessel1841,     //EPSG:7004
+  udGZE_BesselModified, //EPSG:7005
   udGZE_Clarke1866,     //EPSG:7008
   udGZE_Clarke1880IGN,  //EPSG:7011
   udGZE_GRS80,          //EPSG:7019
@@ -31,6 +32,8 @@ enum udGeoZoneEllipsoid
   udGZE_IAG1975,
   udGZE_Everest1830,
   udGZE_GRS67,
+  udGZE_ANS,           //EPSG:7003
+  udGZE_INS,           //EPSG:7021
 
   udGZE_Count
 };
@@ -42,6 +45,7 @@ enum udGeoZoneGeodeticDatum
   udGZGD_ETRS89,     //EPSG:4258,4936
   udGZGD_TM75,       //EPSG:4300
   udGZGD_NAD27,      //EPSG:4267
+  udGZGD_NAD27CGQ77, //EPSG:4609
   udGZGD_NAD83,      //EPSG:4269
   udGZGD_NAD83_1996, //EPSG:6307
   udGZGD_NAD83_CSRS, //EPSG:2955
@@ -73,8 +77,11 @@ enum udGeoZoneGeodeticDatum
   udGZGD_MOON_MERC,  //EPSG:30174,30175
   udGZGD_MOON_PCPF,  //EPSG:30100,30100
   udGZGD_DBREF,      //EPSG:5681
+  udGZGD_DHDN,       //EPSG:4314
   udGZGD_SJTSK03,    //EPSG:8353
   udGZGD_PULK1942,   //EPSG:4284
+  udGZGD_PULK194258, //EPSG:4179
+  udGZGD_PULK194283, //EPSG:4178
   udGZGD_PULK1995,   //EPSG:20004
   udGZGD_WGS_72BE,   //EPSG:32401
   udGZGD_BEIJING1954,//EPSG:21413
@@ -88,6 +95,8 @@ enum udGeoZoneGeodeticDatum
   udGZGD_DGN95,      //EPSG:4755
   udGZGD_UCS2000,    //EPSG:5561
   udGZGD_H94,        //EPSG:4148
+  udGZGD_ID74,       //EPSG:4238
+  udGZGD_NGO1948,    //EPSG:4273
 
   udGZGD_Count
 };
@@ -156,6 +165,13 @@ struct udGeoZone
   char datumName[64];
   char zoneName[64]; // Only 33 characters required for longest known name "Japan Plane Rectangular CS XVIII"
   char displayName[128]; // This is the human readable name; often just datumShortName & zoneName concatenated
+
+  bool knownDatum;
+  int32_t datumSrid;
+  bool toWGS84;
+  bool axisInfo;
+  udGeoZoneEllipsoid zoneSpheroid;
+  double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
 };
 
 // Stored as g_udGZ_GeodeticDatumDescriptors
@@ -178,6 +194,12 @@ struct udGeoZoneEllipsoidInfo
   double semiMajorAxis;
   double flattening;
   int32_t authorityEpsg;
+};
+
+struct udGeoZoneDatumAlias
+{
+  const char *pAlias;
+  const int datumIndex;
 };
 
 extern const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
