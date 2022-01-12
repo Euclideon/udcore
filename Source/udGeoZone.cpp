@@ -96,8 +96,6 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
 
 //Temp Datum descriptor table to support unknown Datum
-// chunkArray ? static index ?
-
 udChunkedArray<udGeoZoneGeodeticDatumDescriptor> g_InternalDatumList = {};
 
 const udGeoZoneDatumAlias g_udGZ_DatumAlias[] = {
@@ -345,16 +343,33 @@ udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum curre
     oldDatum = udGZGD_WGS84;
   }
 
-  udGeoZoneEllipsoid oldEllipsoid = g_udGZ_GeodeticDatumDescriptors[oldDatum].ellipsoid;
-  udGeoZoneEllipsoid newEllipsoid = g_udGZ_GeodeticDatumDescriptors[newDatum].ellipsoid;
+  udGeoZoneEllipsoid oldEllipsoid;
+  udGeoZoneEllipsoid newEllipsoid;
+  if (currentDatum < udGZGD_Count)
+  {
+    oldEllipsoid = g_udGZ_GeodeticDatumDescriptors[oldDatum].ellipsoid;
+    newEllipsoid = g_udGZ_GeodeticDatumDescriptors[newDatum].ellipsoid;
+  }
+  else
+  {
+    oldEllipsoid = g_InternalDatumList[oldDatum - udGZGD_Count - 1].ellipsoid;
+    newEllipsoid = g_InternalDatumList[newDatum - udGZGD_Count - 1].ellipsoid;
+  }
 
   if (newDatum == udGZGD_WGS84) // converting to WGS84; use inverse transform
   {
-    pTransform = &g_udGZ_GeodeticDatumDescriptors[oldDatum];
+    if (oldDatum < udGZGD_Count)
+      pTransform = &g_udGZ_GeodeticDatumDescriptors[oldDatum];
+    else
+      pTransform = &g_InternalDatumList[oldDatum - udGZGD_Count - 1];
   }
   else // converting from WGS84
   {
-    transform = g_udGZ_GeodeticDatumDescriptors[newDatum];
+    if (oldDatum < udGZGD_Count)
+      transform = g_udGZ_GeodeticDatumDescriptors[newDatum];
+    else
+      transform = g_InternalDatumList[newDatum - udGZGD_Count - 1];
+
     for (int i = 0; i < 7; i++)
       transform.paramsHelmert7[i] = -transform.paramsHelmert7[i];
     pTransform = &transform;
@@ -411,7 +426,18 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
 {
   if (pZone->semiMajorAxis == 0.0 && pZone->flattening == 0.0 && pZone->datum < udGZGD_Count)
   {
-    udGeoZoneEllipsoid ellipsoidID = g_udGZ_GeodeticDatumDescriptors[pZone->datum].ellipsoid;
+    udGeoZoneEllipsoid ellipsoidID;
+    if (pZone->datum < udGZGD_Count)
+    {
+      pZone->knownDatum = true;
+      ellipsoidID = g_udGZ_GeodeticDatumDescriptors[pZone->datum].ellipsoid;
+    }
+    else
+    {
+      pZone->knownDatum = false;
+      ellipsoidID = g_InternalDatumList[pZone->datum - udGZGD_Count - 1].ellipsoid;
+    }
+
     if (ellipsoidID < udGZE_Count)
     {
       const udGeoZoneEllipsoidInfo &ellipsoidInfo = g_udGZ_StdEllipsoids[ellipsoidID];
@@ -420,12 +446,18 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
     }
   }
 
-  if (pZone->knownDatum)
+  udGeoZoneGeodeticDatumDescriptor datumDescriptor;
+  if (pZone->datum < udGZGD_Count)
   {
-    udGeoZoneGeodeticDatumDescriptor datumDescriptor = g_udGZ_GeodeticDatumDescriptors[pZone->datum];
-    for (int i = 0; i < 7; ++i)
-      pZone->paramsHelmert7[i] = datumDescriptor.paramsHelmert7[i];
+    datumDescriptor = g_udGZ_GeodeticDatumDescriptors[pZone->datum];
   }
+  else
+  {
+    datumDescriptor = g_InternalDatumList[pZone->datum - udGZGD_Count - 1];
+  }
+
+  for (int i = 0; i < 7; ++i)
+    pZone->paramsHelmert7[i] = datumDescriptor.paramsHelmert7[i];
 
   pZone->semiMinorAxis = pZone->semiMajorAxis * (1 - pZone->flattening);
   pZone->thirdFlattening = pZone->flattening / (2 - pZone->flattening);
@@ -489,7 +521,11 @@ udResult udGeoZone_UpdateDisplayName(udGeoZone *pZone)
   if (pZone == nullptr)
     return udR_InvalidParameter;
 
-  const udGeoZoneGeodeticDatumDescriptor *pDesc = &g_udGZ_GeodeticDatumDescriptors[pZone->datum];
+  const udGeoZoneGeodeticDatumDescriptor *pDesc;
+  if (pZone->datum < udGZGD_Count)
+    pDesc = &g_udGZ_GeodeticDatumDescriptors[pZone->datum];
+  else
+    pDesc = &g_InternalDatumList[pZone->datum - udGZGD_Count - 1];
 
   // Some zones include the datum in the zoneName- if it does thats the displayName as well
   if (udStrBeginsWith(pZone->zoneName, pDesc->pShortName))
@@ -1541,7 +1577,10 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
 
 #if UD_DEBUG
       if (j == udGZGD_Count)
+      {
+        udStrcpy(pZone->datumShortName, pName);
         udDebugPrintf("Unknown Datum: %s\n", pName);
+      }
 #endif
     }
     else if (udStrEqual(pType, "GEOCCS"))
@@ -1589,6 +1628,11 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
             break;
           }
         }
+      }
+      if (j == udGZGD_Count)
+      {
+        udStrcpy(pZone->datumShortName, pName);
+        udDebugPrintf("Unknown Datum: %s\n", pName);
       }
     }
     else if (udStrEqual(pType, "DATUM"))
@@ -1752,9 +1796,16 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
   // if unknown Datum and known spheroid -> fill datumDescriptor table with parameters read from the JSON
   if (!pZone->knownDatum && pZone->zoneSpheroid != udGZE_Count)
   {
-    //                                                             Full Name,        Short  name,      Datum name,       Ellipsoid index,     ToWGS84 parameters,                                                                                                                                                                      epsg,        auth,             AxisInfo,        ToWGS84  
-    g_InternalDatumList.PushBack(udGeoZoneGeodeticDatumDescriptor{ pZone->datumName, pZone->datumName, pZone->datumName, pZone->zoneSpheroid, {pZone->paramsHelmert7[0], pZone->paramsHelmert7[1], pZone->paramsHelmert7[2], pZone->paramsHelmert7[3], pZone->paramsHelmert7[4], pZone->paramsHelmert7[5], pZone->paramsHelmert7[6]}, pZone->srid, pZone->datumSrid, pZone->axisInfo, pZone->toWGS84 });
+    //                                                             Full Name,        Short  name,           Datum name,       Ellipsoid index,     ToWGS84 parameters,                                                                                                                                                                      epsg,        auth,             AxisInfo,        ToWGS84  
+    g_InternalDatumList.PushBack(udGeoZoneGeodeticDatumDescriptor{ pZone->datumName, pZone->datumShortName, pZone->datumName, pZone->zoneSpheroid, {pZone->paramsHelmert7[0], pZone->paramsHelmert7[1], pZone->paramsHelmert7[2], pZone->paramsHelmert7[3], pZone->paramsHelmert7[4], pZone->paramsHelmert7[5], pZone->paramsHelmert7[6]}, pZone->srid, pZone->datumSrid, pZone->axisInfo, pZone->toWGS84 });
+    pZone->datum = (udGeoZoneGeodeticDatum) ((int)udGZGD_Count + g_InternalDatumList.length);
   }
+
+  //reset zone params used above
+  pZone->zoneSpheroid = (udGeoZoneEllipsoid)0;
+  //memset(pZone->paramsHelmert7, 0, sizeof(pZone->paramsHelmert7));
+  pZone->datumSrid = 0;
+  pZone->axisInfo = 0;
 
   udGeoZone_UpdateDisplayName(pZone);
 
@@ -1787,7 +1838,11 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   UD_ERROR_NULL(ppWKT, udR_InvalidParameter);
   UD_ERROR_IF(zone.srid == 0, udR_InvalidParameter);
 
-  pDesc = &g_udGZ_GeodeticDatumDescriptors[zone.datum];
+  if (zone.datum < udGZGD_Count)
+    pDesc = &g_udGZ_GeodeticDatumDescriptors[zone.datum];
+  else
+    pDesc = &g_InternalDatumList[zone.datum - udGZGD_Count - 1];
+
   pEllipsoid = &g_udGZ_StdEllipsoids[pDesc->ellipsoid];
   // If the ellipsoid isn't WGS84, then provide parameters to get to WGS84
   if (pDesc->exportToWGS84)
@@ -2046,7 +2101,8 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
 
   if (zone.projection == udGZPT_ECEF)
   {
-    return udGeoZone_LatLongToGeocentric(udDouble3::create(phi, omega, ellipsoidHeight), g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid]);
+    udGeoZoneEllipsoidInfo ellipsoidInfo = zone.datum > udGZGD_Count ? g_udGZ_StdEllipsoids[g_InternalDatumList[zone.datum - udGZGD_Count].ellipsoid] : g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid];
+    return udGeoZone_LatLongToGeocentric(udDouble3::create(phi, omega, ellipsoidHeight), ellipsoidInfo);
   }
   else if (zone.projection == udGZPT_LatLong)
   {
@@ -2391,7 +2447,8 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
 
   if (zone.projection == udGZPT_ECEF)
   {
-    latLong = udGeoZone_GeocentricToLatLong(position, g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid]);
+    udGeoZoneEllipsoidInfo ellipsoidInfo = zone.datum > udGZGD_Count ? g_udGZ_StdEllipsoids[g_InternalDatumList[zone.datum - udGZGD_Count].ellipsoid] : g_udGZ_StdEllipsoids[g_udGZ_GeodeticDatumDescriptors[zone.datum].ellipsoid];
+    latLong = udGeoZone_GeocentricToLatLong(position, ellipsoidInfo);
   }
   else if (zone.projection == udGZPT_LatLong)
   {
