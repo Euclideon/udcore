@@ -662,12 +662,12 @@ TEST(udGeoZone, ChangingCRSDatums)
       accuracy = LowAccuracy;
 
     udDouble3 wgs84Result = udGeoZone_ConvertDatum(latLongPairs[i], (udGeoZoneGeodeticDatum)i, udGZGD_WGS84);
-    EXPECT_EQ(int64_t(udRound(latLongPairs[0].x * accuracy)), int64_t(udRound(wgs84Result.x * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[0].x * accuracy)) - int64_t(udRound(wgs84Result.x * accuracy)));
-    EXPECT_EQ(int64_t(udRound(latLongPairs[0].y * accuracy)), int64_t(udRound(wgs84Result.y * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[0].y * accuracy)) - int64_t(udRound(wgs84Result.y * accuracy)));
+    EXPECT_EQ(int64_t(udRound((latLongPairs[0].x - wgs84Result.x) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[0].x - wgs84Result.x) * accuracy)));
+    EXPECT_EQ(int64_t(udRound((latLongPairs[0].y - wgs84Result.y) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[0].y - wgs84Result.y) * accuracy)));
 
     udDouble3 curIResult = udGeoZone_ConvertDatum(latLongPairs[0], udGZGD_WGS84, (udGeoZoneGeodeticDatum)i);
-    EXPECT_EQ(int64_t(udRound(latLongPairs[i].x * accuracy)), int64_t(udRound(curIResult.x * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[i].x * accuracy)) - int64_t(udRound(curIResult.x * accuracy)));
-    EXPECT_EQ(int64_t(udRound(latLongPairs[i].y * accuracy)), int64_t(udRound(curIResult.y * accuracy))) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound(latLongPairs[i].y * accuracy)) - int64_t(udRound(curIResult.y * accuracy)));
+    EXPECT_EQ(int64_t(udRound((latLongPairs[i].x - curIResult.x) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[i].x - curIResult.x) * accuracy)));
+    EXPECT_EQ(int64_t(udRound((latLongPairs[i].y - curIResult.y) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[i].y - curIResult.y) * accuracy)));
   }
 }
 
