@@ -1562,7 +1562,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
 
       if (j == udGZGD_Count)
       {
-        for (int aliasIndex = 0; aliasIndex < udLengthOf(g_udGZ_DatumAlias); ++aliasIndex)
+        for (size_t aliasIndex = 0; aliasIndex < udLengthOf(g_udGZ_DatumAlias); ++aliasIndex)
         {
           if (udStrEqual(g_udGZ_DatumAlias[aliasIndex].pAlias, pName))
           {
@@ -1617,7 +1617,7 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
 
       if (j == udGZGD_Count)
       {
-        for (int aliasIndex = 0; aliasIndex < udLengthOf(g_udGZ_DatumAlias); ++aliasIndex)
+        for (size_t aliasIndex = 0; aliasIndex < udLengthOf(g_udGZ_DatumAlias); ++aliasIndex)
         {
           if (udStrEqual(g_udGZ_DatumAlias[aliasIndex].pAlias, pName))
           {
