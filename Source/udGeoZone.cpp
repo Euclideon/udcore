@@ -1802,14 +1802,14 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
   }
 
   //reset zone params used above
+  bool supportedDatum = pZone->zoneSpheroid != udGZE_Count;
   pZone->zoneSpheroid = (udGeoZoneEllipsoid)0;
-  //memset(pZone->paramsHelmert7, 0, sizeof(pZone->paramsHelmert7));
   pZone->datumSrid = 0;
   pZone->axisInfo = 0;
 
   udGeoZone_UpdateDisplayName(pZone);
 
-  if (pZone->scaleFactor != 0 && !udStrEqual(pZone->datumShortName, "") && pZone->semiMajorAxis != 0 && pZone->srid != 0) // ensure some key variables are not null
+  if (pZone->scaleFactor != 0 && !udStrEqual(pZone->datumShortName, "") && pZone->semiMajorAxis != 0 && pZone->srid != 0 && supportedDatum) // ensure some key variables are not null
     return udR_Success;
   return udR_Failure;
 }
