@@ -19,7 +19,7 @@ udResult udWorkerPool_Create(udWorkerPool **ppPool, uint8_t totalThreads, const 
 void udWorkerPool_Destroy(udWorkerPool **ppPool);
 
 // Adds a function to run on a background thread, optionally with userdata. If clearMemory is true, it will call udFree on pUserData after running
-udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData = nullptr, bool clearMemory = true, udWorkerPoolCallback postFunction = nullptr);
+udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData = nullptr, bool clearMemory = true, udWorkerPoolCallback postFunction = nullptr, bool highPriority = false);
 
 // This must be run on the main thread, handles marshalling work back from worker threads if required
 // The parameter can be used to limit how much work is done each time this is called
@@ -27,6 +27,6 @@ udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, vo
 udResult udWorkerPool_DoPostWork(udWorkerPool *pPool, int processLimit = 0);
 
 // Returns true if there are workers currently processing tasks or if workers should be processing tasks
-bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads = nullptr, size_t *pQueuedTasks = nullptr);
+bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads = nullptr, size_t *pQueuedTasks = nullptr, size_t *pQueuedTasksLowPriority = nullptr);
 
 #endif // udWorkerPool_h__

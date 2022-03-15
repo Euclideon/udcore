@@ -26,6 +26,7 @@ struct udWorkerPoolTask
 struct udWorkerPool
 {
   udSafeDeque<udWorkerPoolTask> *pQueuedTasks;
+  udSafeDeque<udWorkerPoolTask> *pQueuedTasksLowPriority;
   udSafeDeque<udWorkerPoolTask> *pQueuedPostTasks;
 
   udSemaphore *pSemaphore;
@@ -58,7 +59,7 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
 
     ++pPool->activeThreads;
 
-    if (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) != udR_Success)
+    if (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) != udR_Success && udSafeDeque_PopFront(pPool->pQueuedTasksLowPriority, &currentTask) != udR_Success)
     {
       --pPool->activeThreads;
       continue;
@@ -95,6 +96,7 @@ udResult udWorkerPool_Create(udWorkerPool **ppPool, uint8_t totalThreads, const 
   UD_ERROR_NULL(pPool, udR_MemoryAllocationFailure);
 
   UD_ERROR_CHECK(udSafeDeque_Create(&pPool->pQueuedTasks, 32));
+  UD_ERROR_CHECK(udSafeDeque_Create(&pPool->pQueuedTasksLowPriority, 32));
   UD_ERROR_CHECK(udSafeDeque_Create(&pPool->pQueuedPostTasks, 32));
 
   pPool->isRunning = true;
@@ -137,7 +139,7 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
   }
 
   udWorkerPoolTask currentTask;
-  while (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) == udR_Success)
+  while (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) == udR_Success || udSafeDeque_PopFront(pPool->pQueuedTasksLowPriority, &currentTask) == udR_Success ) 
   {
     if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);
@@ -150,6 +152,7 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
   }
 
   udSafeDeque_Destroy(&pPool->pQueuedTasks);
+  udSafeDeque_Destroy(&pPool->pQueuedTasksLowPriority);
   udSafeDeque_Destroy(&pPool->pQueuedPostTasks);
   udDestroySemaphore(&pPool->pSemaphore);
 
@@ -159,13 +162,14 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
+udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/, bool highPriority /*= false*/)
 {
   udResult result = udR_Failure;
   udWorkerPoolTask tempTask;
 
   UD_ERROR_NULL(pPool, udR_InvalidParameter);
   UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pQueuedTasksLowPriority, udR_NotInitialized);
   UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized);
   UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized);
   UD_ERROR_IF(!pPool->isRunning, udR_NotAllowed);
@@ -175,7 +179,11 @@ udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, vo
   tempTask.pDataBlock = pUserData;
   tempTask.freeDataBlock = clearMemory;
 
-  UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedTasks, tempTask));
+  if(highPriority)
+    UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedTasks, tempTask));
+  else
+    UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedTasksLowPriority, tempTask));
+
   udIncrementSemaphore(pPool->pSemaphore);
 
   result = udR_Success;
@@ -218,21 +226,27 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /*= nullptr*/, size_t *pQueuedTasks /*= nullptr*/)
+bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /*= nullptr*/, size_t *pQueuedTasks /*= nullptr*/, size_t *pQueuedTasksLowPriority /*= nullptr*/)
 {
   if (pPool == nullptr)
     return false;
 
   udLockMutex(pPool->pQueuedTasks->pMutex);
+  udLockMutex(pPool->pQueuedTasksLowPriority->pMutex);
+  size_t queuedTasksLowPriority = pPool->pQueuedTasksLowPriority->chunkedArray.length ;
   int32_t activeThreads = pPool->activeThreads;
-  size_t queuedTasks = pPool->pQueuedTasks->chunkedArray.length;
+  size_t queuedTasks = pPool->pQueuedTasks->chunkedArray.length + queuedTasksLowPriority;
   udReleaseMutex(pPool->pQueuedTasks->pMutex);
+  udReleaseMutex(pPool->pQueuedTasksLowPriority->pMutex);
 
   if (pActiveThreads)
     *pActiveThreads = (size_t)udMax(activeThreads, 0);
 
   if (pQueuedTasks)
     *pQueuedTasks = queuedTasks;
+
+  if (pQueuedTasksLowPriority)
+    *pQueuedTasksLowPriority = queuedTasksLowPriority;
 
   return (activeThreads > 0 || queuedTasks > 0);
 }
