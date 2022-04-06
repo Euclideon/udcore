@@ -488,6 +488,6 @@ TEST(udJSONTests, CDATAXML)
 
   ASSERT_EQ(udR_Success, json.Parse(pData));
 
-  EXPECT_STREQ("{D5D720DD-E02F-4342-9AE1-49D91341FD2F}", json.Get("vectorChild.guid").AsString());
-  EXPECT_STREQ("Station 018", json.Get("vectorChild.name").AsString());
+  EXPECT_STREQ("{D5D720DD-E02F-4342-9AE1-49D91341FD2F}", json.Get("vectorChild.guid.content").AsString());
+  EXPECT_STREQ("Station 018", json.Get("vectorChild.name.content").AsString());
 }
