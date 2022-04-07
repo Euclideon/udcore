@@ -61,6 +61,8 @@ struct udChunkedArray
   udResult ReserveBack(size_t newCapacity);      // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
   udResult AddChunks(size_t numberOfNewChunks);  // Add a given number of chunks capacity without changing 'length'
 
+  udResult SortSS(bool (*comp)(T, T), bool (*equiv)(T, T) = nullptr); // Straight selection sort (ON2) of elements based on comparator comp and optional equivalence equiv
+
   // At element index, return the number of elements including index that follow in the same chunk (ie can be indexed directly)
   // Optionally, if elementsBehind is true, returns the the number of elements BEHIND index in the same chunk instead
   size_t GetElementRunLength(size_t index, bool elementsBehind = false) const;
@@ -187,6 +189,34 @@ inline udResult udChunkedArray<T>::Clear()
   length = 0;
   inset = 0;
 
+  return udR_Success;
+}
+
+template <typename T>
+inline udResult udChunkedArray<T>::SortSS(bool (*comp)(T, T), bool (*equiv)(T, T) )
+{
+  if(length)
+  {
+    for (uint32_t i = length-1; i > 0; --i)
+    {
+      uint32_t max = 0;
+
+      for (uint32_t j = 0; j < i; ++j)
+      {
+        if (comp((*this)[j], (*this)[max]))
+        {
+          max = j;
+        }
+      }
+      // only perform swap if not equivalent and our max is larger than the one at the position considered
+      if ( !(equiv && equiv((*this)[max], (*this)[i])) && comp((*this)[max], (*this)[i]))
+      {
+        T tmp = (*this)[i];
+        (*this)[i] = (*this)[max];
+        (*this)[max] = tmp;
+      }
+    }
+  }
   return udR_Success;
 }
 

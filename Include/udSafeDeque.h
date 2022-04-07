@@ -147,4 +147,70 @@ epilogue:
   return result;
 }
 
+template <typename T>
+inline udResult udSafeDeque_GetElement(udSafeDeque<T> *pDeque, T* dest, size_t index)
+{
+  udResult result = udR_Success;
+  udMutex *pMutex = nullptr;
+
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
+  UD_ERROR_NULL(dest, udR_InvalidParameter);
+
+  pMutex = udLockMutex(pDeque->pMutex);
+
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
+  UD_ERROR_IF(pDeque->chunkedArray.length < index, udR_OutOfRange);
+
+  *dest = pDeque->chunkedArray.GetElement(index);
+
+epilogue:
+  udReleaseMutex(pMutex);
+
+  return result;
+}
+
+template <typename T>
+inline bool udSafeDeque_Contains(udSafeDeque<T> *pDeque, const T &value)
+{
+  udResult result = udR_NotFound;
+  udMutex *pMutex = nullptr;
+
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
+
+  pMutex = udLockMutex(pDeque->pMutex);
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
+  for (size_t queueIndex = 0; queueIndex < pDeque->chunkedArray.length; ++queueIndex)
+  {
+    if (*pDeque->chunkedArray.GetElement(queueIndex) == value)
+    {
+      result = udR_Success;
+      goto epilogue;
+    }
+  }
+
+
+epilogue:
+  udReleaseMutex(pMutex);
+
+  return result;
+}
+
+// Straight selection sort
+template <typename T>
+inline udResult udSafeDeque_SortSS(udSafeDeque<T> *pDeque, bool (*comp)(T,T), bool (*equiv)(T,T) = nullptr)
+{
+  udResult result = udR_Success;
+  udMutex *pMutex = udLockMutex(pDeque->pMutex);
+  UD_ERROR_NULL(pDeque, udR_InvalidParameter);
+  UD_ERROR_NULL(comp, udR_InvalidParameter);
+
+  UD_ERROR_NULL(pMutex, udR_NotInitialized);
+
+  pDeque->chunkedArray.SortSS(comp, equiv);
+
+epilogue:
+  udReleaseMutex(pMutex);
+
+  return result;
+}
 #endif // UDSAFEDEQUE_H
