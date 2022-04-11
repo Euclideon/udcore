@@ -16,11 +16,25 @@
 template <typename T>
 struct udChunkedArrayIterator
 {
+  using difference_type = ptrdiff_t;
+  //using iterator_category = std::random_access_iterator_tag;
   T **ppCurrChunk;
+
   size_t currChunkElementIndex;
   size_t chunkElementCount;
 
+  difference_type operator-(const udChunkedArrayIterator<T> &rhs) const;
+
   udChunkedArrayIterator<T> &operator++();
+  udChunkedArrayIterator<T> &operator--();
+
+  udChunkedArrayIterator<T> &operator+=(const difference_type a) const;
+  udChunkedArrayIterator<T> &operator+(const difference_type a) const;
+
+  udChunkedArrayIterator<T> &operator-=(const difference_type a) const;
+  udChunkedArrayIterator<T> &operator-(const difference_type a) const;
+
+  udChunkedArrayIterator<T> &operator[](const size_t a) const;
   T &operator*() const;
   bool operator!=(const udChunkedArrayIterator<T> &rhs) const;
 };
@@ -97,6 +111,71 @@ inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator++()
     ++ppCurrChunk;
   }
   return *this;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator--()
+{
+  if (currChunkElementIndex == 0)
+  {
+    currChunkElementIndex = chunkElementCount;
+    --ppCurrChunk;
+  }
+  --currChunkElementIndex;
+  return *this;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator+=(const difference_type a) const
+{
+  difference_type diff = (a + currChunkElementIndex);
+  difference_type newInset = diff % chunkElementCount;
+  difference_type chunkChange = diff / chunkElementCount;
+
+  ppCurrChunk += chunkChange;
+  currChunkElementIndex = newInset;
+  return *this;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator+(const difference_type a) const
+{
+  udChunkedArrayIterator<T> ret = *this;
+  ret += a;
+  return ret;
+}
+
+// TODO: double check this
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator-=(const difference_type a) const
+{
+  if (currChunkElementIndex < a)
+  {
+    difference_type diff = a - currChunkElementIndex;
+    currChunkElementIndex = chunkElementCount -  diff % chunkElementCount;
+    difference_type chunkChange = diff / chunkElementCount;
+    ppCurrChunk -= chunkChange;
+  }
+  else
+  {
+    currChunkElementIndex -= a;
+  }
+  return *this;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator-(const difference_type a) const
+{
+  udChunkedArrayIterator<T> ret = *this;
+  ret -= a;
+  return ret;
+}
+
+//TODO: this is wrong
+template <typename T>
+ptrdiff_t udChunkedArrayIterator<T>::operator-(const udChunkedArrayIterator<T> &rhs) const
+{
+  return (this->ppCurrChunk - rhs.ppCurrChunk) * this->chunkElementCount - this->currChunkElementIndex + rhs.currChunkElementIndex;
 }
 
 // --------------------------------------------------------------------------
