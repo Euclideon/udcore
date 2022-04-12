@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 #include "udChunkedArray.h"
+#include <iterator>
+#include <algorithm>
 
 TEST(udChunkedArrayTests, ToArray)
 {
@@ -162,6 +164,7 @@ TEST(udChunkedArrayTests, Iterator)
   }
   EXPECT_EQ(16, i);
 
+
   // Iterates partially filled chunks correct
   array.PopBack();
 
@@ -184,6 +187,101 @@ TEST(udChunkedArrayTests, Iterator)
   }
   EXPECT_EQ(15, i);
 
+  udChunkedArrayIterator<int> it = array.begin();
+  //++
+  ++it;
+  EXPECT_EQ(*it, 2);
+
+  //--
+  --it;
+  EXPECT_EQ(*it, 1);
+
+  //+=
+  it += 3;
+  EXPECT_EQ(*it, 4);
+
+  //-=
+  it -= 2;
+  EXPECT_EQ(*it, 2);
+
+  //[]
+  EXPECT_EQ(it[3], 5);
+
+  EXPECT_EQ(it < it , false);
+  EXPECT_EQ(it > it , false);
+  EXPECT_EQ(it <= it , true);
+  EXPECT_EQ(it >= it , true);
+
+  EXPECT_EQ(it != it , false);
+  EXPECT_EQ(it == it , true);
+
+  it = it + 8;
+
+  EXPECT_EQ(it < it + 3, true);
+  EXPECT_EQ(it < it - 1, false);
+
+  EXPECT_EQ(it > it + 3, false);
+  EXPECT_EQ(it > it - 1, true);
+
+  auto it2 = it - 1;
+  EXPECT_EQ(it2 < it, true);
+  EXPECT_EQ(it2 > it, false);
+  EXPECT_EQ(it2, --it);
+
+  it2 = it - 2;
+  --it;
+  EXPECT_EQ(it2, --it);
+
+  it = it + 2;
+  EXPECT_EQ(it - 2, it2);
+  EXPECT_EQ(it > it2, true);
+  EXPECT_EQ(it < it2, false);
+  ++it2;
+  ++it2;
+  EXPECT_EQ(it, it2);
+
+  i = 1;
+  for (auto iter = array.begin(); iter < array.end(); ++iter)
+  {
+    EXPECT_EQ(*iter, i);
+    EXPECT_EQ(*(array.begin() + i - 1), *iter);
+    ++i;
+  }
+  EXPECT_EQ(i, array.length + 1);
+
+  for (auto iter = array.end() - 1; iter > array.begin(); --iter)
+  {
+    --i;
+    EXPECT_EQ(*iter, i);
+    EXPECT_EQ(array.begin()[i-1], *iter);
+  }
+
+  EXPECT_EQ(array.end() - array.begin(), array.length);
+
+  array.Deinit();
+  array.Init(64);
+  for (int i = 0; i < 64; ++i)
+  {
+    array.PushBack(i % 4);
+  }
+/*
+  auto reverseStart= std::reverse_iterator<udChunkedArrayIterator<int>>(array.end());
+  auto reverseEnd= std::reverse_iterator<udChunkedArrayIterator<int>>(array.begin() +(array.end() - array.begin()) );
+  for (auto iter = reverseStart; reverseStart < reverseEnd; reverseStart++)
+  {
+    printf("%d, ", *iter);
+  }
+*/
+
+  //non zero inset:
+  array.PopFront();
+
+  std::sort(array.begin(), array.end());
+  for (int el : array)
+  {
+    printf("%d, ", el);
+  }
+  printf("\n");
   array.Deinit();
 }
 
