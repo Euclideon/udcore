@@ -153,7 +153,7 @@ TEST(udChunkedArrayTests, Iterator)
 
   // Iterates across chunk boundaries correctly
   int i;
-  for (i = 0; i < 16; ++i)
+  for (i = 0; i < 32; ++i)
     array.PushBack(i);
 
   i = 0;
@@ -174,7 +174,7 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(i, x);
     ++i;
   }
-  EXPECT_EQ(15, i);
+  EXPECT_EQ(array.length, i);
 
   // Iterates with inset chunk correctly
   array.PopFront();
@@ -185,7 +185,7 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(i, x);
     ++i;
   }
-  EXPECT_EQ(15, i);
+  EXPECT_EQ(array.length, i);
 
   udChunkedArrayIterator<int> it = array.begin();
   //++
@@ -206,7 +206,9 @@ TEST(udChunkedArrayTests, Iterator)
 
   //[]
   EXPECT_EQ(it[3], 5);
+  EXPECT_EQ(*it, 2); //unchanged
 
+  //defintion of comparisons
   EXPECT_EQ(it < it , false);
   EXPECT_EQ(it > it , false);
   EXPECT_EQ(it <= it , true);
@@ -259,29 +261,31 @@ TEST(udChunkedArrayTests, Iterator)
   EXPECT_EQ(array.end() - array.begin(), array.length);
 
   array.Deinit();
-  array.Init(64);
-  for (int i = 0; i < 64; ++i)
+  array.Init(16);
+  for (int i = 0; i < 500; ++i)
   {
     array.PushBack(i % 4);
   }
-/*
+
+  //non zero inset:
+  array.PopFront();
+
+  std::sort(array.begin(), array.end());
+  int previous = array[0];
+  for (int el : array)
+  {
+    EXPECT_EQ(previous > el, false);
+    previous = el;
+  }
+  /*
   auto reverseStart= std::reverse_iterator<udChunkedArrayIterator<int>>(array.end());
   auto reverseEnd= std::reverse_iterator<udChunkedArrayIterator<int>>(array.begin() +(array.end() - array.begin()) );
   for (auto iter = reverseStart; reverseStart < reverseEnd; reverseStart++)
   {
     printf("%d, ", *iter);
   }
-*/
+  */
 
-  //non zero inset:
-  array.PopFront();
-
-  std::sort(array.begin(), array.end());
-  for (int el : array)
-  {
-    printf("%d, ", el);
-  }
-  printf("\n");
   array.Deinit();
 }
 
