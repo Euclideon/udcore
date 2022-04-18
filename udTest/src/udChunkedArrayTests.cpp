@@ -22,9 +22,9 @@ TEST(udChunkedArrayTests, ToArray)
 
   // Extraction of a subset
   memset(buffer, 0, sizeof(buffer));
-  array.ToArray(buffer, UDARRAYSIZE(buffer), 1, len-1);
+  array.ToArray(buffer, UDARRAYSIZE(buffer), 1, len - 1);
   EXPECT_EQ(0, memcmp(buffer, pTestString + 1, len - 1));
-  EXPECT_EQ(0, buffer[len-1]);
+  EXPECT_EQ(0, buffer[len - 1]);
 
   // Extraction with an inset
   array.PopFront(buffer);
@@ -162,7 +162,7 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(i, x);
     ++i;
   }
-  EXPECT_EQ(16, i);
+  EXPECT_EQ(array.length, i);
 
 
   // Iterates partially filled chunks correct
@@ -185,7 +185,7 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(i, x);
     ++i;
   }
-  EXPECT_EQ(array.length, i);
+  EXPECT_EQ(array.length, i - 1);
 
   udChunkedArrayIterator<int> it = array.begin();
   //++
@@ -209,13 +209,13 @@ TEST(udChunkedArrayTests, Iterator)
   EXPECT_EQ(*it, 2); //unchanged
 
   //defintion of comparisons
-  EXPECT_EQ(it < it , false);
-  EXPECT_EQ(it > it , false);
-  EXPECT_EQ(it <= it , true);
-  EXPECT_EQ(it >= it , true);
+  EXPECT_EQ(it < it, false);
+  EXPECT_EQ(it > it, false);
+  EXPECT_EQ(it <= it, true);
+  EXPECT_EQ(it >= it, true);
 
-  EXPECT_EQ(it != it , false);
-  EXPECT_EQ(it == it , true);
+  EXPECT_EQ(it != it, false);
+  EXPECT_EQ(it == it, true);
 
   it = it + 8;
 
@@ -246,7 +246,8 @@ TEST(udChunkedArrayTests, Iterator)
   for (auto iter = array.begin(); iter < array.end(); ++iter)
   {
     EXPECT_EQ(*iter, i);
-    EXPECT_EQ(*(array.begin() + i - 1), *iter);
+    auto iter2 = array.begin() + i;
+    EXPECT_EQ(*(iter2 - 1), *iter);
     ++i;
   }
   EXPECT_EQ(i, array.length + 1);
@@ -255,14 +256,14 @@ TEST(udChunkedArrayTests, Iterator)
   {
     --i;
     EXPECT_EQ(*iter, i);
-    EXPECT_EQ(array.begin()[i-1], *iter);
+    EXPECT_EQ(array.begin()[i - 1], *iter);
   }
 
   EXPECT_EQ(array.end() - array.begin(), array.length);
 
   array.Deinit();
   array.Init(16);
-  for (int i = 0; i < 500; ++i)
+  for (int i = 0; i < 500; ++i) // ensure that the array is forced to grow
   {
     array.PushBack(i % 4);
   }
@@ -277,14 +278,18 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(previous > el, false);
     previous = el;
   }
-  /*
-  auto reverseStart= std::reverse_iterator<udChunkedArrayIterator<int>>(array.end());
-  auto reverseEnd= std::reverse_iterator<udChunkedArrayIterator<int>>(array.begin() +(array.end() - array.begin()) );
-  for (auto iter = reverseStart; reverseStart < reverseEnd; reverseStart++)
+
+  //testing std::reverse_iterator: should return reverse order
+  auto reverseStart = std::reverse_iterator<udChunkedArrayIterator<int>>(array.end());
+  auto reverseEnd = std::reverse_iterator<udChunkedArrayIterator<int>>(array.begin());
+
+  EXPECT_EQ(reverseEnd - reverseStart, array.length);
+  previous = *reverseStart;
+  for (auto iter = reverseStart; iter < reverseEnd; iter++)
   {
-    printf("%d, ", *iter);
+    EXPECT_EQ(*iter > previous, false);
+    previous = *iter;
   }
-  */
 
   array.Deinit();
 }
