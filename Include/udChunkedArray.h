@@ -143,9 +143,12 @@ inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator--()
 template <typename T>
 inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator+=(const difference_type a)
 {
-  difference_type rawInd = (a + (difference_type)currChunkElementIndex); // the 'index' within the current block we get to without taking into account chunk length
-  difference_type newInd = (rawInd < 0 ? (difference_type)chunkElementCount : 0) + rawInd % (difference_type)chunkElementCount; //index within the chunk adjusting for block size
-  difference_type chunkChange = (rawInd < 0 ? -1 : 0) + rawInd / (difference_type)chunkElementCount; // change in chunk index
+  // the 'index' within the current block we get to without taking into account chunk length
+  difference_type rawInd = (a + (difference_type)currChunkElementIndex);
+  //index within the chunk adjusting for block size
+  difference_type newInd = (rawInd < 0 ? (difference_type)chunkElementCount : 0) + rawInd % (difference_type)chunkElementCount;
+  // change in chunk index
+  difference_type chunkChange = (rawInd < 0 ? -1 : 0) + rawInd / (difference_type)chunkElementCount; 
 
   ppCurrChunk += chunkChange;
   currChunkElementIndex = newInd;
@@ -823,7 +826,6 @@ template <typename T>
 inline typename udChunkedArray<T>::iterator udChunkedArray<T>::begin()
 {
   return udChunkedArrayIterator<T>(this->ppChunks, this->inset, this->chunkElementCount, this->chunkElementCountShift, this->chunkElementCountMask, 0);
-  //return udChunkedArray<T>::iterator{ &ppChunks[0], 0, chunkElementCount };
 }
 
 // --------------------------------------------------------------------------
@@ -832,7 +834,6 @@ template <typename T>
 inline typename udChunkedArray<T>::iterator udChunkedArray<T>::end()
 {
   return udChunkedArrayIterator<T>(this->ppChunks, this->inset, this->chunkElementCount, this->chunkElementCountShift, this->chunkElementCountMask, this->length);
-  //return udChunkedArray<T>::iterator{ &ppChunks[(inset + length) >> chunkElementCountShift], (inset + length) & chunkElementCountMask, chunkElementCount };
 }
 
 template<typename T>

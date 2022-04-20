@@ -193,7 +193,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
   {
     // Since we're returning a handle, increment the ref count because the caller is now expected to destroy it
     *ppThread = pThread;
-    pThread->refCount = 2;
+    ++pThread->refCount;
   }
   result = udR_Success;
 

@@ -146,6 +146,29 @@ TEST(udChunkedArrayTests, FullChunkInsert)
   }
 }
 
+template<typename T>
+bool iteratorIsValid(const udChunkedArrayIterator<T> &it, const udChunkedArray<T> array)
+{
+  udResult result = udR_Success;
+  UD_ERROR_IF(it.ppCurrChunk < array.ppChunks, udR_Failure);
+  UD_ERROR_IF(it.ppCurrChunk > array.ppChunks + array.chunkCount, udR_Failure);
+  if (it.ppCurrChunk == array.ppChunks)
+  {
+    UD_ERROR_IF(it.currChunkElementIndex < array.inset, udR_Failure);
+  }
+  else if (it.ppCurrChunk == array.ppChunks + array.chunkCount - 1)
+  {
+    UD_ERROR_IF(it.currChunkElementIndex > array.length % array.chunkElementCount, udR_Failure);
+  }
+  else
+  {
+    UD_ERROR_IF(it.currChunkElementIndex < 0, udR_Failure);
+    UD_ERROR_IF(it.currChunkElementIndex >= array.chunkElementCount, udR_Failure);
+  }
+epilogue:
+  return result == udR_Success;
+}
+
 TEST(udChunkedArrayTests, Iterator)
 {
   udChunkedArray<int> array;
@@ -186,68 +209,59 @@ TEST(udChunkedArrayTests, Iterator)
     ++i;
   }
   EXPECT_EQ(array.length, i - 1);
-
+  // array.end() is over the end of the array and not valid by this definition (dereferencable)
+  EXPECT_TRUE(iteratorIsValid(array.end() - 1, array)); 
   udChunkedArrayIterator<int> it = array.begin();
-  //++
-  ++it;
+  EXPECT_TRUE(iteratorIsValid(it, array));
+
+  EXPECT_EQ(it.currChunkElementIndex, array.inset);
+  EXPECT_EQ(it.ppCurrChunk, array.ppChunks);
+
+  udChunkedArrayIterator<int> copy = ++it;
+  EXPECT_EQ(copy, it);
   EXPECT_EQ(*it, 2);
 
-  //--
-  --it;
+  copy = --it;
+  EXPECT_EQ(copy, it);
   EXPECT_EQ(*it, 1);
 
-  //+=
   it += 3;
   EXPECT_EQ(*it, 4);
 
-  //-=
   it -= 2;
   EXPECT_EQ(*it, 2);
 
-  //[]
   EXPECT_EQ(it[3], 5);
   EXPECT_EQ(*it, 2); //unchanged
 
   //defintion of comparisons
-  EXPECT_EQ(it < it, false);
-  EXPECT_EQ(it > it, false);
-  EXPECT_EQ(it <= it, true);
-  EXPECT_EQ(it >= it, true);
+  copy = it;
 
-  EXPECT_EQ(it != it, false);
-  EXPECT_EQ(it == it, true);
+  EXPECT_EQ(it < copy, false);
+  EXPECT_EQ(it > copy, false);
+  EXPECT_EQ(it <= copy, true);
+  EXPECT_EQ(it >= copy, true);
 
-  it = it + 8;
+  EXPECT_EQ(it != copy, false);
+  EXPECT_EQ(it == copy, true);
 
-  EXPECT_EQ(it < it + 3, true);
-  EXPECT_EQ(it < it - 1, false);
+  EXPECT_EQ(it < (it + 3), true);
+  EXPECT_EQ(it < (it - 1), false);
 
-  EXPECT_EQ(it > it + 3, false);
-  EXPECT_EQ(it > it - 1, true);
+  EXPECT_EQ(it > (it + 3), false);
+  EXPECT_EQ(it > (it - 1), true);
 
-  auto it2 = it - 1;
-  EXPECT_EQ(it2 < it, true);
-  EXPECT_EQ(it2 > it, false);
-  EXPECT_EQ(it2, --it);
-
-  it2 = it - 2;
+  auto it2 = it - 2;
   --it;
   EXPECT_EQ(it2, --it);
-
-  it = it + 2;
-  EXPECT_EQ(it - 2, it2);
-  EXPECT_EQ(it > it2, true);
-  EXPECT_EQ(it < it2, false);
-  ++it2;
-  ++it2;
-  EXPECT_EQ(it, it2);
 
   i = 1;
   for (auto iter = array.begin(); iter < array.end(); ++iter)
   {
     EXPECT_EQ(*iter, i);
     auto iter2 = array.begin() + i;
-    EXPECT_EQ(*(iter2 - 1), *iter);
+    //test that indexing into the array by adding to an interator will give the same result as dereferencing the iterator
+    EXPECT_EQ(*(iter2 - 1), *iter); 
     ++i;
   }
   EXPECT_EQ(i, array.length + 1);
@@ -256,26 +270,27 @@ TEST(udChunkedArrayTests, Iterator)
   {
     --i;
     EXPECT_EQ(*iter, i);
-    EXPECT_EQ(array.begin()[i - 1], *iter);
+    //test that indexing into the array using an interator will give the same result as dereferencing the iterator
+    EXPECT_EQ(array.begin()[i - 1], *iter); 
   }
 
   EXPECT_EQ(array.end() - array.begin(), array.length);
 
   array.Deinit();
   array.Init(16);
-  for (int i = 0; i < 500; ++i) // ensure that the array is forced to grow
+  for (int i = 0; i < 32; ++i) // at least 2 chunks
   {
     array.PushBack(i % 4);
   }
 
-  //non zero inset:
+  // do the test on an array with an inset:
   array.PopFront();
 
   std::sort(array.begin(), array.end());
   int previous = array[0];
   for (int el : array)
   {
-    EXPECT_EQ(previous > el, false);
+    EXPECT_TRUE(previous <= el);
     previous = el;
   }
 
@@ -287,7 +302,7 @@ TEST(udChunkedArrayTests, Iterator)
   previous = *reverseStart;
   for (auto iter = reverseStart; iter < reverseEnd; iter++)
   {
-    EXPECT_EQ(*iter > previous, false);
+    EXPECT_TRUE(*iter <= previous);
     previous = *iter;
   }
 
