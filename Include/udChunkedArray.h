@@ -11,19 +11,48 @@
 #include "udPlatform.h"
 #include "udPlatformUtil.h"
 #include "udResult.h"
+#include <iterator>
 
 // --------------------------------------------------------------------------
 template <typename T>
 struct udChunkedArrayIterator
 {
+  // definitions necessary for compatibility with LegacyRandomAccessIterator
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = ptrdiff_t;
+  using value_type = T;
+  using pointer = T*;
+  using reference = T&;
+
+  udChunkedArrayIterator(T **ppChunks, size_t inset, size_t chunkElementCount, size_t chunkElementCountShift, size_t chunkElementCountMask, size_t startInd);
+
   T **ppCurrChunk;
+
   size_t currChunkElementIndex;
   size_t chunkElementCount;
 
+  difference_type operator-(const udChunkedArrayIterator<T> &rhs) const;
+
   udChunkedArrayIterator<T> &operator++();
-  T &operator*() const;
+  udChunkedArrayIterator<T> &operator--();
+
+  inline udChunkedArrayIterator<T> &operator+=(const difference_type a);
+  inline udChunkedArrayIterator<T> operator+(const difference_type a) const;
+
+  inline udChunkedArrayIterator<T> &operator-=(const difference_type a);
+  inline udChunkedArrayIterator<T> operator-(const difference_type a) const;
+
+  inline bool operator<(const udChunkedArrayIterator<T> &a) const { return (*this - a) < 0; }
+  inline bool operator>(const udChunkedArrayIterator<T> &a) const { return (*this - a) > 0; }
+  inline bool operator>=(const udChunkedArrayIterator<T> &a) const { return !(*this < a); }
+  inline bool operator<=(const udChunkedArrayIterator<T> &a) const { return !(*this > a); }
+
+  reference operator[](const size_t &a) const;
+  reference operator*() const;
   bool operator!=(const udChunkedArrayIterator<T> &rhs) const;
+  bool operator==(const udChunkedArrayIterator<T> &rhs) const;
 };
+
 
 template <typename T>
 struct udChunkedArray
@@ -64,15 +93,15 @@ struct udChunkedArray
   // At element index, return the number of elements including index that follow in the same chunk (ie can be indexed directly)
   // Optionally, if elementsBehind is true, returns the the number of elements BEHIND index in the same chunk instead
   size_t GetElementRunLength(size_t index, bool elementsBehind = false) const;
-  size_t ChunkElementCount() const               { return chunkElementCount; }
-  size_t ElementSize() const                     { return sizeof(T); }
+  size_t ChunkElementCount() const { return chunkElementCount; }
+  size_t ElementSize() const { return sizeof(T); }
 
   // Iterators
   typedef udChunkedArrayIterator<T> iterator;
   iterator begin();
   iterator end();
 
-  enum { ptrArrayInc = 32};
+  enum { ptrArrayInc = 32 };
 
   T **ppChunks;
   size_t ptrArraySize;
@@ -99,10 +128,65 @@ inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator++()
   return *this;
 }
 
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator--()
+{
+  if (currChunkElementIndex == 0)
+  {
+    currChunkElementIndex = chunkElementCount;
+    --ppCurrChunk;
+  }
+  --currChunkElementIndex;
+  return *this;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator+=(const difference_type a)
+{
+  // the 'index' within the current block we get to without taking into account chunk length
+  difference_type rawInd = (a + (difference_type)currChunkElementIndex);
+  //index within the chunk adjusting for block size
+  difference_type newInd = (rawInd < 0 ? (difference_type)chunkElementCount : 0) + rawInd % (difference_type)chunkElementCount;
+  // change in chunk index
+  difference_type chunkChange = (rawInd < 0 ? -1 : 0) + rawInd / (difference_type)chunkElementCount; 
+
+  ppCurrChunk += chunkChange;
+  currChunkElementIndex = newInd;
+  return *this;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> udChunkedArrayIterator<T>::operator+(const difference_type a) const
+{
+  udChunkedArrayIterator<T> ret = *this;
+  ret += a;
+  return ret;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator-=(const difference_type a)
+{
+  return *this += -a;
+}
+
+template <typename T>
+inline udChunkedArrayIterator<T> udChunkedArrayIterator<T>::operator-(const difference_type a) const
+{
+  udChunkedArrayIterator<T> ret = *this;
+  ret -= a;
+  return ret;
+}
+
+template <typename T>
+typename udChunkedArrayIterator<T>::difference_type udChunkedArrayIterator<T>::operator-(const udChunkedArrayIterator<T> &rhs) const
+{
+  return (this->ppCurrChunk - rhs.ppCurrChunk) * this->chunkElementCount + this->currChunkElementIndex - rhs.currChunkElementIndex;
+}
+
 // --------------------------------------------------------------------------
 // Author: Samuel Surtees, June 2020
 template <typename T>
-T &udChunkedArrayIterator<T>::operator*() const
+typename udChunkedArrayIterator<T>::reference udChunkedArrayIterator<T>::operator*() const
 {
   return (*ppCurrChunk)[currChunkElementIndex];
 }
@@ -110,9 +194,21 @@ T &udChunkedArrayIterator<T>::operator*() const
 // --------------------------------------------------------------------------
 // Author: Samuel Surtees, June 2020
 template <typename T>
+bool udChunkedArrayIterator<T>::operator==(const udChunkedArrayIterator<T> &rhs) const
+{
+  return (ppCurrChunk == rhs.ppCurrChunk && currChunkElementIndex == rhs.currChunkElementIndex);
+}
+
+template <typename T>
 bool udChunkedArrayIterator<T>::operator!=(const udChunkedArrayIterator<T> &rhs) const
 {
-  return !(ppCurrChunk == rhs.ppCurrChunk && currChunkElementIndex == rhs.currChunkElementIndex);
+  return !(*this == rhs);
+}
+
+template<typename T>
+typename udChunkedArrayIterator<T>::reference udChunkedArrayIterator<T>::operator[](const size_t &a) const
+{
+  return *(*this + a);
 }
 
 // --------------------------------------------------------------------------
@@ -142,7 +238,7 @@ inline udResult udChunkedArray<T>::Init(size_t a_chunkElementCount)
   else
     ptrArraySize = ptrArrayInc;
 
-  ppChunks = udAllocType(T*, ptrArraySize, udAF_Zero);
+  ppChunks = udAllocType(T *, ptrArraySize, udAF_Zero);
   UD_ERROR_NULL(ppChunks, udR_MemoryAllocationFailure);
 
   for (; c < chunkCount; ++c)
@@ -200,11 +296,11 @@ inline udResult udChunkedArray<T>::AddChunks(size_t numberOfNewChunks)
   if (newChunkCount > ptrArraySize)
   {
     size_t newPtrArraySize = ((newChunkCount + ptrArrayInc - 1) / ptrArrayInc) * ptrArrayInc;
-    T **newppChunks = udAllocType(T*, newPtrArraySize, udAF_Zero);
+    T **newppChunks = udAllocType(T *, newPtrArraySize, udAF_Zero);
     if (!newppChunks)
       return udR_MemoryAllocationFailure;
 
-    memcpy(newppChunks, ppChunks, ptrArraySize * sizeof(T*));
+    memcpy(newppChunks, ppChunks, ptrArraySize * sizeof(T *));
     udFree(ppChunks);
 
     ppChunks = newppChunks;
@@ -309,7 +405,7 @@ inline const T &udChunkedArray<T>::operator[](size_t index) const
 // --------------------------------------------------------------------------
 // Author: David Ely, May 2015
 template <typename T>
-inline T* udChunkedArray<T>::GetElement(size_t index)
+inline T *udChunkedArray<T>::GetElement(size_t index)
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
@@ -320,7 +416,7 @@ inline T* udChunkedArray<T>::GetElement(size_t index)
 // --------------------------------------------------------------------------
 // Author: Khan Maxfield, January 2016
 template <typename T>
-inline const T* udChunkedArray<T>::GetElement(size_t index) const
+inline const T *udChunkedArray<T>::GetElement(size_t index) const
 {
   UDASSERT(index < length, "Index out of bounds");
   index += inset;
@@ -424,19 +520,19 @@ inline udResult udChunkedArray<T>::PushFront(T **ppElement)
       // Are we out of pointers
       if ((chunkCount + 1) > ptrArraySize)
       {
-        T **ppNewChunks = udAllocType(T*, (ptrArraySize + ptrArrayInc), udAF_Zero);
+        T **ppNewChunks = udAllocType(T *, (ptrArraySize + ptrArrayInc), udAF_Zero);
         if (!ppNewChunks)
           return udR_MemoryAllocationFailure;
 
         ptrArraySize += ptrArrayInc;
-        memcpy(ppNewChunks + 1, ppChunks, chunkCount * sizeof(T*));
+        memcpy(ppNewChunks + 1, ppChunks, chunkCount * sizeof(T *));
 
         udFree(ppChunks);
         ppChunks = ppNewChunks;
       }
       else
       {
-        memmove(ppChunks + 1, ppChunks, chunkCount * sizeof(T*));
+        memmove(ppChunks + 1, ppChunks, chunkCount * sizeof(T *));
       }
 
       // See if we have an unused chunk at the end of the array
@@ -451,7 +547,7 @@ inline udResult udChunkedArray<T>::PushFront(T **ppElement)
         T *pNewBlock = udAllocType(T, chunkElementCount, udAF_None);
         if (!pNewBlock)
         {
-          memmove(ppChunks, ppChunks + 1, chunkCount * sizeof(T*));
+          memmove(ppChunks, ppChunks + 1, chunkCount * sizeof(T *));
           return udR_MemoryAllocationFailure;
         }
         ppChunks[0] = pNewBlock;
@@ -529,7 +625,7 @@ inline bool udChunkedArray<T>::PopFront(T *pDest)
       if (chunkCount > 1)
       {
         T *pHead = ppChunks[0];
-        memmove(ppChunks, ppChunks + 1, (chunkCount - 1) * sizeof(T*));
+        memmove(ppChunks, ppChunks + 1, (chunkCount - 1) * sizeof(T *));
         ppChunks[chunkCount - 1] = pHead;
       }
     }
@@ -729,7 +825,7 @@ inline size_t udChunkedArray<T>::GetElementRunLength(size_t index, bool elements
 template <typename T>
 inline typename udChunkedArray<T>::iterator udChunkedArray<T>::begin()
 {
-  return udChunkedArray<T>::iterator{ &ppChunks[0], inset, chunkElementCount };
+  return udChunkedArrayIterator<T>(this->ppChunks, this->inset, this->chunkElementCount, this->chunkElementCountShift, this->chunkElementCountMask, 0);
 }
 
 // --------------------------------------------------------------------------
@@ -737,7 +833,15 @@ inline typename udChunkedArray<T>::iterator udChunkedArray<T>::begin()
 template <typename T>
 inline typename udChunkedArray<T>::iterator udChunkedArray<T>::end()
 {
-  return udChunkedArray<T>::iterator{ &ppChunks[(inset + length) >> chunkElementCountShift], (inset + length) & chunkElementCountMask, chunkElementCount };
+  return udChunkedArrayIterator<T>(this->ppChunks, this->inset, this->chunkElementCount, this->chunkElementCountShift, this->chunkElementCountMask, this->length);
+}
+
+template<typename T>
+udChunkedArrayIterator<T>::udChunkedArrayIterator(T **ppChunks, size_t inset, size_t chunkElementCount, size_t chunkElementCountShift, size_t chunkElementCountMask, size_t startInd)
+{
+  this->ppCurrChunk = &ppChunks[(inset + startInd) >> chunkElementCountShift];
+  this->currChunkElementIndex = (inset + startInd) & chunkElementCountMask;
+  this->chunkElementCount = chunkElementCount;
 }
 
 #endif // UDCHUNKEDARRAY_H
