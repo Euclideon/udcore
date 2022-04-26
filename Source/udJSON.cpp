@@ -1579,26 +1579,29 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
-static udResult ParseXMLString(const char **ppStr, const char *pXML, int *pCharCount)
+static udResult ParseXMLString(const char **ppStr, const char *pXML, int *pCharCount, int expectedLen)
 {
   udResult result;
-  int charCount = 0;
+  int charCount = expectedLen;
   int extraChars = 0;
   int di = 0;
   char *pStr = nullptr;
 
-  if (*pXML == '\'' || *pXML == '\"')
+  if (expectedLen <= 0)
   {
-    charCount = (int)udStrMatchBrace(pXML) - 2;
-    extraChars = 2;
-    UD_ERROR_IF(charCount < 0, udR_ParseError);
-    ++pXML;
-  }
-  else
-  {
-    const char *pTerm = udStrchr(pXML, "<");
-    UD_ERROR_NULL(pTerm, udR_ParseError);
-    charCount = (int)(pTerm - pXML);
+    if (*pXML == '\'' || *pXML == '\"')
+    {
+      charCount = (int)udStrMatchBrace(pXML) - 2;
+      extraChars = 2;
+      UD_ERROR_IF(charCount < 0, udR_ParseError);
+      ++pXML;
+    }
+    else
+    {
+      const char *pTerm = udStrchr(pXML, "<");
+      UD_ERROR_NULL(pTerm, udR_ParseError);
+      charCount = (int)(pTerm - pXML);
+    }
   }
 
   pStr = udAllocType(char, charCount + 1, udAF_None);
@@ -1729,7 +1732,7 @@ udResult udJSON::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
       pAttr->pKey = udStrndup(pXML, len);
       pXML = udStrSkipWhiteSpace(pXML + len + 1, nullptr, pLineNumber);
       pAttr->value.Clear();
-      result = ParseXMLString(&pAttr->value.u.pStr, pXML, &charCount);
+      result = ParseXMLString(&pAttr->value.u.pStr, pXML, &charCount, 0);
       UD_ERROR_HANDLE();
       pAttr->value.type = T_String;
       pXML = udStrSkipWhiteSpace(pXML + charCount, nullptr, pLineNumber);
@@ -1780,7 +1783,7 @@ udResult udJSON::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
         pAttr->pKey = udStrdup(CONTENT_MEMBER);
         UD_ERROR_NULL(pAttr->pKey, udR_MemoryAllocationFailure);
         pAttr->value.Clear();
-        ParseXMLString(&pAttr->value.u.pStr, pXML, nullptr);
+        ParseXMLString(&pAttr->value.u.pStr, pXML, nullptr, (int)len);
         UD_ERROR_NULL(pAttr->value.u.pStr, udR_MemoryAllocationFailure);
         pAttr->value.type = T_String;
         if (cData)
