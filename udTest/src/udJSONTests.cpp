@@ -2,6 +2,8 @@
 #include "udJSON.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
+#include "udPlatform.h"
+#include "udFile.h"
 
 // First-pass most basic tests for udJSON
 // TODO: Fix udMemoryDebugTracking to be useful and test memory leaks
@@ -491,3 +493,25 @@ TEST(udJSONTests, CDATAXML)
   EXPECT_STREQ("{D5D720DD-E02F-4342-9AE1-49D91341FD2F}", json.Get("vectorChild.guid.content").AsString());
   EXPECT_STREQ("Station 018", json.Get("vectorChild.name.content").AsString());
 }
+
+
+#if !UDPLATFORM_EMSCRIPTEN // Disabled because of local file access issues
+TEST(udJSONTests, CDATAXMLE57)
+{
+  const char *pFilename = "testfiles/e57.xml";
+  if (udFileExists("../../../testfiles/e57.xml") == udR_Success)
+    pFilename = "../../../testfiles/e57.xml";
+
+  const char *pBuffer = nullptr;
+  int64_t fsize = 0;
+  ASSERT_EQ(udR_Success, udFile_Load(pFilename, &pBuffer, &fsize)) << "Could not open spatial reference file";
+
+  udJSON e57Data = {};
+  EXPECT_EQ(udR_Success, e57Data.Parse(pBuffer));
+
+  EXPECT_STREQ("{93228F34-467F-4FBE-95FA-5D02D5EF5FB6}", e57Data.Get("e57Root.images2D.vectorChild.guid.content").AsString());
+  EXPECT_STREQ("Station 018", e57Data.Get("e57Root.images2D.vectorChild.name.content").AsString());
+
+  udFree(pBuffer);
+}
+#endif

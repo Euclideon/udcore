@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<e57Root type="Structure"
+         xmlns="http://www.astm.org/COMMIT/E57/2010-e57-v1.0">
+  <formatName type="String"><![CDATA[ASTM E57 3D Imaging Data File]]></formatName>
+  <guid type="String"><![CDATA[{EDF75CCC-8C56-4A6F-A3FA-4056F8459935}]]></guid>
+  <versionMajor type="Integer">1</versionMajor>
+  <versionMinor type="Integer"/>
+  <e57LibraryVersion type="String"><![CDATA[InteliSum-LD3-Studio-V5.1-E57RefImpl-1.0.154-x86-windows]]></e57LibraryVersion>
+  <coordinateMetadata type="String"/>
+  <creationDateTime type="Structure">
+    <dateTimeValue type="Float">9.8996729485598445e+008</dateTimeValue>
+    <isAtomicClockReferenced type="Integer"/>
+  </creationDateTime>
+  <data3D type="Vector" allowHeterogeneousChildren="1">
+    <vectorChild type="Structure">
+      <guid type="String"><![CDATA[{D5D720DD-E02F-4342-9AE1-49D91341FD2F}]]></guid>
+      <name type="String"><![CDATA[Station 018]]></name>
+      <temperature type="Float"/>
+      <indexBounds type="Structure">
+        <rowMinimum type="Integer"/>
+        <rowMaximum type="Integer">1663</rowMaximum>
+        <columnMinimum type="Integer"/>
+        <columnMaximum type="Integer">5025</columnMaximum>
+        <returnMinimum type="Integer"/>
+        <returnMaximum type="Integer"/>
+      </indexBounds>
+      <intensityLimits type="Structure">
+        <intensityMaximum type="ScaledInteger" minimum="0" maximum="32767" scale="3.0518509475997192e-005">32767</intensityMaximum>
+        <intensityMinimum type="ScaledInteger" minimum="0" maximum="32767" scale="3.0518509475997192e-005"/>
+      </intensityLimits>
+      <colorLimits type="Structure">
+        <colorRedMaximum type="Integer">255</colorRedMaximum>
+        <colorRedMinimum type="Integer"/>
+        <colorGreenMaximum type="Integer">255</colorGreenMaximum>
+        <colorGreenMinimum type="Integer"/>
+        <colorBlueMaximum type="Integer">255</colorBlueMaximum>
+        <colorBlueMinimum type="Integer"/>
+      </colorLimits>
+      <cartesianBounds type="Structure">
+        <xMinimum type="Float">-2.65705018e+002</xMinimum>
+        <xMaximum type="Float">2.6383508399999999e+002</xMaximum>
+        <yMinimum type="Float">-2.4027735999999999e+002</yMinimum>
+        <yMaximum type="Float">2.64460328e+002</yMaximum>
+        <zMinimum type="Float">-5.7436749999999996</zMinimum>
+        <zMaximum type="Float">2.0099076e+001</zMaximum>
+      </cartesianBounds>
+      <sphericalBounds type="Structure">
+        <rangeMinimum type="Float">2.459956</rangeMinimum>
+        <rangeMaximum type="Float">3.5823510199999998e+002</rangeMaximum>
+        <elevationMinimum type="Float">-7.9318933103374833e-001</elevationMinimum>
+        <elevationMaximum type="Float">1.2927780909144957</elevationMaximum>
+        <azimuthStart type="Float">3.5587220273177414e-006</azimuthStart>
+        <azimuthEnd type="Float">-4.4427877753605571e-005</azimuthEnd>
+      </sphericalBounds>
+      <pose type="Structure">
+        <rotation type="Structure">
+          <w type="Float">3.8139286343546308e-001</w>
+          <x type="Float"/>
+          <y type="Float"/>
+          <z type="Float">9.2441304822059833e-001</z>
+        </rotation>
+        <translation type="Structure">
+          <x type="Float">8.1316972799999996e+002</x>
+          <y type="Float">5.9910159699999997e+002</y>
+          <z type="Float">2.9616304e+001</z>
+        </translation>
+      </pose>
+      <pointGroupingSchemes type="Structure">
+        <groupingByLine type="Structure">
+          <idElementName type="String"><![CDATA[columnIndex]]></idElementName>
+          <groups type="CompressedVector" fileOffset="79166976" recordCount="5026">
+            <prototype type="Structure">
+              <startPointIndex type="Integer" minimum="0" maximum="8363263"/>
+              <idElementValue type="Integer" minimum="0" maximum="5025"/>
+              <pointCount type="Integer" minimum="0" maximum="1664"/>
+            </prototype>
+            <codecs type="Vector" allowHeterogeneousChildren="1">
+            </codecs>
+          </groups>
+        </groupingByLine>
+      </pointGroupingSchemes>
+      <points type="CompressedVector" fileOffset="48" recordCount="4067815">
+        <prototype type="Structure">
+          <cartesianX type="ScaledInteger" minimum="-536870912" maximum="536870911" scale="9.9999999999999995e-007"/>
+          <cartesianY type="ScaledInteger" minimum="-536870912" maximum="536870911" scale="9.9999999999999995e-007"/>
+          <cartesianZ type="ScaledInteger" minimum="-536870912" maximum="536870911" scale="9.9999999999999995e-007"/>
+          <intensity type="ScaledInteger" minimum="0" maximum="32767" scale="3.0518509475997192e-005"/>
+          <colorRed type="Integer" minimum="0" maximum="255"/>
+          <colorGreen type="Integer" minimum="0" maximum="255"/>
+          <colorBlue type="Integer" minimum="0" maximum="255"/>
+          <rowIndex type="Integer" minimum="0" maximum="2047"/>
+          <columnIndex type="Integer" minimum="0" maximum="8191"/>
+          <cartesianInvalidState type="Integer" minimum="0" maximum="2"/>
+        </prototype>
+        <codecs type="Vector" allowHeterogeneousChildren="1">
+        </codecs>
+      </points>
+    </vectorChild>
+  </data3D>
+  <images2D type="Vector" allowHeterogeneousChildren="1">
+    <vectorChild type="Structure">
+      <guid type="String"><![CDATA[{93228F34-467F-4FBE-95FA-5D02D5EF5FB6}]]></guid>
+      <name type="String"><![CDATA[Station 018]]></name>
+      <associatedData3DGuid type="String"><![CDATA[{D5D720DD-E02F-4342-9AE1-49D91341FD2F}]]></associatedData3DGuid>
+      <pose type="Structure">
+        <rotation type="Structure">
+          <w type="Float">9.480260728603021e-002</w>
+          <x type="Float"/>
+          <y type="Float"/>
+          <z type="Float">9.9549609022425145e-001</z>
+        </rotation>
+        <translation type="Structure">
+          <x type="Float">8.1316972799999996e+002</x>
+          <y type="Float">5.9910159699999997e+002</y>
+          <z type="Float">2.9616304e+001</z>
+        </translation>
+      </pose>
+      <sphericalRepresentation type="Structure">
+        <jpegImage type="Blob" fileOffset="79196668" length="37890817"/>
+        <imageHeight type="Integer">4488</imageHeight>
+        <imageWidth type="Integer">8976</imageWidth>
+        <pixelHeight type="Float">6.9999836309932997e-004</pixelHeight>
+        <pixelWidth type="Float">6.9999301699794265e-004</pixelWidth>
+      </sphericalRepresentation>
+    </vectorChild>
+  </images2D>
+</e57Root>
