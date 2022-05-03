@@ -65,17 +65,25 @@ TEST(udUUID, ComparisonTests)
 
 TEST(udUUID, NonceTests)
 {
-  udUUID a, b, c;
+  udUUID a, b, c, d, e;
 
   EXPECT_EQ(udR_Success, udUUID_SetFromString(&a, "DC8EA1A9-BECD-4534-ADAD-900B3972EE8C"));
   EXPECT_EQ(udR_Success, udUUID_SetFromString(&b, "dc8ea1a9-becd-4534-adad-900b3972ee8c"));
   EXPECT_EQ(udR_Success, udUUID_SetFromString(&c, "01234567-89AB-CDEF-0123-456789ABCDEF"));
+  EXPECT_EQ(udR_Success, udUUID_SetFromString(&d, "76543210-BA98-CDEF-7654-3210BA980000"));
+  EXPECT_EQ(udR_Success, udUUID_SetFromString(&e, "00000000-0000-CDEF-0000-000000000000"));
 
   EXPECT_NE(0, udUUID_ToNonce(&a));
   EXPECT_NE(0, udUUID_ToNonce(&c));
 
   EXPECT_EQ(udUUID_ToNonce(&a), udUUID_ToNonce(&b));
   EXPECT_NE(udUUID_ToNonce(&a), udUUID_ToNonce(&c));
+
+  EXPECT_EQ(8152414324602695308U, udUUID_ToNonce(&a));
+  EXPECT_EQ(8152414324602695308U, udUUID_ToNonce(&b));
+  EXPECT_EQ(52719U, udUUID_ToNonce(&c));
+  EXPECT_EQ(0U, udUUID_ToNonce(&d));
+  EXPECT_EQ(0U, udUUID_ToNonce(&e));
 }
 
 TEST(udUUID, GenerationTests)
