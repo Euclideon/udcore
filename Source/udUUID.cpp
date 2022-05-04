@@ -197,11 +197,10 @@ uint64_t udUUID_ToNonce(const udUUID *pUUID)
 {
   uint64_t accumA = udStrAtou64((const char *)&pUUID->internal_bytes[0], nullptr, 16);
   uint64_t accumB = udStrAtou64((const char *)&pUUID->internal_bytes[9], nullptr, 16);
-  uint64_t accumC = udStrAtou64((const char *)&pUUID->internal_bytes[13], nullptr, 16);
   uint64_t accumD = udStrAtou64((const char *)&pUUID->internal_bytes[19], nullptr, 16);
   uint64_t accumE = udStrAtou64((const char *)&pUUID->internal_bytes[24], nullptr, 16);
 
-  uint64_t partA = (accumA << 32) | (accumB << 16) | (accumC);
+  uint64_t partA = (accumA << 32) | (accumB << 16);
   uint64_t partB = (accumD << 48) | accumE;
 
   return (partA ^ partB);
