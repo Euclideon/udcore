@@ -956,10 +956,9 @@ udResult udCryptoKey_DeriveFromData(const char **ppKey, size_t keyLen, const voi
   udResult result;
   uint8_t hashBuffer[udCHL_SHA512Length];
   const char *pHashBase64 = nullptr;
-  size_t i;
 
   UD_ERROR_IF(keyLen > sizeof(hashBuffer), udR_CountExceeded);
-  UD_ERROR_CHECK(udCryptoHash_Hash((keyLen > udCHL_SHA256Length) ? udCH_SHA512 : udCH_SHA256, pData, dataLen, &pHashBase64, &i));
+  UD_ERROR_CHECK(udCryptoHash_Hash((keyLen > udCHL_SHA256Length) ? udCH_SHA512 : udCH_SHA256, pData, dataLen, &pHashBase64));
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hashBuffer, sizeof(hashBuffer)));
   result = udBase64Encode(ppKey, hashBuffer, keyLen);
 
