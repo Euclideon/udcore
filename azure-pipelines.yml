@@ -14,6 +14,11 @@ stages:
       name: ubuntu2004
       displayName: 'Ubuntu 20.04'
       vmImage: 'ubuntu-20.04'
+  - template: azure-pipelines-jobs-linux-containerless.yml
+    parameters:
+      name: ubuntu2204
+      displayName: 'Ubuntu 22.04'
+      vmImage: 'ubuntu-22.04'
   - template: azure-pipelines-jobs-macos.yml
     parameters:
       name: macos
