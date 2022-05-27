@@ -148,6 +148,7 @@ udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pF
   int loaded = 0;
   int mismatched = 0;
   int failed = 0;
+  udUnused(mismatched);
 
   int highestLoaded = 0;
   udChunkedArray<udJSONKVPair> *pMembers = nullptr;
