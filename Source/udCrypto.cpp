@@ -1548,8 +1548,8 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   size_t hashLen;
   size_t sigLen = sizeof(signature);
 
-  mbedtls_entropy_context entropy;
-  mbedtls_ctr_drbg_context ctr_drbg;
+  mbedtls_entropy_context entropy = {};
+  mbedtls_ctr_drbg_context ctr_drbg = {};
 
   UD_ERROR_IF(hashMethod > udCH_Count, udR_InvalidParameter);
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter);
