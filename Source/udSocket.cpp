@@ -3,7 +3,7 @@
 #include "udStringUtil.h"
 #include "udCrypto.h"
 
-#include "mbedtls/net.h"
+#include "mbedtls/net_sockets.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
@@ -332,7 +332,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
 
       // Set up public key
       mbedtls_pk_init(&pSocket->tlsClient.publicKey);
-      retVal = mbedtls_pk_parse_key(&pSocket->tlsClient.publicKey, (const unsigned char *)pPrivateKey, udStrlen(pPrivateKey)+1, NULL, 0);
+      retVal = mbedtls_pk_parse_key(&pSocket->tlsClient.publicKey, (const unsigned char *)pPrivateKey, udStrlen(pPrivateKey)+1, NULL, 0, NULL, NULL);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_pk_parse_key returned %d\n", retVal);
