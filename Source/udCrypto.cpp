@@ -1245,7 +1245,7 @@ udResult udCryptoKeyECDH_DeriveFromPartyA(const char *pPublicValueA, const char 
   UD_ERROR_CHECK(udBase64Encode(ppPublicValueB, buf, len));
 
   // Get the secret key
-  UD_ERROR_IF(mbedtls_ecdh_calc_secret(&pCtx->ecdh, &res_len, res_buf, udLengthOf(res_buf), NULL, NULL) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ecdh_calc_secret(&pCtx->ecdh, &res_len, res_buf, udLengthOf(res_buf), mbedtls_ctr_drbg_random, &pCtx->ctr_drbg) != 0, udR_InternalCryptoError);
   UD_ERROR_CHECK(udCryptoHash_Hash(udCH_SHA256, res_buf, res_len, ppKey));
 
   // Intentionally not giving the ECDH context back to the caller- it can just be cleaned up now
@@ -1548,11 +1548,20 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   size_t hashLen;
   size_t sigLen = sizeof(signature);
 
+  mbedtls_entropy_context entropy;
+  mbedtls_ctr_drbg_context ctr_drbg;
+
   UD_ERROR_IF(hashMethod > udCH_Count, udR_InvalidParameter);
   UD_ERROR_NULL(pSigCtx, udR_InvalidParameter);
   UD_ERROR_NULL(pHashBase64, udR_InvalidParameter);
   UD_ERROR_NULL(ppSignatureBase64, udR_InvalidParameter);
   UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
+
+  mbedtls_ctr_drbg_init(&ctr_drbg);
+  mbedtls_entropy_init(&entropy);
+
+  // Seed the random number generator
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
 
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
@@ -1564,12 +1573,12 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
       if (pad == udCSPS_Deterministic)
         mbedtls_rsa_set_padding(&pSigCtx->rsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_NONE);
       UD_ERROR_IF(sizeof(signature) < (size_t)(pSigCtx->type / 8), udR_InternalCryptoError);
-      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_sign(&pSigCtx->rsa, NULL, NULL, udc_to_mbed_hashfunctions[hashMethod], hashLen, hash, signature) != 0, udR_InternalCryptoError);
+      UD_ERROR_IF(mbedtls_rsa_rsassa_pkcs1_v15_sign(&pSigCtx->rsa, mbedtls_ctr_drbg_random, &ctr_drbg, udc_to_mbed_hashfunctions[hashMethod], hashLen, hash, signature) != 0, udR_InternalCryptoError);
       result = udBase64Encode(ppSignatureBase64, signature, pSigCtx->type / 8);
       UD_ERROR_HANDLE();
       break;
     case udCST_ECPBP384:
-      UD_ERROR_IF(mbedtls_ecdsa_write_signature(&pSigCtx->ecdsa, udc_to_mbed_hashfunctions[hashMethod], hash, hashLen, signature, udLengthOf(signature), &sigLen, NULL, NULL) != 0, udR_InternalCryptoError);
+      UD_ERROR_IF(mbedtls_ecdsa_write_signature(&pSigCtx->ecdsa, udc_to_mbed_hashfunctions[hashMethod], hash, hashLen, signature, udLengthOf(signature), &sigLen, mbedtls_ctr_drbg_random, &ctr_drbg) != 0, udR_InternalCryptoError);
       result = udBase64Encode(ppSignatureBase64, signature, sigLen);
       UD_ERROR_HANDLE();
       break;
@@ -1578,6 +1587,9 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   }
 
 epilogue:
+  mbedtls_ctr_drbg_free(&ctr_drbg);
+  mbedtls_entropy_free(&entropy);
+
   return result;
 }
 
