@@ -1063,18 +1063,28 @@ TEST(MathTests, MatrixExtraction)
   EXPECT_DOUBLE_EQ(outQuatYPR.z, outMatYPR.z);
 }
 
-//return  0: success
-//        1: result is not perpendicular to input
-//        2: result is a zero vector
-int udPerpendicular3_Check(const udDouble3 &v, double epsilon)
+//expectedMode  0: success
+//              1: result is not perpendicular to input
+//              2: result is a zero vector
+void udPerpendicular3_Check(const udDouble3 &v, double epsilon, int expectedMode)
 {
   udDouble3 vPerp = udPerpendicular3(v);
   double proj = udDot(v, vPerp);
-  if (udMag3(vPerp) <= epsilon)
-    return 2;
-  if (udAbs(proj) > epsilon)
-    return 1;
-  return 0;
+
+  if (expectedMode == 2)
+  {
+    EXPECT_LE(udMag3(vPerp), epsilon);
+  }
+  else if (expectedMode == 1)
+  {
+    EXPECT_GT(udMag3(vPerp), epsilon);
+    EXPECT_GT(udAbs(proj), epsilon);
+  }
+  else
+  {
+    EXPECT_GT(udMag3(vPerp), epsilon);
+    EXPECT_LE(udAbs(proj), epsilon);
+  }
 }
 
 TEST(MathTests, UtilityFunctions)
@@ -1083,31 +1093,31 @@ TEST(MathTests, UtilityFunctions)
     double epsilon        = 1e-12;
     double epsilonSmaller = 1e-13;
 
-    EXPECT_EQ(udPerpendicular3_Check({1.0, 0.0, 0.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, 1.0, 0.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, 1.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({1.0, 1.0, 0.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({1.0, 0.0, 1.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({1.0, 1.0, 1.0}, epsilon), 0);
+    udPerpendicular3_Check({1.0, 0.0, 0.0}, epsilon, 0);
+    udPerpendicular3_Check({0.0, 1.0, 0.0}, epsilon, 0);
+    udPerpendicular3_Check({0.0, 0.0, 1.0}, epsilon, 0);
+    udPerpendicular3_Check({1.0, 1.0, 0.0}, epsilon, 0);
+    udPerpendicular3_Check({1.0, 0.0, 1.0}, epsilon, 0);
+    udPerpendicular3_Check({1.0, 1.0, 1.0}, epsilon, 0);
 
-    EXPECT_EQ(udPerpendicular3_Check({-1.0, 0.0, 0.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, -1.0, 0.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, -1.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({-1.0, -1.0, 0.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({-1.0, 0.0, -1.0}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({-1.0, -1.0, -1.0}, epsilon), 0);
+    udPerpendicular3_Check({-1.0, 0.0, 0.0}, epsilon, 0);
+    udPerpendicular3_Check({0.0, -1.0, 0.0}, epsilon, 0);
+    udPerpendicular3_Check({0.0, 0.0, -1.0}, epsilon, 0);
+    udPerpendicular3_Check({-1.0, -1.0, 0.0}, epsilon, 0);
+    udPerpendicular3_Check({-1.0, 0.0, -1.0}, epsilon, 0);
+    udPerpendicular3_Check({-1.0, -1.0, -1.0}, epsilon, 0);
 
-    EXPECT_EQ(udPerpendicular3_Check({23.45, -45.89, 4597.13}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({-3421750394.3, 987715.3457, 184573763.437}, epsilon), 0);
-    EXPECT_EQ(udPerpendicular3_Check({-1e43, -2e109, 42.0}, epsilon), 0);
+    udPerpendicular3_Check({23.45, -45.89, 4597.13}, epsilon, 0);
+    udPerpendicular3_Check({-3421750394.3, 987715.3457, 184573763.437}, epsilon, 0);
+    udPerpendicular3_Check({-1e43, -2e109, 42.0}, epsilon, 0);
 
-    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, 0.0}, epsilon), 2);
-    EXPECT_EQ(udPerpendicular3_Check({epsilonSmaller, 0.0, 0.0}, epsilon), 2);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, epsilonSmaller, 0.0}, epsilon), 2);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, epsilonSmaller}, epsilon), 2);
-    EXPECT_EQ(udPerpendicular3_Check({-epsilonSmaller, 0.0, 0.0}, epsilon), 2);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, -epsilonSmaller, 0.0}, epsilon), 2);
-    EXPECT_EQ(udPerpendicular3_Check({0.0, 0.0, -epsilonSmaller}, epsilon), 2);
+    udPerpendicular3_Check({0.0, 0.0, 0.0}, epsilon, 2);
+    udPerpendicular3_Check({epsilonSmaller, 0.0, 0.0}, epsilon, 2);
+    udPerpendicular3_Check({0.0, epsilonSmaller, 0.0}, epsilon, 2);
+    udPerpendicular3_Check({0.0, 0.0, epsilonSmaller}, epsilon, 2);
+    udPerpendicular3_Check({-epsilonSmaller, 0.0, 0.0}, epsilon, 2);
+    udPerpendicular3_Check({0.0, -epsilonSmaller, 0.0}, epsilon, 2);
+    udPerpendicular3_Check({0.0, 0.0, -epsilonSmaller}, epsilon, 2);
   }
 
   {

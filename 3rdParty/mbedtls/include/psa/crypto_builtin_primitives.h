@@ -32,6 +32,7 @@
 
 #ifndef PSA_CRYPTO_BUILTIN_PRIMITIVES_H
 #define PSA_CRYPTO_BUILTIN_PRIMITIVES_H
+#include "mbedtls/private_access.h"
 
 #include <psa/crypto_driver_common.h>
 
@@ -39,17 +40,13 @@
  * Hash multi-part operation definitions.
  */
 
-#include "mbedtls/md2.h"
-#include "mbedtls/md4.h"
 #include "mbedtls/md5.h"
 #include "mbedtls/ripemd160.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
 
-#if defined(MBEDTLS_PSA_BUILTIN_ALG_MD2) || \
-    defined(MBEDTLS_PSA_BUILTIN_ALG_MD4) || \
-    defined(MBEDTLS_PSA_BUILTIN_ALG_MD5) || \
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_MD5) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_RIPEMD160) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_1) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_224) || \
@@ -61,32 +58,28 @@
 
 typedef struct
 {
-    psa_algorithm_t alg;
+    psa_algorithm_t MBEDTLS_PRIVATE(alg);
     union
     {
         unsigned dummy; /* Make the union non-empty even with no supported algorithms. */
-#if defined(MBEDTLS_MD2_C)
-        mbedtls_md2_context md2;
-#endif
-#if defined(MBEDTLS_MD4_C)
-        mbedtls_md4_context md4;
-#endif
-#if defined(MBEDTLS_MD5_C)
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_MD5)
         mbedtls_md5_context md5;
 #endif
-#if defined(MBEDTLS_RIPEMD160_C)
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_RIPEMD160)
         mbedtls_ripemd160_context ripemd160;
 #endif
-#if defined(MBEDTLS_SHA1_C)
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_1)
         mbedtls_sha1_context sha1;
 #endif
-#if defined(MBEDTLS_SHA256_C)
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_256) || \
+    defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_224)
         mbedtls_sha256_context sha256;
 #endif
-#if defined(MBEDTLS_SHA512_C)
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_512) || \
+    defined(MBEDTLS_PSA_BUILTIN_ALG_SHA_384)
         mbedtls_sha512_context sha512;
 #endif
-    } ctx;
+    } MBEDTLS_PRIVATE(ctx);
 } mbedtls_psa_hash_operation_t;
 
 #define MBEDTLS_PSA_HASH_OPERATION_INIT {0, {0}}
@@ -101,7 +94,6 @@ typedef struct
     defined(MBEDTLS_PSA_BUILTIN_ALG_CTR) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_CFB) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_OFB) || \
-    defined(MBEDTLS_PSA_BUILTIN_ALG_XTS) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_ECB_NO_PADDING) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_CBC_NO_PADDING) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_CBC_PKCS7)
@@ -110,40 +102,15 @@ typedef struct
 
 typedef struct {
     /* Context structure for the Mbed TLS cipher implementation. */
-    psa_algorithm_t alg;
-    uint8_t iv_length;
-    uint8_t block_length;
+    psa_algorithm_t MBEDTLS_PRIVATE(alg);
+    uint8_t MBEDTLS_PRIVATE(iv_length);
+    uint8_t MBEDTLS_PRIVATE(block_length);
     union {
-        unsigned int dummy;
-        mbedtls_cipher_context_t cipher;
-    } ctx;
+        unsigned int MBEDTLS_PRIVATE(dummy);
+        mbedtls_cipher_context_t MBEDTLS_PRIVATE(cipher);
+    } MBEDTLS_PRIVATE(ctx);
 } mbedtls_psa_cipher_operation_t;
 
 #define MBEDTLS_PSA_CIPHER_OPERATION_INIT {0, 0, 0, {0}}
-
-/*
- * BEYOND THIS POINT, TEST DRIVER DECLARATIONS ONLY.
- */
-#if defined(PSA_CRYPTO_DRIVER_TEST)
-
-typedef mbedtls_psa_hash_operation_t mbedtls_transparent_test_driver_hash_operation_t;
-
-#define MBEDTLS_TRANSPARENT_TEST_DRIVER_HASH_OPERATION_INIT MBEDTLS_PSA_HASH_OPERATION_INIT
-
-typedef mbedtls_psa_cipher_operation_t
-        mbedtls_transparent_test_driver_cipher_operation_t;
-
-typedef struct {
-    unsigned int initialised : 1;
-    mbedtls_transparent_test_driver_cipher_operation_t ctx;
-} mbedtls_opaque_test_driver_cipher_operation_t;
-
-#define MBEDTLS_TRANSPARENT_TEST_DRIVER_CIPHER_OPERATION_INIT \
-     MBEDTLS_PSA_CIPHER_OPERATION_INIT
-
-#define MBEDTLS_OPAQUE_TEST_DRIVER_CIPHER_OPERATION_INIT \
-     { 0, MBEDTLS_TRANSPARENT_TEST_DRIVER_CIPHER_OPERATION_INIT }
-
-#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 #endif /* PSA_CRYPTO_BUILTIN_PRIMITIVES_H */

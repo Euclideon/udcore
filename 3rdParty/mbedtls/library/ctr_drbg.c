@@ -152,11 +152,8 @@ static int block_cipher_df( unsigned char *output,
      *     (Total is padded to a multiple of 16-bytes with zeroes)
      */
     p = buf + MBEDTLS_CTR_DRBG_BLOCKSIZE;
-    *p++ = ( data_len >> 24 ) & 0xff;
-    *p++ = ( data_len >> 16 ) & 0xff;
-    *p++ = ( data_len >> 8  ) & 0xff;
-    *p++ = ( data_len       ) & 0xff;
-    p += 3;
+    MBEDTLS_PUT_UINT32_BE( data_len, p, 0);
+    p += 4 + 3;
     *p++ = MBEDTLS_CTR_DRBG_SEEDLEN;
     memcpy( p, data, data_len );
     p[data_len] = 0x80;
@@ -315,7 +312,7 @@ exit:
  * and with outputs
  *   ctx = initial_working_state
  */
-int mbedtls_ctr_drbg_update_ret( mbedtls_ctr_drbg_context *ctx,
+int mbedtls_ctr_drbg_update( mbedtls_ctr_drbg_context *ctx,
                                  const unsigned char *additional,
                                  size_t add_len )
 {
@@ -334,19 +331,6 @@ exit:
     mbedtls_platform_zeroize( add_input, sizeof( add_input ) );
     return( ret );
 }
-
-#if !defined(MBEDTLS_DEPRECATED_REMOVED)
-void mbedtls_ctr_drbg_update( mbedtls_ctr_drbg_context *ctx,
-                              const unsigned char *additional,
-                              size_t add_len )
-{
-    /* MAX_INPUT would be more logical here, but we have to match
-     * block_cipher_df()'s limits since we can't propagate errors */
-    if( add_len > MBEDTLS_CTR_DRBG_MAX_SEED_INPUT )
-        add_len = MBEDTLS_CTR_DRBG_MAX_SEED_INPUT;
-    (void) mbedtls_ctr_drbg_update_ret( ctx, additional, add_len );
-}
-#endif /* MBEDTLS_DEPRECATED_REMOVED */
 
 /* CTR_DRBG_Reseed with derivation function (SP 800-90A &sect;10.2.1.4.2)
  * mbedtls_ctr_drbg_reseed(ctx, additional, len, nonce_len)
@@ -670,7 +654,7 @@ int mbedtls_ctr_drbg_update_seed_file( mbedtls_ctr_drbg_context *ctx,
     fclose( f );
     f = NULL;
 
-    ret = mbedtls_ctr_drbg_update_ret( ctx, buf, n );
+    ret = mbedtls_ctr_drbg_update( ctx, buf, n );
 
 exit:
     mbedtls_platform_zeroize( buf, sizeof( buf ) );
@@ -831,7 +815,7 @@ static int ctr_drbg_self_test_entropy( void *data, unsigned char *buf,
                         return( 1 );                        \
                     }
 
-#define SELF_TEST_OUPUT_DISCARD_LENGTH 64
+#define SELF_TEST_OUTPUT_DISCARD_LENGTH 64
 
 /*
  * Checkup routine
@@ -857,7 +841,7 @@ int mbedtls_ctr_drbg_self_test( int verbose )
                                 (void *) entropy_source_pr,
                                 pers_pr, MBEDTLS_CTR_DRBG_KEYSIZE ) );
     mbedtls_ctr_drbg_set_prediction_resistance( &ctx, MBEDTLS_CTR_DRBG_PR_ON );
-    CHK( mbedtls_ctr_drbg_random( &ctx, buf, SELF_TEST_OUPUT_DISCARD_LENGTH ) );
+    CHK( mbedtls_ctr_drbg_random( &ctx, buf, SELF_TEST_OUTPUT_DISCARD_LENGTH ) );
     CHK( mbedtls_ctr_drbg_random( &ctx, buf, sizeof( result_pr ) ) );
     CHK( memcmp( buf, result_pr, sizeof( result_pr ) ) );
 
@@ -882,7 +866,7 @@ int mbedtls_ctr_drbg_self_test( int verbose )
                                 (void *) entropy_source_nopr,
                                 pers_nopr, MBEDTLS_CTR_DRBG_KEYSIZE ) );
     CHK( mbedtls_ctr_drbg_reseed( &ctx, NULL, 0 ) );
-    CHK( mbedtls_ctr_drbg_random( &ctx, buf, SELF_TEST_OUPUT_DISCARD_LENGTH ) );
+    CHK( mbedtls_ctr_drbg_random( &ctx, buf, SELF_TEST_OUTPUT_DISCARD_LENGTH ) );
     CHK( mbedtls_ctr_drbg_random( &ctx, buf, sizeof( result_nopr ) ) );
     CHK( memcmp( buf, result_nopr, sizeof( result_nopr ) ) );
 
