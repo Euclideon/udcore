@@ -1,6 +1,7 @@
 1. Delete everything in library and include
 2. Copy from the release package
 3. Restore threading_alt.h
-4. Enable MBEDTLS_THREADING_ALT and MBEDTLS_THREADING_C in config.h
-5. Enable MBEDTLS_HAVE_INT64 in bignum.h for Windows ARM64 builds using _M_ARM64 macro
-6. Disable optimisations for mbedtls_mpi_safe_cond_assign in Windows ARM64 builds using _MSC_VER and _M_ARM64 macro
+4. Enable MBEDTLS_THREADING_ALT and MBEDTLS_THREADING_C in mbedtls_config.h
+5. Disable MBEDTLS_ERROR_C in mbedtls_config.h
+6. Ensure that in entropy_poll.c
+has a bcrypt version of mbedtls_platform_entropy_poll (revert that function if required) for UWP

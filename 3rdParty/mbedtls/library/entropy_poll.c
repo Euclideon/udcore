@@ -55,6 +55,38 @@
 #include <windows.h>
 #include <wincrypt.h>
 
+#include <winapifamily.h>
+#if WINAPI_FAMILY == WINAPI_FAMILY_PC_APP
+# include <bcrypt.h>
+# include <intsafe.h>
+// Acquired from https://github.com/ARMmbed/mbedtls/pull/1453
+int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
+                           size_t *olen)
+{
+    ULONG len_as_ulong;
+    ((void)data);
+    *olen = 0;
+
+    /*
+     * BCryptGenRandom takes ULONG for size, which is smaller than size_t on
+     * 64-bit Windows platforms. Ensure len's value can be safely converted into
+     * a ULONG.
+     */
+    if (FAILED(SizeTToULong(len, &len_as_ulong)))
+    {
+        return(MBEDTLS_ERR_ENTROPY_SOURCE_FAILED);
+    }
+
+    if (!BCRYPT_SUCCESS(BCryptGenRandom(NULL, output, len_as_ulong, BCRYPT_USE_SYSTEM_PREFERRED_RNG)))
+    {
+        return(MBEDTLS_ERR_ENTROPY_SOURCE_FAILED);
+    }
+
+    *olen = len;
+
+    return(0);
+}
+#else
 int mbedtls_platform_entropy_poll( void *data, unsigned char *output, size_t len,
                            size_t *olen )
 {
@@ -79,6 +111,7 @@ int mbedtls_platform_entropy_poll( void *data, unsigned char *output, size_t len
 
     return( 0 );
 }
+#endif
 #else /* _WIN32 && !EFIX64 && !EFI32 */
 
 /*
