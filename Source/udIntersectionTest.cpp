@@ -1,8 +1,8 @@
 /********************************************************/
 /* AABB-triangle overlap test code                      */
-/* by Tomas Akenine-Möller                              */
-/* Function: int triBoxOverlap(float boxcenter[3],      */
-/*          float boxHalfSize[3],float triverts[3][3]); */
+/* by Tomas Akenine-MÃ¶ller                              */
+/* Function: int triBoxOverlap(double boxcenter[3],      */
+/*          double boxHalfSize[3],double triverts[3][3]); */
 /* History:                                             */
 /*   2001-03-05: released the code in its first version */
 /*   2001-06-18: changed the order of the tests, faster */
@@ -14,15 +14,15 @@
 
 #include "udIntersectionTest.h"
 
-static bool PlaneBoxOverlap(const udFloat3 &normal, const udFloat3 &vert, const udFloat3 &maxbox)	// -NJMP-
+static bool PlaneBoxOverlap(const udDouble3 &normal, const udDouble3 &vert, const udDouble3 &maxbox)	// -NJMP-
 {
   int q;
-  float v;
-  udFloat3 vmin, vmax;
+  double v;
+  udDouble3 vmin, vmax;
   for (q = 0; q < 3; ++q)
   {
     v = vert[q];					// -NJMP-
-    if (normal[q] > 0.0f)
+    if (normal[q] > 0.0)
     {
       vmin[q] = -maxbox[q] - v;	// -NJMP-
       vmax[q] =  maxbox[q] - v;	// -NJMP-
@@ -33,8 +33,8 @@ static bool PlaneBoxOverlap(const udFloat3 &normal, const udFloat3 &vert, const 
       vmax[q] = -maxbox[q] - v;	// -NJMP-
     }
   }
-  if (udDot(normal, vmin) > 0.0f) return false;	// -NJMP-
-  if (udDot(normal, vmax) >= 0.0f) return true;	// -NJMP-
+  if (udDot(normal, vmin) > 0.0) return false;	// -NJMP-
+  if (udDot(normal, vmax) >= 0.0) return true;	// -NJMP-
 
   return false;
 }
@@ -95,7 +95,7 @@ static bool PlaneBoxOverlap(const udFloat3 &normal, const udFloat3 &vert, const 
 
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019 (slightly translated from above credited authors)
-bool udIntersectionTest_AABBTriangle(const udFloat3 &boxCenter, const udFloat3 &boxHalfSize, const udFloat3 triVerts[3])
+bool udIntersectionTest_AABBTriangle(const udDouble3 &boxCenter, const udDouble3 &boxHalfSize, const udDouble3 triVerts[3])
 {
   //    use separating axis theorem to test overlap between triangle and box
   //    need to test for overlap in these directions:
@@ -104,9 +104,9 @@ bool udIntersectionTest_AABBTriangle(const udFloat3 &boxCenter, const udFloat3 &
   //    2) normal of the triangle
   //    3) crossproduct(edge from tri, {x,y,z}-direction)
   //       this gives 3x3=9 more tests
-  udFloat3 v0,v1,v2;
-  float min,max,p0,p1,p2,rad,fex,fey,fez;		// -NJMP- "d" local variable removed
-  udFloat3 normal,e0,e1,e2;
+  udDouble3 v0,v1,v2;
+  double min,max,p0,p1,p2,rad,fex,fey,fez;		// -NJMP- "d" local variable removed
+  udDouble3 normal,e0,e1,e2;
 
   // This is the fastest branch on Sun
   // move everything so that the boxcenter is in (0,0,0)
@@ -121,23 +121,23 @@ bool udIntersectionTest_AABBTriangle(const udFloat3 &boxCenter, const udFloat3 &
 
   // Bullet 3:
   //  test the 9 tests first (this was faster)
-  fex = fabsf(e0.x);
-  fey = fabsf(e0.y);
-  fez = fabsf(e0.z);
+  fex = fabs(e0.x);
+  fey = fabs(e0.y);
+  fez = fabs(e0.z);
   AXISTEST_X01(e0.z, e0.y, fez, fey);
   AXISTEST_Y02(e0.z, e0.x, fez, fex);
   AXISTEST_Z12(e0.y, e0.x, fey, fex);
 
-  fex = fabsf(e1.x);
-  fey = fabsf(e1.y);
-  fez = fabsf(e1.z);
+  fex = fabs(e1.x);
+  fey = fabs(e1.y);
+  fez = fabs(e1.z);
   AXISTEST_X01(e1.z, e1.y, fez, fey);
   AXISTEST_Y02(e1.z, e1.x, fez, fex);
   AXISTEST_Z0(e1.y, e1.x, fey, fex);
 
-  fex = fabsf(e2.x);
-  fey = fabsf(e2.y);
-  fez = fabsf(e2.z);
+  fex = fabs(e2.x);
+  fey = fabs(e2.y);
+  fez = fabs(e2.z);
   AXISTEST_X2(e2.z, e2.y, fez, fey);
   AXISTEST_Y1(e2.z, e2.x, fez, fex);
   AXISTEST_Z12(e2.y, e2.x, fey, fex);
@@ -177,17 +177,17 @@ bool udIntersectionTest_AABBTriangle(const udFloat3 &boxCenter, const udFloat3 &
 // AABB vs line segment test. By Miguel Gomez
 // Taken from http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php?page=6
 // TODO: Some optimization opportunity on this one, particularly precomputing the abs linedir
-static bool AABB_LineSegmentOverlap(udFloat3 lineDir,	    // line direction
-                                    udFloat3 mid,	  // midpoint of the line segment
-                                    float halfLength,	    // segment half-length
-                                    udFloat3 boxCenter, // box center/extents
-                                    udFloat3 boxExtents)
+static bool AABB_LineSegmentOverlap(udDouble3 lineDir,	    // line direction
+                                    udDouble3 mid,	  // midpoint of the line segment
+                                    double halfLength,	    // segment half-length
+                                    udDouble3 boxCenter, // box center/extents
+                                    udDouble3 boxExtents)
 {
   // ALGORITHM: Use the separating axis theorem to see if the line segment
   // and the box overlap. A line segment is a degenerate OBB.
 
-  float r;
-  const udFloat3 t = boxCenter - mid;
+  double r;
+  const udDouble3 t = boxCenter - mid;
 
   // do any of the principal axes form a separating axis?
 
@@ -205,34 +205,34 @@ static bool AABB_LineSegmentOverlap(udFloat3 lineDir,	    // line direction
 
   //lineDir.cross(x-axis)?
 
-  r = boxExtents.y * fabsf(lineDir.z) + boxExtents.z * fabsf(lineDir.y);
+  r = boxExtents.y * fabs(lineDir.z) + boxExtents.z * fabs(lineDir.y);
 
-  if (fabsf(t.y*lineDir.z - t.z*lineDir.y) > r)
+  if (fabs(t.y*lineDir.z - t.z*lineDir.y) > r)
     return 0;
 
   //lineDir.cross(y-axis)?
 
-  r = boxExtents.x * fabsf(lineDir.z) + boxExtents.z * fabsf(lineDir.x);
+  r = boxExtents.x * fabs(lineDir.z) + boxExtents.z * fabs(lineDir.x);
 
-  if (fabsf(t.z * lineDir.x - t.x * lineDir.z) > r)
+  if (fabs(t.z * lineDir.x - t.x * lineDir.z) > r)
     return 0;
 
   //lineDir.cross(z-axis)?
 
-  r = boxExtents.x * fabsf(lineDir.y) + boxExtents.y * fabsf(lineDir.x);
+  r = boxExtents.x * fabs(lineDir.y) + boxExtents.y * fabs(lineDir.x);
 
-  if (fabsf(t.x * lineDir.y - t.y * lineDir.x) > r)
+  if (fabs(t.x * lineDir.y - t.y * lineDir.x) > r)
     return false;
 
   return true;
 }
 
-bool udIntersectionTest_AABBLine(const udFloat3 &boxCenter, const udFloat3 &boxExtents, const udFloat3 lineVerts[2])
+bool udIntersectionTest_AABBLine(const udDouble3 &boxCenter, const udDouble3 &boxExtents, const udDouble3 lineVerts[2])
 {
   // TODO: Optimize by moving these calculations into DXFParser so they are only done once per line
-  udFloat3 lineDir;
-  udFloat3 mid;
-  float halfLength;
+  udDouble3 lineDir;
+  udDouble3 mid;
+  double halfLength;
   mid = (lineVerts[0] + lineVerts[1]) * 0.5f;
   lineDir = mid - lineVerts[0];
   halfLength = udMag3(lineDir);
