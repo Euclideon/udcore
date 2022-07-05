@@ -1007,40 +1007,7 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
   else
   {
     int charCount = 0;
-    int64_t i = udStrAtoi64(pString, &charCount);
-    if (charCount)
-    {
-      if (pString[charCount] == '.' || pString[charCount] == 'e' || pString[charCount] == 'E')
-      {
-        int integralCharCount = charCount + 1;
-        u.dVal = udStrAtof64(pString, &charCount);
-        dPrec = (uint8_t)(charCount - integralCharCount);
-        type = T_Double;
-        if (dPrec > 10 && charCount < 60)
-        {
-          // For numbers with a lot of precision, detect recurring numbers and
-          // add the recurring precision to preserve as much precision as possible
-          int recurCount = 0;
-          char lastDigit = pString[charCount - 1];
-          while (recurCount < dPrec && pString[charCount - 2 - recurCount] == lastDigit)
-            ++recurCount;
-          if (recurCount >= 6)
-          {
-            char tmp[64];
-            udStrncpy(tmp, pString, charCount);
-            tmp[charCount] = tmp[charCount + 1] = tmp[charCount + 2] = tmp[charCount + 3] = lastDigit;
-            tmp[charCount + 4] = 0;
-            u.dVal = udStrAtof64(tmp);
-          }
-        }
-      }
-      else
-      {
-        u.i64Val = i;
-        type = T_Int64;
-      }
-    }
-    else if (udStrBeginsWithi(pString, "true"))
+    if (udStrBeginsWithi(pString, "true"))
     {
       charCount = 4;
       u.bVal = true;
@@ -1058,13 +1025,82 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
       u.i64Val = 0;
       type = T_Void;
     }
+    else if (udStrBeginsWithi(pString, "0x") || udStrBeginsWithi(pString, "-0x"))
+    {
+      // Handle hex numbers, both integral and float
+      bool negate = false;
+      if (*pString == '-')
+      {
+        negate = true;
+        ++totalCharCount;
+      }
+      totalCharCount += 2;
+      uint64_t first = udStrAtoi64(pString + totalCharCount, &charCount, 16);
+      // Flag a parse error if no valid digits followed 0x
+      if (!charCount)
+        UD_ERROR_SET(udR_ParseError);
+
+      totalCharCount += charCount;
+      if (pString[totalCharCount] == '.')
+      {
+        // Hex-float representation
+        // For the moment just use strtod until correct parsing rules known
+        char *pEnd;
+        type = T_Double;
+        u.dVal = strtod(pString, &pEnd);
+        charCount = 0;
+        totalCharCount = (int)(pEnd - pString);
+        dPrec = 255; // Sentinal to indicate hexfloat should be used when writing back out
+      }
+      else
+      {
+        u.i64Val = (negate) ? -(int64_t)first : (int64_t)first;
+        type = T_Int64;
+      }
+    }
     else
     {
-      // Don't flag an error when nothing to parse
-      if ((totalCharCount + charCount) == 0)
-        UD_ERROR_SET_NO_BREAK(udR_ParseError);
+      int64_t i = udStrAtoi64(pString, &charCount);
+      if (charCount)
+      {
+        if (pString[charCount] == '.' || pString[charCount] == 'e' || pString[charCount] == 'E')
+        {
+          int integralCharCount = charCount + 1;
+          u.dVal = udStrAtof64(pString, &charCount);
+          dPrec = (uint8_t)(charCount - integralCharCount);
+          type = T_Double;
+          if (dPrec > 10 && charCount < 60)
+          {
+            // For numbers with a lot of precision, detect recurring numbers and
+            // add the recurring precision to preserve as much precision as possible
+            int recurCount = 0;
+            char lastDigit = pString[charCount - 1];
+            while (recurCount < dPrec && pString[charCount - 2 - recurCount] == lastDigit)
+              ++recurCount;
+            if (recurCount >= 6)
+            {
+              char tmp[64];
+              udStrncpy(tmp, pString, charCount);
+              tmp[charCount] = tmp[charCount + 1] = tmp[charCount + 2] = tmp[charCount + 3] = lastDigit;
+              tmp[charCount + 4] = 0;
+              u.dVal = udStrAtof64(tmp);
+            }
+          }
+        }
+        else
+        {
+          u.i64Val = i;
+          type = T_Int64;
+        }
+      }
       else
-        UD_ERROR_SET(udR_ParseError);
+      {
+        // Don't flag an error when nothing to parse
+        if ((totalCharCount + charCount) == 0)
+          UD_ERROR_SET_NO_BREAK(udR_ParseError);
+        else
+          UD_ERROR_SET(udR_ParseError);
+      }
     }
     totalCharCount += charCount;
   }
@@ -1088,7 +1124,12 @@ udResult udJSON::ToString(const char **ppStr, int indent, const char *pPre, cons
     case T_Void:    result = udSprintf(ppStr, "%*s%snull%s",     indent, "", pPre, pPost); break;
     case T_Bool:    result = udSprintf(ppStr, "%*s%s%s%s%s%s",   indent, "", pPre, pQuote, u.bVal ? "true" : "false", pQuote, pPost); break;
     case T_Int64:   result = udSprintf(ppStr, "%*s%s%s%" PRId64 "%s%s", indent, "", pPre, pQuote, u.i64Val, pQuote, pPost); break;
-    case T_Double:  result = udSprintf(ppStr, "%*s%s%s%.*lf%s%s",  indent, "", pPre, pQuote, dPrec ? dPrec : DEFAULT_DOUBLE_TOSTRING_PRECISION, u.dVal, pQuote, pPost); break;
+    case T_Double:
+      if (dPrec == 255)
+        result = udSprintf(ppStr, "%*s%s%s%la%s%s", indent, "", pPre, pQuote, u.dVal, pQuote, pPost);
+      else
+        result = udSprintf(ppStr, "%*s%s%s%.*lf%s%s",  indent, "", pPre, pQuote, dPrec ? dPrec : DEFAULT_DOUBLE_TOSTRING_PRECISION, u.dVal, pQuote, pPost);
+      break;
     case T_String:
       if (escape == 1 || escape == 2) // JSON or XML escape
       {
