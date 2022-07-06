@@ -239,3 +239,42 @@ bool udIntersectionTest_AABBLine(const udDouble3 &boxCenter, const udDouble3 &bo
   lineDir = lineDir * (1.f / halfLength);
   return AABB_LineSegmentOverlap(lineDir, mid, halfLength, boxCenter, boxExtents);
 }
+
+inline double sqDistPointSeg(udDouble3 a, udDouble3 b, udDouble3 point)
+{
+  udDouble3 ab = b - a;
+  udDouble3 ac = point - a;
+  udDouble3 bc = point - b;
+
+  double e = udDot3(ac, ab);
+  if (e <= 0.0)
+  {
+    return udDot3(ac, ac);
+  }
+  double f = udDot3(ab, ab);
+  if (e >= f)
+  {
+    return udDot3(bc, bc);
+  }
+  double ret = udDot3(ac, ac);
+  ret -= e * e / f;
+  return ret;
+}
+
+// from https://arrowinmyknee.com/2021/03/15/some-math-about-capsule-collision/
+bool udIntersectionTest_SphereCapsule(udDouble3 sphereCentre, double sphereRadius, const udDouble3 capsuleEnds[2], double capsuleRadius)
+{
+  double dist2 = sqDistPointSeg(capsuleEnds[0], capsuleEnds[1], sphereCentre);
+  double r = sphereRadius + capsuleRadius;
+  return dist2 <= r * r;
+}
+
+bool udIntersectionTest_AABBCapsule(const udDouble3 &boxCenter, const udDouble3 &boxExtents, const udDouble3 endPoints[2], const double radius)
+{
+  return udIntersectionTest_SphereCapsule(boxCenter, udMag3(boxExtents), endPoints, radius);
+
+  //for each plne making up the bounding box:
+    // find the point on the plane closest to the line
+    
+
+}
