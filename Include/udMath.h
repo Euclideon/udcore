@@ -9,6 +9,8 @@
 //
 
 #include "udPlatform.h"
+#include <float.h>
+#include <math.h>
 
 #if defined(_MSC_VER)
 // warning C4201: nonstandard extension used : nameless struct/union

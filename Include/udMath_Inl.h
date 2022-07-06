@@ -1,6 +1,3 @@
-#include <float.h>
-#include <math.h>
-
 template <typename T>
 T udHighestBitValue(T i)
 {

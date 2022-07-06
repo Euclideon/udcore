@@ -1158,4 +1158,8 @@ TEST(MathTests, UtilityFunctions)
     q = udDoubleQuat::create({3, 2, 1});
     EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
   }
+
+  EXPECT_TRUE(udIsFinite(1.0));
+  EXPECT_FALSE(udIsFinite(NAN));
+  EXPECT_FALSE(udIsFinite(INFINITY));
 }
