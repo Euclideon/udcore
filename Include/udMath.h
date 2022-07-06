@@ -97,6 +97,22 @@ double udATanh(double d);
 template <typename T>
 T udNormaliseRotation(T rad, T absRange = UD_PI);
 
+// A define for consistency with udArrayIsFinite
+#define udIsFinite(x) isfinite(x)
+
+template <typename T> constexpr bool udArrayIsFinite(const T *pArr, size_t n) {
+  for (size_t i = 0; i < n; ++i)
+  {
+    if (!udIsFinite(pArr[i]))
+      return false;
+  }
+  return true;
+}
+
+// Template helper for arrays whose length is known at compile time
+template <typename T, size_t N> constexpr bool udArrayIsFinite(T(&arr)[N]) { return udArrayIsFinite(arr, N); }
+
+
 // rounding functions
 float udRound(float f);
 double udRound(double d);
