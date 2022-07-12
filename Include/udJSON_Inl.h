@@ -4,7 +4,7 @@
 inline udJSON::udJSON()           { Clear(); }
 inline udJSON::udJSON(int64_t v)  { type = T_Int64;  u.i64Val = v; dPrec = 0; }
 inline udJSON::udJSON(double v)   { type = T_Double; u.dVal   = v; dPrec = 0; }
-inline void udJSON::Clear()        { type = T_Void;   u.i64Val = 0; dPrec = 0; } // Clear the value without freeing
+inline void udJSON::Clear()       { type = T_Void;   u.pObject = nullptr; dPrec = 0; } // Clear the value without freeing
 inline udJSON::~udJSON()          { Destroy(); }
 
 // Set the value

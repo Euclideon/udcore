@@ -274,11 +274,11 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(array.begin()[i - 1], *iter); 
   }
 
-  EXPECT_EQ(array.end() - array.begin(), array.length);
+  EXPECT_EQ((size_t)(array.end() - array.begin()), array.length);
 
   array.Deinit();
   array.Init(16);
-  for (int i = 0; i < 32; ++i) // at least 2 chunks
+  for (i = 0; i < 32; ++i) // at least 2 chunks
   {
     array.PushBack(i % 4);
   }
@@ -298,7 +298,7 @@ TEST(udChunkedArrayTests, Iterator)
   auto reverseStart = std::reverse_iterator<udChunkedArrayIterator<int>>(array.end());
   auto reverseEnd = std::reverse_iterator<udChunkedArrayIterator<int>>(array.begin());
 
-  EXPECT_EQ(reverseEnd - reverseStart, array.length);
+  EXPECT_EQ((size_t)(reverseEnd - reverseStart), array.length);
   previous = *reverseStart;
   for (auto iter = reverseStart; iter < reverseEnd; iter++)
   {

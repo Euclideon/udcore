@@ -515,3 +515,38 @@ TEST(udJSONTests, CDATAXMLE57)
   udFree(pBuffer);
 }
 #endif
+
+TEST(udJSONTests, DefaultCtor)
+{
+  udJSON j;
+
+  EXPECT_EQ(0, *(uint64_t*)&j);
+  EXPECT_EQ(udJSON::T_Void, j.GetType());
+
+  j.Set(true);
+  EXPECT_NE(0, *(uint64_t*)&j);
+  EXPECT_NE(udJSON::T_Void, j.GetType());
+}
+
+
+TEST(udJSONTests, ArraySetting)
+{
+  float data[3][3] =
+  {
+    { 1, 2, 3 },
+    { 4, 5, 6 },
+    { 7, 8, 9 }
+  };
+
+  udJSON tempNode;
+  for (int i = 0; i < udLengthOf(data); ++i)
+    tempNode.Set("[] = [%f, %f, %f]", data[i][0], data[i][1], data[i][2]);
+
+  const char *pText = nullptr;
+  tempNode.Export(&pText);
+  udDebugPrintf("%s\n", pText);
+
+  for (int i = 0; i < udLengthOf(data); ++i)
+    for (int j = 0; j < 3; ++j)
+      EXPECT_EQ(data[i][j], tempNode.Get("[%d][%d]", i, j).AsFloat());
+}
