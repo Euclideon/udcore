@@ -1,4 +1,4 @@
-#include "udPlatform.h"
+#include "udPlatformUtil.h"
 #include "udThread.h"
 #include <stdlib.h>
 #include <string.h>
@@ -21,14 +21,25 @@
 
 
 // ----------------------------------------------------------------------------
-// Author: Bryce Kiefer, March 2017
+// Author: Dave Pevreal, August 2022
 void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags, const char *pFile, int line)
 {
   void *pDuplicated = _udAlloc(size + additionalBytes, udAF_None, pFile, line);
-  memcpy(pDuplicated, pMemory, size);
+#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+  if (!pDuplicated)
+  {
+    udDebugPrintf("udMemDup failure, %llu", size + additionalBytes);
+    __debugbreak();
+  }
+#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 
-  if (flags & udAF_Zero)
-    memset((char*)pDuplicated + size, 0, additionalBytes);
+  if (pDuplicated)
+  {
+    memcpy(pDuplicated, pMemory, size);
+
+    if (additionalBytes && (flags & udAF_Zero))
+      memset(udAddBytes(pDuplicated, size), 0, additionalBytes);
+  }
 
   return pDuplicated;
 }
