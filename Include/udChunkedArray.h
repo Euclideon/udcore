@@ -68,13 +68,13 @@ struct udChunkedArray
   size_t FindIndex(const T &element, size_t compareLen = sizeof(T)) const; // Linear search for matching element (first compareLen bytes compared)
   void SetElement(size_t index, const T &data);
 
-  udResult PushBack(const T &v);
-  udResult PushBack(T **ppElement);              // NOTE: Does not zero memory, can fail if memory allocation fails
-  T *PushBack();                                 // DEPRECATED: Please use PushBack(const T&) or PushBack(T **)
+  udResult PushBack(const T &v);                              // Push a copy of v to the back of the array, can fail if memory allocation fails
+  udResult PushBack(T **ppElement, bool zeroMemory = true);   // Get pointer to new element at back of the array, can fail if memory allocation fails when growing array
+  T *PushBack();                                              // Get pointer to new zeroed element at back of the array, or NULL on failure
 
-  udResult PushFront(const T &v);
-  udResult PushFront(T **ppElement);             // NOTE: Does not zero memory, can fail if memory allocation fails
-  T *PushFront();                                // DEPRECATED: Please use PushFront(const T&) or PushFront(T **)
+  udResult PushFront(const T &v);                             // Push a copy of v to the front of the array, can fail if memory allocation fails
+  udResult PushFront(T **ppElement, bool zeroMemory = true);  // Get pointer to new element at front of the array, can fail if memory allocation fails when growing array
+  T *PushFront();                                             // Get pointer to new zeroed element at front of the array, or NULL on failure
 
   udResult Insert(size_t index, const T *pData = nullptr);  // Insert the element at index, pushing and moving all elements after to make space.
 
@@ -86,9 +86,9 @@ struct udChunkedArray
   udResult ToArray(T *pArray, size_t arrayLength, size_t startIndex = 0, size_t count = 0) const; // Copy elements to an array supplied by caller
   udResult ToArray(T **ppArray, size_t startIndex = 0, size_t count = 0) const;                   // Copy elements to an array allocated and returned to caller
 
-  udResult GrowBack(size_t numberOfNewElements); // Push back a number of new elements, zeroing the memory
-  udResult ReserveBack(size_t newCapacity);      // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
-  udResult AddChunks(size_t numberOfNewChunks);  // Add a given number of chunks capacity without changing 'length'
+  udResult GrowBack(size_t numberOfNewElements, bool zeroMemory = true); // Push back a number of new elements
+  udResult ReserveBack(size_t newCapacity);                              // Reserve memory for a given number of elements without changing 'length'  NOTE: Does not reduce in size
+  udResult AddChunks(size_t numberOfNewChunks);                          // Add a given number of chunks capacity without changing 'length'
 
   // At element index, return the number of elements including index that follow in the same chunk (ie can be indexed directly)
   // Optionally, if elementsBehind is true, returns the the number of elements BEHIND index in the same chunk instead
@@ -324,7 +324,7 @@ inline udResult udChunkedArray<T>::AddChunks(size_t numberOfNewChunks)
 // --------------------------------------------------------------------------
 // Author: Khan Maxfield, February 2016
 template <typename T>
-inline udResult udChunkedArray<T>::GrowBack(size_t numberOfNewElements)
+inline udResult udChunkedArray<T>::GrowBack(size_t numberOfNewElements, bool zeroMemory)
 {
   if (numberOfNewElements == 0)
     return udR_InvalidParameter;
@@ -337,27 +337,30 @@ inline udResult udChunkedArray<T>::GrowBack(size_t numberOfNewElements)
   if (res != udR_Success)
     return res;
 
-  // Zero new elements
-  size_t newUsedChunkCount = (newLength + chunkElementCount - 1) >> chunkElementCountShift;
-  size_t usedChunkDelta = newUsedChunkCount - prevUsedChunkCount;
-  size_t head = oldLength & chunkElementCountMask;
-
-  if (usedChunkDelta)
+  if (zeroMemory)
   {
-    if (head)
-      memset(&ppChunks[prevUsedChunkCount - 1][head], 0, (chunkElementCount - head) * sizeof(T));
+    // Zero new elements
+    size_t newUsedChunkCount = (newLength + chunkElementCount - 1) >> chunkElementCountShift;
+    size_t usedChunkDelta = newUsedChunkCount - prevUsedChunkCount;
+    size_t head = oldLength & chunkElementCountMask;
 
-    size_t tail = newLength & chunkElementCountMask;
+    if (usedChunkDelta)
+    {
+      if (head)
+        memset(&ppChunks[prevUsedChunkCount - 1][head], 0, (chunkElementCount - head) * sizeof(T));
 
-    for (size_t chunkIndex = prevUsedChunkCount; chunkIndex < (newUsedChunkCount - 1 + !tail); ++chunkIndex)
-      memset(ppChunks[chunkIndex], 0, sizeof(T) * chunkElementCount);
+      size_t tail = newLength & chunkElementCountMask;
 
-    if (tail)
-      memset(&ppChunks[newUsedChunkCount - 1][0], 0, tail * sizeof(T));
-  }
-  else
-  {
-    memset(&ppChunks[prevUsedChunkCount - 1][head], 0, numberOfNewElements * sizeof(T));
+      for (size_t chunkIndex = prevUsedChunkCount; chunkIndex < (newUsedChunkCount - 1 + !tail); ++chunkIndex)
+        memset(ppChunks[chunkIndex], 0, sizeof(T) * chunkElementCount);
+
+      if (tail)
+        memset(&ppChunks[newUsedChunkCount - 1][0], 0, tail * sizeof(T));
+    }
+    else
+    {
+      memset(&ppChunks[prevUsedChunkCount - 1][head], 0, numberOfNewElements * sizeof(T));
+    }
   }
 
   length += numberOfNewElements;
@@ -458,7 +461,7 @@ inline void udChunkedArray<T>::SetElement(size_t index, const T &data)
 // --------------------------------------------------------------------------
 // Author: Khan Maxfield, February 2016
 template <typename T>
-inline udResult udChunkedArray<T>::PushBack(T **ppElement)
+inline udResult udChunkedArray<T>::PushBack(T **ppElement, bool zeroMemory)
 {
   UDASSERT(ppElement, "parameter is null");
 
@@ -470,6 +473,8 @@ inline udResult udChunkedArray<T>::PushBack(T **ppElement)
   size_t chunkIndex = size_t(newIndex >> chunkElementCountShift);
 
   *ppElement = ppChunks[chunkIndex] + (newIndex & chunkElementCountMask);
+  if (zeroMemory)
+    memset((void*)*ppElement, 0, sizeof(T));
 
   ++length;
   return udR_Success;
@@ -481,10 +486,7 @@ template <typename T>
 inline T *udChunkedArray<T>::PushBack()
 {
   T *pElement = nullptr;
-
-  if (PushBack(&pElement) == udR_Success)
-    memset(pElement, 0, sizeof(T));
-
+  PushBack(&pElement, true);
   return pElement;
 }
 
@@ -495,7 +497,7 @@ inline udResult udChunkedArray<T>::PushBack(const T &v)
 {
   T *pElement = nullptr;
 
-  udResult res = PushBack(&pElement);
+  udResult res = PushBack(&pElement, false);
   if (res == udR_Success)
     *pElement = v;
 
@@ -505,7 +507,7 @@ inline udResult udChunkedArray<T>::PushBack(const T &v)
 // --------------------------------------------------------------------------
 // Author: David Ely, March 2016
 template <typename T>
-inline udResult udChunkedArray<T>::PushFront(T **ppElement)
+inline udResult udChunkedArray<T>::PushFront(T **ppElement, bool zeroMemory)
 {
   UDASSERT(ppElement, "parameter is null");
 
@@ -560,6 +562,8 @@ inline udResult udChunkedArray<T>::PushFront(T **ppElement)
   ++length;
 
   *ppElement = ppChunks[0] + inset;
+  if (zeroMemory)
+    memset((void*)*ppElement, 0, sizeof(T));
 
   return udR_Success;
 }
@@ -570,10 +574,7 @@ template <typename T>
 inline T *udChunkedArray<T>::PushFront()
 {
   T *pElement = nullptr;
-
-  if (PushFront(&pElement) == udR_Success)
-    memset(pElement, 0, sizeof(T));
-
+  PushFront(&pElement, true);
   return pElement;
 }
 
@@ -584,7 +585,7 @@ inline udResult udChunkedArray<T>::PushFront(const T &v)
 {
   T *pElement = nullptr;
 
-  udResult res = PushFront(&pElement);
+  udResult res = PushFront(&pElement, false);
   if (res == udR_Success)
     *pElement = v;
 
@@ -778,7 +779,7 @@ inline udResult udChunkedArray<T>::Insert(size_t index, const T *pData)
   else
   {
     // Make room for new element
-    udResult result = GrowBack(1);
+    udResult result = GrowBack(1, false);
     if (result != udR_Success)
       return result;
 

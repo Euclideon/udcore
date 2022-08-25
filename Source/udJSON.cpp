@@ -116,6 +116,10 @@ void udJSON::Destroy()
     u.pArray->Deinit();
     udFree(u.pArray);
   }
+  else
+  {
+    UDASSERT(type < T_Count, "Destroying a JSON node with invalid type, possibly uninitialised\n");
+  }
 
   type = T_Void;
   u.i64Val = 0;
