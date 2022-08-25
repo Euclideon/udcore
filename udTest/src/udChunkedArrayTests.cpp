@@ -117,6 +117,44 @@ TEST(udChunkedArrayTests, Basic)
   array.Deinit();
 }
 
+TEST(udChunkedArrayTests, ZeroMemory)
+{
+  udChunkedArray<int> array;
+  int *pTemp;
+
+  array.Init(8);
+
+  // First push unique non-zero numbers and then pop them to make sure the chunk is non-zero
+  for (int i = 1; i <= 8; ++i)
+    array.PushBack(i);
+  for (int i = 1; i <= 8; ++i)
+    array.PopBack();
+
+  // Test pushfronts without zeroing work
+  array.PushFront(&pTemp, false);
+  EXPECT_NE(*pTemp, 0);
+  array.PopFront();
+
+  // Test pushbacks without zeroing work
+  array.PushBack(&pTemp, false);
+  EXPECT_NE(*pTemp, 0);
+  array.PopBack();
+
+  // Test pushfronts with zeroing work
+  array.PushFront(&pTemp, true);
+  EXPECT_EQ(*pTemp, 0);
+
+  // Test pushbacks with zeroing work
+  array.PushBack(&pTemp, true);
+  EXPECT_EQ(*pTemp, 0);
+
+  array.PopFront();
+  array.PopBack();
+
+  array.Deinit();
+}
+
+
 TEST(udChunkedArrayTests, FullChunkInsert)
 {
   // Test to insert at all positions with the chunk being completely full
@@ -274,11 +312,11 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(array.begin()[i - 1], *iter); 
   }
 
-  EXPECT_EQ(array.end() - array.begin(), array.length);
+  EXPECT_EQ(array.end() - array.begin(), (int)array.length);
 
   array.Deinit();
   array.Init(16);
-  for (int i = 0; i < 32; ++i) // at least 2 chunks
+  for (i = 0; i < 32; ++i) // at least 2 chunks
   {
     array.PushBack(i % 4);
   }
@@ -298,7 +336,7 @@ TEST(udChunkedArrayTests, Iterator)
   auto reverseStart = std::reverse_iterator<udChunkedArrayIterator<int>>(array.end());
   auto reverseEnd = std::reverse_iterator<udChunkedArrayIterator<int>>(array.begin());
 
-  EXPECT_EQ(reverseEnd - reverseStart, array.length);
+  EXPECT_EQ(reverseEnd - reverseStart, (int)array.length);
   previous = *reverseStart;
   for (auto iter = reverseStart; iter < reverseEnd; iter++)
   {
