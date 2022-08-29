@@ -70,10 +70,10 @@ enum udImageSaveType
 };
 
 // Load an image from a filename
-udResult udImage_Load(udImage **ppImage, const char *pFilename);
+udResult udImage_Load(udImage **ppImage, const char *pFilename, bool infoOnly = false);
 
 // Load an image from a file already in memory
-udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t length);
+udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t length, bool infoOnly = false);
 
 // Save the image back out
 udResult udImage_Save(const udImage *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType);
