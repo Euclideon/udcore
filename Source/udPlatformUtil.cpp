@@ -1219,7 +1219,8 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
       // Directory creation failed, move back one folder and try there
       while (currPathLen > 0 && (pPath[currPathLen] != '\\' && pPath[currPathLen] != '/'))
         --currPathLen;
-      UD_ERROR_IF(currPathLen == 0, udR_Failure); // Weren't able to make any of the folders
+      if (currPathLen == 0)
+        UD_ERROR_SET_NO_BREAK(udR_Failure); // Weren't able to make any of the folders
       truncChar = pPath[currPathLen];
       pPath[currPathLen] = 0;
 
