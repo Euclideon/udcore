@@ -91,6 +91,7 @@ const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   { "Hartebeesthoek94",                      "Hartebeesthoek94","Hartebeesthoek94",                             udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4148, 6148, false,    true  },
   { "ID74",                                  "ID74",            "Indonesian_Datum_1974",                        udGZE_INS,           { -24.0, -15.0, 5.0, 0.0, 0.0, 0.0, 0 },                            4238, 6238, true,     true  },
   { "NGO 1948",                              "NGO_1948",        "NGO_1948",                                     udGZE_BesselModified,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4273, 6273, true,     false },
+  { "RGF93 v2b",                             "RGF93 v2b",       "Reseau_Geodesique_Francais_1993_v2b",          udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              9782, 6171, true,     true  },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -872,6 +873,24 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->scaleFactor = 1.0;
     udGeoZone_SetSpheroid(pZone);
   }
+  else if (sridCode >= 9842 && sridCode <= 9850)
+  {
+    // France Conic Conformal zones
+    pZone->datum = udGZGD_RGF93v2b;
+    pZone->projection = udGZPT_LambertConformalConic2SP;
+    pZone->zone = sridCode - 9842;
+    udSprintf(pZone->zoneName, "CC%d", sridCode - 9800);
+    pZone->meridian = 3.0;
+    pZone->parallel = 42.0 + pZone->zone;
+    pZone->firstParallel = pZone->parallel - 0.75;
+    pZone->secondParallel = pZone->parallel + 0.75;
+    pZone->falseNorthing = 1200000 + 1000000 * pZone->zone;
+    pZone->falseEasting = 1700000;
+    pZone->scaleFactor = 1.0;
+    udGeoZone_SetSpheroid(pZone);
+    pZone->latLongBoundMin = udDouble2::create(pZone->parallel - 1.0, -2.0); // Longitude here not perfect, differs greatly in different zones
+    pZone->latLongBoundMax = udDouble2::create(pZone->parallel + 1.0, 10.00);
+  }
   else //unordered codes
   {
     switch (sridCode)
@@ -889,6 +908,21 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       break;
     case 2154: // RGF93 / Lambert-93
       pZone->datum = udGZGD_RGF93;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      udStrcpy(pZone->zoneName, "Lambert-93");
+      pZone->meridian = 3;
+      pZone->parallel = 46.5;
+      pZone->firstParallel = 49;
+      pZone->secondParallel = 44;
+      pZone->falseNorthing = 6600000;
+      pZone->falseEasting = 700000;
+      pZone->scaleFactor = 1.0;
+      udGeoZone_SetSpheroid(pZone);
+      pZone->latLongBoundMin = udDouble2::create(41.1800, -9.6200);
+      pZone->latLongBoundMax = udDouble2::create(51.5400, 10.3000);
+      break;
+    case 9794: // RGF93 / Lambert-93 v2b
+      pZone->datum = udGZGD_RGF93v2b;
       pZone->projection = udGZPT_LambertConformalConic2SP;
       udStrcpy(pZone->zoneName, "Lambert-93");
       pZone->meridian = 3;
