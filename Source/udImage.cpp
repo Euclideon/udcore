@@ -11,23 +11,40 @@
 
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
-udResult udImage_Load(udImage **ppImage, const char *pFilename)
+udResult udImage_Load(udImage **ppImage, const char *pFilename, bool infoOnly)
 {
   udResult result;
+  udFile *pFile = nullptr;
   void *pMem = nullptr;
   int64_t fileLen;
 
-  UD_ERROR_CHECK(udFile_Load(pFilename, &pMem, &fileLen));
-  UD_ERROR_CHECK(udImage_LoadFromMemory(ppImage, pMem, (size_t)fileLen));
+  if (infoOnly)
+  {
+    const int headerMaxLen = 512; // Let's hope the dimensions are in the first half a KB
+    pMem = udAlloc(headerMaxLen);
+    UD_ERROR_NULL(pMem, udR_MemoryAllocationFailure);
+    UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_FastOpen | udFOF_Read));
+    size_t actRead;
+    UD_ERROR_CHECK(udFile_Read(pFile, pMem, headerMaxLen, 0, udFSW_SeekSet, &actRead));
+    fileLen = (int64_t)actRead;
+  }
+  else
+  {
+    UD_ERROR_CHECK(udFile_Load(pFilename, &pMem, &fileLen));
+  }
+  UD_ERROR_CHECK(udImage_LoadFromMemory(ppImage, pMem, (size_t)fileLen, infoOnly));
+  // Uncomment for debugging
+  //udDebugPrintf("%s %d x %d to %p (%s)\n", infoOnly ? "Read header" : "Loaded", (*ppImage)->width, (*ppImage)->height, (void*)*ppImage, pFilename);
 
 epilogue:
+  udFile_Close(&pFile);
   udFree(pMem);
   return result;
 }
 
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
-udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t length)
+udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t length, bool infoOnly)
 {
   udResult result;
   udImage *pImage = nullptr;
@@ -38,8 +55,15 @@ udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t l
   UD_ERROR_NULL(pMemory, udR_InvalidParameter);
   UD_ERROR_IF(length == 0, udR_InvalidParameter);
 
-  pSTBIImage = stbi_load_from_memory((const stbi_uc *)pMemory, (int)length, &w, &h, &sc, 4);
-  UD_ERROR_NULL(pSTBIImage, udR_ImageLoadFailure);
+  if (infoOnly)
+  {
+    UD_ERROR_IF(stbi_info_from_memory((const stbi_uc *)pMemory, (int)length, &w, &h, &sc) != 1, udR_ImageLoadFailure);
+  }
+  else
+  {
+    pSTBIImage = stbi_load_from_memory((const stbi_uc *)pMemory, (int)length, &w, &h, &sc, 4);
+    UD_ERROR_NULL(pSTBIImage, udR_ImageLoadFailure);
+  }
 
   pImage = (udImage *)udAllocFlags(sizeof(udImage), udAF_Zero);
   UD_ERROR_NULL(pImage, udR_MemoryAllocationFailure);
@@ -47,11 +71,14 @@ udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t l
   pImage->height = (uint32_t)h;
   pImage->sourceChannels = (uint16_t)sc;
 
-  // Duplicate stbi image data
-  pImage->pImageData = (uint32_t *)udMemDup(pSTBIImage, w * h * 4, 0, udAF_None);
-  UD_ERROR_NULL(pImage->pImageData, udR_MemoryAllocationFailure);
-  stbi_image_free((void *)pSTBIImage);
-  pSTBIImage = nullptr;
+  if (!infoOnly)
+  {
+    // Duplicate stbi image data
+    pImage->pImageData = (uint32_t *)udMemDup(pSTBIImage, w * h * 4, 0, udAF_None);
+    UD_ERROR_NULL(pImage->pImageData, udR_MemoryAllocationFailure);
+    stbi_image_free((void *)pSTBIImage);
+    pSTBIImage = nullptr;
+  }
 
   *ppImage = pImage;
   pImage = nullptr;
@@ -226,6 +253,8 @@ void udImage_Destroy(udImage **ppImage)
 {
   if (ppImage && *ppImage)
   {
+    // Uncomment for debugging
+    //udDebugPrintf("Freeing %d x %d at %p\n", (*ppImage)->width, (*ppImage)->height, (void*)*ppImage);
     udImage *pImage = *ppImage;
     *ppImage = nullptr;
     udFree(pImage->pImageData);
