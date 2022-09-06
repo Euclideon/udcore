@@ -841,13 +841,24 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     udGeoZone_SetSpheroid(pZone);
     udGeoZone_SetUTMZoneBounds(pZone, true);
   }
-  else if (sridCode >= 3942 && sridCode <= 3950)
+  else if ((sridCode >= 3942 && sridCode <= 3950) || (sridCode >= 9842 && sridCode <= 9850))
   {
     // France Conic Conformal zones
-    pZone->datum = udGZGD_RGF93;
-    pZone->projection = udGZPT_LambertConformalConic2SP;
-    pZone->zone = sridCode - 3942;
-    udSprintf(pZone->zoneName, "CC%d", sridCode - 3900);
+    if (sridCode >= 9842)
+    {
+      pZone->datum = udGZGD_RGF93v2b;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      pZone->zone = sridCode - 9842;
+      udSprintf(pZone->zoneName, "CC%d", sridCode - 9800);
+    }
+    else
+    {
+      pZone->datum = udGZGD_RGF93;
+      pZone->projection = udGZPT_LambertConformalConic2SP;
+      pZone->zone = sridCode - 3942;
+      udSprintf(pZone->zoneName, "CC%d", sridCode - 3900);
+    }
+
     pZone->meridian = 3.0;
     pZone->parallel = 42.0 + pZone->zone;
     pZone->firstParallel = pZone->parallel - 0.75;
@@ -872,24 +883,6 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     pZone->falseNorthing = 0;
     pZone->scaleFactor = 1.0;
     udGeoZone_SetSpheroid(pZone);
-  }
-  else if (sridCode >= 9842 && sridCode <= 9850)
-  {
-    // France Conic Conformal zones
-    pZone->datum = udGZGD_RGF93v2b;
-    pZone->projection = udGZPT_LambertConformalConic2SP;
-    pZone->zone = sridCode - 9842;
-    udSprintf(pZone->zoneName, "CC%d", sridCode - 9800);
-    pZone->meridian = 3.0;
-    pZone->parallel = 42.0 + pZone->zone;
-    pZone->firstParallel = pZone->parallel - 0.75;
-    pZone->secondParallel = pZone->parallel + 0.75;
-    pZone->falseNorthing = 1200000 + 1000000 * pZone->zone;
-    pZone->falseEasting = 1700000;
-    pZone->scaleFactor = 1.0;
-    udGeoZone_SetSpheroid(pZone);
-    pZone->latLongBoundMin = udDouble2::create(pZone->parallel - 1.0, -2.0); // Longitude here not perfect, differs greatly in different zones
-    pZone->latLongBoundMax = udDouble2::create(pZone->parallel + 1.0, 10.00);
   }
   else //unordered codes
   {
