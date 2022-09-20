@@ -158,4 +158,10 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line = 
 #define UDCHECKRESULT
 #endif
 
+// Dump a report to debug console of all lines that allocated memory, with allocation count and total, sorted by total
+// Returns true if a report was generated
+bool udDebugMemoryReport(const char *pHeader, size_t minimumUsageForReport = 0, size_t *pActualUsage = nullptr);
+
+
+
 #endif // UDDEBUG_H

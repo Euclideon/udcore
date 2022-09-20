@@ -1,5 +1,6 @@
 #include "udDebug.h"
 #include "udStringUtil.h"
+#include "udPlatformUtil.h"
 
 #include <stdio.h>
 #include <atomic>
@@ -164,4 +165,124 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line)
     pMem = ((const char*)pMem)+n;
     length -= n;
   }
+}
+
+#if UDPLATFORM_WINDOWS && defined(__MEMORY_DEBUG__)
+
+struct Entry
+{
+  char *pLineInfo;
+  uint64_t total;
+  uint32_t crc;
+  uint32_t count;
+};
+static Entry *pEntries = nullptr;
+static size_t entryCount;
+static size_t entriesAllocated;
+static size_t entryTotal;
+static int64_t activeEntry;
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, August 2022
+static int __CRTDECL udDebugReportHook(int /*reportType*/, char *pLineStr, int *pReturnValue)
+{
+  *pReturnValue = 0;
+  if (udStrEndsWith(pLineStr, ") : "))
+  {
+    activeEntry = -1;
+    uint32_t crc = udCrc32c(pLineStr, udStrlen(pLineStr));
+    size_t j;
+    for (j = 0; j < entryCount; ++j)
+    {
+      if (crc == pEntries[j].crc && udStrcmp(pLineStr, pEntries[j].pLineInfo) == 0)
+      {
+        activeEntry = (int64_t)j;
+        break;
+      }
+    }
+    if (j == entryCount)
+    {
+      if (entryCount == entriesAllocated)
+      {
+        entriesAllocated += 4096;
+        Entry *pNewEntries = (Entry *)udRealloc(pEntries, entriesAllocated * sizeof(Entry));
+        if (pNewEntries)
+          pEntries = pNewEntries;
+        else
+          entriesAllocated = entryCount; // Allocation failed, kinda to be expected since we're trying to figure out where the memory went
+      }
+      if (entryCount < entriesAllocated)
+      {
+        pEntries[entryCount].pLineInfo = udStrdup(pLineStr);
+        pEntries[entryCount].crc = crc;
+        pEntries[entryCount].count = 0;
+        pEntries[entryCount].total = 0;
+        ++entryCount;
+        activeEntry = (int64_t)j;
+      }
+    }
+  }
+
+  if (activeEntry >= 0 && udStrEndsWith(pLineStr, "bytes long.\n"))
+  {
+    uint64_t allocAmount = udStrAtou64(udStrrchr(pLineStr, ",") + 1);
+    pEntries[activeEntry].count++;
+    pEntries[activeEntry].total += allocAmount;
+    entryTotal += allocAmount;
+  }
+  return 1; // Return non-zero to prevent it from displaying the report
+}
+
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, August 2022
+int EntrySortByTotal(const void *pA, const void *pB)
+{
+  int64_t r = ((const Entry *)pB)->total - ((const Entry *)pA)->total;
+  // Casting to an int can be a problem with large numbers.
+  if (r < 0)
+    return -1;
+  else if (r > 0)
+    return 1;
+  else
+    return 0;
+}
+
+#endif // UDPLATFORM_WINDOWS && defined(__MEMORY_DEBUG__)
+
+// ***************************************************************************************
+// Author: Dave Pevreal, August 2022
+bool udDebugMemoryReport(const char *pHeader, size_t minimumUsageForReport, size_t *pActualUsage)
+{
+#if UDPLATFORM_WINDOWS && defined(__MEMORY_DEBUG__)
+  entryCount = entriesAllocated = entryTotal = 0;
+  activeEntry = -1;
+
+  _CRT_REPORT_HOOK prevHook = _CrtSetReportHook(udDebugReportHook);
+  _CrtMemDumpAllObjectsSince(nullptr);
+  _CrtSetReportHook(prevHook);
+
+  if (pActualUsage)
+    *pActualUsage = entryTotal;
+  if (entryTotal >= minimumUsageForReport)
+  {
+    qsort(pEntries, entryCount, sizeof(Entry), EntrySortByTotal);
+    if (pHeader)
+      udDebugPrintf("%s\n", pHeader);
+    for (int i = 0; i < entryCount; ++i)
+      udDebugPrintf("%s %sKB total in %s allocations\n", pEntries[i].pLineInfo, udCommaInt(pEntries[i].total / 1024), udCommaInt(pEntries[i].count));
+    udDebugPrintf("%sKB total allocated\n", udCommaInt(entryTotal / 1024));
+  }
+
+  for (int i = 0; i < entryCount; ++i)
+    udFree(pEntries[i].pLineInfo);
+  udFree(pEntries);
+  entryCount = entriesAllocated = entryTotal = 0;
+  return (entryTotal >= minimumUsageForReport);
+#else
+  udUnused(pHeader);
+  udUnused(minimumUsageForReport);
+  udUnused(pActualUsage);
+  udDebugPrintf("udDebugMemoryReport requires UDPLATFORM_WINDOWS __MEMORY_DEBUG__ defined\n");
+  return false;
+#endif // UDPLATFORM_WINDOWS && defined(__MEMORY_DEBUG__)
 }
