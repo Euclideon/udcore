@@ -3,6 +3,7 @@
 #include "udStringUtil.h"
 #include "udJSON.h"
 #include "udFile.h"
+#include "udThread.h"
 
 const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   // WKT Sphere name      semiMajor    flattening           authority epsg
@@ -114,6 +115,20 @@ const udGeoZoneDatumAlias g_udGZ_DatumAlias[] = {
 };
 
 udChunkedArray<udGeoZone> g_InternalGeoZoneList = {};
+udMutex *g_pMutex = nullptr;
+
+class udGeoZone_GlobalInit
+{
+public:
+  udGeoZone_GlobalInit() noexcept
+  {
+    g_pMutex = udCreateMutex();
+  }
+  ~udGeoZone_GlobalInit() noexcept
+  {
+    udDestroyMutex(&g_pMutex);
+  }
+} g_initGeoZone;
 
 int udGeoZone_InternalIndexOf(int srid)
 {
@@ -143,6 +158,8 @@ int udGeoZone_InternalIndexOf(int srid)
 
 udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pFailed)
 {
+  udScopeLock scopeLock(g_pMutex);
+
   udResult result = udR_Failure;
   udJSON zones = {};
 
@@ -248,6 +265,8 @@ epilogue:
 
 udResult udGeoZone_UnloadZones()
 {
+  udScopeLock scopeLock(g_pMutex);
+
   if (g_InternalGeoZoneList.chunkCount == 0 && g_InternalDatumList.chunkCount == 0)
     return udR_Success;
 
@@ -1407,11 +1426,15 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
       break;
 
     default:
+    {
+      udScopeLock scopeLock(g_pMutex);
+
       int index = udGeoZone_InternalIndexOf(sridCode);
       if (index >= 0)
         *pZone = g_InternalGeoZoneList[index];
       else
         return udR_NotFound;
+    }
     }
   }
 
