@@ -1683,7 +1683,9 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       if (j == udGZGD_Count)
       {
         udStrcpy(pZone->datumShortName, pName);
+#if UD_DEBUG
         udDebugPrintf("Unknown Datum: %s\n", pName);
+#endif //UD_DEBUG
       }
     }
     else if (udStrEqual(pType, "DATUM"))
