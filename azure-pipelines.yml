@@ -53,8 +53,13 @@ stages:
   - template: azure-pipelines-jobs-emscripten.yml
     parameters:
       name: emscripten
-      displayName: 'Emscripten'
-      container: euclideon/vault:emscripten-bionic-v2
+      displayName: 'Emscripten 3.1.18'
+      emsdkVersion: '3.1.18'
+  - template: azure-pipelines-jobs-emscripten.yml
+    parameters:
+      name: emscriptenlatest
+      displayName: 'Emscripten Latest'
+      emsdkVersion: 'latest'
 - stage: test
   displayName: 'Test'
   jobs:
@@ -62,11 +67,11 @@ stages:
     displayName: Coverage
     pool:
       vmImage: 'ubuntu-latest'
-    container:
-      image: euclideon/vault:dev-bionic-v1
     steps:
     - checkout: self
       submodules: recursive
+    - script: sudo apt update && sudo apt install -y gcovr
+      displayName: 'Install dependencies'
     - script: bin/premake-bin/premake5 gmake2 --coverage
       displayName: 'Run Premake'
     - script: make -j4 config=debug_x64

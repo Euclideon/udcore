@@ -1,15 +1,13 @@
 parameters:
   name: ''
   displayName: ''
-  container: ''
+  emsdkVersion: ''
 
 jobs:
 - job: ${{ parameters.name }}
   displayName: ${{ parameters.displayName }}
   pool:
     vmImage: 'ubuntu-latest'
-  container:
-    image: ${{ parameters.container }}
   variables:
     platform: Emscripten
   strategy:
@@ -18,12 +16,19 @@ jobs:
         configuration: Debug
       Release:
         configuration: Release
+  ${{ if eq(parameters.emsdkVersion, 'latest') }}:
+    continueOnError: true
   steps:
   - checkout: self
     submodules: recursive
+  - bash: pip3 install selenium
+    displayName: 'Install Dependencies'
   - script: |
-      pushd /emsdk
-      ./emsdk activate latest
+      git clone https://github.com/emscripten-core/emsdk.git
+      pushd ./emsdk
+      ./emsdk install ${{ parameters.emsdkVersion }}
+      ./emsdk activate ${{ parameters.emsdkVersion }}
+      source ./emsdk_env.sh
       popd
     displayName: 'Configure Emscripten Environment'
   - script: bin/premake-bin/premake5 gmake2 --os=emscripten
@@ -31,15 +36,15 @@ jobs:
   - script: make -j4 config=$(echo ${CONFIGURATION}_${PLATFORM} | tr [:upper:] [:lower:])
     displayName: 'Build Projects'
     env:
-      EMSDK: /emsdk
-      EMSDK_NODE: /emsdk/node/12.9.1_64bit/bin/node
-      PATH: $(PATH):/emsdk:/emsdk/upstream/emscripten:/emsdk/node/12.9.1_64bit/bin
+      EMSDK: $(Build.SourcesDirectory)/emsdk
+      PATH: $(PATH):$(Build.SourcesDirectory)/emsdk:$(Build.SourcesDirectory)/emsdk/upstream/emscripten
   - script: |
       mkdir www
       cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
       cp udTest/udTest.html www
+      cp udTest/server.py www
       pushd www
-      python3 -m http.server 8000 </dev/null &>/dev/null &
+      python3 server.py 8000 </dev/null &>/dev/null &
       popd
       python3 ./udTest/webtest.py chrome
     displayName: 'Run Chrome Tests'
@@ -47,8 +52,9 @@ jobs:
       mkdir www
       cp Output/bin/${CONFIGURATION}_${PLATFORM}/udTest.* www
       cp udTest/udTest.html www
+      cp udTest/server.py www
       pushd www
-      python3 -m http.server 8000 </dev/null &>/dev/null &
+      python3 server.py 8000 </dev/null &>/dev/null &
       popd
       python3 ./udTest/webtest.py firefox
     displayName: 'Run Firefox Tests'
