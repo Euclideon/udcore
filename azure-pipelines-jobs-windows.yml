@@ -18,7 +18,7 @@ jobs:
   steps:
   - checkout: self
     submodules: recursive
-  - script: bin\premake-bin\premake5.exe vs2019 ${{ parameters.premakeOpts }}
+  - script: bin\premake-bin\premake5.exe vs2022 ${{ parameters.premakeOpts }}
     displayName: 'Run Premake'
   - task: MSBuild@1
     displayName: 'Build Projects'

@@ -14,7 +14,7 @@ project ("udCore" .. (projectSuffix or ""))
 
 	includedirs { "3rdParty" }
 	includedirs { "3rdParty/mbedtls/include" }
-	sysincludedirs { "3rdParty/mbedtls/include" }
+	externalincludedirs { "3rdParty/mbedtls/include" }
 	includedirs { "Include" }
 
 	-- include common stuff

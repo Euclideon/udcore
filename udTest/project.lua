@@ -29,6 +29,9 @@ project ("udTest" .. (projectSuffix or ""))
 		links { "Foundation.framework", "Security.framework" }
 		buildoptions { "-fno-stack-check" }
 
+	filter { "system:emscripten" }
+		linkoptions  { "-s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"cwrap\", \"getValue\", \"setValue\", \"UTF8ToString\", \"stringToUTF8\", \"run\"]'" }
+
 	-- include common stuff
 	dofile "../bin/premake-bin/common-proj.lua"
 	exceptionhandling "Default"

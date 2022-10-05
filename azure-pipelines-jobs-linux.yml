@@ -10,6 +10,7 @@ jobs:
     vmImage: 'ubuntu-latest'
   container:
     image: ${{ parameters.container }}
+    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   variables:
     platform: x64
   strategy:
@@ -25,6 +26,13 @@ jobs:
   steps:
   - checkout: self
     submodules: recursive
+  - script: |
+      /tmp/docker exec -t -u 0 ci-container sh -c "apt update && apt install -y uuid-dev"
+      git clone --depth 1 --branch v5.0.0-beta2 https://github.com/premake/premake-core.git
+      cd premake-core
+      make -f Bootstrap.mak linux
+      cp bin/release/premake5 ../bin/premake-bin/premake5
+    displayName: 'Build Premake'
   - script: bin/premake-bin/premake5 gmake2
     displayName: 'Run Premake'
   - script: make -j4 config=$(echo ${CONFIGURATION}_${PLATFORM} | tr [:upper:] [:lower:])
