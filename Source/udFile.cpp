@@ -373,6 +373,7 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
   pFile->msAccumulator -= udGetTimeMs();
   result = pFile->fpWrite(pFile, pBuffer, bufferLength, offset, &actualWritten);
   pFile->filePos = offset + actualWritten;
+  pFile->fileLength = udMax(pFile->fileLength, pFile->filePos);
 
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   udUpdateFilePerformance(pFile, actualWritten);
