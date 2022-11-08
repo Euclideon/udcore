@@ -24,9 +24,11 @@ TEST(udFileTests, GeneralFileTests)
   int64_t currentTime = udGetEpochSecsUTCd();
 
   udFile *pFile;
-  if (udFile_Open(&pFile, pFilename, udFOF_Write) == udR_Success)
+  if (udFile_Open(&pFile, pFilename, udFOF_Create | udFOF_Write) == udR_Success)
   {
     udFile_Write(pFile, "TEST", 4);
+    udFile_Write(pFile, "APPEND1", 7, 0, udFSW_SeekEnd);
+    udFile_Write(pFile, "APPEND2", 7, 0, udFSW_SeekEnd);
     udFile_Close(&pFile);
   }
 
@@ -35,7 +37,7 @@ TEST(udFileTests, GeneralFileTests)
 
   EXPECT_EQ(udR_Success, udFileExists(pFilename, &size, &modifyTime));
 
-  EXPECT_EQ(4, size);
+  EXPECT_EQ(18, size);
   EXPECT_GT(2, udAbs(currentTime - modifyTime));
 
   EXPECT_EQ(udR_Success, udFileDelete(pFilename));
