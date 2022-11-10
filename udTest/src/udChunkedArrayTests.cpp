@@ -350,7 +350,6 @@ TEST(udChunkedArrayTests, Iterator)
 
 TEST(udChunkedArrayTests, udVirtualChunkedArray)
 {
-  // udVirtualChunkedArray is in udOBJ for the moment, and may move to udCore in the future
   udVirtualChunkedArray<int> array;
   const char *pTempFilename = nullptr;
   udFile *pTempFile = nullptr;
@@ -371,15 +370,15 @@ TEST(udChunkedArrayTests, udVirtualChunkedArray)
     array.PushBack(i);
   udFile_Read(pTempFile, &tempFileLen, 0, 0, udFSW_SeekEnd, nullptr, &tempFileLen);
   EXPECT_EQ(32, tempFileLen);
-  EXPECT_EQ(false, array.IsChunkLoaded(0));
+  EXPECT_EQ(false, array.IsElementInMemory(0));
 
   // And a third page should spill the second page
   for (int i = 16; i < 24; ++i)
     array.PushBack(i);
   udFile_Read(pTempFile, &tempFileLen, 0, 0, udFSW_SeekEnd, nullptr, &tempFileLen);
   EXPECT_EQ(64, tempFileLen);
-  EXPECT_EQ(false, array.IsChunkLoaded(0));
-  EXPECT_EQ(false, array.IsChunkLoaded(8));
+  EXPECT_EQ(false, array.IsElementInMemory(0));
+  EXPECT_EQ(false, array.IsElementInMemory(8));
 
   // All should be retrievable, but reading first page again should spill the third page
   for (int i = 0; i < 24; ++i)
@@ -388,9 +387,9 @@ TEST(udChunkedArrayTests, udVirtualChunkedArray)
   EXPECT_EQ(96, tempFileLen);
 
   // By the end only the 3rd page should be in memory
-  EXPECT_EQ(false, array.IsChunkLoaded(0));
-  EXPECT_EQ(false, array.IsChunkLoaded(8));
-  EXPECT_EQ(true, array.IsChunkLoaded(16));
+  EXPECT_EQ(false, array.IsElementInMemory(0));
+  EXPECT_EQ(false, array.IsElementInMemory(8));
+  EXPECT_EQ(true, array.IsElementInMemory(16));
 
   array.Deinit();
   udFile_Close(&pTempFile);

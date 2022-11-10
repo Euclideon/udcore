@@ -6,20 +6,22 @@
 #define VIRTUALCHUNKEDARRAY_DEBUGGING 0
 
 // Minimal implementation currently, will only work for simple typed non-sparse arrays with elements read-only after being added
-// pTempFile must be opened for read/write and should be opened for multi-threading, it is always appended to and the same
-// temp file can be used for multiple udVirtualChunkedArray instances
 template <typename T>
 class udVirtualChunkedArray
 {
 public:
-  udResult Init(size_t chunkElementCount, uint32_t maxChunksInMem = 0, udFile *pTempFile = nullptr);
+  udResult Init(size_t chunkElementCount, const char *pTempFilename, uint32_t maxChunksInMem = 8);
   udResult Deinit();
+
+  // Methods matching udChunkedArray functionality
   udResult PushBack(T **ppElement, bool zeroMemory = true);
   bool PopBack(T *pData = nullptr);
   const T &operator[](size_t index);
   inline udResult PushBack(const T &v) { udResult result;  T *pEl; result = PushBack(&pEl, false); if (result == udR_Success) *pEl = v; return result; }
+
+  // Test if an element will require loading from the temp file
+  bool IsElementInMemory(size_t index) const { return (index < array.length &&array.ppChunks[(index + array.inset) >> array.chunkElementCountShift] != nullptr); } // For unit testing
   size_t length;                // Mirror of internal array length
-  bool IsChunkLoaded(size_t index) const { return (index < array.length &&array.ppChunks[(index + array.inset) >> array.chunkElementCountShift] != nullptr); } // For unit testing
 
 private:
   udChunkedArray<T> array;
@@ -30,6 +32,7 @@ private:
   } *pChunkInfo;
   size_t chunkInfoLength;       // Length of the info array (used to keep in sync with array.chunkCount)
   size_t currentReference;      // Rolling counter to determine LRU
+  const char *pTempFilename;
   udFile *pTempFile;
   udMutex *pLock;
   uint32_t chunksInMem;
@@ -43,7 +46,7 @@ private:
 // ****************************************************************************
 // Author: Dave Pevreal, November 2022
 template <typename T>
-udResult udVirtualChunkedArray<T>::Init(size_t chunkElementCount, uint32_t _maxChunksInMem, udFile *_pTempFile)
+udResult udVirtualChunkedArray<T>::Init(size_t chunkElementCount, const char *_pTempFilename, uint32_t _maxChunksInMem)
 {
   udResult result;
 
@@ -54,7 +57,10 @@ udResult udVirtualChunkedArray<T>::Init(size_t chunkElementCount, uint32_t _maxC
   chunksInMem = 0;
   maxChunksInMem = _maxChunksInMem;
   currentReference = 1;
-  pTempFile = _pTempFile;
+  pTempFilename = udStrdup(_pTempFilename);
+  pTempFile = nullptr;
+  if (pTempFilename)
+    UD_ERROR_CHECK(udFile_Open(&pTempFile, pTempFilename, udFOF_Create | udFOF_Read | udFOF_Write));
   result = udR_Success;
 
 epilogue:
@@ -72,6 +78,12 @@ udResult udVirtualChunkedArray<T>::Deinit()
   udDestroyMutex(&pLock);
   udFree(pChunkInfo);
   UD_ERROR_CHECK(array.Deinit());
+  if (pTempFile)
+  {
+    udFile_Close(&pTempFile);
+    udFileDelete(pTempFilename);
+  }
+  udFree(pTempFilename);
   result = udR_Success;
 
 epilogue:
