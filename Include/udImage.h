@@ -25,14 +25,14 @@ struct udImageStreamingOnDisk
 {
   enum
   {
-    Fourcc = MAKE_FOURCC('U', 'D', 'T', '0'),  // Fourcc also a version number
+    Fourcc = MAKE_FOURCC('U', 'D', 'T', '0'), // Fourcc also a version number
     TileSize = 64,
     MaxMipLevels = 24,
   };
   uint32_t fourcc;
   uint32_t width, height;
   uint16_t mipCount;
-  char name[64]; // some descriptive text (such as a filename) to help identify
+  char name[64];         // some descriptive text (such as a filename) to help identify
   uint16_t offsetToMip0; // To allow future extension
 };
 
@@ -43,10 +43,10 @@ struct udImageStreaming : public udImageStreamingOnDisk
   int64_t baseOffset;
   struct Mip
   {
-    int64_t offset;             // Offset from beginning of on-disk image of first tile
-    uint32_t width, height;     // Dimensions for this mip
-    uint16_t gridW, gridH;      // Dimensions of cell grid
-    uint8_t * volatile * ppCellImage;      // Pointers to each 64x64 tile
+    int64_t offset;                 // Offset from beginning of on-disk image of first tile
+    uint32_t width, height;         // Dimensions for this mip
+    uint16_t gridW, gridH;          // Dimensions of cell grid
+    uint8_t *volatile *ppCellImage; // Pointers to each 64x64 tile
   } mips[MaxMipLevels];
 };
 
@@ -55,9 +55,9 @@ enum udImageSampleFlags
   udISF_None = 0,
   udISF_Filter = 1,
   udISF_Clamp = 2,
-  udISF_ABGR = 4,       // By default, colors are returned in ARGB (blue least significant byte), this option returns in ABGR (red least significant byte)
-  udISF_TopLeft = 8,    // Sample with top left point as 0,0 rather than openGL's curious bottom left 0,0 scheme
-  udISF_NoStream = 16,  // If a cell isn't loaded, don't load it, but rather return the index data in lower 24 bits, alpha is zero
+  udISF_ABGR = 4,      // By default, colors are returned in ARGB (blue least significant byte), this option returns in ABGR (red least significant byte)
+  udISF_TopLeft = 8,   // Sample with top left point as 0,0 rather than openGL's curious bottom left 0,0 scheme
+  udISF_NoStream = 16, // If a cell isn't loaded, don't load it, but rather return the index data in lower 24 bits, alpha is zero
 };
 inline udImageSampleFlags operator|(udImageSampleFlags a, udImageSampleFlags b) { return (udImageSampleFlags)(int(a) | int(b)); }
 

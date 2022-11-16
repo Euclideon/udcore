@@ -1,21 +1,20 @@
-#include "gtest/gtest.h"
 #include "udPlatform.h"
 #include "udStringUtil.h"
+#include "gtest/gtest.h"
 
 #define GENERATE_EXPECTED 0
 
-#define GETSIGN(x) (((x) < 0) ? -1 : ((x) > 0) ? 1 : 0)
+#define GETSIGN(x) (((x) < 0) ? -1 : ((x) > 0) ? 1 \
+                                               : 0)
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, July 2017
 TEST(udStrTests, udStrncmp)
 {
-  static const char *strings[] =
-  {
+  static const char *strings[] = {
     "", "abc", "ABC", "123", "Hello", "[symbols%!]"
   };
-  static int expectedStrcmp[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] =
-  {
+  static int expectedStrcmp[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] = {
     { 0, -1, -1, -1, -1, -1 },
     { 1, 0, 1, 1, 1, 1 },
     { 1, -1, 0, 1, -1, -1 },
@@ -23,8 +22,7 @@ TEST(udStrTests, udStrncmp)
     { 1, -1, 1, 1, 0, -1 },
     { 1, -1, 1, 1, 1, 0 },
   };
-  static int expectedStrcmpi[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] =
-  {
+  static int expectedStrcmpi[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] = {
     { 0, -1, -1, -1, -1, -1 },
     { 1, 0, 0, 1, -1, 1 },
     { 1, 0, 0, 1, -1, 1 },
@@ -32,8 +30,7 @@ TEST(udStrTests, udStrncmp)
     { 1, 1, 1, 1, 0, 1 },
     { 1, -1, -1, 1, -1, 0 },
   };
-  static int expectedStrncmp[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] =
-  {
+  static int expectedStrncmp[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] = {
     { 0, 0, 0, 0, 0, 0 },
     { 1, 0, 1, 1, 1, 1 },
     { 1, -1, 0, 1, -1, -1 },
@@ -41,8 +38,7 @@ TEST(udStrTests, udStrncmp)
     { 1, -1, 1, 1, 0, -1 },
     { 1, -1, 1, 1, 1, 0 },
   };
-  static int expectedStrncmpi[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] =
-  {
+  static int expectedStrncmpi[UDARRAYSIZE(strings)][UDARRAYSIZE(strings)] = {
     { 0, 0, 0, 0, 0, 0 },
     { 1, 0, 0, 1, -1, 1 },
     { 1, 0, 0, 1, -1, 1 },
@@ -246,12 +242,12 @@ TEST(udStrTests, udAddToStringTable)
 }
 
 static const char *s_pTestParagraph =
-"Today, historians relate that, as a general rule, buying and selling securities was very much unorganized before the year 1792. "
-"Every person who owned a security faced the problem of finding interested buyers who might consider the purchase of a debt - free investment. "
-"This meant most people were somewhat slow in investing in stocks and bonds because these securities could not readily be converted into money. "
-"We have been told that an interesting number of traders and merchants agreed to try to do something to help correct the situation. "
-"At this first crucial meeting, they decided that it was a good idea to visit regularly on a daily basis to buy and sell securities. "
-"The group of leaders, whose meeting place was under an old, tall cottonwood tree, found the needed time to plot the financial future of our nation. ";
+    "Today, historians relate that, as a general rule, buying and selling securities was very much unorganized before the year 1792. "
+    "Every person who owned a security faced the problem of finding interested buyers who might consider the purchase of a debt - free investment. "
+    "This meant most people were somewhat slow in investing in stocks and bonds because these securities could not readily be converted into money. "
+    "We have been told that an interesting number of traders and merchants agreed to try to do something to help correct the situation. "
+    "At this first crucial meeting, they decided that it was a good idea to visit regularly on a daily basis to buy and sell securities. "
+    "The group of leaders, whose meeting place was under an old, tall cottonwood tree, found the needed time to plot the financial future of our nation. ";
 
 TEST(udStrTests, udTempStr)
 {
@@ -261,7 +257,7 @@ TEST(udStrTests, udTempStr)
   EXPECT_STREQ("3.2mm", udTempStr_HumanMeasurement(0.0032));
   EXPECT_STREQ("01:23", udTempStr_ElapsedTime(60 + 23));
   EXPECT_STREQ("0:01:23", udTempStr_ElapsedTime(60 + 23, false));
-  EXPECT_STREQ("2:01:23", udTempStr_ElapsedTime(120*60 + 60 + 23, false));
+  EXPECT_STREQ("2:01:23", udTempStr_ElapsedTime(120 * 60 + 60 + 23, false));
 
   EXPECT_STREQ("0", udTempStr_TrimDouble(0, 10, 0));
   EXPECT_STREQ("0.0", udTempStr_TrimDouble(0, 10, 1));
@@ -313,4 +309,3 @@ TEST(udStrTests, udTempStr)
     EXPECT_EQ(i, udStrAtoi(pStr2));
   }
 }
-

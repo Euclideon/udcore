@@ -32,73 +32,72 @@ enum udGeoZoneEllipsoid
   udGZE_IAG1975,
   udGZE_Everest1830,
   udGZE_GRS67,
-  udGZE_ANS,           //EPSG:7003
-  udGZE_INS,           //EPSG:7021
+  udGZE_ANS, //EPSG:7003
+  udGZE_INS, //EPSG:7021
 
   udGZE_Count
 };
 
 enum udGeoZoneGeodeticDatum
 {
-  udGZGD_WGS84,      //EPSG:4326
-  udGZGD_ED50,       //EPSG:4230
-  udGZGD_ETRS89,     //EPSG:4258,4936
-  udGZGD_TM75,       //EPSG:4300
-  udGZGD_NAD27,      //EPSG:4267
-  udGZGD_NAD27CGQ77, //EPSG:4609
-  udGZGD_NAD83,      //EPSG:4269
-  udGZGD_NAD83_1996, //EPSG:6307
-  udGZGD_NAD83_CSRS, //EPSG:2955
-  udGZGD_NAD83_NSRS2007,//EPSG:3465
-  udGZGD_NAD83_2011, //EPSG:6318
-  udGZGD_NTF,        //EPSG:4275
-  udGZGD_OSGB36,     //EPSG:4277
-  udGZGD_Potsdam,    //EPSG:4746
-  udGZGD_Tokyo,      //EPSG:7414
-  udGZGD_WGS72,      //EPSG:4322
-  udGZGD_JGD2000,    //EPSG:4612
-  udGZGD_JGD2011,    //EPSG:6668
-  udGZGD_GDA94,      //EPSG:4283
-  udGZGD_GDA2020,    //EPSG:7844
-  udGZGD_RGF93,      //EPSG:4171
-  udGZGD_NAD83_HARN, //EPSG:4152
-  udGZGD_CGCS2000,   //EPSG:4490
-  udGZGD_HK1980,     //EPSG:4611
-  udGZGD_SVY21,      //EPSG:4757
-  udGZGD_MGI,        //EPSG:6312
-  udGZGD_NZGD2000,   //EPSG:2193
-  udGZGD_AMERSFOORT, //EPSG:28992
-  udGZGD_TRI1903,    //EPSG:30200
-  udGZGD_VANUA1915,  //EPSG:3139
-  udGZGD_DEALUL1970, //EPSG:31700
-  udGZGD_SINGGRID,   //EPSG:19920
-  udGZGD_MARS_MERC,  //EPSG:49974,49975
-  udGZGD_MARS_PCPF,  //EPSG:8705
-  udGZGD_MOON_MERC,  //EPSG:30174,30175
-  udGZGD_MOON_PCPF,  //EPSG:30100,30100
-  udGZGD_DBREF,      //EPSG:5681
-  udGZGD_DHDN,       //EPSG:4314
-  udGZGD_SJTSK03,    //EPSG:8353
-  udGZGD_PULK1942,   //EPSG:4284
-  udGZGD_PULK194258, //EPSG:4179
-  udGZGD_PULK194283, //EPSG:4178
-  udGZGD_PULK1995,   //EPSG:20004
-  udGZGD_WGS_72BE,   //EPSG:32401
-  udGZGD_BEIJING1954,//EPSG:21413
-  udGZGD_NEWBEIJING, //EPSG:4555
-  udGZGD_XIAN1980,   //EPSG:4610
-  udGZGD_TIMB1948,   //EPSG:28973
-  udGZGD_NZGD49,     //EPSG:4272
-  udGZGD_SWEREF99,   //EPSG:4619
-  udGZGD_SAD69,      //EPSG:4291
-  udGZGD_GR96,       //EPSG:4747
-  udGZGD_DGN95,      //EPSG:4755
-  udGZGD_UCS2000,    //EPSG:5561
-  udGZGD_H94,        //EPSG:4148
-  udGZGD_ID74,       //EPSG:4238
-  udGZGD_NGO1948,    //EPSG:4273
-  udGZGD_RGF93v2b,   //EPSG:9782
-
+  udGZGD_WGS84,          //EPSG:4326
+  udGZGD_ED50,           //EPSG:4230
+  udGZGD_ETRS89,         //EPSG:4258,4936
+  udGZGD_TM75,           //EPSG:4300
+  udGZGD_NAD27,          //EPSG:4267
+  udGZGD_NAD27CGQ77,     //EPSG:4609
+  udGZGD_NAD83,          //EPSG:4269
+  udGZGD_NAD83_1996,     //EPSG:6307
+  udGZGD_NAD83_CSRS,     //EPSG:2955
+  udGZGD_NAD83_NSRS2007, //EPSG:3465
+  udGZGD_NAD83_2011,     //EPSG:6318
+  udGZGD_NTF,            //EPSG:4275
+  udGZGD_OSGB36,         //EPSG:4277
+  udGZGD_Potsdam,        //EPSG:4746
+  udGZGD_Tokyo,          //EPSG:7414
+  udGZGD_WGS72,          //EPSG:4322
+  udGZGD_JGD2000,        //EPSG:4612
+  udGZGD_JGD2011,        //EPSG:6668
+  udGZGD_GDA94,          //EPSG:4283
+  udGZGD_GDA2020,        //EPSG:7844
+  udGZGD_RGF93,          //EPSG:4171
+  udGZGD_NAD83_HARN,     //EPSG:4152
+  udGZGD_CGCS2000,       //EPSG:4490
+  udGZGD_HK1980,         //EPSG:4611
+  udGZGD_SVY21,          //EPSG:4757
+  udGZGD_MGI,            //EPSG:6312
+  udGZGD_NZGD2000,       //EPSG:2193
+  udGZGD_AMERSFOORT,     //EPSG:28992
+  udGZGD_TRI1903,        //EPSG:30200
+  udGZGD_VANUA1915,      //EPSG:3139
+  udGZGD_DEALUL1970,     //EPSG:31700
+  udGZGD_SINGGRID,       //EPSG:19920
+  udGZGD_MARS_MERC,      //EPSG:49974,49975
+  udGZGD_MARS_PCPF,      //EPSG:8705
+  udGZGD_MOON_MERC,      //EPSG:30174,30175
+  udGZGD_MOON_PCPF,      //EPSG:30100,30100
+  udGZGD_DBREF,          //EPSG:5681
+  udGZGD_DHDN,           //EPSG:4314
+  udGZGD_SJTSK03,        //EPSG:8353
+  udGZGD_PULK1942,       //EPSG:4284
+  udGZGD_PULK194258,     //EPSG:4179
+  udGZGD_PULK194283,     //EPSG:4178
+  udGZGD_PULK1995,       //EPSG:20004
+  udGZGD_WGS_72BE,       //EPSG:32401
+  udGZGD_BEIJING1954,    //EPSG:21413
+  udGZGD_NEWBEIJING,     //EPSG:4555
+  udGZGD_XIAN1980,       //EPSG:4610
+  udGZGD_TIMB1948,       //EPSG:28973
+  udGZGD_NZGD49,         //EPSG:4272
+  udGZGD_SWEREF99,       //EPSG:4619
+  udGZGD_SAD69,          //EPSG:4291
+  udGZGD_GR96,           //EPSG:4747
+  udGZGD_DGN95,          //EPSG:4755
+  udGZGD_UCS2000,        //EPSG:5561
+  udGZGD_H94,            //EPSG:4148
+  udGZGD_ID74,           //EPSG:4238
+  udGZGD_NGO1948,        //EPSG:4273
+  udGZGD_RGF93v2b,       //EPSG:9782
 
   udGZGD_Count
 };
@@ -142,9 +141,9 @@ struct udGeoZone
   udDouble2 latLongBoundMin;
   udDouble2 latLongBoundMax;
   double meridian;
-  double parallel;            // Parallel of origin for Transverse Mercator
-  double latProjCentre;       // Latitude of Projection Centre for Krovak Projection
-  double coLatConeAxis;       // Co Latitude of the cone axis for Krovak Projection
+  double parallel;      // Parallel of origin for Transverse Mercator
+  double latProjCentre; // Latitude of Projection Centre for Krovak Projection
+  double coLatConeAxis; // Co Latitude of the cone axis for Krovak Projection
   double flattening;
   double semiMajorAxis;
   double semiMinorAxis;
@@ -160,12 +159,12 @@ struct udGeoZone
   double secondParallel;
   double falseNorthing;
   double falseEasting;
-  double unitMetreScale;      // 1.0 for metres, 0.3048006096012192 for feet
+  double unitMetreScale; // 1.0 for metres, 0.3048006096012192 for feet
   int32_t zone;
   int32_t srid;
   char datumShortName[16];
   char datumName[64];
-  char zoneName[64]; // Only 33 characters required for longest known name "Japan Plane Rectangular CS XVIII"
+  char zoneName[64];     // Only 33 characters required for longest known name "Japan Plane Rectangular CS XVIII"
   char displayName[128]; // This is the human readable name; often just datumShortName & zoneName concatenated
 
   bool knownDatum;
@@ -184,8 +183,8 @@ struct udGeoZoneGeodeticDatumDescriptor
   const char *pDatumName;
   udGeoZoneEllipsoid ellipsoid;
   double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
-  int32_t epsg; // epsg code for the datum
-  int32_t authority; // authority for this datum
+  int32_t epsg;             // epsg code for the datum
+  int32_t authority;        // authority for this datum
   bool exportAxisInfo;
   bool exportToWGS84;
 };

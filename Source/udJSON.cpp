@@ -1,34 +1,33 @@
 #include "udPlatform.h"
 
 #if defined(UD_GCC_VERSION) && !defined(__clang__) && UD_GCC_VERSION > 90000
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wclass-memaccess"
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
 #include "udJSON.h"
 #if defined(UD_GCC_VERSION) && !defined(__clang__) && UD_GCC_VERSION > 90000
-# pragma GCC diagnostic push
+#  pragma GCC diagnostic push
 #endif
 
-#include "udStringUtil.h"
 #include "udCrypto.h"
+#include "udStringUtil.h"
 
-#define CONTENT_MEMBER "content"
-#define DEFAULT_DOUBLE_TOSTRING_PRECISION 6  // This is the printf default
+#define CONTENT_MEMBER                    "content"
+#define DEFAULT_DOUBLE_TOSTRING_PRECISION 6 // This is the printf default
 
 const udJSON udJSON::s_void;
-const size_t udJSON::s_udJSONTypeSize[T_Count] =
-{
-  0, // T_Void = 0,      // Guaranteed to be zero, thus a non-zero type indicates value exists
-  1, // T_Bool,
-  8, // T_Int64,
-  8, // T_Double,
-  sizeof(char*), // T_String,
-  sizeof(udJSONArray*), // T_Array,
-  sizeof(udJSONObject*), // T_Object,
+const size_t udJSON::s_udJSONTypeSize[T_Count] = {
+  0,                      // T_Void = 0,      // Guaranteed to be zero, thus a non-zero type indicates value exists
+  1,                      // T_Bool,
+  8,                      // T_Int64,
+  8,                      // T_Double,
+  sizeof(char *),         // T_String,
+  sizeof(udJSONArray *),  // T_Array,
+  sizeof(udJSONObject *), // T_Object,
 };
 
 // The XML escape character set. Note: apos MUST come first, it is ignored when writing strings that use double quotes
-static const char *s_pXMLEscStrings[] = { "&apos;", "&amp;" , "&quot;", "&lt;", "&gt;"};
+static const char *s_pXMLEscStrings[] = { "&apos;", "&amp;", "&quot;", "&lt;", "&gt;" };
 static const char *s_xmlEscChars = "\'&\"<>";
 
 static const char *s_pJSONEscStrings[] = { "\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t" };
@@ -47,12 +46,12 @@ public:
 
   void Init(char *pKeyExpression)
   {
-    pRemainingExpression = const_cast<char*>(udStrSkipWhiteSpace(pKeyExpression));
+    pRemainingExpression = const_cast<char *>(udStrSkipWhiteSpace(pKeyExpression));
     nextOp = 0;
     if (*pRemainingExpression == '[' || *pRemainingExpression == '.')
     {
       nextOp = *pRemainingExpression;
-      pRemainingExpression = const_cast<char*>(udStrSkipWhiteSpace(pRemainingExpression + 1));
+      pRemainingExpression = const_cast<char *>(udStrSkipWhiteSpace(pRemainingExpression + 1));
     }
     Next();
   }
@@ -69,7 +68,7 @@ public:
     char *pTemp = pRemainingExpression;
     if (pTemp)
     {
-      pRemainingExpression = const_cast<char*>(udStrchr(pTemp, ".["));
+      pRemainingExpression = const_cast<char *>(udStrchr(pTemp, ".["));
       if (pRemainingExpression)
       {
         nextOp = *pRemainingExpression;
@@ -84,7 +83,6 @@ public:
     pKey = udStrSkipWhiteSpace(pTemp); // udStrSkipWhiteSpace handles nulls gracefully
   }
 };
-
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
@@ -314,10 +312,14 @@ bool udJSON::AsBool(bool defaultValue) const
 {
   switch (type)
   {
-    case T_Bool:    return u.bVal;
-    case T_Int64:   return u.i64Val != 0;
-    case T_Double:  return u.dVal >= 1.0;
-    case T_String:  return udStrEquali(u.pStr, "true") || udStrAtof(u.pStr) >= 1.0;
+    case T_Bool:
+      return u.bVal;
+    case T_Int64:
+      return u.i64Val != 0;
+    case T_Double:
+      return u.dVal >= 1.0;
+    case T_String:
+      return udStrEquali(u.pStr, "true") || udStrAtof(u.pStr) >= 1.0;
     default:
       return defaultValue;
   }
@@ -329,10 +331,14 @@ int udJSON::AsInt(int defaultValue) const
 {
   switch (type)
   {
-    case T_Bool:    return (int)u.bVal;
-    case T_Int64:   return (int)u.i64Val;
-    case T_Double:  return (int)u.dVal;
-    case T_String:  return      udStrAtoi(u.pStr);
+    case T_Bool:
+      return (int)u.bVal;
+    case T_Int64:
+      return (int)u.i64Val;
+    case T_Double:
+      return (int)u.dVal;
+    case T_String:
+      return udStrAtoi(u.pStr);
     default:
       return defaultValue;
   }
@@ -344,10 +350,14 @@ int64_t udJSON::AsInt64(int64_t defaultValue) const
 {
   switch (type)
   {
-    case T_Bool:    return (int64_t)u.bVal;
-    case T_Int64:   return          u.i64Val;
-    case T_Double:  return (int64_t)u.dVal;
-    case T_String:  return          udStrAtoi64(u.pStr);
+    case T_Bool:
+      return (int64_t)u.bVal;
+    case T_Int64:
+      return u.i64Val;
+    case T_Double:
+      return (int64_t)u.dVal;
+    case T_String:
+      return udStrAtoi64(u.pStr);
     default:
       return defaultValue;
   }
@@ -359,10 +369,14 @@ float udJSON::AsFloat(float defaultValue) const
 {
   switch (type)
   {
-    case T_Bool:    return (float)u.bVal;
-    case T_Int64:   return (float)u.i64Val;
-    case T_Double:  return (float)u.dVal;
-    case T_String:  return        udStrAtof(u.pStr);
+    case T_Bool:
+      return (float)u.bVal;
+    case T_Int64:
+      return (float)u.i64Val;
+    case T_Double:
+      return (float)u.dVal;
+    case T_String:
+      return udStrAtof(u.pStr);
     default:
       return defaultValue;
   }
@@ -374,10 +388,14 @@ double udJSON::AsDouble(double defaultValue) const
 {
   switch (type)
   {
-    case T_Bool:    return (double)u.bVal;
-    case T_Int64:   return (double)u.i64Val;
-    case T_Double:  return         u.dVal;
-    case T_String:  return         udStrAtof64(u.pStr);
+    case T_Bool:
+      return (double)u.bVal;
+    case T_Int64:
+      return (double)u.i64Val;
+    case T_Double:
+      return u.dVal;
+    case T_String:
+      return udStrAtof64(u.pStr);
     default:
       return defaultValue;
   }
@@ -389,8 +407,10 @@ const char *udJSON::AsString(const char *pDefaultValue) const
 {
   switch (type)
   {
-    case T_Bool:    return u.bVal ? "true" : "false";
-    case T_String:  return u.pStr;
+    case T_Bool:
+      return u.bVal ? "true" : "false";
+    case T_String:
+      return u.pStr;
     default:
       return pDefaultValue;
   }
@@ -516,7 +536,7 @@ static size_t FindMatch(const udJSONArray *pArray, const udJSONObject *pSearchOb
   for (; i < pArray->length; ++i) // For each element in the array
   {
     attributesMatched = 0;
-    const udJSONObject *pCurrent = const_cast<udJSON*>(pArray->GetElement(i))->AsObject();
+    const udJSONObject *pCurrent = const_cast<udJSON *>(pArray->GetElement(i))->AsObject();
     if (!pCurrent)
       continue;
     size_t j;
@@ -525,8 +545,7 @@ static size_t FindMatch(const udJSONArray *pArray, const udJSONObject *pSearchOb
       size_t k;
       for (k = 0; k < pSearchObj->length; ++k) // For each attribute in the search expression
       {
-        if (udStrEqual(pSearchObj->GetElement(k)->pKey, pCurrent->GetElement(j)->pKey)
-          && pSearchObj->GetElement(k)->value.IsEqualTo(pCurrent->GetElement(j)->value))
+        if (udStrEqual(pSearchObj->GetElement(k)->pKey, pCurrent->GetElement(j)->pKey) && pSearchObj->GetElement(k)->value.IsEqualTo(pCurrent->GetElement(j)->value))
         {
           ++attributesMatched;
           break;
@@ -591,7 +610,7 @@ static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **
     UD_ERROR_IF(resultNumberParsed, udR_ParseError);
     if (pRoot->IsVoid() && createIfNotExist)
     {
-      result = const_cast<udJSON*>(pRoot)->SetObject();
+      result = const_cast<udJSON *>(pRoot)->SetObject();
       UD_ERROR_HANDLE();
     }
     if (pRoot->IsObject())
@@ -634,7 +653,7 @@ static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **
       // [], which means append to the array
       if (pRoot->IsVoid() && createIfNotExist) // If the entry is void, we can safely make it an array now
       {
-        result = const_cast<udJSON*>(pRoot)->SetArray();
+        result = const_cast<udJSON *>(pRoot)->SetArray();
         UD_ERROR_HANDLE();
       }
       UD_ERROR_IF(!pRoot->IsArray() || !createIfNotExist, udR_ParseError);
@@ -651,12 +670,12 @@ static udResult udJSON_ProcessArrayOperator(const udJSON *pRoot, const udJSON **
   {
     if (pRoot->IsVoid() && createIfNotExist) // If the entry is void, we can safely make it an array now
     {
-      result = const_cast<udJSON*>(pRoot)->SetArray();
+      result = const_cast<udJSON *>(pRoot)->SetArray();
       UD_ERROR_HANDLE();
     }
     // Search expression is numeric, which is typically an array index, but we also support [0] on an object which returns itself
     UD_ERROR_IF(resultNumberParsed, udR_ParseError);
-    int searchIndex  = searchExp.AsInt();
+    int searchIndex = searchExp.AsInt();
     if (pRoot->IsObject())
     {
       UD_ERROR_IF(searchIndex != 0, udR_ParseError); // We accept objects being accessed as object[0] for xml parsing reasons
@@ -733,27 +752,27 @@ static udResult udJSON_GetVA(const udJSON *pRoot, udJSON **ppValue, const char *
     switch (exp.op)
     {
       case '[':
-        {
-          int charCount;
-          size_t index;
-          result = udJSON_ProcessArrayOperator(pRoot, &pRoot, &index, exp.pKey, &charCount, false);
-          UD_ERROR_HANDLE();
-        }
-        break;
+      {
+        int charCount;
+        size_t index;
+        result = udJSON_ProcessArrayOperator(pRoot, &pRoot, &index, exp.pKey, &charCount, false);
+        UD_ERROR_HANDLE();
+      }
+      break;
       case 0:
         // Fall-thru to normal member-of code if root isn't XML
       case '.':
-        {
-          pRoot = pRoot->FindMember(exp.pKey);
-          if (!pRoot)
-            UD_ERROR_SET_NO_BREAK(udR_NotFound);
-        }
-        break;
+      {
+        pRoot = pRoot->FindMember(exp.pKey);
+        if (!pRoot)
+          UD_ERROR_SET_NO_BREAK(udR_NotFound);
+      }
+      break;
     }
   }
 
   if (ppValue)
-    *ppValue = const_cast<udJSON*>(pRoot);
+    *ppValue = const_cast<udJSON *>(pRoot);
   result = udR_Success;
 
 epilogue:
@@ -774,7 +793,7 @@ udResult udJSON::Get(udJSON **ppValue, const char *pKeyExpression, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
-const udJSON &udJSON::Get(const char * pKeyExpression, ...) const
+const udJSON &udJSON::Get(const char *pKeyExpression, ...) const
 {
   udJSON *pValue = nullptr;
   va_list ap;
@@ -806,7 +825,7 @@ static udResult udJSON_SetVA(udJSON *pRoot, udJSON *pSetToValue, const char *pKe
     UD_ERROR_NULL(pDup, udR_MemoryAllocationFailure);
     udSprintfVA(pDup, expressionLength + 1, pKeyExpression, ap);
     // Parse the assignment result here before initialising exp
-    char *pEquals = const_cast<char*>(udStrchr(pDup, "="));
+    char *pEquals = const_cast<char *>(udStrchr(pDup, "="));
     if (pEquals)
     {
       UD_ERROR_IF(pSetToValue != nullptr, udR_InvalidConfiguration);
@@ -830,35 +849,35 @@ static udResult udJSON_SetVA(udJSON *pRoot, udJSON *pSetToValue, const char *pKe
     switch (exp.op)
     {
       case '[':
+      {
+        int charCount;
+        udJSON *pV = nullptr;
+        size_t index;
+        result = udJSON_ProcessArrayOperator(pRoot, const_cast<const udJSON **>(&pV), &index, exp.pKey, &charCount, pSetToValue != nullptr);
+        if (!pSetToValue && !exp.pRemainingExpression)
         {
-          int charCount;
-          udJSON *pV = nullptr;
-          size_t index;
-          result = udJSON_ProcessArrayOperator(pRoot, const_cast<const udJSON**>(&pV), &index, exp.pKey, &charCount, pSetToValue != nullptr);
-          if (!pSetToValue && !exp.pRemainingExpression)
+          UD_ERROR_NULL(pV, udR_NotFound);
+          // End of the expression with no set, means remove the item
+          if (pRoot->IsObject())
           {
-            UD_ERROR_NULL(pV, udR_NotFound);
-            // End of the expression with no set, means remove the item
-            if (pRoot->IsObject())
-            {
-              udJSONKVPair *pItem = pRoot->AsObject()->GetElement(index);
-              udFree(pItem->pKey);
-              pItem->value.Destroy();
-              pRoot->AsObject()->RemoveAt(index);
-            }
-            else if (pRoot->IsArray())
-            {
-              pV->Destroy();
-              pRoot->AsArray()->RemoveAt(index);
-            }
+            udJSONKVPair *pItem = pRoot->AsObject()->GetElement(index);
+            udFree(pItem->pKey);
+            pItem->value.Destroy();
+            pRoot->AsObject()->RemoveAt(index);
           }
-          else
+          else if (pRoot->IsArray())
           {
-            pRoot = pV;
-            UD_ERROR_NULL(pRoot, udR_ParseError);
+            pV->Destroy();
+            pRoot->AsArray()->RemoveAt(index);
           }
         }
-        break;
+        else
+        {
+          pRoot = pV;
+          UD_ERROR_NULL(pRoot, udR_ParseError);
+        }
+      }
+      break;
       case '.':
         // Fall through to default case
       default: // op == 0 here
@@ -980,17 +999,39 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
       {
         switch (pString[++si])
         {
-          case 'a': pStr[di++] = '\a'; break;
-          case 'b': pStr[di++] = '\b'; break;
-          case 'e': pStr[di++] =   27; break; // GCC extension for escape character
-          case 'f': pStr[di++] = '\f'; break;
-          case 'n': pStr[di++] = '\n'; break;
-          case 'r': pStr[di++] = '\r'; break;
-          case 't': pStr[di++] = '\t'; break;
-          case 'v': pStr[di++] = '\v'; break;
-          case '\\': pStr[di++] = '\\'; break;
-          case '\'': pStr[di++] = '\''; break;
-          case '\"': pStr[di++] = '\"'; break;
+          case 'a':
+            pStr[di++] = '\a';
+            break;
+          case 'b':
+            pStr[di++] = '\b';
+            break;
+          case 'e':
+            pStr[di++] = 27;
+            break; // GCC extension for escape character
+          case 'f':
+            pStr[di++] = '\f';
+            break;
+          case 'n':
+            pStr[di++] = '\n';
+            break;
+          case 'r':
+            pStr[di++] = '\r';
+            break;
+          case 't':
+            pStr[di++] = '\t';
+            break;
+          case 'v':
+            pStr[di++] = '\v';
+            break;
+          case '\\':
+            pStr[di++] = '\\';
+            break;
+          case '\'':
+            pStr[di++] = '\'';
+            break;
+          case '\"':
+            pStr[di++] = '\"';
+            break;
           default:
             // Any escape sequence not recognised is output verbatim (eg \P remains \P)
             pStr[di++] = '\\';
@@ -1125,14 +1166,20 @@ udResult udJSON::ToString(const char **ppStr, int indent, const char *pPre, cons
 
   switch (type)
   {
-    case T_Void:    result = udSprintf(ppStr, "%*s%snull%s",     indent, "", pPre, pPost); break;
-    case T_Bool:    result = udSprintf(ppStr, "%*s%s%s%s%s%s",   indent, "", pPre, pQuote, u.bVal ? "true" : "false", pQuote, pPost); break;
-    case T_Int64:   result = udSprintf(ppStr, "%*s%s%s%" PRId64 "%s%s", indent, "", pPre, pQuote, u.i64Val, pQuote, pPost); break;
+    case T_Void:
+      result = udSprintf(ppStr, "%*s%snull%s", indent, "", pPre, pPost);
+      break;
+    case T_Bool:
+      result = udSprintf(ppStr, "%*s%s%s%s%s%s", indent, "", pPre, pQuote, u.bVal ? "true" : "false", pQuote, pPost);
+      break;
+    case T_Int64:
+      result = udSprintf(ppStr, "%*s%s%s%" PRId64 "%s%s", indent, "", pPre, pQuote, u.i64Val, pQuote, pPost);
+      break;
     case T_Double:
       if (dPrec == 255)
         result = udSprintf(ppStr, "%*s%s%s%la%s%s", indent, "", pPre, pQuote, u.dVal, pQuote, pPost);
       else
-        result = udSprintf(ppStr, "%*s%s%s%.*lf%s%s",  indent, "", pPre, pQuote, dPrec ? dPrec : DEFAULT_DOUBLE_TOSTRING_PRECISION, u.dVal, pQuote, pPost);
+        result = udSprintf(ppStr, "%*s%s%s%.*lf%s%s", indent, "", pPre, pQuote, dPrec ? dPrec : DEFAULT_DOUBLE_TOSTRING_PRECISION, u.dVal, pQuote, pPost);
       break;
     case T_String:
       if (escape == 1 || escape == 2) // JSON or XML escape
@@ -1159,7 +1206,7 @@ udResult udJSON::ToString(const char **ppStr, int indent, const char *pPre, cons
           udStrchr(p, pEscChars + offset, &strCharIndex, &escCharIndex);
           if (p[strCharIndex])
           {
-            newSize += udStrlen(pEscStrings[offset+escCharIndex]) - 1;
+            newSize += udStrlen(pEscStrings[offset + escCharIndex]) - 1;
             ++strCharIndex; // Skip the actual character we just escaped
           }
           p += strCharIndex;
@@ -1176,8 +1223,8 @@ udResult udJSON::ToString(const char **ppStr, int indent, const char *pPre, cons
           newSize += strCharIndex;
           if (p[strCharIndex])
           {
-            size_t l = udStrlen(pEscStrings[offset+escCharIndex]);
-            memcpy(pEscaped + newSize, pEscStrings[offset+escCharIndex], l);
+            size_t l = udStrlen(pEscStrings[offset + escCharIndex]);
+            memcpy(pEscaped + newSize, pEscStrings[offset + escCharIndex], l);
             newSize += l;
             ++strCharIndex; // Skip the actual character we just escaped
           }
@@ -1210,7 +1257,7 @@ udResult udJSON::ExportJSON(const char *pKey, udJSON::LineList *pLines, int inde
     indent = 0;
 
   if (pKey)
-      result = udSprintf(&pKeyText, "\"%s\":%s", pKey, (strip) ? "" : " ");
+    result = udSprintf(&pKeyText, "\"%s\":%s", pKey, (strip) ? "" : " ");
   else
     pKeyText = pEmpty;
 
@@ -1225,43 +1272,44 @@ udResult udJSON::ExportJSON(const char *pKey, udJSON::LineList *pLines, int inde
       break;
 
     case T_Array:
-      {
-        udJSONArray *pArray = AsArray();
-        result = udSprintf(&pStr, "%*s%s%s", indent, "", pKeyText, pArray->length ? "[" : comma ? "[]," : "[]");
-        UD_ERROR_HANDLE();
-        result = pLines->PushBack(pStr);
-        UD_ERROR_HANDLE();
-        pStr = nullptr;
+    {
+      udJSONArray *pArray = AsArray();
+      result = udSprintf(&pStr, "%*s%s%s", indent, "", pKeyText, pArray->length ? "[" : comma ? "[],"
+                                                                                              : "[]");
+      UD_ERROR_HANDLE();
+      result = pLines->PushBack(pStr);
+      UD_ERROR_HANDLE();
+      pStr = nullptr;
 
-        if (pArray->length)
-        {
-          for (size_t i = 0; i < pArray->length; ++i)
-          {
-            result = pArray->GetElement(i)->ExportJSON(nullptr, pLines, indent + 2, strip, i < (pArray->length - 1));
-            UD_ERROR_HANDLE();
-          }
-          result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
-        }
-      }
-      break;
-
-    case T_Object:
+      if (pArray->length)
       {
-        udJSONObject *pObject = AsObject();
-        result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
-        UD_ERROR_HANDLE();
-        result = pLines->PushBack(pStr);
-        UD_ERROR_HANDLE();
-        pStr = nullptr;
-        for (size_t i = 0; i < pObject->length; ++i)
+        for (size_t i = 0; i < pArray->length; ++i)
         {
-          udJSONKVPair *pItem = pObject->GetElement(i);
-          result = pItem->value.ExportJSON(pItem->pKey, pLines, indent + 2, strip, i < (pObject->length - 1));
+          result = pArray->GetElement(i)->ExportJSON(nullptr, pLines, indent + 2, strip, i < (pArray->length - 1));
           UD_ERROR_HANDLE();
         }
-        result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
+        result = udSprintf(&pStr, "%*s]%s", indent, "", pComma);
       }
-      break;
+    }
+    break;
+
+    case T_Object:
+    {
+      udJSONObject *pObject = AsObject();
+      result = udSprintf(&pStr, "%*s%s{", indent, "", pKeyText);
+      UD_ERROR_HANDLE();
+      result = pLines->PushBack(pStr);
+      UD_ERROR_HANDLE();
+      pStr = nullptr;
+      for (size_t i = 0; i < pObject->length; ++i)
+      {
+        udJSONKVPair *pItem = pObject->GetElement(i);
+        result = pItem->value.ExportJSON(pItem->pKey, pLines, indent + 2, strip, i < (pObject->length - 1));
+        UD_ERROR_HANDLE();
+      }
+      result = udSprintf(&pStr, "%*s}%s", indent, "", pComma);
+    }
+    break;
 
     default:
       UD_ERROR_SET(udR_InternalError);
@@ -1313,121 +1361,133 @@ udResult udJSON::ExportXML(const char *pKey, udJSON::LineList *pLines, int inden
       break;
 
     case T_Array:
+    {
+      udJSONArray *pArray = AsArray();
+      if (pArray->length == 0)
       {
-        udJSONArray *pArray = AsArray();
-        if (pArray->length == 0)
+        // Export empty arrays as an empty tag
+        result = udSprintf(&pStr, "%*s<%s></%s>", indent, "", pKey, pKey);
+        break;
+      }
+      for (size_t i = 0; i < pArray->length; ++i)
+      {
+        const udJSON *pValue = pArray->GetElement(i);
+        switch (pValue->type)
         {
-          // Export empty arrays as an empty tag
-          result = udSprintf(&pStr, "%*s<%s></%s>", indent, "", pKey, pKey); break;
+          case T_Void:
+            result = udSprintf(&pStr, "%*s<%s></%s>", indent, "", pKey, pKey);
+            break;
+          case T_Bool:
+            result = udSprintf(&pStr, "%*s<%s>%s</%s>", indent, "", pKey, pValue->u.bVal ? "true" : "false", pKey);
+            break;
+          case T_Int64:
+            result = udSprintf(&pStr, "%*s<%s>%" PRId64 "</%s>", indent, "", pKey, pValue->u.i64Val, pKey);
+            break;
+          case T_Double:
+            result = udSprintf(&pStr, "%*s<%s>%lf</%s>", indent, "", pKey, pValue->u.dVal, pKey);
+            break;
+          case T_String:
+            result = udSprintf(&pStr, "%*s<%s>%s</%s>", indent, "", pKey, pValue->u.pStr, pKey);
+            break;
+          case T_Array:
+          case T_Object:
+            result = pArray->GetElement(i)->ExportXML(pKey, pLines, indent, strip);
+            break;
+          default:
+            UD_ERROR_SET(udR_Failure);
         }
-        for (size_t i = 0; i < pArray->length; ++i)
+        UD_ERROR_HANDLE();
+        if (pStr)
         {
-          const udJSON *pValue = pArray->GetElement(i);
-          switch (pValue->type)
-          {
-            case T_Void:    result = udSprintf(&pStr, "%*s<%s></%s>",     indent, "", pKey, pKey); break;
-            case T_Bool:    result = udSprintf(&pStr, "%*s<%s>%s</%s>",   indent, "", pKey, pValue->u.bVal ? "true" : "false", pKey); break;
-            case T_Int64:   result = udSprintf(&pStr, "%*s<%s>%" PRId64 "</%s>", indent, "", pKey, pValue->u.i64Val, pKey); break;
-            case T_Double:  result = udSprintf(&pStr, "%*s<%s>%lf</%s>",  indent, "", pKey, pValue->u.dVal, pKey); break;
-            case T_String:  result = udSprintf(&pStr, "%*s<%s>%s</%s>", indent, "", pKey, pValue->u.pStr, pKey); break;
-            case T_Array:
-            case T_Object:
-              result = pArray->GetElement(i)->ExportXML(pKey, pLines, indent, strip);
-              break;
-            default:
-              UD_ERROR_SET(udR_Failure);
-          }
+          result = pLines->PushBack(pStr);
           UD_ERROR_HANDLE();
-          if (pStr)
+          pStr = nullptr;
+        }
+      }
+    }
+    break;
+
+    case T_Object:
+    {
+      udJSONObject *pObject = AsObject();
+      int subObjectCount = 0, attributeCount = 0;
+
+      // First, find out how many simple attributes are present versus subobjects (exported as children)
+      for (size_t i = 0; i < pObject->length; ++i)
+      {
+        const udJSONKVPair *pAttribute = pObject->GetElement(i);
+        if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void)
+          ++subObjectCount;
+        else if (!pContentString && udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
+          pAttribute->value.ToString(&pContentString, 0, "", "", "", 2);
+        else
+          ++attributeCount;
+      }
+
+      // Create opening tag, optionally self-closing it if there's nothing else to add to it
+      result = udSprintf(&pStr, "%*s<%s%s", indent, "", pKeyText, (!attributeCount && !subObjectCount && !pContentString) ? "/>" : (!attributeCount) ? ">"
+                                                                                                                                                     : "");
+      UD_ERROR_HANDLE();
+      // Export all the attributes to a separate list to be combined to a single line
+      LineList attributeLines;
+      attributeLines.Init(32);
+      for (size_t i = 0; i < pObject->length && attributeCount; ++i)
+      {
+        const udJSONKVPair *pAttribute = pObject->GetElement(i);
+        if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void) // Children exported after the attributes
+          continue;
+        else if (udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
+          continue;
+        UD_ERROR_IF(pAttribute->value.type < T_Bool || pAttribute->value.type > T_String, udR_ObjectTypeMismatch);
+        result = pAttribute->value.ExportXML(pAttribute->pKey, &attributeLines, 0, strip);
+        UD_ERROR_HANDLE();
+        const char *pAttrText;
+        if (attributeLines.PopBack(&pAttrText))
+        {
+          --attributeCount;
+          // Combine the element onto the tag line, appending a closing or self-closing tag as required
+          // Complicated a little by injecting the content string if required
+          result = udSprintf(&pStr, "%s %s%s", pStr, pAttrText,
+                             attributeCount ? "" : ((subObjectCount || pContentString) ? ">" : "/>"));
+          udFree(pAttrText);
+          UD_ERROR_HANDLE();
+
+          // Append ">pContentString</close> if no subojects following
+          if (!attributeCount && !subObjectCount && pContentString)
           {
-            result = pLines->PushBack(pStr);
+            result = udSprintf(&pStr, "%s%s</%s>", pStr, pContentString, pKey);
             UD_ERROR_HANDLE();
-            pStr = nullptr;
           }
         }
       }
-      break;
+      attributeLines.Deinit();
+      result = pLines->PushBack(pStr);
+      UD_ERROR_HANDLE();
+      pStr = nullptr;
 
-    case T_Object:
+      if (subObjectCount)
       {
-        udJSONObject *pObject = AsObject();
-        int subObjectCount = 0, attributeCount = 0;
-
-        // First, find out how many simple attributes are present versus subobjects (exported as children)
         for (size_t i = 0; i < pObject->length; ++i)
         {
           const udJSONKVPair *pAttribute = pObject->GetElement(i);
-          if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void)
-            ++subObjectCount;
-          else if (!pContentString && udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
-            pAttribute->value.ToString(&pContentString, 0, "", "", "", 2);
-          else
-            ++attributeCount;
-        }
-
-        // Create opening tag, optionally self-closing it if there's nothing else to add to it
-        result = udSprintf(&pStr, "%*s<%s%s", indent, "", pKeyText, (!attributeCount && !subObjectCount && !pContentString) ? "/>" : (!attributeCount) ? ">" : "");
-        UD_ERROR_HANDLE();
-        // Export all the attributes to a separate list to be combined to a single line
-        LineList attributeLines;
-        attributeLines.Init(32);
-        for (size_t i = 0; i < pObject->length && attributeCount; ++i)
-        {
-          const udJSONKVPair *pAttribute = pObject->GetElement(i);
-          if (pAttribute->value.type == T_Object || pAttribute->value.type == T_Array || pAttribute->value.type == T_Void) // Children exported after the attributes
+          if (pAttribute->value.type != T_Object && pAttribute->value.type != T_Array && pAttribute->value.type != T_Void) // Attributes already exported
             continue;
-          else if (udStrEqual(pAttribute->pKey, CONTENT_MEMBER))
-            continue;
-          UD_ERROR_IF(pAttribute->value.type < T_Bool || pAttribute->value.type > T_String, udR_ObjectTypeMismatch);
-          result = pAttribute->value.ExportXML(pAttribute->pKey, &attributeLines, 0, strip);
-          UD_ERROR_HANDLE();
-          const char *pAttrText;
-          if (attributeLines.PopBack(&pAttrText))
-          {
-            --attributeCount;
-            // Combine the element onto the tag line, appending a closing or self-closing tag as required
-            // Complicated a little by injecting the content string if required
-            result = udSprintf(&pStr, "%s %s%s", pStr, pAttrText,
-                                attributeCount ? "" : ((subObjectCount || pContentString) ? ">" : "/>"));
-            udFree(pAttrText);
-            UD_ERROR_HANDLE();
-
-            // Append ">pContentString</close> if no subojects following
-            if (!attributeCount && !subObjectCount && pContentString)
-            {
-              result = udSprintf(&pStr, "%s%s</%s>", pStr, pContentString, pKey);
-              UD_ERROR_HANDLE();
-            }
-          }
-        }
-        attributeLines.Deinit();
-        result = pLines->PushBack(pStr);
-        UD_ERROR_HANDLE();
-        pStr = nullptr;
-
-        if (subObjectCount)
-        {
-          for (size_t i = 0; i < pObject->length; ++i)
-          {
-            const udJSONKVPair *pAttribute = pObject->GetElement(i);
-            if (pAttribute->value.type != T_Object && pAttribute->value.type != T_Array && pAttribute->value.type != T_Void) // Attributes already exported
-              continue;
-            result = pAttribute->value.ExportXML(pAttribute->pKey, pLines, indent + 2, strip);
-            UD_ERROR_HANDLE();
-          }
-          if (pContentString)
-          {
-            // If a content string present with subobjects, tab in in same as they are
-            result = udSprintf(&pStr, "%*s%s", indent + 2, "", pContentString);
-            pLines->PushBack(pStr);
-            pStr = nullptr;
-          }
-          // Closing tag
-          result = udSprintf(&pStr, "%*s</%s>", indent, "", pKeyText);
+          result = pAttribute->value.ExportXML(pAttribute->pKey, pLines, indent + 2, strip);
           UD_ERROR_HANDLE();
         }
+        if (pContentString)
+        {
+          // If a content string present with subobjects, tab in in same as they are
+          result = udSprintf(&pStr, "%*s%s", indent + 2, "", pContentString);
+          pLines->PushBack(pStr);
+          pStr = nullptr;
+        }
+        // Closing tag
+        result = udSprintf(&pStr, "%*s</%s>", indent, "", pKeyText);
+        UD_ERROR_HANDLE();
       }
-      break;
+    }
+    break;
 
     default:
       UD_ERROR_SET(udR_InternalError);
@@ -1581,7 +1641,6 @@ udResult udJSON::ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber)
         pJSON = udStrSkipWhiteSpace(pJSON + 1, nullptr, pLineNumber);
     }
     ++pJSON; // Skip the final close brace
-
   }
   else if (*pJSON == '[')
   {
@@ -1666,7 +1725,7 @@ static udResult ParseXMLString(const char **ppStr, const char *pXML, int *pCharC
     {
       for (int e = 0; pXML[si] == '&' && !escaped && e < (int)UDARRAYSIZE(s_pXMLEscStrings); ++e)
       {
-        if (udStrBeginsWith(pXML+si, s_pXMLEscStrings[e]))
+        if (udStrBeginsWith(pXML + si, s_pXMLEscStrings[e]))
         {
           pStr[di++] = s_xmlEscChars[e];
           si += (int)udStrlen(s_pXMLEscStrings[e]);
@@ -1731,14 +1790,14 @@ udResult udJSON::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
   pElementName = udStrndup(pXML, len);
   pXML = udStrSkipWhiteSpace(pXML + len, nullptr, pLineNumber);
   // So here we have the name of the element, but it might already exist or not
-  pElement = const_cast<udJSON*>(FindMember(pElementName));
+  pElement = const_cast<udJSON *>(FindMember(pElementName));
   if (!pElement)
   {
     // Case where the tag hasn't been encountered before, so create an object for it
     udJSONKVPair *pKVP = AsObject()->PushBack();
     UD_ERROR_NULL(pKVP, udR_MemoryAllocationFailure);
     pKVP->pKey = udStrdup(pElementName);
-    pKVP->value.Clear();  // Initialise without prior destruction
+    pKVP->value.Clear(); // Initialise without prior destruction
     pKVP->value.SetObject();
     pElement = &pKVP->value;
   }
@@ -1837,8 +1896,8 @@ udResult udJSON::ParseXML(const char *pXML, int *pCharCount, int *pLineNumber)
       }
     }
     UD_ERROR_IF(!*pXML, udR_ParseError);
-    pXML = udStrSkipWhiteSpace(pXML + 2, nullptr, pLineNumber); // Skip </
-    UD_ERROR_IF(!udStrBeginsWith(pXML, pElementName), udR_ParseError); // Check for closing element name
+    pXML = udStrSkipWhiteSpace(pXML + 2, nullptr, pLineNumber);                      // Skip </
+    UD_ERROR_IF(!udStrBeginsWith(pXML, pElementName), udR_ParseError);               // Check for closing element name
     pXML = udStrSkipWhiteSpace(pXML + udStrlen(pElementName), nullptr, pLineNumber); // Skip </
     UD_ERROR_IF(*pXML != '>', udR_ParseError);
     pXML = udStrSkipWhiteSpace(pXML + 1, nullptr, pLineNumber); // Skip >

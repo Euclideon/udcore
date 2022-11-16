@@ -12,18 +12,18 @@
 // The prefix raw://compression=ZlibDeflate,size=123@base64 can be used for compressed in-memory files contained in the filename (see udCompressionTypeAsString)
 //
 
+#include "udCompression.h"
 #include "udPlatform.h"
 #include "udResult.h"
-#include "udCompression.h"
 
 struct udFile;
 enum udFileOpenFlags
 {
-  udFOF_Read  = 1,
+  udFOF_Read = 1,
   udFOF_Write = 2,
   udFOF_Create = 4,
   udFOF_Multithread = 8,
-  udFOF_FastOpen = 16   // No checks performed, file length not supported. Currently functional for FILE (deferred open) and HTTP (stateless)
+  udFOF_FastOpen = 16 // No checks performed, file length not supported. Currently functional for FILE (deferred open) and HTTP (stateless)
 };
 // Inline of operator to allow flags to be combined and retain type-safety
 inline udFileOpenFlags operator|(udFileOpenFlags a, udFileOpenFlags b) { return (udFileOpenFlags)(int(a) | int(b)); }
@@ -52,8 +52,8 @@ struct udFilePerformance
 // Load an entire file, appending a nul terminator. Calls Open/Read/Close internally.
 udResult udFile_Load(const char *pFilename, void **ppMemory, int64_t *pFileLengthInBytes = nullptr);
 
-template<typename T>
-inline udResult udFile_Load(const char *pFilename, T **ppMemory, int64_t *pFileLengthInBytes = nullptr) { return udFile_Load(pFilename, (void**)ppMemory, pFileLengthInBytes); }
+template <typename T>
+inline udResult udFile_Load(const char *pFilename, T **ppMemory, int64_t *pFileLengthInBytes = nullptr) { return udFile_Load(pFilename, (void **)ppMemory, pFileLengthInBytes); }
 
 // Save an entire file, Calls Open/Write/Close internally.
 udResult udFile_Save(const char *pFilename, const void *pBuffer, size_t length);

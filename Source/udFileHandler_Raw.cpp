@@ -1,9 +1,9 @@
+#include "udCompression.h"
 #include "udFile.h"
 #include "udFileHandler.h"
+#include "udMath.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udCompression.h"
-#include "udMath.h"
 
 // Raw support udFile handler
 // To encode to base64 use this: https://www.browserling.com/tools/file-to-base64
@@ -11,21 +11,20 @@
 // Alternatively udFile_GenerateRawFilename can be used which offers compression and support for writing
 
 // Declarations of the fall-back standard handler that uses crt Raw as a back-end
-static udFile_SeekReadHandlerFunc   udFileHandler_RawSeekRead;
-static udFile_SeekWriteHandlerFunc  udFileHandler_RawSeekWrite;
-static udFile_CloseHandlerFunc      udFileHandler_RawClose;
+static udFile_SeekReadHandlerFunc udFileHandler_RawSeekRead;
+static udFile_SeekWriteHandlerFunc udFileHandler_RawSeekWrite;
+static udFile_CloseHandlerFunc udFileHandler_RawClose;
 
 // The udFile derivative for supporting base64 raw and compressed files
 struct udFile_Raw : public udFile
 {
-  const char *pOriginalFilename;  // Copy of "original" filename, generally a human-readable name rather than base64
+  const char *pOriginalFilename; // Copy of "original" filename, generally a human-readable name rather than base64
   uint8_t *pData;
   int64_t fp;
   size_t dataLen;
   size_t allocationSize; // When closing a file opened for write, this is the limit of the data written back to the filename pointer
   udCompressionType ct;  // For writeable files the compression type specified in the original text
 };
-
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
@@ -243,14 +242,13 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, August 2018
 static udResult udFileHandler_RawSeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   UDTRACE();
   udResult result;
-  udFile_Raw *pRaw = static_cast<udFile_Raw*>(pFile);
+  udFile_Raw *pRaw = static_cast<udFile_Raw *>(pFile);
   size_t actualRead;
 
   UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pRaw->dataLen, udR_InvalidParameter);
@@ -266,14 +264,13 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, August 2018
 static udResult udFileHandler_RawSeekWrite(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualWritten)
 {
   UDTRACE();
   udResult result;
-  udFile_Raw *pRaw = static_cast<udFile_Raw*>(pFile);
+  udFile_Raw *pRaw = static_cast<udFile_Raw *>(pFile);
 
   UD_ERROR_IF(seekOffset < 0, udR_InvalidParameter);
   if ((seekOffset + bufferLength) > pRaw->dataLen)
@@ -282,7 +279,7 @@ static udResult udFileHandler_RawSeekWrite(udFile *pFile, const void *pBuffer, s
     size_t newLen = (size_t)(seekOffset + bufferLength);
     void *pNewData = udRealloc(pRaw->pData, newLen);
     UD_ERROR_NULL(pNewData, udR_MemoryAllocationFailure);
-    pRaw->pData = (uint8_t*)pNewData;
+    pRaw->pData = (uint8_t *)pNewData;
     if (seekOffset > (int64_t)pRaw->dataLen)
       memset(pRaw->pData + pRaw->dataLen, 0, seekOffset - pRaw->dataLen); // Zero the part of the extension not written to
     pRaw->dataLen = newLen;
@@ -298,7 +295,6 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of CloseHandler to access the crt Raw i/o functions
@@ -306,14 +302,14 @@ static udResult udFileHandler_RawClose(udFile **ppFile)
 {
   UDTRACE();
   udResult result;
-  udFile_Raw *pRaw = static_cast<udFile_Raw*>(*ppFile);
+  udFile_Raw *pRaw = static_cast<udFile_Raw *>(*ppFile);
   *ppFile = nullptr;
   const char *pTempRaw = nullptr;
 
   if (pRaw && pRaw->fpWrite)
   {
     UD_ERROR_CHECK(udFile_GenerateRawFilename(&pTempRaw, pRaw->pData, pRaw->dataLen, pRaw->ct, pRaw->pOriginalFilename, pRaw->allocationSize));
-    udStrcpy(const_cast<char*>(pRaw->pFilenameCopy), pRaw->allocationSize, pTempRaw);
+    udStrcpy(const_cast<char *>(pRaw->pFilenameCopy), pRaw->allocationSize, pTempRaw);
   }
 
   result = udR_Success;
@@ -328,5 +324,3 @@ epilogue:
   }
   return result;
 }
-
-

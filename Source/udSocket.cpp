@@ -1,53 +1,52 @@
 #include "udSocket.h"
+#include "udCrypto.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udCrypto.h"
 
-#include "mbedtls/net_sockets.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
-#include "mbedtls/x509.h"
-#include "mbedtls/net_sockets.h"
+#include "mbedtls/entropy.h"
 #include "mbedtls/error.h"
+#include "mbedtls/net_sockets.h"
+#include "mbedtls/ssl.h"
+#include "mbedtls/x509.h"
 
 #include <atomic>
 
 #if UDPLATFORM_WINDOWS
-# include <windows.h>
-# include <Wincrypt.h>
-# include <winsock2.h>
-# include <Ws2tcpip.h>
-# pragma comment(lib, "ws2_32.lib")
-# pragma comment(lib, "Crypt32.lib")
+#  include <Wincrypt.h>
+#  include <Ws2tcpip.h>
+#  include <windows.h>
+#  include <winsock2.h>
+#  pragma comment(lib, "ws2_32.lib")
+#  pragma comment(lib, "Crypt32.lib")
 #else
 /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
-# include <unistd.h> /* Needed for close() */
-# if UDPLATFORM_EMSCRIPTEN
-#  include <sys/select.h>
-#  include <errno.h>
-# else
-#  include <sys/errno.h>
-# endif
+#  include <arpa/inet.h>
+#  include <netdb.h> /* Needed for getaddrinfo() and freeaddrinfo() */
+#  include <sys/socket.h>
+#  include <unistd.h> /* Needed for close() */
+#  if UDPLATFORM_EMSCRIPTEN
+#    include <errno.h>
+#    include <sys/select.h>
+#  else
+#    include <sys/errno.h>
+#  endif
 #endif
 
 #if UDPLATFORM_OSX
-# include <Security/Security.h>
+#  include <Security/Security.h>
 #endif
 
 #ifndef INVALID_SOCKET //Some platforms don't have these defined
-  typedef int SOCKET;
-# define INVALID_SOCKET  (SOCKET)(~0)
-# define SOCKET_ERROR            (-1)
+typedef int SOCKET;
+#  define INVALID_SOCKET (SOCKET)(~0)
+#  define SOCKET_ERROR   (-1)
 #endif //INVALID_SOCKET
 
 struct udSocketSharedData
 {
-  static std::atomic<int32_t> loadCount; // ref count for loaded certs; must be zero
+  static std::atomic<int32_t> loadCount;   // ref count for loaded certs; must be zero
   static std::atomic<int32_t> initialised; // set to 1 once initialisation is complete
   static mbedtls_entropy_context entropy;
   static mbedtls_x509_crt certificateChain;
@@ -68,7 +67,7 @@ struct udSocket
   {
     mbedtls_net_context socketContext; //The actual socket
     mbedtls_ctr_drbg_context ctr_drbg; //The encryption context
-    mbedtls_ssl_context ssl; //The socket to encryption context
+    mbedtls_ssl_context ssl;           //The socket to encryption context
     mbedtls_ssl_config conf;
 
     //Additional server things
@@ -96,11 +95,11 @@ udResult udSocket_LoadCACerts()
   // Open a scope to prevent various initialisation warnings
   {
 #if UDPLATFORM_WINDOWS
-# if UDPLATFORM_UWP
+#  if UDPLATFORM_UWP
     HCERTSTORE store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_SYSTEM_STORE_CURRENT_USER, "Root");
-# else
+#  else
     HCERTSTORE store = CertOpenSystemStoreA(0, "Root");
-# endif
+#  endif
     UD_ERROR_NULL(store, udR_Failure);
     for (PCCERT_CONTEXT cert = CertEnumCertificatesInStore(store, nullptr); cert; cert = CertEnumCertificatesInStore(store, cert))
     {
@@ -125,7 +124,7 @@ udResult udSocket_LoadCACerts()
     CFDictionarySetValue(search, kSecReturnRef, kCFBooleanTrue);
     CFDictionarySetValue(search, kSecMatchSearchList, CFArrayCreate(NULL, (const void **)&keychain, 1, NULL));
 
-    if (SecItemCopyMatching(search, (CFTypeRef*)&cfResult) == errSecSuccess)
+    if (SecItemCopyMatching(search, (CFTypeRef *)&cfResult) == errSecSuccess)
     {
       CFIndex n = CFArrayGetCount(cfResult);
       for (CFIndex i = 0; i < n; i++)
@@ -136,7 +135,7 @@ udResult udSocket_LoadCACerts()
         dat = SecCertificateCopyData(item);
         if (dat)
         {
-          if (mbedtls_x509_crt_parse_der(&udSocketSharedData::certificateChain, (unsigned char*)CFDataGetBytePtr(dat), CFDataGetLength(dat)) == 0)
+          if (mbedtls_x509_crt_parse_der(&udSocketSharedData::certificateChain, (unsigned char *)CFDataGetBytePtr(dat), CFDataGetLength(dat)) == 0)
             certParsed = true;
           CFRelease(dat);
         }
@@ -267,7 +266,6 @@ bool udSocket_IsValidSocket(udSocket *pSocket)
     return (pSocket->basicSocket != INVALID_SOCKET);
 }
 
-
 // --------------------------------------------------------------------------
 // Author: Paul Fox, October 2018
 static void udSocketmbedDebug(void * /*pUserData*/, int /*level*/, const char *file, int line, const char *str)
@@ -320,10 +318,10 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
       {
         udDebugPrintf(" failed! Certificate and private key cannot be null if running a secure server!\n");
         UD_ERROR_SET(udR_InvalidConfiguration);
-     }
+      }
 
       // Set up server certificate
-      retVal = mbedtls_x509_crt_parse(&pSocket->tlsClient.certificateServer, (const unsigned char *)pPublicCertificate, udStrlen(pPublicCertificate)+1);
+      retVal = mbedtls_x509_crt_parse(&pSocket->tlsClient.certificateServer, (const unsigned char *)pPublicCertificate, udStrlen(pPublicCertificate) + 1);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_x509_crt_parse returned %d\n", retVal);
@@ -332,7 +330,7 @@ udResult udSocket_Open(udSocket **ppSocket, const char *pAddress, uint32_t port,
 
       // Set up public key
       mbedtls_pk_init(&pSocket->tlsClient.publicKey);
-      retVal = mbedtls_pk_parse_key(&pSocket->tlsClient.publicKey, (const unsigned char *)pPrivateKey, udStrlen(pPrivateKey)+1, NULL, 0, NULL, NULL);
+      retVal = mbedtls_pk_parse_key(&pSocket->tlsClient.publicKey, (const unsigned char *)pPrivateKey, udStrlen(pPrivateKey) + 1, NULL, 0, NULL, NULL);
       if (retVal != 0)
       {
         udDebugPrintf(" failed! mbedtls_pk_parse_key returned %d\n", retVal);
@@ -566,7 +564,7 @@ udResult udSocket_ReceiveData(udSocket *pSocket, uint8_t *pBytes, int64_t buffer
   if (pSocket->isSecure)
     actualReceived = mbedtls_ssl_read(&pSocket->tlsClient.ssl, pBytes, bufferSize);
   else
-    actualReceived = recv(pSocket->basicSocket, (char*)pBytes, (int)bufferSize, 0);
+    actualReceived = recv(pSocket->basicSocket, (char *)pBytes, (int)bufferSize, 0);
 
   UD_ERROR_IF(actualReceived < 0, udR_SocketError);
 
@@ -621,7 +619,7 @@ bool udSocket_ServerAcceptClientPartA(udSocket *pServerSocket, udSocket **ppClie
   {
     sockaddr_storage clientAddr;
     socklen_t clientAddrSize = sizeof(clientAddr);
-    SOCKET clientSocket = accept(pServerSocket->basicSocket, (sockaddr*)&clientAddr, &clientAddrSize);
+    SOCKET clientSocket = accept(pServerSocket->basicSocket, (sockaddr *)&clientAddr, &clientAddrSize);
 
     if (clientSocket != INVALID_SOCKET)
     {
@@ -630,7 +628,7 @@ bool udSocket_ServerAcceptClientPartA(udSocket *pServerSocket, udSocket **ppClie
 
       if (pIPv4Address != nullptr)
       {
-        sockaddr_in *pAddrV4 = (sockaddr_in*)&clientAddr;
+        sockaddr_in *pAddrV4 = (sockaddr_in *)&clientAddr;
         memcpy(clientIP, &pAddrV4->sin_addr.s_addr, sizeof(pAddrV4->sin_addr.s_addr));
         *pIPv4Address = (clientIP[0] << 24) | (clientIP[1] << 16) | (clientIP[2] << 8) | (clientIP[3]);
       }

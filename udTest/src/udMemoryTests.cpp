@@ -1,6 +1,6 @@
-#include "gtest/gtest.h"
 #include "udPlatform.h"
 #include "udStringUtil.h"
+#include "gtest/gtest.h"
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, January 2019
@@ -16,7 +16,7 @@ TEST(udMemoryTests, Validate)
   // udMemdup test
   const char numbers[] = "1,2,3,4,5,6,7,8,9";
   const char expectedNumbers[] = { '1', ',', '2', ',', '3', ',', '4', ',', '5', ',', '6', ',', '7', ',', '8', ',', '9', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
-  void *pNumbersMemory = udMemDup(numbers, sizeof(numbers)-1, 10, udAF_Zero); //-1 to strip the \0
+  void *pNumbersMemory = udMemDup(numbers, sizeof(numbers) - 1, 10, udAF_Zero); //-1 to strip the \0
   EXPECT_EQ(0, memcmp(pNumbersMemory, expectedNumbers, sizeof(expectedNumbers)));
   udFree(pNumbersMemory);
 }

@@ -9,8 +9,8 @@
 // internally to provide file i/o to direct file system, http and other future protocols
 //
 
-#include "udPlatform.h"
 #include "udFile.h"
+#include "udPlatform.h"
 #include "udThread.h"
 
 // Some function prototypes required if implementing a custom file handler
@@ -43,8 +43,8 @@ typedef udResult udFile_CloseHandlerFunc(udFile **ppFile);
 // The base file structure, file handlers are expected to zero this structure and extend the to include custom data to manage state.
 struct udFile
 {
-  const char *pFilenameCopy;              // If assigned by a handler, set filenameCopyRequiresFree, or handler is responsible for free
-  udFileOpenFlags flagsCopy;              // Set by udFile, not handlers. A copy of the flags used to open the file
+  const char *pFilenameCopy;                   // If assigned by a handler, set filenameCopyRequiresFree, or handler is responsible for free
+  udFileOpenFlags flagsCopy;                   // Set by udFile, not handlers. A copy of the flags used to open the file
   udFile_SetSubFilenameFunc *fpSetSubFilename; // Optional, for handlers of archive files such as zip etc
   udFile_LoadHandlerFunc *fpLoad;              // Optional, for handlers that can optimize the Open/Read/Close approach of udFile_Load, such as HTTP
   udFile_SeekReadHandlerFunc *fpRead;
@@ -53,7 +53,7 @@ struct udFile
   udFile_ReleaseHandlerFunc *fpRelease;
   udFile_CloseHandlerFunc *fpClose;
   struct udCryptoCipherContext *pCipherCtx;
-  int64_t nonce, counterOffset;  // For CTR mode, the nonce and an offset added to calculated counter, used mainly by split files or to add perceived security
+  int64_t nonce, counterOffset; // For CTR mode, the nonce and an offset added to calculated counter, used mainly by split files or to add perceived security
   int64_t seekBase;
   int64_t filePos;
   int64_t fileLength;
@@ -61,7 +61,7 @@ struct udFile
   uint32_t requestsInFlight;
   uint64_t totalBytes;
   float mbPerSec;
-  bool filenameCopyRequiresFree;          // Set if the filename copy was allocated, will be freed prior to calling handler close function
+  bool filenameCopyRequiresFree; // Set if the filename copy was allocated, will be freed prior to calling handler close function
 };
 
 // Register a file handler

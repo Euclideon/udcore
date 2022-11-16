@@ -4,39 +4,38 @@
 // Creator: Dave Pevreal, March 2014
 //
 
+#include "udCrypto.h"
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udCrypto.h"
 
 #if UDPLATFORM_UWP
-# include <winrt/Windows.Storage.h>
+#  include <winrt/Windows.Storage.h>
 #elif UDPLATFORM_WINDOWS
-# include <ShlObj.h>
+#  include <ShlObj.h>
 #else
-# include <pwd.h>
+#  include <pwd.h>
 #endif
 
-#define MAX_HANDLERS 16
+#define MAX_HANDLERS            16
 #define CONTENT_LOAD_CHUNK_SIZE 65536 // When loading an entire file of unknown size, read in chunks of this many bytes
 
-udFile_OpenHandlerFunc udFileHandler_FILEOpen;     // Default crt FILE based handler
-udFile_OpenHandlerFunc udFileHandler_RawOpen;      // Default raw handler
-udFile_OpenHandlerFunc udFileHandler_MiniZOpen;    // Default zip handler
-udFile_OpenHandlerFunc udFileHandler_DataOpen;     // Default data handler
+udFile_OpenHandlerFunc udFileHandler_FILEOpen;  // Default crt FILE based handler
+udFile_OpenHandlerFunc udFileHandler_RawOpen;   // Default raw handler
+udFile_OpenHandlerFunc udFileHandler_MiniZOpen; // Default zip handler
+udFile_OpenHandlerFunc udFileHandler_DataOpen;  // Default data handler
 
 struct udFileHandler
 {
   udFile_OpenHandlerFunc *fpOpen;
-  char prefix[16];              // The prefix that this handler will respond to, eg 'http:', or an empty string for regular filenames
+  char prefix[16]; // The prefix that this handler will respond to, eg 'http:', or an empty string for regular filenames
 };
 
-static udFileHandler s_handlers[MAX_HANDLERS] =
-{
-  { udFileHandler_FILEOpen, "" },         // Default file handler
-  { udFileHandler_RawOpen, "raw://" },    // Raw handler
-  { udFileHandler_MiniZOpen, "zip://" },  // Zip handler
-  { udFileHandler_DataOpen, "data:" },  // Data handler
+static udFileHandler s_handlers[MAX_HANDLERS] = {
+  { udFileHandler_FILEOpen, "" },        // Default file handler
+  { udFileHandler_RawOpen, "raw://" },   // Raw handler
+  { udFileHandler_MiniZOpen, "zip://" }, // Zip handler
+  { udFileHandler_DataOpen, "data:" },   // Data handler
 };
 static int s_handlersCount = 4;
 
@@ -52,7 +51,7 @@ udResult udFile_GenericLoad(udFile *pFile, void **ppMemory, int64_t *pFileLength
 
   if (length)
   {
-    pMemory = (char*)udAlloc((size_t)length + 1); // Note always allocating 1 extra byte
+    pMemory = (char *)udAlloc((size_t)length + 1); // Note always allocating 1 extra byte
     UD_ERROR_CHECK(udFile_Read(pFile, pMemory, (size_t)length, 0, udFSW_SeekCur, &actualRead));
     UD_ERROR_IF(actualRead != (size_t)length, udR_ReadFailure);
   }
@@ -67,7 +66,7 @@ udResult udFile_GenericLoad(udFile *pFile, void **ppMemory, int64_t *pFileLength
         length += CONTENT_LOAD_CHUNK_SIZE;
       void *pNewMem = udRealloc(pMemory, (size_t)length + 1); // Note always allocating 1 extra byte
       UD_ERROR_NULL(pNewMem, udR_MemoryAllocationFailure);
-      pMemory = (char*)pNewMem;
+      pMemory = (char *)pNewMem;
 
       attemptRead = (size_t)length + 1 - alreadyRead; // Note attempt to read 1 extra byte so EOF is detected
       UD_ERROR_CHECK(udFile_Read(pFile, pMemory + alreadyRead, attemptRead, 0, udFSW_SeekCur, &actualRead));
@@ -78,7 +77,7 @@ udResult udFile_GenericLoad(udFile *pFile, void **ppMemory, int64_t *pFileLength
       length = alreadyRead;
       void *pNewMem = udRealloc(pMemory, (size_t)length + 1);
       UD_ERROR_NULL(pNewMem, udR_MemoryAllocationFailure);
-      pMemory = (char*)pNewMem;
+      pMemory = (char *)pNewMem;
     }
   }
   pMemory[length] = 0; // A nul-terminator for text files
@@ -122,7 +121,7 @@ udResult udFile_Save(const char *pFilename, const void *pBuffer, size_t length)
   udResult result;
   udFile *pFile = nullptr;
 
-  UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Create|udFOF_Write));
+  UD_ERROR_CHECK(udFile_Open(&pFile, pFilename, udFOF_Create | udFOF_Write));
   UD_ERROR_CHECK(udFile_Write(pFile, pBuffer, (size_t)length));
   UD_ERROR_CHECK(udFile_Close(&pFile)); // Close errors are important when writing
 
@@ -187,7 +186,7 @@ void udFile_SetSeekBase(udFile *pFile, int64_t seekBase, int64_t newLength)
     pFile->seekBase = seekBase;
     if (newLength)
       pFile->fileLength = newLength;
-    pFile->filePos = seekBase;  // Move the current position to the base in case a udFSW_SeekCur read is issued
+    pFile->filePos = seekBase; // Move the current position to the base in case a udFSW_SeekCur read is issued
   }
 }
 
@@ -256,7 +255,6 @@ udResult udFile_GetPerformance(udFile *pFile, udFilePerformance *pPerformance)
   return udR_Success;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
@@ -265,9 +263,8 @@ static void udUpdateFilePerformance(udFile *pFile, size_t actualRead)
   pFile->msAccumulator += udGetTimeMs();
   pFile->totalBytes += actualRead;
   if (--pFile->requestsInFlight == 0)
-    pFile->mbPerSec = float((pFile->totalBytes/1048576.0) / (pFile->msAccumulator / 1000.0));
+    pFile->mbPerSec = float((pFile->totalBytes / 1048576.0) / (pFile->msAccumulator / 1000.0));
 }
-
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
@@ -284,9 +281,15 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
 
   switch (seekWhence)
   {
-    case udFSW_SeekSet: offset = seekOffset + pFile->seekBase; break;
-    case udFSW_SeekCur: offset = pFile->filePos + seekOffset; break;
-    case udFSW_SeekEnd: offset = pFile->fileLength + seekOffset + pFile->seekBase; break;
+    case udFSW_SeekSet:
+      offset = seekOffset + pFile->seekBase;
+      break;
+    case udFSW_SeekCur:
+      offset = pFile->filePos + seekOffset;
+      break;
+    case udFSW_SeekEnd:
+      offset = pFile->fileLength + seekOffset + pFile->seekBase;
+      break;
     default:
       UD_ERROR_SET(udR_InvalidParameter);
   }
@@ -347,7 +350,6 @@ epilogue:
   return result;
 }
 
-
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
 udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, int64_t seekOffset, udFileSeekWhence seekWhence, size_t *pActualWritten, int64_t *pFilePos)
@@ -362,11 +364,17 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
 
   switch (seekWhence)
   {
-  case udFSW_SeekSet: offset = seekOffset + pFile->seekBase; break;
-  case udFSW_SeekCur: offset = pFile->filePos + seekOffset; break;
-  case udFSW_SeekEnd: offset = pFile->fileLength + seekOffset; break;
-  default:
-    UD_ERROR_SET(udR_InvalidParameter);
+    case udFSW_SeekSet:
+      offset = seekOffset + pFile->seekBase;
+      break;
+    case udFSW_SeekCur:
+      offset = pFile->filePos + seekOffset;
+      break;
+    case udFSW_SeekEnd:
+      offset = pFile->fileLength + seekOffset;
+      break;
+    default:
+      UD_ERROR_SET(udR_InvalidParameter);
   }
 
   ++pFile->requestsInFlight;
@@ -390,7 +398,6 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
 epilogue:
   return result;
 }
-
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
@@ -428,7 +435,6 @@ epilogue:
   return result;
 }
 
-
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
 udResult udFile_Close(udFile **ppFile)
@@ -448,7 +454,6 @@ udResult udFile_Close(udFile **ppFile)
   }
   return udR_Success; // Already closed, no error condition
 }
-
 
 // ****************************************************************************
 // Author: Samuel Surtees, July 2018
@@ -502,7 +507,6 @@ epilogue:
   return result;
 }
 
-
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
 udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix)
@@ -515,7 +519,6 @@ udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *p
   ++s_handlersCount;
   return udR_Success;
 }
-
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
@@ -535,4 +538,3 @@ udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler)
 
   return udR_NotFound;
 }
-

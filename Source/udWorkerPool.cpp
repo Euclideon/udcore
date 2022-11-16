@@ -3,10 +3,10 @@
 #include "udSafeDeque.h"
 
 #include "udChunkedArray.h"
-#include "udPlatformUtil.h"
-#include "udThread.h"
 #include "udMath.h"
+#include "udPlatformUtil.h"
 #include "udStringUtil.h"
+#include "udThread.h"
 #include <atomic>
 
 struct udWorkerPoolThread
@@ -43,7 +43,7 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
 {
   UDRELASSERT(pPoolPtr != nullptr, "Bad Pool Ptr!");
 
-  udWorkerPoolThread *pThreadData = (udWorkerPoolThread*)pPoolPtr;
+  udWorkerPoolThread *pThreadData = (udWorkerPoolThread *)pPoolPtr;
   udWorkerPool *pPool = pThreadData->pPool;
 
   udWorkerPoolTask currentTask;

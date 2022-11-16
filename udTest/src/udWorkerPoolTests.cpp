@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 
-#include "udWorkerPool.h"
 #include "udPlatformUtil.h"
 #include "udThread.h"
+#include "udWorkerPool.h"
 
 struct WorkerTestData
 {
@@ -12,7 +12,7 @@ struct WorkerTestData
 
 void UpdateDataPlusOne(void *pDataPtr)
 {
-  WorkerTestData *pData = (WorkerTestData*)pDataPtr;
+  WorkerTestData *pData = (WorkerTestData *)pDataPtr;
 
   *pData->pInt = (*pData->pInt) + 1;
 
@@ -21,7 +21,7 @@ void UpdateDataPlusOne(void *pDataPtr)
 
 void UpdateDataMultiNeg25(void *pDataPtr)
 {
-  WorkerTestData *pData = (WorkerTestData*)pDataPtr;
+  WorkerTestData *pData = (WorkerTestData *)pDataPtr;
 
   *pData->pInt = (*pData->pInt) * -25;
 
@@ -66,9 +66,9 @@ TEST(udWorkerPoolTests, Validate)
   EXPECT_EQ(1250, value);
 
   // Queue other combinations
-  EXPECT_EQ(udR_Success, udWorkerPool_AddTask(pPool, nullptr, &data, false)); // Doesn't do anything
+  EXPECT_EQ(udR_Success, udWorkerPool_AddTask(pPool, nullptr, &data, false));                       // Doesn't do anything
   EXPECT_EQ(udR_Success, udWorkerPool_AddTask(pPool, nullptr, &data, false, UpdateDataMultiNeg25)); // Multiply by 25 but don't do anything on a thread
-  EXPECT_EQ(udR_Success, udWorkerPool_AddTask(pPool, UpdateDataPlusOne, &data, false)); // Only +1
+  EXPECT_EQ(udR_Success, udWorkerPool_AddTask(pPool, UpdateDataPlusOne, &data, false));             // Only +1
 
   // Should be hit once
   udWaitSemaphore(data.pSema);
@@ -90,7 +90,7 @@ TEST(udWorkerPoolTests, Validate)
 
   for (int i = 0; i < TotalQueue; ++i)
   {
-    WorkerTestData *pCopiedData = (WorkerTestData*)udMemDup(&data, sizeof(data), i, udAF_Zero);
+    WorkerTestData *pCopiedData = (WorkerTestData *)udMemDup(&data, sizeof(data), i, udAF_Zero);
     EXPECT_EQ(udR_Success, udWorkerPool_AddTask(pPool, UpdateDataPlusOne, pCopiedData, true, UpdateDataPlusOne));
   }
 

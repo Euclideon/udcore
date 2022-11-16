@@ -1,0 +1,33 @@
+UseTab: Never
+IndentWidth: 2
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Right
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+IndentCaseLabels: true
+AttributeMacros: [UD_PRINTF_FORMAT_FUNC(1)]
+ColumnLimit: 0
+IndentPPDirectives: AfterHash
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AlignConsecutiveMacros: true
+Cpp11BracedListStyle: false

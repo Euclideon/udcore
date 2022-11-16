@@ -1,27 +1,27 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "udPlatformUtil.h"
-#include "udStringUtil.h"
 #include "udFile.h"
-#include "udMath.h"
 #include "udJSON.h"
+#include "udMath.h"
+#include "udStringUtil.h"
 
+#include <chrono>
 #include <sys/stat.h>
 #include <time.h>
-#include <chrono>
 
 #if UDPLATFORM_WINDOWS
-# include <io.h>
-# include <mmsystem.h>
+#  include <io.h>
+#  include <mmsystem.h>
 #else
-# include <sys/types.h>
-# include <pwd.h>
-# include "dirent.h"
-# include <time.h>
-# include <sys/time.h>
-# include <errno.h>
+#  include "dirent.h"
+#  include <errno.h>
+#  include <pwd.h>
+#  include <sys/time.h>
+#  include <sys/types.h>
+#  include <time.h>
 static const uint64_t nsec_per_sec = 1000000000; // 1 billion nanoseconds in one second
 static const uint64_t nsec_per_msec = 1000000;   // 1 million nanoseconds in one millisecond
-//static const uint64_t usec_per_msec = 1000;      // 1 thousand microseconds in one millisecond
+                                                 //static const uint64_t usec_per_msec = 1000;      // 1 thousand microseconds in one millisecond
 #endif
 
 static char s_udStrEmptyString[] = "";
@@ -35,7 +35,7 @@ void udUpdateCamera(double camera[16], double yawRadians, double pitchRadians, d
   rotation.axis.t = udDouble4::identity();
 
   if (yawRadians != 0.0)
-    rotation = udDouble4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
+    rotation = udDouble4x4::rotationZ(yawRadians) * rotation; // Yaw on global axis
   if (pitchRadians != 0.0)
     rotation = rotation * udDouble4x4::rotationX(pitchRadians); // Pitch on local axis
   udDouble3 trans = udDouble3::zero();
@@ -103,7 +103,6 @@ uint64_t udPerfCounterStart()
 #endif
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, June 2014
 float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end)
@@ -141,23 +140,23 @@ float udPerfCounterSeconds(uint64_t startValue, uint64_t end)
 // Author: Dave Pevreal, April 2018
 int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr)
 {
-  // Calculate the build year/month compile-time constants
-  #define BUILDDATE __DATE__
-  #define BUILDDATEYEAR (BUILDDATE[7]*1000 + BUILDDATE[8]*100 + BUILDDATE[9]*10 + BUILDDATE[10] - 1111*'0')
-  #define BUILDDATEMONTH  (((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'n')) ?  1 : ( /* Jan */ \
-                           ((BUILDDATE[0] == 'F') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'b')) ?  2 : ( /* Feb */ \
-                           ((BUILDDATE[0] == 'M') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'r')) ?  3 : ( /* Mar */ \
-                           ((BUILDDATE[0] == 'A') && (BUILDDATE[1] == 'p') && (BUILDDATE[2] == 'r')) ?  4 : ( /* Apr */ \
-                           ((BUILDDATE[0] == 'M') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'y')) ?  5 : ( /* May */ \
-                           ((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'n')) ?  6 : ( /* Jun */ \
-                           ((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'l')) ?  7 : ( /* Jul */ \
-                           ((BUILDDATE[0] == 'A') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'g')) ?  8 : ( /* Aug */ \
-                           ((BUILDDATE[0] == 'S') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'p')) ?  9 : ( /* Sep */ \
-                           ((BUILDDATE[0] == 'O') && (BUILDDATE[1] == 'c') && (BUILDDATE[2] == 't')) ? 10 : ( /* Oct */ \
-                           ((BUILDDATE[0] == 'N') && (BUILDDATE[1] == 'o') && (BUILDDATE[2] == 'v')) ? 11 : ( /* Nov */ \
-                           ((BUILDDATE[0] == 'D') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'c')) ? 12 : ( /* Dec */ \
-                            -1 )))))))))))))
-  #define BUILDDATEDAY ((BUILDDATE[4] == ' ' ? '0' : BUILDDATE[4]) * 10 + BUILDDATE[5] - 11*'0')
+// Calculate the build year/month compile-time constants
+#define BUILDDATE      __DATE__
+#define BUILDDATEYEAR  (BUILDDATE[7] * 1000 + BUILDDATE[8] * 100 + BUILDDATE[9] * 10 + BUILDDATE[10] - 1111 * '0')
+#define BUILDDATEMONTH (((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'n')) ? 1 : (                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              /* Jan */ \
+                                                                                                         ((BUILDDATE[0] == 'F') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'b')) ? 2 : (                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             /* Feb */ \
+                                                                                                                                                                                          ((BUILDDATE[0] == 'M') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'r')) ? 3 : (                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* Mar */ \
+                                                                                                                                                                                                                                                                           ((BUILDDATE[0] == 'A') && (BUILDDATE[1] == 'p') && (BUILDDATE[2] == 'r')) ? 4 : (                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           /* Apr */ \
+                                                                                                                                                                                                                                                                                                                                                            ((BUILDDATE[0] == 'M') && (BUILDDATE[1] == 'a') && (BUILDDATE[2] == 'y')) ? 5 : (                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /* May */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                             ((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'n')) ? 6 : (                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         /* Jun */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ((BUILDDATE[0] == 'J') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'l')) ? 7 : (                                                                                                                                                                                                                                                                                                                                                                                                                        /* Jul */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               ((BUILDDATE[0] == 'A') && (BUILDDATE[1] == 'u') && (BUILDDATE[2] == 'g')) ? 8 : (                                                                                                                                                                                                                                                                                                                                       /* Aug */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ((BUILDDATE[0] == 'S') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'p')) ? 9 : (                                                                                                                                                                                                                                                      /* Sep */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ((BUILDDATE[0] == 'O') && (BUILDDATE[1] == 'c') && (BUILDDATE[2] == 't')) ? 10 : (                                                                                                                                                                    /* Oct */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ((BUILDDATE[0] == 'N') && (BUILDDATE[1] == 'o') && (BUILDDATE[2] == 'v')) ? 11 : (                                                                                  /* Nov */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ((BUILDDATE[0] == 'D') && (BUILDDATE[1] == 'e') && (BUILDDATE[2] == 'c')) ? 12 : (/* Dec */ \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       -1)))))))))))))
+#define BUILDDATEDAY ((BUILDDATE[4] == ' ' ? '0' : BUILDDATE[4]) * 10 + BUILDDATE[5] - 11 * '0')
 
   time_t nowMoment = time(0), testMoment;
   struct tm nowTm = *localtime(&nowMoment);
@@ -166,10 +165,10 @@ int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr)
   buildTm.tm_year = BUILDDATEYEAR - 1900;
   buildTm.tm_mon = BUILDDATEMONTH - 1;
   buildTm.tm_mday = BUILDDATEDAY; // Only field that starts at 1 not zero.
-  #undef BUILDDATE
-  #undef BUILDDATEYEAR
-  #undef BUILDDATEMONTH
-  #undef BUILDDATEDAY
+#undef BUILDDATE
+#undef BUILDDATEYEAR
+#undef BUILDDATEMONTH
+#undef BUILDDATEDAY
 
   int daysSince = -1;
   do
@@ -213,7 +212,7 @@ double udGetEpochSecsUTCf()
 udOSString::udOSString(const char *pString)
 {
   size_t len = udStrlen(pString) + 1;
-  pUTF8 = const_cast<char*>(pString);
+  pUTF8 = const_cast<char *>(pString);
   pWide = udAllocType(wchar_t, len, udAF_None);
   pAllocation = pWide;
 
@@ -228,7 +227,7 @@ udOSString::udOSString(const wchar_t *pString)
   size_t len = wcslen(pString) + 1;
   size_t allocSize = len * 4;
   pUTF8 = udAllocType(char, allocSize, udAF_None);
-  pWide = const_cast<wchar_t*>(pString);
+  pWide = const_cast<wchar_t *>(pString);
   pAllocation = pUTF8;
 
   if (WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, pString, -1, pUTF8, (int)allocSize, nullptr, nullptr) == 0)
@@ -266,7 +265,7 @@ udResult udBase64Decode(const char *pString, size_t length, uint8_t *pOutput, si
   UD_ERROR_NULL(pString, udR_InvalidParameter);
   UD_ERROR_NULL(pOutput, udR_InvalidParameter);
 
-  for (size_t inputIndex = 0; inputIndex < length; )
+  for (size_t inputIndex = 0; inputIndex < length;)
   {
     char *c = strchr(b64, pString[inputIndex++]);
     if (c)
@@ -338,7 +337,7 @@ udResult udBase64Encode(const void *pBinary, size_t binaryLength, char *pString,
 
   for (size_t inputIndex = 0; inputIndex < binaryLength; ++inputIndex)
   {
-    accum = (accum << 8) | ((uint8_t*)pBinary)[inputIndex];
+    accum = (accum << 8) | ((uint8_t *)pBinary)[inputIndex];
     accumBits += 8;
     while (accumBits >= 6)
     {
@@ -353,15 +352,15 @@ udResult udBase64Encode(const void *pBinary, size_t binaryLength, char *pString,
   {
     UD_ERROR_IF(outputIndex >= strLength + 3, udR_BufferTooSmall);
     pString[outputIndex] = b64[(accum & 0x3) << 4];
-    pString[outputIndex+1] = '='; //Pad chars
-    pString[outputIndex+2] = '=';
+    pString[outputIndex + 1] = '='; //Pad chars
+    pString[outputIndex + 2] = '=';
     outputIndex += 3;
   }
   else if (accumBits == 4)
   {
     UD_ERROR_IF(outputIndex + 2 >= strLength, udR_BufferTooSmall);
     pString[outputIndex] = b64[(accum & 0xF) << 2];
-    pString[outputIndex+1] = '='; //Pad chars
+    pString[outputIndex + 1] = '='; //Pad chars
     outputIndex += 2;
   }
   pString[outputIndex++] = 0; // Null terminate if room in the string
@@ -550,17 +549,17 @@ bool udFilename::SetFolder(const char *pFolder)
 
   // If the path doesn't have a trailing seperator, look for one so we can
   // append one already being used. That is c:\path\ or c:/path/
-  if (i > 2 && pFolder[i-2] != '/' && pFolder[i-2] != '\\' && pFolder[i-2] != ':')
+  if (i > 2 && pFolder[i - 2] != '/' && pFolder[i - 2] != '\\' && pFolder[i - 2] != ':')
   {
     for (--i; i > 0; --i)
     {
-      if (pFolder[i-1] == '\\' || pFolder[i-1] == ':')
+      if (pFolder[i - 1] == '\\' || pFolder[i - 1] == ':')
       {
         separator = '\\';
         break;
       }
 
-      if (pFolder[i-1] == '/')
+      if (pFolder[i - 1] == '/')
         break;
     }
     // TODO: Get correct separator from system when one isn't found
@@ -709,7 +708,6 @@ void udFilename::CalculateIndices()
     filenameIndex = 0;
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 void udFilename::Debug()
@@ -722,7 +720,6 @@ void udFilename::Debug()
   udDebugPrintf("folder<%s> name<%s> ext<%s> filename<%s> -> %s\n", folder, name, GetExt(), GetFilenameWithExt(), pPath);
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 udResult udURL::SetURL(const char *pURL)
@@ -731,8 +728,22 @@ udResult udURL::SetURL(const char *pURL)
   pScheme = s_udStrEmptyString;
   pDomain = s_udStrEmptyString;
   pPath = s_udStrEmptyString;
-  static const char specialChars[]   = { ' ',  '#',   '%',   '+',   '?',   '\0', }; // Made for extending later, not wanting to encode any more than we need to
-  static const char *pSpecialSubs[] = { "%20", "%23", "%25", "%2B", "%3F", "", };
+  static const char specialChars[] = {
+    ' ',
+    '#',
+    '%',
+    '+',
+    '?',
+    '\0',
+  }; // Made for extending later, not wanting to encode any more than we need to
+  static const char *pSpecialSubs[] = {
+    "%20",
+    "%23",
+    "%25",
+    "%2B",
+    "%3F",
+    "",
+  };
 
   if (pURL)
   {
@@ -759,12 +770,13 @@ udResult udURL::SetURL(const char *pURL)
     // Isolate the domain - this is slightly painful because ipv6 has colons
     pDomain = p;
     udStrchr(p, p[0] == '[' ? "/]" : "/:", &i); // Find the character that breaks the domain, but don't search past a slash
-    if (p[0] == '[' && p[i] == ']') ++i; // Skip over closing bracket of ipv6 address
+    if (p[0] == '[' && p[i] == ']')
+      ++i; // Skip over closing bracket of ipv6 address
     if (p[i] == ':')
     {
       // A colon is present, so decode the port number
       int portChars;
-      port = udStrAtoi(&p[i+1], &portChars);
+      port = udStrAtoi(&p[i + 1], &portChars);
       p[i] = 0; // null terminate the domain
       i += portChars + 1;
     }
@@ -776,7 +788,7 @@ udResult udURL::SetURL(const char *pURL)
       if (p[i] != 0)
       {
         memmove(p + i + 1, p + i, udStrlen(p + i) + 1); // Move the string one to the right to retain the separator (note: 1 byte was added to allocation when udStrdup called)
-        p[i++] = 0; // null terminate the domain
+        p[i++] = 0;                                     // null terminate the domain
       }
     }
     p += i;
@@ -785,7 +797,7 @@ udResult udURL::SetURL(const char *pURL)
     pPath = p;
 
     // Now, find any "special" URL characters in the path and encode them
-    while ((p = (char*)udStrchr(p, specialChars, nullptr, &charListIndex)) != nullptr)
+    while ((p = (char *)udStrchr(p, specialChars, nullptr, &charListIndex)) != nullptr)
     {
       size_t len = udStrlen(pSpecialSubs[charListIndex]);
       memmove(p + len - 1, p, udStrlen(p) + 1);
@@ -797,28 +809,27 @@ udResult udURL::SetURL(const char *pURL)
   return udR_Success; // TODO: Perhaps return an error if the url isn't formed properly
 }
 
-
 #pragma pack(push)
 #pragma pack(2)
 struct udBMPHeader
 {
-    uint16_t  bfType;            // must be 'BM'
-    uint32_t  bfSize;            // size of the whole .bmp file
-    uint16_t  bfReserved1;       // must be 0
-    uint16_t  bfReserved2;       // must be 0
-    uint32_t  bfOffBits;
+  uint16_t bfType;      // must be 'BM'
+  uint32_t bfSize;      // size of the whole .bmp file
+  uint16_t bfReserved1; // must be 0
+  uint16_t bfReserved2; // must be 0
+  uint32_t bfOffBits;
 
-    uint32_t  biSize;            // size of the structure
-    int32_t   biWidth;           // image width
-    int32_t   biHeight;          // image height
-    uint16_t  biPlanes;          // bitplanes
-    uint16_t  biBitCount;        // resolution
-    uint32_t  biCompression;     // compression
-    uint32_t  biSizeImage;       // size of the image
-    int32_t   biXPelsPerMeter;   // pixels per meter X
-    int32_t   biYPelsPerMeter;   // pixels per meter Y
-    uint32_t  biClrUsed;         // colors used
-    uint32_t  biClrImportant;    // important colors
+  uint32_t biSize;         // size of the structure
+  int32_t biWidth;         // image width
+  int32_t biHeight;        // image height
+  uint16_t biPlanes;       // bitplanes
+  uint16_t biBitCount;     // resolution
+  uint32_t biCompression;  // compression
+  uint32_t biSizeImage;    // size of the image
+  int32_t biXPelsPerMeter; // pixels per meter X
+  int32_t biYPelsPerMeter; // pixels per meter Y
+  uint32_t biClrUsed;      // colors used
+  uint32_t biClrImportant; // important colors
 };
 #pragma pack(pop)
 
@@ -838,7 +849,7 @@ udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColo
   if (!pLine)
     goto error;
 
-  header.bfType = 0x4d42;       // 0x4d42 = 'BM'
+  header.bfType = 0x4d42; // 0x4d42 = 'BM'
   header.bfReserved1 = 0;
   header.bfReserved2 = 0;
   header.bfSize = sizeof(header) + paddedLineSize * height;
@@ -863,10 +874,10 @@ udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColo
   if (result != udR_Success)
     goto error;
 
-  for (int y = height - 1; y >= 0 ; --y)
+  for (int y = height - 1; y >= 0; --y)
   {
     for (int x = 0; x < width; ++x)
-      memcpy(&pLine[x*3], &((uint8_t*)pColorData)[y * pitchInBytes + x * 4], 3);
+      memcpy(&pLine[x * 3], &((uint8_t *)pColorData)[y * pitchInBytes + x * 4], 3);
 
     result = udFile_Write(pFile, pLine, paddedLineSize);
     if (result != udR_Success)
@@ -906,7 +917,7 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
   pLine = udAllocType(uint8_t, paddedLineSize, udAF_None);
   UD_ERROR_NULL(pLine, udR_MemoryAllocationFailure);
 
-  for (int y = *pHeight - 1; y >= 0 ; --y)
+  for (int y = *pHeight - 1; y >= 0; --y)
   {
     UD_ERROR_CHECK(udFile_Read(pFile, pLine, paddedLineSize));
     uint8_t *p = pColors + y * *pWidth * 4;
@@ -919,7 +930,7 @@ udResult udLoadBMP(const char *pFilename, int *pWidth, int *pHeight, uint32_t **
     }
   }
 
-  *ppColorData = (uint32_t*)pColors;
+  *ppColorData = (uint32_t *)pColors;
   pColors = nullptr;
   result = udR_Success;
 
@@ -959,38 +970,38 @@ struct udFindDirData : public udFindDir
 #elif UDPLATFORM_NACL
   //Do nothing
 #else
-#error "Unsupported platform"
+#  error "Unsupported platform"
 #endif
 };
 
 #if UD_32BIT
-# define UD_STAT_STRUCT stat
-# define UD_STAT_FUNC stat
-# define UD_STAT_MODTIME (int64_t)st.st_mtime
-# define UD_STAT_ISDIR (st.st_mode & S_IFDIR)
+#  define UD_STAT_STRUCT  stat
+#  define UD_STAT_FUNC    stat
+#  define UD_STAT_MODTIME (int64_t) st.st_mtime
+#  define UD_STAT_ISDIR   (st.st_mode & S_IFDIR)
 #elif UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS
 // Apple made these 64bit and deprecated the 64bit variants
-# define UD_STAT_STRUCT stat
-# define UD_STAT_FUNC stat
-# define UD_STAT_MODTIME (int64_t)st.st_mtime
-# define UD_STAT_ISDIR S_ISDIR(st.st_mode)
+#  define UD_STAT_STRUCT  stat
+#  define UD_STAT_FUNC    stat
+#  define UD_STAT_MODTIME (int64_t) st.st_mtime
+#  define UD_STAT_ISDIR   S_ISDIR(st.st_mode)
 #elif UDPLATFORM_WINDOWS
-# define UD_STAT_STRUCT _stat64
-# define UD_STAT_FUNC _wstat64
-# define UD_STAT_MODTIME (int64_t)st.st_mtime
-# define UD_STAT_ISDIR (st.st_mode & _S_IFDIR)
+#  define UD_STAT_STRUCT  _stat64
+#  define UD_STAT_FUNC    _wstat64
+#  define UD_STAT_MODTIME (int64_t) st.st_mtime
+#  define UD_STAT_ISDIR   (st.st_mode & _S_IFDIR)
 #elif UDPLATFORM_LINUX
-# define UD_STAT_STRUCT stat64
-# define UD_STAT_FUNC stat64
-# define UD_STAT_MODTIME (int64_t)st.st_mtim.tv_sec
-# define UD_STAT_ISDIR (st.st_mode & S_IFDIR)
+#  define UD_STAT_STRUCT  stat64
+#  define UD_STAT_FUNC    stat64
+#  define UD_STAT_MODTIME (int64_t) st.st_mtim.tv_sec
+#  define UD_STAT_ISDIR   (st.st_mode & S_IFDIR)
 #elif UDPLATFORM_ANDROID
-# define UD_STAT_STRUCT stat64
-# define UD_STAT_FUNC stat64
-# define UD_STAT_MODTIME (int64_t)st.st_mtime
-# define UD_STAT_ISDIR (st.st_mode & S_IFDIR)
+#  define UD_STAT_STRUCT  stat64
+#  define UD_STAT_FUNC    stat64
+#  define UD_STAT_MODTIME (int64_t) st.st_mtime
+#  define UD_STAT_ISDIR   (st.st_mode & S_IFDIR)
 #else
-# error "Unsupported Platform"
+#  error "Unsupported Platform"
 #endif
 
 // ****************************************************************************
@@ -1109,7 +1120,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
   // TODO: See if this implementation is required
   UD_ERROR_SET(udR_NotFound);
 #else
-  #error "Unsupported Platform"
+#  error "Unsupported Platform"
 #endif
 
   result = udR_Success;
@@ -1118,7 +1129,7 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
 
 epilogue:
   if (pFindData)
-    udCloseDir((udFindDir**)&pFindData);
+    udCloseDir((udFindDir **)&pFindData);
 
   return result;
 }
@@ -1142,9 +1153,9 @@ udResult udReadDir(udFindDir *pFindDir)
     return udR_NotFound;
   pFindData->SetMembers();
 #elif UDPLATFORM_NACL
-  // Do nothing
+    // Do nothing
 #else
-  #error "Unsupported Platform"
+#  error "Unsupported Platform"
 #endif
   return udR_Success;
 }
@@ -1165,9 +1176,9 @@ udResult udCloseDir(udFindDir **ppFindDir)
   if (pFindData->pDir)
     closedir(pFindData->pDir);
 #elif UDPLATFORM_NACL
-  // Do nothing
+    // Do nothing
 #else
-  #error "Unsupported Platform"
+#  error "Unsupported Platform"
 #endif
 
   udFree(*ppFindDir);
@@ -1186,7 +1197,7 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
   char truncChar = 0; // Character at truncation point (currPathLen)
 
   UD_ERROR_NULL(pDirPath, udR_InvalidParameter);
-  if (udFile_TranslatePath(const_cast<const char**>(&pPath), pDirPath) != udR_Success)
+  if (udFile_TranslatePath(const_cast<const char **>(&pPath), pDirPath) != udR_Success)
   {
     pPath = udStrdup(pDirPath);
     UD_ERROR_NULL(pPath, udR_MemoryAllocationFailure);
@@ -1201,7 +1212,7 @@ udResult udCreateDir(const char *pDirPath, int *pDirsCreatedCount)
   UD_ERROR_IF(fullPathLen == 0, udR_Success);
 
   // Attempt the full path first, if it completes this is the most efficient case
-  for (currPathLen = fullPathLen; ;)
+  for (currPathLen = fullPathLen;;)
   {
 #if UDPLATFORM_WINDOWS
     bool actuallyCreated = CreateDirectoryW(udOSString(pPath), nullptr) != 0;
@@ -1299,7 +1310,8 @@ epilogue:
 // Author: Dave Pevreal, May 2018
 udResult udParseWKT(udJSON *pValue, const char *pString, int *pCharCount)
 {
-  udResult result = udR_Success;;
+  udResult result = udR_Success;
+  ;
   size_t idLen;
   udJSON temp;
   int tempCharCount = 0;
@@ -1355,7 +1367,6 @@ udResult udParseWKT(udJSON *pValue, const char *pString, int *pCharCount)
 epilogue:
   return result;
 }
-
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2018

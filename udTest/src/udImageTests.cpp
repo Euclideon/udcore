@@ -1,6 +1,6 @@
-#include "gtest/gtest.h"
-#include "udImage.h"
 #include "udFile.h"
+#include "udImage.h"
+#include "gtest/gtest.h"
 
 TEST(udImageTests, SaveLoad)
 {

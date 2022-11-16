@@ -29,9 +29,12 @@ size_t udStrlen(const char *pStr);
 // *********************************************************************
 // Helper functions for fixed size strings
 // *********************************************************************
-template <size_t N> inline size_t udStrcpy(char(&dest)[N], const char *pSrc) { return udStrcpy(dest, N, pSrc); }
-template <size_t N> inline size_t udStrncpy(char(&dest)[N], const char *pSrc, size_t maxChars) { return udStrncpy(dest, N, pSrc, maxChars); }
-template <size_t N> inline size_t udStrcat(char(&dest)[N], const char *pSrc) { return udStrcat(dest, N, pSrc); }
+template <size_t N>
+inline size_t udStrcpy(char (&dest)[N], const char *pSrc) { return udStrcpy(dest, N, pSrc); }
+template <size_t N>
+inline size_t udStrncpy(char (&dest)[N], const char *pSrc, size_t maxChars) { return udStrncpy(dest, N, pSrc, maxChars); }
+template <size_t N>
+inline size_t udStrcat(char (&dest)[N], const char *pSrc) { return udStrcat(dest, N, pSrc); }
 
 // *********************************************************************
 // String maniplulation functions, NULL-safe
@@ -39,15 +42,15 @@ template <size_t N> inline size_t udStrcat(char(&dest)[N], const char *pSrc) { r
 // udStrdup behaves much like strdup, optionally allocating additional characters and replicating NULL
 #ifdef __MEMORY_DEBUG__
 char *_udStrdup(const char *pStr, size_t additionalChars, const char *pFile, int line);
-#define UD_EXPAND(x) x
-#define UDSTRDUP_1_ARGS(pStr)                  _udStrdup(pStr, 0, __FILE__, __LINE__)
-#define UDSTRDUP_2_ARGS(pStr, additionalChars) _udStrdup(pStr, additionalChars, __FILE__, __LINE__)
+#  define UD_EXPAND(x)                           x
+#  define UDSTRDUP_1_ARGS(pStr)                  _udStrdup(pStr, 0, __FILE__, __LINE__)
+#  define UDSTRDUP_2_ARGS(pStr, additionalChars) _udStrdup(pStr, additionalChars, __FILE__, __LINE__)
 
-#define GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
-#define UDSTRDUP_MACRO_CHOOSER(...) \
+#  define GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
+#  define UDSTRDUP_MACRO_CHOOSER(...) \
     UD_EXPAND(GET_3RD_ARG(__VA_ARGS__, UDSTRDUP_2_ARGS, UDSTRDUP_1_ARGS, ))
 
-#define udStrdup(...) UD_EXPAND(UDSTRDUP_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__))
+#  define udStrdup(...) UD_EXPAND(UDSTRDUP_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__))
 #else
 char *udStrdup(const char *pStr, size_t additionalChars = 0);
 #endif
@@ -82,10 +85,14 @@ size_t udStrItoa(char *pStr, size_t strLen, int32_t value, int radix = 10, size_
 size_t udStrItoa64(char *pStr, size_t strLen, int64_t value, int radix = 10, size_t minChars = 1);
 size_t udStrFtoa(char *pStr, size_t strLen, double value, int precision, size_t minChars = 1);
 // udStr*toa helpers for fixed size strings
-template <size_t N> inline size_t udStrUtoa(char(&str)[N], uint64_t value, int radix = 10, size_t minChars = 1) { return udStrUtoa(str, N, value, radix, minChars); }
-template <size_t N> inline size_t udStrItoa(char(&str)[N], int32_t value, int radix = 10, size_t minChars = 1) { return udStrItoa(str, N, value, radix, minChars); }
-template <size_t N> inline size_t udStrItoa64(char(&str)[N], int64_t value, int radix = 10, size_t minChars = 1) { return udStrItoa64(str, N, value, radix, minChars); }
-template <size_t N> inline size_t udStrFtoa(char(&str)[N], double value, int precision, size_t minChars = 1) { return udStrFtoa(str, N, value, precision, minChars); }
+template <size_t N>
+inline size_t udStrUtoa(char (&str)[N], uint64_t value, int radix = 10, size_t minChars = 1) { return udStrUtoa(str, N, value, radix, minChars); }
+template <size_t N>
+inline size_t udStrItoa(char (&str)[N], int32_t value, int radix = 10, size_t minChars = 1) { return udStrItoa(str, N, value, radix, minChars); }
+template <size_t N>
+inline size_t udStrItoa64(char (&str)[N], int64_t value, int radix = 10, size_t minChars = 1) { return udStrItoa64(str, N, value, radix, minChars); }
+template <size_t N>
+inline size_t udStrFtoa(char (&str)[N], double value, int precision, size_t minChars = 1) { return udStrFtoa(str, N, value, precision, minChars); }
 
 // Split a line into an array of tokens
 int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], int maxTokens);
@@ -131,7 +138,8 @@ int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const 
 // *********************************************************************
 
 // Create a temporary small string using one of a number of cycling static buffers
-UD_PRINTF_FORMAT_FUNC(1) const char *udTempStr(const char *pFormat, ...);
+UD_PRINTF_FORMAT_FUNC(1)
+const char *udTempStr(const char *pFormat, ...);
 
 // Give back pretty version (ie with commas) of an int using one of a number of cycling static buffers
 const char *udTempStr_CommaInt(int64_t n);
@@ -147,14 +155,25 @@ inline const char *udSecondsToString(int seconds, bool trimHours = true) { retur
 // Return a human readable measurement string such as 1cm for 0.01, 2mm for 0.002 etc using one of a number of cycling static buffers
 const char *udTempStr_HumanMeasurement(double measurement);
 
-
 // Write a formatted string to the buffer
-UD_PRINTF_FORMAT_FUNC(3) int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
+UD_PRINTF_FORMAT_FUNC(3)
+int udSprintf(char *pDest, size_t destlength, const char *pFormat, ...);
 int udSprintfVA(char *pDest, size_t destlength, const char *pFormat, va_list args);
 // Create an allocated string to fit the output, *ppDest will be freed if non-null, and may be an argument to the string
-UD_PRINTF_FORMAT_FUNC(2) udResult udSprintf(const char **ppDest, const char *pFormat, ...);
+UD_PRINTF_FORMAT_FUNC(2)
+udResult udSprintf(const char **ppDest, const char *pFormat, ...);
 // Helper functions for fixed size arrays
-template <size_t N> UD_PRINTF_FORMAT_FUNC(2) inline int udSprintf(char(&dest)[N], const char *pFormat, ...) { va_list args; va_start(args, pFormat); int length = udSprintfVA(dest, N, pFormat, args); va_end(args); return length; }
-template <size_t N> inline int udSprintfVA(char(&dest)[N], const char *pFormat, va_list args) { return udSprintfVA(dest, N, pFormat, args); }
+template <size_t N>
+UD_PRINTF_FORMAT_FUNC(2)
+inline int udSprintf(char (&dest)[N], const char *pFormat, ...)
+{
+  va_list args;
+  va_start(args, pFormat);
+  int length = udSprintfVA(dest, N, pFormat, args);
+  va_end(args);
+  return length;
+}
+template <size_t N>
+inline int udSprintfVA(char (&dest)[N], const char *pFormat, va_list args) { return udSprintfVA(dest, N, pFormat, args); }
 
 #endif // UDSTRINGUTIL_H

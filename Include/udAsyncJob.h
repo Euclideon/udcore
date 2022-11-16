@@ -9,9 +9,9 @@
 // with the caller able to either poll or wait for completion at a later time
 //
 
+#include "udPlatformUtil.h"
 #include "udResult.h"
 #include "udThread.h"
-#include "udPlatformUtil.h"
 
 // A simple interface to allow function calls to be easily made optionally background calls with one additional parameter
 
@@ -20,8 +20,8 @@ struct udAsyncJob;
 // A helper for pausing ASync jobs, ensure all fields are zero to be initialised into non-paused state
 struct udAsyncPause
 {
-  udSemaphore *volatile pSema;         // Created locked by initiator of pause, released and destroyed by handler of pause when incremented to release pause
-  udResult errorCausingPause; // If an error condition (eg disk full) initiated a pause, the error code is here
+  udSemaphore *volatile pSema; // Created locked by initiator of pause, released and destroyed by handler of pause when incremented to release pause
+  udResult errorCausingPause;  // If an error condition (eg disk full) initiated a pause, the error code is here
   enum Context
   {
     EC_None,
@@ -69,14 +69,16 @@ const char *udAsyncPause_GetErrorContextString(udAsyncPause::Context errorContex
 // Some helper macros for boiler-plate code generation, each macro corresponds to number of parameters before pAsyncJob
 // For these macros to work, udAsyncJob *pAsyncJob must be the LAST PARAMETER of the function
 
-#define UDASYNC_CALL(funcCall) if (pAsyncJob) {                                       \
-  udThreadStart udajStartFunc = [=](void *) -> unsigned int                           \
-  {                                                                                   \
-    udAsyncJob_SetResult(pAsyncJob, funcCall);                                        \
-    return 0;                                                                         \
-  };                                                                                  \
-  udAsyncJob_SetPending(pAsyncJob);                                                   \
-  return udThread_Create(nullptr, udajStartFunc, nullptr, udTCF_None, __FUNC_NAME__); \
-}
+#define UDASYNC_CALL(funcCall)                                                          \
+  if (pAsyncJob)                                                                        \
+  {                                                                                     \
+    udThreadStart udajStartFunc = [=](void *) -> unsigned int                           \
+    {                                                                                   \
+      udAsyncJob_SetResult(pAsyncJob, funcCall);                                        \
+      return 0;                                                                         \
+    };                                                                                  \
+    udAsyncJob_SetPending(pAsyncJob);                                                   \
+    return udThread_Create(nullptr, udajStartFunc, nullptr, udTCF_None, __FUNC_NAME__); \
+  }
 
 #endif // UDASYNCJOB_H

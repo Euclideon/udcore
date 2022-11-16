@@ -1,15 +1,15 @@
-#include "gtest/gtest.h"
+#include "udCrypto.h"
 #include "udFile.h"
 #include "udFileHandler.h"
-#include "udCrypto.h"
+#include "udMath.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udMath.h"
+#include "gtest/gtest.h"
 
 static const size_t s_QBF_Len = 43; // Not including NUL character
 static const char *s_pQBF_Text = "The quick brown fox jumps over the lazy dog";
-static const char *s_pQBF_Uncomp  = "raw://VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
-static const char *s_pQBF_RawDef  = "raw://compression=RawDeflate,size=43@C8lIVSgszUzOVkgqyi/PU0jLr1DIKs0tKFbIL0stUigBSuckVlUqpOSnAwA=";
+static const char *s_pQBF_Uncomp = "raw://VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
+static const char *s_pQBF_RawDef = "raw://compression=RawDeflate,size=43@C8lIVSgszUzOVkgqyi/PU0jLr1DIKs0tKFbIL0stUigBSuckVlUqpOSnAwA=";
 static const char *s_pQBF_GzipDef = "raw://compression=GzipDeflate,size=43@H4sIAAAAAAAA/wvJSFUoLM1MzlZIKsovz1NIy69QyCrNLShWyC9LLVIoAUrnJFZVKqTkpwMAOaNPQSsAAAA=";
 static const char *s_pQBF_ZlibDef = "raw://compression=ZlibDeflate,size=43@eJwLyUhVKCzNTM5WSCrKL89TSMuvUMgqzS0oVsgvSy1SKAFK5yRWVSqk5KcDAFvcD9o=";
 static const char *s_pQBF_DataBase64 = "data:text/plain;base64,VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==";
@@ -44,7 +44,6 @@ TEST(udFileTests, GeneralFileTests)
   // Additional destructions of non-existent objects
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
   EXPECT_EQ(udR_InvalidParameter, udFile_Close(nullptr));
-
 }
 
 TEST(udFileTests, GeneralDirectoryTests)
@@ -96,7 +95,7 @@ TEST(udFileTests, BasicReadWriteLoadFILE)
 
   // Load
   char *pLoadBuffer = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Load(pFilename, (void**)&pLoadBuffer));
+  EXPECT_EQ(udR_Success, udFile_Load(pFilename, (void **)&pLoadBuffer));
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
@@ -166,20 +165,27 @@ udResult udFileTests_CustomFileHandler_Open(udFile **ppFile, const char *pFilena
   if (result != udR_Success)
     pFile->fileLength = 0;
 
-  pFile->fpRead = [](udFile *, void *pBuffer, size_t , int64_t , size_t *pActualRead, udFilePipelinedRequest *) -> udResult {
+  pFile->fpRead = [](udFile *, void *pBuffer, size_t, int64_t, size_t *pActualRead, udFilePipelinedRequest *) -> udResult
+  {
     memcpy(pBuffer, s_customFileHandler_buffer, udStrlen(s_customFileHandler_buffer) + 1);
     if (pActualRead)
       *pActualRead = udStrlen(s_customFileHandler_buffer) + 1;
     return udR_Success;
   };
-  pFile->fpWrite = [](udFile *, const void *pBuffer, size_t bufferLength, int64_t , size_t *pActualWritten) -> udResult {
+  pFile->fpWrite = [](udFile *, const void *pBuffer, size_t bufferLength, int64_t, size_t *pActualWritten) -> udResult
+  {
     memcpy(s_customFileHandler_buffer, pBuffer, bufferLength);
     if (pActualWritten)
       *pActualWritten = bufferLength;
     return udR_Success;
   };
-  pFile->fpRelease = [](udFile *) { return udR_Success; };
-  pFile->fpClose = [](udFile **ppFile) { udFree(*ppFile); return udR_Success; };
+  pFile->fpRelease = [](udFile *)
+  { return udR_Success; };
+  pFile->fpClose = [](udFile **ppFile)
+  {
+    udFree(*ppFile);
+    return udR_Success;
+  };
 
   *ppFile = pFile;
   pFile = nullptr;
@@ -211,7 +217,7 @@ TEST(udFileTests, CustomFileHandler)
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   char *pLoadBuffer = nullptr;
-  EXPECT_EQ(udR_Success, udFile_Load(pFilename, (void**)&pLoadBuffer));
+  EXPECT_EQ(udR_Success, udFile_Load(pFilename, (void **)&pLoadBuffer));
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
@@ -228,28 +234,28 @@ TEST(udFileTests, TranslatingPaths)
 
   EXPECT_EQ(udR_Success, udFile_TranslatePath(&pNewPath, pPath));
   EXPECT_NE(nullptr, pNewPath);
-#if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   EXPECT_TRUE(udStrBeginsWithi(pNewPath, "C:\\Users\\"));
-#elif UDPLATFORM_OSX
+#  elif UDPLATFORM_OSX
   EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/Users/"));
-#else
+#  else
   // '/home/' for regular users and '/root' for the root user
   EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/home/") || udStrBeginsWith(pNewPath, "/root"));
-#endif
+#  endif
   udFree(pNewPath);
 
   // Test with additional path
   pPath = "~/test.file";
   EXPECT_EQ(udR_Success, udFile_TranslatePath(&pNewPath, pPath));
   EXPECT_NE(nullptr, pNewPath);
-#if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   EXPECT_TRUE(udStrBeginsWithi(pNewPath, "C:\\Users\\"));
-#elif UDPLATFORM_OSX
+#  elif UDPLATFORM_OSX
   EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/Users/"));
-#else
+#  else
   // '/home/' for regular users and '/root' for the root user
   EXPECT_TRUE(udStrBeginsWithi(pNewPath, "/home/") || udStrBeginsWith(pNewPath, "/root"));
-#endif
+#  endif
   EXPECT_NE(nullptr, udStrstr(pNewPath, 0, "/test.file"));
   EXPECT_EQ(nullptr, udStrstr(pNewPath, 0, "//test.file"));
   udFree(pNewPath);
@@ -277,27 +283,27 @@ TEST(udFileTests, RawLoad)
   result = udFile_Load("raw://SGVsbG8gV29ybGQ=", &pMemory, &len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_EQ(11, len);
-  EXPECT_STREQ("Hello World", (char*)pMemory); // Can do strcmp here because udFile_Load always adds a nul
+  EXPECT_STREQ("Hello World", (char *)pMemory); // Can do strcmp here because udFile_Load always adds a nul
   udFree(pMemory);
 
   udFile_Load(s_pQBF_Uncomp, &pMemory, &len);
   EXPECT_EQ(s_QBF_Len, (size_t)len);
-  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
+  EXPECT_STREQ(s_pQBF_Text, (char *)pMemory);
   udFree(pMemory);
 
   udFile_Load(s_pQBF_RawDef, &pMemory, &len);
   EXPECT_EQ(s_QBF_Len, (size_t)len);
-  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
+  EXPECT_STREQ(s_pQBF_Text, (char *)pMemory);
   udFree(pMemory);
 
   udFile_Load(s_pQBF_GzipDef, &pMemory, &len);
   EXPECT_EQ(s_QBF_Len, (size_t)len);
-  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
+  EXPECT_STREQ(s_pQBF_Text, (char *)pMemory);
   udFree(pMemory);
 
   udFile_Load(s_pQBF_ZlibDef, &pMemory, &len);
   EXPECT_EQ(s_QBF_Len, (size_t)len);
-  EXPECT_STREQ(s_pQBF_Text, (char*)pMemory);
+  EXPECT_STREQ(s_pQBF_Text, (char *)pMemory);
   udFree(pMemory);
 }
 
@@ -372,11 +378,11 @@ TEST(udFileTests, RecursiveCreateDirectoryTests)
   EXPECT_EQ(udR_Failure, udRemoveDir("./some"));
   EXPECT_EQ(udR_Success, udRemoveDir("./some/folder.name"));
   EXPECT_EQ(udR_Success, udRemoveDir("./some"));
-  
+
   EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename3, udFOF_Create | udFOF_Write));
   EXPECT_EQ(udR_Success, udFile_Write(pFile, pOutput, udStrlen(pOutput)));
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
-  
+
   EXPECT_EQ(udR_Success, udFileExists(pFilename3));
   EXPECT_EQ(udR_Success, udFileDelete(pFilename3));
   EXPECT_NE(udR_Success, udFileExists(pFilename3));

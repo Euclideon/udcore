@@ -1,9 +1,9 @@
 #include "udDebug.h"
-#include "udStringUtil.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
-#include <stdio.h>
 #include <atomic>
+#include <stdio.h>
 
 void (*gpudDebugPrintfOutputCallback)(const char *pString) = nullptr;
 
@@ -22,7 +22,7 @@ void udDebugPrintf(const char *format, ...)
 
   if (!multiThreads)
   {
-    multiThreads = (lastThread!=-1) && (lastThread != udTrace::GetThreadId());
+    multiThreads = (lastThread != -1) && (lastThread != udTrace::GetThreadId());
     lastThread = udTrace::GetThreadId();
   }
 
@@ -33,7 +33,7 @@ void udDebugPrintf(const char *format, ...)
   }
 
   va_start(args, format);
-  required = udSprintfVA(pBuffer + prefix, bufferLen-prefix, format, args);
+  required = udSprintfVA(pBuffer + prefix, bufferLen - prefix, format, args);
   va_end(args);
   if (required >= (bufferLen - prefix))
   {
@@ -73,7 +73,7 @@ static std::atomic<int32_t> nextThreadId;
 // ***************************************************************************************
 int udTrace::GetThreadId()
 {
-  if (threadId==-1)
+  if (threadId == -1)
     threadId = nextThreadId++;
 
   return threadId;
@@ -82,7 +82,7 @@ int udTrace::GetThreadId()
 // ***************************************************************************************
 udTrace::udTrace(const char *a_functionName, int traceLevel)
 {
-  if (threadId==-1)
+  if (threadId == -1)
   {
     threadId = nextThreadId++;
     if (traceLevel)
@@ -94,7 +94,7 @@ udTrace::udTrace(const char *a_functionName, int traceLevel)
   entryPrinted = false;
   if (traceLevel > 1)
   {
-    udDebugPrintf("%*.s Entering %s\n", depth*2, "", functionName);
+    udDebugPrintf("%*.s Entering %s\n", depth * 2, "", functionName);
     entryPrinted = true;
   }
   ++depth;
@@ -106,7 +106,7 @@ udTrace::~udTrace()
   --depth;
   head = next;
   if (entryPrinted)
-    udDebugPrintf("%*.s Exiting  %s\n", depth*2, "", functionName);
+    udDebugPrintf("%*.s Exiting  %s\n", depth * 2, "", functionName);
 }
 
 // ***************************************************************************************
@@ -132,12 +132,11 @@ void udTrace::Message(const char *pFormat, ...)
           pParent1 = head->next->next->next->functionName;
       }
     }
-    udDebugPrintf("%*.s Within  %s->%s->%s->%s\n", (depth-1)*2, "", pParent2, pParent1, pParent0, head->functionName);
+    udDebugPrintf("%*.s Within  %s->%s->%s->%s\n", (depth - 1) * 2, "", pParent2, pParent1, pParent0, head->functionName);
     head->entryPrinted = true;
   }
-  udDebugPrintf("%*.s %s\n", head ? head->depth*2 : 0, "", buffer);
+  udDebugPrintf("%*.s %s\n", head ? head->depth * 2 : 0, "", buffer);
 }
-
 
 // ***************************************************************************************
 void udTrace::ShowCallstack()
@@ -162,7 +161,7 @@ void udTrace_Memory(const char *pName, const void *pMem, int length, int line)
     memcpy(p, pMem, n);
     format[n * 5] = 0; // nul terminate in the correct spot
     udTrace::Message(format, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]);
-    pMem = ((const char*)pMem)+n;
+    pMem = ((const char *)pMem) + n;
     length -= n;
   }
 }

@@ -45,8 +45,13 @@ TEST(udThreadTests, Thread)
 {
   int value = 0;
   udThread *pThread;
-  udThreadStart startFunc = [](void *data) -> unsigned int { int *pValue = (int*)data; (*pValue) = 1; return 0; };
-  udResult result = udThread_Create(&pThread, startFunc, (void*)&value);
+  udThreadStart startFunc = [](void *data) -> unsigned int
+  {
+    int *pValue = (int *)data;
+    (*pValue) = 1;
+    return 0;
+  };
+  udResult result = udThread_Create(&pThread, startFunc, (void *)&value);
 
   EXPECT_EQ(udR_Success, result);
 
@@ -76,8 +81,9 @@ TEST(udThreadTests, ThreadConditionVariable)
   data.pConditionVariable = udCreateConditionVariable();
 
   udThread *pThread;
-  udThreadStart startFunc = [](void *data) -> unsigned int {
-    TestStruct *pData = (TestStruct*)data;
+  udThreadStart startFunc = [](void *data) -> unsigned int
+  {
+    TestStruct *pData = (TestStruct *)data;
     udSleep(100);
 
     udLockMutex(pData->pMutex);
@@ -87,7 +93,7 @@ TEST(udThreadTests, ThreadConditionVariable)
     return 0;
   };
 
-  udResult result = udThread_Create(&pThread, startFunc, (void*)&data);
+  udResult result = udThread_Create(&pThread, startFunc, (void *)&data);
   EXPECT_EQ(udR_Success, result);
 
   udLockMutex(data.pMutex);
@@ -123,8 +129,9 @@ TEST(udThreadTests, ThreadSemaphore)
   data.p500 = udCreateSemaphore();
   data.value = 0;
 
-  udThreadStart startFunc1 = [](void *data) -> unsigned int {
-    TestStruct *pData = (TestStruct*)data;
+  udThreadStart startFunc1 = [](void *data) -> unsigned int
+  {
+    TestStruct *pData = (TestStruct *)data;
     bool running = true;
     while (running)
     {
@@ -141,11 +148,12 @@ TEST(udThreadTests, ThreadSemaphore)
     }
     return 0;
   };
-  udResult result = udThread_Create(&pThread1, startFunc1, (void*)&data);
+  udResult result = udThread_Create(&pThread1, startFunc1, (void *)&data);
   EXPECT_EQ(udR_Success, result);
 
-  udThreadStart startFunc2 = [](void *data) -> unsigned int {
-    TestStruct *pData = (TestStruct*)data;
+  udThreadStart startFunc2 = [](void *data) -> unsigned int
+  {
+    TestStruct *pData = (TestStruct *)data;
     bool running = true;
     while (running)
     {
@@ -162,11 +170,12 @@ TEST(udThreadTests, ThreadSemaphore)
     }
     return 0;
   };
-  result = udThread_Create(&pThread2, startFunc2, (void*)&data);
+  result = udThread_Create(&pThread2, startFunc2, (void *)&data);
   EXPECT_EQ(udR_Success, result);
 
-  udThreadStart startFunc3 = [](void *data) -> unsigned int {
-    TestStruct *pData = (TestStruct*)data;
+  udThreadStart startFunc3 = [](void *data) -> unsigned int
+  {
+    TestStruct *pData = (TestStruct *)data;
 
     udWaitSemaphore(pData->p500);
     EXPECT_GE(pData->value, 500);
@@ -184,7 +193,7 @@ TEST(udThreadTests, ThreadSemaphore)
     }
     return 0;
   };
-  result = udThread_Create(&pThread3, startFunc3, (void*)&data);
+  result = udThread_Create(&pThread3, startFunc3, (void *)&data);
   EXPECT_EQ(udR_Success, result);
 
   for (int i = 0; i < 3000; i++)
@@ -221,7 +230,14 @@ TEST(udThreadTests, TimeSemaphore)
 {
   udSemaphore *pSemaphore = udCreateSemaphore();
   udThread *pThread;
-  udThread_Create(&pThread, [](void *pData) -> unsigned int { udSemaphore *pSemaphore = (udSemaphore*)pData; EXPECT_EQ(0, udWaitSemaphore(pSemaphore, 5000)); return 0; }, pSemaphore);
+  udThread_Create(
+      &pThread, [](void *pData) -> unsigned int
+      {
+        udSemaphore *pSemaphore = (udSemaphore *)pData;
+        EXPECT_EQ(0, udWaitSemaphore(pSemaphore, 5000));
+        return 0;
+      },
+      pSemaphore);
 
   EXPECT_NE(0, udWaitSemaphore(pSemaphore, 200));
 

@@ -9,14 +9,13 @@
 //
 
 #include "udPlatform.h"
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 class udJSON;
 
 #define UDNAMEASSTRING(s) #s
-#define UDSTRINGIFY(s) UDNAMEASSTRING(s)
-
+#define UDSTRINGIFY(s)    UDNAMEASSTRING(s)
 
 // *********************************************************************
 // Some simple utility template functions
@@ -26,12 +25,15 @@ template <typename SourceType, typename DestType>
 inline DestType udCastToTypeOf(const SourceType &source, const DestType &) { return DestType(source); }
 
 // A utility macro to isolate a bit-field style value from an integer, using an enumerate convention
-#define udBitFieldGet(composite, id)        (((composite) >> id##Shift) & id##Mask)                                       // Retrieve a field from a composite
+#define udBitFieldGet(composite, id) (((composite) >> id##Shift) & id##Mask)                                              // Retrieve a field from a composite
 #define udBitFieldClear(composite, id)      ((composite) & ~(udCastToTypeOf(id##Mask, composite) << id##Shift)            // Clear a field, generally used before updating just one field of a composite
 #define udBitFieldSet(composite, id, value) ((composite) | ((udCastToTypeOf(value, composite) & id##Mask) << id##Shift))  // NOTE! Field should be cleared first, most common case is building a composite from zero
 
 template <typename T>
-T *udAddBytes(T *ptr, ptrdiff_t bytes) { return (T*)(bytes + (char*)ptr); }
+T *udAddBytes(T *ptr, ptrdiff_t bytes)
+{
+  return (T *)(bytes + (char *)ptr);
+}
 
 template <typename T, typename P>
 inline void udAssignUnaligned(P *ptr, T value)
@@ -39,7 +41,7 @@ inline void udAssignUnaligned(P *ptr, T value)
 #if UDPLATFORM_EMSCRIPTEN
   memcpy(ptr, &value, sizeof(value));
 #else
-  *(T*)ptr = value;
+  *(T *)ptr = value;
 #endif
 }
 
@@ -54,7 +56,7 @@ inline udResult udReadFromPointer(T *pDest, P *&pSrc, int *pBytesRemaining = nul
       return udR_CountExceeded;
     *pBytesRemaining -= bytesRequired;
   }
-  memcpy((void*)pDest, pSrc, bytesRequired);
+  memcpy((void *)pDest, pSrc, bytesRequired);
   pSrc = udAddBytes(pSrc, bytesRequired);
   return udR_Success;
 }
@@ -69,7 +71,7 @@ inline udResult udWriteToPointer(T *pSrc, P *&pDest, int *pBytesRemaining = null
       return udR_CountExceeded;
     *pBytesRemaining -= bytesRequired;
   }
-  memcpy((void*)pDest, pSrc, bytesRequired);
+  memcpy((void *)pDest, pSrc, bytesRequired);
   pDest = udAddBytes(pDest, bytesRequired);
   return udR_Success;
 }
@@ -89,11 +91,11 @@ void udUpdateCamera(float camera[16], float yawRadians, float pitchRadians, floa
 // *********************************************************************
 // Time and timing
 // *********************************************************************
-uint32_t udGetTimeMs(); // Get a millisecond-resolution timer that is thread-independent - timeGetTime() on windows
-uint64_t udPerfCounterStart(); // Get a starting point value for now (thread dependent)
+uint32_t udGetTimeMs();                                                 // Get a millisecond-resolution timer that is thread-independent - timeGetTime() on windows
+uint64_t udPerfCounterStart();                                          // Get a starting point value for now (thread dependent)
 float udPerfCounterMilliseconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
-float udPerfCounterSeconds(uint64_t startValue, uint64_t end = 0); // Get elapsed time since previous start (end value is "now" by default)
-int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr); // Return the number of days until the build expires
+float udPerfCounterSeconds(uint64_t startValue, uint64_t end = 0);      // Get elapsed time since previous start (end value is "now" by default)
+int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr);      // Return the number of days until the build expires
 
 int64_t udGetEpochSecsUTCd();
 double udGetEpochSecsUTCf();
@@ -116,13 +118,13 @@ public:
   char *pUTF8;
 };
 #else
-# define udOSString(p) p
+#  define udOSString(p) p
 #endif
 
 // *********************************************************************
 // Helper for growing an array as required TODO: Use configured memory allocators
 // *********************************************************************
-template<typename T>
+template <typename T>
 bool udSizeArray(T *&ptr, size_t &currentLength, size_t requiredLength, size_t allocationMultiples = 0)
 {
   if (requiredLength > currentLength || allocationMultiples == 0)
@@ -136,7 +138,7 @@ bool udSizeArray(T *&ptr, size_t &currentLength, size_t requiredLength, size_t a
     if (!resized)
       return false;
 
-    ptr = (T*)resized;
+    ptr = (T *)resized;
     currentLength = newLength;
   }
   return true;
@@ -148,8 +150,8 @@ bool udSizeArray(T *&ptr, size_t &currentLength, size_t requiredLength, size_t a
 
 inline uint32_t udCountBits32(uint32_t v)
 {
-  v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
-  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
+  v = v - ((v >> 1) & 0x55555555);                         // reuse input as temporary
+  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);          // temp
   return (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
 }
 
@@ -160,25 +162,24 @@ inline uint32_t udCountBits64(uint64_t v)
 
 inline uint32_t udCountBits8(uint8_t a_number)
 {
-  static const uint8_t bits[256] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
-                                     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
-                                     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
-                                     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-                                     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
-                                     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-                                     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-                                     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-                                     1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
-                                     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-                                     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-                                     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-                                     2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
-                                     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-                                     3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
-                                     4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8 };
+  static const uint8_t bits[256] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                                     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8 };
   return bits[a_number];
 }
-
 
 // *********************************************************************
 // Create (or optionally update) a standard 32-bit CRC (polynomial 0xedb88320)
@@ -186,7 +187,6 @@ uint32_t udCrc(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
 
 // Create (or optionally update) a iSCSI standard 32-bit CRC (polynomial 0x1edc6f41)
 uint32_t udCrc32c(const void *pBuffer, size_t length, uint32_t updateCrc = 0);
-
 
 // *********************************************************************
 // Simple base64 decoder, output can be same memory as input
@@ -206,7 +206,6 @@ udResult udBase64Encode(const char **ppDestStr, const void *pBinary, size_t bina
 // *********************************************************************
 int udGetHardwareThreadCount();
 
-
 // *********************************************************************
 // A helper class for dealing with filenames
 // If allocated rather than created with new, call Construct method
@@ -224,9 +223,16 @@ public:
   udFilename(udFilename &&o) noexcept;
   udFilename &operator=(udFilename &&o) noexcept;
   void Construct() { SetFromFullPath(NULL); }
-  void Destruct() { if (pPath != path) udFree(pPath); }
+  void Destruct()
+  {
+    if (pPath != path)
+      udFree(pPath);
+  }
 
-  enum { MaxPath = 260 };
+  enum
+  {
+    MaxPath = 260
+  };
 
   //Cast operator for convenience
   operator const char *() { return pPath; }
@@ -238,7 +244,8 @@ public:
   //    SetFilenameNoExt  - Set the filename without extension, retaining the existing folder and extension
   //    SetExtension      - Set the extension, retaining the folder and filename
   //
-  UD_PRINTF_FORMAT_FUNC(2) bool SetFromFullPath(const char *pFormat, ...);
+  UD_PRINTF_FORMAT_FUNC(2)
+  bool SetFromFullPath(const char *pFormat, ...);
   bool SetFolder(const char *folder);
   bool SetFilenameNoExt(const char *filenameOnlyComponent);
   bool SetFilenameWithExt(const char *filenameWithExtension);
@@ -249,9 +256,9 @@ public:
   //    GetPath             - Get the complete path (eg pass to fopen)
   //    GetFilenameWithExt  - Get the filename and extension, without the path
   //    GetExt              - Get just the extension (starting with the dot)
-  const char *GetPath() const            { return pPath; }
+  const char *GetPath() const { return pPath; }
   const char *GetFilenameWithExt() const { return pPath + filenameIndex; }
-  const char *GetExt() const             { return pPath + extensionIndex; }
+  const char *GetExt() const { return pPath + extensionIndex; }
 
   //
   // Extract methods: (take portions from within the full path to a user supplied buffer, returning size required)
@@ -263,20 +270,19 @@ public:
 
   //
   // Test methods: to determine what is present in the filename
-  bool HasFilename() const              { return pPath[filenameIndex] != 0; }
-  bool HasExt() const                   { return pPath[extensionIndex] != 0; }
+  bool HasFilename() const { return pPath[filenameIndex] != 0; }
+  bool HasExt() const { return pPath[extensionIndex] != 0; }
 
   // Temporary function to output debug info until unit tests are done to prove reliability
   void Debug();
 
 protected:
   void CalculateIndices();
-  int filenameIndex;      // Index to starting character of filename
-  int extensionIndex;     // Index to starting character of extension
-  char path[MaxPath];         // Buffer for the path, set to 260 characters
-  char *pPath;            // Pointer to actual path, may point to path
+  int filenameIndex;  // Index to starting character of filename
+  int extensionIndex; // Index to starting character of extension
+  char path[MaxPath]; // Buffer for the path, set to 260 characters
+  char *pPath;        // Pointer to actual path, may point to path
 };
-
 
 // *********************************************************************
 // A helper class for dealing with filenames, allocates memory due to unknown maximum length of url
@@ -285,15 +291,19 @@ protected:
 class udURL
 {
 public:
-  udURL(const char *pURLText = nullptr) { Construct(); SetURL(pURLText); }
+  udURL(const char *pURLText = nullptr)
+  {
+    Construct();
+    SetURL(pURLText);
+  }
   ~udURL() { SetURL(nullptr); }
   void Construct() { pURLText = nullptr; }
 
   udResult SetURL(const char *pURLText);
-  const char *GetScheme()         { return pScheme; }
-  const char *GetDomain()         { return pDomain; }
-  int GetPort()                   { return port; }
-  const char *GetPathWithQuery()  { return pPath; }
+  const char *GetScheme() { return pScheme; }
+  const char *GetDomain() { return pDomain; }
+  int GetPort() { return port; }
+  const char *GetPathWithQuery() { return pPath; }
 
 protected:
   char *pURLText;
@@ -302,7 +312,6 @@ protected:
   const char *pPath;
   int port;
 };
-
 
 // Load or Save a BMP
 udResult udSaveBMP(const char *pFilename, int width, int height, uint32_t *pColorData, int pitch = 0);
@@ -349,6 +358,5 @@ udResult udParseWKT(udJSON *pValue, const char *pWKTString, int *pCharCount = nu
 
 // Export a previously parsed WKT back to WKT format
 udResult udExportWKT(const char **ppOutput, const udJSON *pValue);
-
 
 #endif // UDPLATFORM_UTIL_H

@@ -1,7 +1,7 @@
 #include "udImage.h"
+#include "udCompression.h"
 #include "udFile.h"
 #include "udMath.h"
-#include "udCompression.h"
 #include "udStringUtil.h"
 #include "udThread.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -147,7 +147,7 @@ static void stbiWriteWrapper(stbiWriteContext *pContext, uint32_t width, uint32_
 udResult udImage_Save(const udImage *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType)
 {
   udResult result;
-  void *pRGB = nullptr; // Sadly, stbi has no support for writing 24-bit from a 32-bit source, so we must shrink
+  void *pRGB = nullptr;     // Sadly, stbi has no support for writing 24-bit from a 32-bit source, so we must shrink
   uint8_t *pSource, *pDest; // For shrinking
   uint32_t count;
   stbiWriteContext writeContext;
@@ -159,7 +159,7 @@ udResult udImage_Save(const udImage *pImage, const char *pFilename, uint32_t *pS
   pRGB = udAlloc(count * 3);
   UD_ERROR_NULL(pRGB, udR_MemoryAllocationFailure);
   pSource = (uint8_t *)pImage->pImageData;
-  pDest = (uint8_t*)pRGB;
+  pDest = (uint8_t *)pRGB;
   while (count--)
   {
     *pDest++ = pSource[0];
@@ -192,7 +192,7 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
     v = udClamp(v, 0.f, 1.f);
   }
 
-  u =  u * pImage->width;
+  u = u * pImage->width;
   if (flags & udISF_TopLeft)
     v = v * pImage->height;
   else
@@ -227,7 +227,7 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
     uint32_t c2 = (pImage->pImageData[x0 + y1 * pImage->width]);
     uint32_t c3 = (pImage->pImageData[x1 + y1 * pImage->width]);
 
-    uint32_t bfB = 0x00ff0000 & (((c0 >> 16)      * a) + ((c1 >> 16)      * b) + ((c2 >> 16)      * c) + ((c3 >> 16)      * d));
+    uint32_t bfB = 0x00ff0000 & (((c0 >> 16) * a) + ((c1 >> 16) * b) + ((c2 >> 16) * c) + ((c3 >> 16) * d));
     uint32_t bfG = 0xff000000 & (((c0 & 0x00ff00) * a) + ((c1 & 0x00ff00) * b) + ((c2 & 0x00ff00) * c) + ((c3 & 0x00ff00) * d));
     uint32_t bfR = 0x00ff0000 & (((c0 & 0x0000ff) * a) + ((c1 & 0x0000ff) * b) + ((c2 & 0x0000ff) * c) + ((c3 & 0x0000ff) * d));
 
@@ -303,7 +303,7 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
     p24BitData = udAllocType(uint8_t, pImage->width * pImage->height * 3, udAF_None);
     UD_ERROR_NULL(p24BitData, udR_MemoryAllocationFailure);
     pOut = p24BitData;
-    pIn = (uint8_t*)(pImage->pImageData);
+    pIn = (uint8_t *)(pImage->pImageData);
     for (uint32_t y = 0; y < pImage->height; ++y)
     {
       for (uint32_t x = 0; x < pImage->width; ++x)
@@ -637,7 +637,7 @@ void udImageStreaming_Destroy(udImageStreaming **ppImage)
       if (pImage->mips[i].ppCellImage)
       {
         for (uint16_t j = 0; j < (pImage->mips[i].gridW * pImage->mips[i].gridH); ++j)
-          udFree(const_cast<uint8_t*&>(pImage->mips[i].ppCellImage[j]));
+          udFree(const_cast<uint8_t *&>(pImage->mips[i].ppCellImage[j]));
         udFree(pImage->mips[i].ppCellImage);
       }
     }

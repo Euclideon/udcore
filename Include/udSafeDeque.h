@@ -8,8 +8,8 @@
 // Wraps udChunkedArray to provide a thread safe strict deque interface
 //
 
-#include "udResult.h"
 #include "udChunkedArray.h"
+#include "udResult.h"
 #include "udThread.h"
 
 /// Thread safe double ended queue

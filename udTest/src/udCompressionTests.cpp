@@ -1,9 +1,9 @@
-#include "gtest/gtest.h"
 #include "udCompression.h"
-#include "udMath.h"
 #include "udFile.h"
+#include "udMath.h"
 #include "udPlatform.h"
 #include "udStringUtil.h"
+#include "gtest/gtest.h"
 
 TEST(udCompressionTests, Basic)
 {
@@ -99,44 +99,44 @@ TEST(udCompressionTests, Zip)
   int fileCount;
   // An embedded zip containing 3 text files "Doc1.txt" (deflate), "Doc2.txt" (deflate64) and "Doc3.txt" (stored)
   static const char *pRawZip =
-    "zip://raw://UEsDBBQAAAAIADZpUU0Gd9psGAEAANYBAAAIAAAARG9jMS50eHQtUclRQzEMvTNDD68AJk0AN64UIGwl0YxtObYUUj5SPjdre5vftc/Fe3PFr9"
-    "gVlc+NjF9fvnRxh8ztHVWbLmwxUGd7Q9GxuRibL1CVKbvIuICbxDCg4gAsvrtWGPcZxzKKVKk+DG5o9BPwYEvofHW6DAI1uTmd8G3gIT2w0SUf9yipv+HmsjF0"
-    "2/IKfvAqYmSiA94a9aIHci7JlmA6IGXGMphCeA9NehgIKjvhIyHJjSHLF6egp1wsjmCuPCovsWzctfkMOg45LVqZGoq0diT0NOQ4+0XIMFIQJq0ofJ3w+Sg8jT"
-    "1jjAy0FOISe8WnVLK8CBdzqVQemaKPJI15m5S+oeezFKH4oc0rp11byqAMSGrI+c/V++kPUEsDBBUAAAAJADppUU1h67lJGwEAANgBAAAIAAAARG9jMi50eHQt"
-    "kEFOAzEMRfdI3OEfoJoV4gLAji0HMImntZTEaWKXHp9YM7s4tr//fx9a++A5OeNP7IbMeyHj97fXl28dXCF9ekXWogNTDFTZLkjaJidj8wHK0mUmaVdwkdUMsa"
-    "xg8Vk1w7h2HZCWJEv2ZnBDod8lD7ZDmlHp2ghU5O604cfATSooo0o8HqukesHdZaLptOEZ/OSRxMhEG7wUqkkP5RiSKXA7JKWvYTAhaV2e9AiwTtmGz5AkN4YM"
-    "H3xmlYbBC82NW+YhFh8PLd6NjPGIpAhuSFLKSSgCOXa/ChlaGEKnsQofG76eibuxB8Zm0JSIExmSd8lksaENfahkbkHRWxxd/dIpckP3XZIQMk8e0a1awgYFIM"
-    "ngeXL1uv0DUEsDBAoAAAAAABloUU3pwhanDgAAAA4AAAAIAAAARG9jMy50eHROb3QgY29tcHJlc3NlZFBLAQI/ABQAAAAIADZpUU0Gd9psGAEAANYBAAAIACQA"
-    "AAAAAAAAICAAAAAAAABEb2MxLnR4dAoAIAAAAAAAAQAYAAPtNNnGZdQBUmjSgsVl1AFSaNKCxWXUAVBLAQI/ABUAAAAJADppUU1h67lJGwEAANgBAAAIACQAAA"
-    "AAAAAAICAAAD4BAABEb2MyLnR4dAoAIAAAAAAAAQAYACIo993GZdQB99Y6hsVl1AH31jqGxWXUAVBLAQI/AAoAAAAAABloUU3pwhanDgAAAA4AAAAIACQAAAAA"
-    "AAAAICAAAH8CAABEb2MzLnR4dAoAIAAAAAAAAQAYAJEWSZvFZdQBpylnh8Vl1AGnKWeHxWXUAVBLBQYAAAAAAwADAA4BAACzAgAAAAA=";
+      "zip://raw://UEsDBBQAAAAIADZpUU0Gd9psGAEAANYBAAAIAAAARG9jMS50eHQtUclRQzEMvTNDD68AJk0AN64UIGwl0YxtObYUUj5SPjdre5vftc/Fe3PFr9"
+      "gVlc+NjF9fvnRxh8ztHVWbLmwxUGd7Q9GxuRibL1CVKbvIuICbxDCg4gAsvrtWGPcZxzKKVKk+DG5o9BPwYEvofHW6DAI1uTmd8G3gIT2w0SUf9yipv+HmsjF0"
+      "2/IKfvAqYmSiA94a9aIHci7JlmA6IGXGMphCeA9NehgIKjvhIyHJjSHLF6egp1wsjmCuPCovsWzctfkMOg45LVqZGoq0diT0NOQ4+0XIMFIQJq0ofJ3w+Sg8jT"
+      "1jjAy0FOISe8WnVLK8CBdzqVQemaKPJI15m5S+oeezFKH4oc0rp11byqAMSGrI+c/V++kPUEsDBBUAAAAJADppUU1h67lJGwEAANgBAAAIAAAARG9jMi50eHQt"
+      "kEFOAzEMRfdI3OEfoJoV4gLAji0HMImntZTEaWKXHp9YM7s4tr//fx9a++A5OeNP7IbMeyHj97fXl28dXCF9ekXWogNTDFTZLkjaJidj8wHK0mUmaVdwkdUMsa"
+      "xg8Vk1w7h2HZCWJEv2ZnBDod8lD7ZDmlHp2ghU5O604cfATSooo0o8HqukesHdZaLptOEZ/OSRxMhEG7wUqkkP5RiSKXA7JKWvYTAhaV2e9AiwTtmGz5AkN4YM"
+      "H3xmlYbBC82NW+YhFh8PLd6NjPGIpAhuSFLKSSgCOXa/ChlaGEKnsQofG76eibuxB8Zm0JSIExmSd8lksaENfahkbkHRWxxd/dIpckP3XZIQMk8e0a1awgYFIM"
+      "ngeXL1uv0DUEsDBAoAAAAAABloUU3pwhanDgAAAA4AAAAIAAAARG9jMy50eHROb3QgY29tcHJlc3NlZFBLAQI/ABQAAAAIADZpUU0Gd9psGAEAANYBAAAIACQA"
+      "AAAAAAAAICAAAAAAAABEb2MxLnR4dAoAIAAAAAAAAQAYAAPtNNnGZdQBUmjSgsVl1AFSaNKCxWXUAVBLAQI/ABUAAAAJADppUU1h67lJGwEAANgBAAAIACQAAA"
+      "AAAAAAICAAAD4BAABEb2MyLnR4dAoAIAAAAAAAAQAYACIo993GZdQB99Y6hsVl1AH31jqGxWXUAVBLAQI/AAoAAAAAABloUU3pwhanDgAAAA4AAAAIACQAAAAA"
+      "AAAAICAAAH8CAABEb2MzLnR4dAoAIAAAAAAAAQAYAJEWSZvFZdQBpylnh8Vl1AGnKWeHxWXUAVBLBQYAAAAAAwADAA4BAACzAgAAAAA=";
   static const char *pText =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
-    ". Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute ir"
-    "ure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidat"
-    "at non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua"
+      ". Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute ir"
+      "ure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidat"
+      "at non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
   // First up, load the table of contents (exposed as a text file)
   int64_t tocLen, doc1Len, doc2Len, doc3Len;
-  result = udFile_Load(pRawZip, (void**)&pTOC, &tocLen);
+  result = udFile_Load(pRawZip, (void **)&pTOC, &tocLen);
   EXPECT_EQ(udR_Success, result);
   fileCount = (int)udStrTokenSplit(pTOC, "\n", pFilenames, (int)udLengthOf(pFilenames));
   EXPECT_EQ(3, fileCount);
 
   EXPECT_TRUE(udStrEqual(pFilenames[0], "Doc1.txt"));
-  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[0]), (void**)&pDOC, &doc1Len);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[0]), (void **)&pDOC, &doc1Len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_TRUE(udStrEqual(pDOC, udTempStr("Compressed with deflate\r\n%s", pText)));
   udFree(pDOC);
 
   EXPECT_TRUE(udStrEqual(pFilenames[1], "Doc2.txt"));
-  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[1]), (void**)&pDOC, &doc2Len);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[1]), (void **)&pDOC, &doc2Len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_TRUE(udStrEqual(pDOC, udTempStr("Compressed with deflate64\r\n%s", pText)));
   udFree(pDOC);
 
   EXPECT_TRUE(udStrEqual(pFilenames[2], "Doc3.txt"));
-  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[2]), (void**)&pDOC, &doc3Len);
+  result = udFile_Load(udTempStr("%s:%s", pRawZip, pFilenames[2]), (void **)&pDOC, &doc3Len);
   EXPECT_EQ(udR_Success, result);
   EXPECT_TRUE(udStrEqual(pDOC, "Not compressed"));
   udFree(pDOC);
@@ -148,7 +148,6 @@ TEST(udCompressionTests, Zip)
   EXPECT_EQ(udR_Success, result);
   EXPECT_EQ(0, len); // No TOC is returned if a single colon follows the name
   udFile_Close(&pFile);
-
 
   result = udFile_Open(&pFile, pRawZip, udFOF_Read, &len);
   EXPECT_EQ(udR_Success, result);
@@ -195,8 +194,8 @@ TEST(udCompressionTests, ZipWithFolder)
 
   // Test accessing a file under a folder in the zip
   static const char *pFolderInZip =
-    "zip://raw://UEsDBBQAAAAAAHFtdk81p2zRCgAAAAoAAAAWAAAAZm9sZGVyL0RvY0luRm9sZGVyLnR4dGNhcnBlIGRpZW1QSwECFAAUAAAAAABxbXZPNads0Q"
-    "oAAAAKAAAAFgAAAAAAAAABACAAAAAAAAAAZm9sZGVyL0RvY0luRm9sZGVyLnR4dFBLBQYAAAAAAQABAEQAAAA+AAAAAAA=";
+      "zip://raw://UEsDBBQAAAAAAHFtdk81p2zRCgAAAAoAAAAWAAAAZm9sZGVyL0RvY0luRm9sZGVyLnR4dGNhcnBlIGRpZW1QSwECFAAUAAAAAABxbXZPNads0Q"
+      "oAAAAKAAAAFgAAAAAAAAABACAAAAAAAAAAZm9sZGVyL0RvY0luRm9sZGVyLnR4dFBLBQYAAAAAAQABAEQAAAA+AAAAAAA=";
 
   result = udFile_Open(&pFile, pFolderInZip, udFOF_Read);
   EXPECT_EQ(udR_Success, result);

@@ -1,14 +1,14 @@
-#include "gtest/gtest.h"
-#include "udThread.h"
 #include "udSocket.h"
 #include "udStringUtil.h"
+#include "udThread.h"
+#include "gtest/gtest.h"
 
 // Emscripten requires more work for sockets
 #if !UDPLATFORM_EMSCRIPTEN
 uint8_t clientSend[] = "ClientSendData";
 uint8_t serverSend[] = "ServerSendData";
 
-#define UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY "-----BEGIN PRIVATE KEY-----\n\
+#  define UDSOCKETTEST_CERTIFICATE_PRIVATE_KEY "-----BEGIN PRIVATE KEY-----\n\
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDY1f2s/EeofcuL\n\
 FshdPoInwR30ZWAuKFl0dCcMB74P4zuKucVgcil26sjKjFLAJwFH+d2iOXUmgy7/\n\
 dzz5dJxUESA8yLlOL4LX3HBlKKQ17WQkjjAxiOpxLq5QzaHtoH9nR963yc6igT6I\n\
@@ -36,7 +36,7 @@ Vc+teD6M9yB4i0g3D5n72TuM4izk03Qz1fXfBDCeUPb7CvXF8Oco/4baSjoz+62U\n\
 +8jdUnx/AOSac2LauzWhziOPiDz4WGN3BfsHcDQN+xOxZLrII/yP9ky8YKPuJeGj\n\
 hJUnrbVwYTWLHnkV2tC3txE=\n\
 -----END PRIVATE KEY-----"
-#define UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY "-----BEGIN CERTIFICATE-----\n\
+#  define UDSOCKETTEST_CERTIFICATE_PUBLIC_KEY  "-----BEGIN CERTIFICATE-----\n\
 MIIDpDCCAowCCQDkMz5PqaQQAzANBgkqhkiG9w0BAQsFADCBkzELMAkGA1UEBhMC\n\
 QVUxEzARBgNVBAgMClF1ZWVuc2xhbmQxETAPBgNVBAcMCEJyaXNiYW5lMRowGAYD\n\
 VQQKDBFFdWNsaWRlb24gUHR5IEx0ZDEOMAwGA1UECwwFVmF1bHQxDTALBgNVBAMM\n\
@@ -63,7 +63,7 @@ const int32_t BigTestSize = 1024 * 1024 * 40; //40MB; Anything over a few MB wil
 
 uint32_t udSocketTestsServerThread(void *data)
 {
-  udSocket *pListenSocket = (udSocket*)data;
+  udSocket *pListenSocket = (udSocket *)data;
   udSocket *pSocket = nullptr;
   EXPECT_TRUE(udSocket_ServerAcceptClient(pListenSocket, &pSocket));
 
@@ -81,7 +81,7 @@ uint32_t udSocketTestsServerThread(void *data)
 
 uint32_t udSocketTestsSocketSetServerThread(void *data)
 {
-  udSocket *pListenSocket = (udSocket*)data;
+  udSocket *pListenSocket = (udSocket *)data;
   udSocket *pSocket = nullptr;
   udSocketSet *pReadSet = nullptr;
   udSocketSet *pWriteSet = nullptr;
@@ -222,7 +222,7 @@ TEST(udSocket, BigReadWriteTest)
   EXPECT_EQ(udR_Success, udSocket_InitSystem());
 
   uint8_t *pData = udAllocType(uint8_t, BigTestSize, udAF_None);
- 
+
   udSocket *sockets[2];
   udThread *pServerThread;
 
@@ -341,7 +341,7 @@ TEST(udSocket, RealWebsiteSecureTest)
 
   const char *pRequest = "GET /favicon.ico HTTP/1.1\r\nHost: www.euclideon.com\r\nUser-Agent: HTTPTestAgent\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-us,en;q=0.5\r\nPragma: no-cache\r\nCache-Control: no-cache\r\n\r\n";
 
-  EXPECT_EQ(udR_Success, udSocket_SendData(pSockets, (const uint8_t*)pRequest, udStrlen(pRequest)+1));
+  EXPECT_EQ(udR_Success, udSocket_SendData(pSockets, (const uint8_t *)pRequest, udStrlen(pRequest) + 1));
 
   uint8_t recv[8192];
 

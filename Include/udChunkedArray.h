@@ -21,8 +21,8 @@ struct udChunkedArrayIterator
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = ptrdiff_t;
   using value_type = T;
-  using pointer = T*;
-  using reference = T&;
+  using pointer = T *;
+  using reference = T &;
 
   udChunkedArrayIterator(T **ppChunks, size_t inset, size_t chunkElementCount, size_t chunkElementCountShift, size_t chunkElementCountMask, size_t startInd);
 
@@ -53,7 +53,6 @@ struct udChunkedArrayIterator
   bool operator==(const udChunkedArrayIterator<T> &rhs) const;
 };
 
-
 template <typename T>
 struct udChunkedArray
 {
@@ -68,20 +67,20 @@ struct udChunkedArray
   size_t FindIndex(const T &element, size_t compareLen = sizeof(T)) const; // Linear search for matching element (first compareLen bytes compared)
   void SetElement(size_t index, const T &data);
 
-  udResult PushBack(const T &v);                              // Push a copy of v to the back of the array, can fail if memory allocation fails
-  udResult PushBack(T **ppElement, bool zeroMemory = true);   // Get pointer to new element at back of the array, can fail if memory allocation fails when growing array
-  T *PushBack();                                              // Get pointer to new zeroed element at back of the array, or NULL on failure
+  udResult PushBack(const T &v);                            // Push a copy of v to the back of the array, can fail if memory allocation fails
+  udResult PushBack(T **ppElement, bool zeroMemory = true); // Get pointer to new element at back of the array, can fail if memory allocation fails when growing array
+  T *PushBack();                                            // Get pointer to new zeroed element at back of the array, or NULL on failure
 
-  udResult PushFront(const T &v);                             // Push a copy of v to the front of the array, can fail if memory allocation fails
-  udResult PushFront(T **ppElement, bool zeroMemory = true);  // Get pointer to new element at front of the array, can fail if memory allocation fails when growing array
-  T *PushFront();                                             // Get pointer to new zeroed element at front of the array, or NULL on failure
+  udResult PushFront(const T &v);                            // Push a copy of v to the front of the array, can fail if memory allocation fails
+  udResult PushFront(T **ppElement, bool zeroMemory = true); // Get pointer to new element at front of the array, can fail if memory allocation fails when growing array
+  T *PushFront();                                            // Get pointer to new zeroed element at front of the array, or NULL on failure
 
-  udResult Insert(size_t index, const T *pData = nullptr);  // Insert the element at index, pushing and moving all elements after to make space.
+  udResult Insert(size_t index, const T *pData = nullptr); // Insert the element at index, pushing and moving all elements after to make space.
 
-  bool PopBack(T *pData = nullptr);              // Returns false if no element to pop
-  bool PopFront(T *pData = nullptr);             // Returns false if no element to pop
-  void RemoveAt(size_t index);                   // Remove the element at index, moving all elements after to fill the gap.
-  void RemoveSwapLast(size_t index);             // Remove the element at index, swapping with the last element to ensure array is contiguous
+  bool PopBack(T *pData = nullptr);  // Returns false if no element to pop
+  bool PopFront(T *pData = nullptr); // Returns false if no element to pop
+  void RemoveAt(size_t index);       // Remove the element at index, moving all elements after to fill the gap.
+  void RemoveSwapLast(size_t index); // Remove the element at index, swapping with the last element to ensure array is contiguous
 
   udResult ToArray(T *pArray, size_t arrayLength, size_t startIndex = 0, size_t count = 0) const; // Copy elements to an array supplied by caller
   udResult ToArray(T **ppArray, size_t startIndex = 0, size_t count = 0) const;                   // Copy elements to an array allocated and returned to caller
@@ -101,7 +100,10 @@ struct udChunkedArray
   iterator begin();
   iterator end();
 
-  enum { ptrArrayInc = 32 };
+  enum
+  {
+    ptrArrayInc = 32
+  };
 
   T **ppChunks;
   size_t ptrArraySize;
@@ -148,7 +150,7 @@ inline udChunkedArrayIterator<T> &udChunkedArrayIterator<T>::operator+=(const di
   //index within the chunk adjusting for block size
   difference_type newInd = (rawInd < 0 ? (difference_type)chunkElementCount : 0) + rawInd % (difference_type)chunkElementCount;
   // change in chunk index
-  difference_type chunkChange = (rawInd < 0 ? -1 : 0) + rawInd / (difference_type)chunkElementCount; 
+  difference_type chunkChange = (rawInd < 0 ? -1 : 0) + rawInd / (difference_type)chunkElementCount;
 
   ppCurrChunk += chunkChange;
   currChunkElementIndex = newInd;
@@ -205,7 +207,7 @@ bool udChunkedArrayIterator<T>::operator!=(const udChunkedArrayIterator<T> &rhs)
   return !(*this == rhs);
 }
 
-template<typename T>
+template <typename T>
 typename udChunkedArrayIterator<T>::reference udChunkedArrayIterator<T>::operator[](const size_t &a) const
 {
   return *(*this + a);
@@ -474,7 +476,7 @@ inline udResult udChunkedArray<T>::PushBack(T **ppElement, bool zeroMemory)
 
   *ppElement = ppChunks[chunkIndex] + (newIndex & chunkElementCountMask);
   if (zeroMemory)
-    memset((void*)*ppElement, 0, sizeof(T));
+    memset((void *)*ppElement, 0, sizeof(T));
 
   ++length;
   return udR_Success;
@@ -563,7 +565,7 @@ inline udResult udChunkedArray<T>::PushFront(T **ppElement, bool zeroMemory)
 
   *ppElement = ppChunks[0] + inset;
   if (zeroMemory)
-    memset((void*)*ppElement, 0, sizeof(T));
+    memset((void *)*ppElement, 0, sizeof(T));
 
   return udR_Success;
 }
@@ -783,7 +785,7 @@ inline udResult udChunkedArray<T>::Insert(size_t index, const T *pData)
     if (result != udR_Success)
       return result;
 
-    for (size_t dst = length - 1; dst > index; )
+    for (size_t dst = length - 1; dst > index;)
     {
       size_t src = dst - 1;
       size_t srcBackRunLen = GetElementRunLength(src, true);
@@ -837,7 +839,7 @@ inline typename udChunkedArray<T>::iterator udChunkedArray<T>::end()
   return udChunkedArrayIterator<T>(this->ppChunks, this->inset, this->chunkElementCount, this->chunkElementCountShift, this->chunkElementCountMask, this->length);
 }
 
-template<typename T>
+template <typename T>
 udChunkedArrayIterator<T>::udChunkedArrayIterator(T **ppChunks, size_t inset, size_t chunkElementCount, size_t chunkElementCountShift, size_t chunkElementCountMask, size_t startInd)
 {
   this->ppCurrChunk = &ppChunks[(inset + startInd) >> chunkElementCountShift];

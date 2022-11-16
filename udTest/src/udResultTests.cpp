@@ -1,9 +1,12 @@
 #include "gtest/gtest.h"
 
-#include "udStringUtil.h"
 #include "udResult.h"
+#include "udStringUtil.h"
 
-#define CHECK_STR(x) case x: EXPECT_TRUE(udStrEqual(udResultAsString(x), &(#x)[4])); break;
+#define CHECK_STR(x)                                        \
+  case x:                                                   \
+    EXPECT_TRUE(udStrEqual(udResultAsString(x), &(#x)[4])); \
+    break;
 
 TEST(udResult, StringNamesMatch)
 {

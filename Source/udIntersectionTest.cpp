@@ -14,84 +14,150 @@
 
 #include "udIntersectionTest.h"
 
-static bool PlaneBoxOverlap(const udDouble3 &normal, const udDouble3 &vert, const udDouble3 &maxbox)	// -NJMP-
+static bool PlaneBoxOverlap(const udDouble3 &normal, const udDouble3 &vert, const udDouble3 &maxbox) // -NJMP-
 {
   int q;
   double v;
   udDouble3 vmin, vmax;
   for (q = 0; q < 3; ++q)
   {
-    v = vert[q];					// -NJMP-
+    v = vert[q]; // -NJMP-
     if (normal[q] > 0.0)
     {
-      vmin[q] = -maxbox[q] - v;	// -NJMP-
-      vmax[q] =  maxbox[q] - v;	// -NJMP-
+      vmin[q] = -maxbox[q] - v; // -NJMP-
+      vmax[q] = maxbox[q] - v;  // -NJMP-
     }
     else
     {
-      vmin[q] =  maxbox[q] - v;	// -NJMP-
-      vmax[q] = -maxbox[q] - v;	// -NJMP-
+      vmin[q] = maxbox[q] - v;  // -NJMP-
+      vmax[q] = -maxbox[q] - v; // -NJMP-
     }
   }
-  if (udDot(normal, vmin) > 0.0) return false;	// -NJMP-
-  if (udDot(normal, vmax) >= 0.0) return true;	// -NJMP-
+  if (udDot(normal, vmin) > 0.0)
+    return false; // -NJMP-
+  if (udDot(normal, vmax) >= 0.0)
+    return true; // -NJMP-
 
   return false;
 }
 
 //=================== Find min/max ========================
-#define FINDMINMAX(x0,x1,x2,min,max) \
-  min = max = x0;   \
-  if (x1 < min) min=x1;\
-  if (x1 > max) max=x1;\
-  if (x2 < min) min=x2;\
-  if (x2 > max) max=x2;
+#define FINDMINMAX(x0, x1, x2, min, max) \
+  min = max = x0;                        \
+  if (x1 < min)                          \
+    min = x1;                            \
+  if (x1 > max)                          \
+    max = x1;                            \
+  if (x2 < min)                          \
+    min = x2;                            \
+  if (x2 > max)                          \
+    max = x2;
 
 //======================== X-tests ========================
-#define AXISTEST_X01(a, b, fa, fb)			   \
-  p0 = a*v0.y - b*v0.z;			       	   \
-  p2 = a*v2.y - b*v2.z;			       	   \
-  if (p0<p2) {min=p0; max=p2;} else {min=p2; max=p0;} \
-  rad = fa * boxHalfSize.y + fb * boxHalfSize.z;   \
-  if (min>rad || max<-rad) return 0;
+#define AXISTEST_X01(a, b, fa, fb)               \
+  p0 = a * v0.y - b * v0.z;                      \
+  p2 = a * v2.y - b * v2.z;                      \
+  if (p0 < p2)                                   \
+  {                                              \
+    min = p0;                                    \
+    max = p2;                                    \
+  }                                              \
+  else                                           \
+  {                                              \
+    min = p2;                                    \
+    max = p0;                                    \
+  }                                              \
+  rad = fa * boxHalfSize.y + fb * boxHalfSize.z; \
+  if (min > rad || max < -rad)                   \
+    return 0;
 
-#define AXISTEST_X2(a, b, fa, fb)			   \
-  p0 = a*v0.y - b*v0.z;			           \
-  p1 = a*v1.y - b*v1.z;			       	   \
-  if (p0<p1) {min=p0; max=p1;} else {min=p1; max=p0;} \
-  rad = fa * boxHalfSize.y + fb * boxHalfSize.z;   \
-  if (min>rad || max<-rad) return 0;
+#define AXISTEST_X2(a, b, fa, fb)                \
+  p0 = a * v0.y - b * v0.z;                      \
+  p1 = a * v1.y - b * v1.z;                      \
+  if (p0 < p1)                                   \
+  {                                              \
+    min = p0;                                    \
+    max = p1;                                    \
+  }                                              \
+  else                                           \
+  {                                              \
+    min = p1;                                    \
+    max = p0;                                    \
+  }                                              \
+  rad = fa * boxHalfSize.y + fb * boxHalfSize.z; \
+  if (min > rad || max < -rad)                   \
+    return 0;
 
 //======================== Y-tests ========================
-#define AXISTEST_Y02(a, b, fa, fb)			   \
-  p0 = -a*v0.x + b*v0.z;		      	   \
-  p2 = -a*v2.x + b*v2.z;	       	       	   \
-  if (p0<p2) {min=p0; max=p2;} else {min=p2; max=p0;} \
-  rad = fa * boxHalfSize.x + fb * boxHalfSize.z;   \
-  if (min>rad || max<-rad) return 0;
+#define AXISTEST_Y02(a, b, fa, fb)               \
+  p0 = -a * v0.x + b * v0.z;                     \
+  p2 = -a * v2.x + b * v2.z;                     \
+  if (p0 < p2)                                   \
+  {                                              \
+    min = p0;                                    \
+    max = p2;                                    \
+  }                                              \
+  else                                           \
+  {                                              \
+    min = p2;                                    \
+    max = p0;                                    \
+  }                                              \
+  rad = fa * boxHalfSize.x + fb * boxHalfSize.z; \
+  if (min > rad || max < -rad)                   \
+    return 0;
 
-#define AXISTEST_Y1(a, b, fa, fb)			   \
-  p0 = -a*v0.x + b*v0.z;		      	   \
-  p1 = -a*v1.x + b*v1.z;	     	       	   \
-  if (p0<p1) {min=p0; max=p1;} else {min=p1; max=p0;} \
-  rad = fa * boxHalfSize.x + fb * boxHalfSize.z;   \
-  if (min>rad || max<-rad) return 0;
+#define AXISTEST_Y1(a, b, fa, fb)                \
+  p0 = -a * v0.x + b * v0.z;                     \
+  p1 = -a * v1.x + b * v1.z;                     \
+  if (p0 < p1)                                   \
+  {                                              \
+    min = p0;                                    \
+    max = p1;                                    \
+  }                                              \
+  else                                           \
+  {                                              \
+    min = p1;                                    \
+    max = p0;                                    \
+  }                                              \
+  rad = fa * boxHalfSize.x + fb * boxHalfSize.z; \
+  if (min > rad || max < -rad)                   \
+    return 0;
 
 //======================== Z-tests ========================
 
-#define AXISTEST_Z12(a, b, fa, fb)			   \
-  p1 = a*v1.x - b*v1.y;			           \
-  p2 = a*v2.x - b*v2.y;			       	   \
-  if (p2<p1) {min=p2; max=p1;} else {min=p1; max=p2;} \
-  rad = fa * boxHalfSize.x + fb * boxHalfSize.y;   \
-  if (min>rad || max<-rad) return 0;
+#define AXISTEST_Z12(a, b, fa, fb)               \
+  p1 = a * v1.x - b * v1.y;                      \
+  p2 = a * v2.x - b * v2.y;                      \
+  if (p2 < p1)                                   \
+  {                                              \
+    min = p2;                                    \
+    max = p1;                                    \
+  }                                              \
+  else                                           \
+  {                                              \
+    min = p1;                                    \
+    max = p2;                                    \
+  }                                              \
+  rad = fa * boxHalfSize.x + fb * boxHalfSize.y; \
+  if (min > rad || max < -rad)                   \
+    return 0;
 
-#define AXISTEST_Z0(a, b, fa, fb)			   \
-  p0 = a*v0.x - b*v0.y;				   \
-  p1 = a*v1.x - b*v1.y;			           \
-  if (p0<p1) {min=p0; max=p1;} else {min=p1; max=p0;} \
-  rad = fa * boxHalfSize.x + fb * boxHalfSize.y;   \
-  if (min>rad || max<-rad) return 0;
+#define AXISTEST_Z0(a, b, fa, fb)                \
+  p0 = a * v0.x - b * v0.y;                      \
+  p1 = a * v1.x - b * v1.y;                      \
+  if (p0 < p1)                                   \
+  {                                              \
+    min = p0;                                    \
+    max = p1;                                    \
+  }                                              \
+  else                                           \
+  {                                              \
+    min = p1;                                    \
+    max = p0;                                    \
+  }                                              \
+  rad = fa * boxHalfSize.x + fb * boxHalfSize.y; \
+  if (min > rad || max < -rad)                   \
+    return 0;
 
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019 (slightly translated from above credited authors)
@@ -104,9 +170,9 @@ bool udIntersectionTest_AABBTriangle(const udDouble3 &boxCenter, const udDouble3
   //    2) normal of the triangle
   //    3) crossproduct(edge from tri, {x,y,z}-direction)
   //       this gives 3x3=9 more tests
-  udDouble3 v0,v1,v2;
-  double min,max,p0,p1,p2,rad,fex,fey,fez;		// -NJMP- "d" local variable removed
-  udDouble3 normal,e0,e1,e2;
+  udDouble3 v0, v1, v2;
+  double min, max, p0, p1, p2, rad, fex, fey, fez; // -NJMP- "d" local variable removed
+  udDouble3 normal, e0, e1, e2;
 
   // This is the fastest branch on Sun
   // move everything so that the boxcenter is in (0,0,0)
@@ -115,9 +181,9 @@ bool udIntersectionTest_AABBTriangle(const udDouble3 &boxCenter, const udDouble3
   v2 = triVerts[2] - boxCenter;
 
   // compute triangle edges
-  e0 = v1 - v0;      // tri edge 0
-  e1 = v2 - v1;      // tri edge 1
-  e2 = v0 - v2;      // tri edge 2
+  e0 = v1 - v0; // tri edge 0
+  e1 = v2 - v1; // tri edge 1
+  e2 = v0 - v2; // tri edge 2
 
   // Bullet 3:
   //  test the 9 tests first (this was faster)
@@ -169,17 +235,17 @@ bool udIntersectionTest_AABBTriangle(const udDouble3 &boxCenter, const udDouble3
   normal = udCross3(e0, e1);
   // -NJMP- (line removed here)
   if (!PlaneBoxOverlap(normal, v0, boxHalfSize))
-    return false;	// -NJMP-
+    return false; // -NJMP-
 
-  return true;   // box and triangle overlaps
+  return true; // box and triangle overlaps
 }
 
 // AABB vs line segment test. By Miguel Gomez
 // Taken from http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php?page=6
 // TODO: Some optimization opportunity on this one, particularly precomputing the abs linedir
-static bool AABB_LineSegmentOverlap(udDouble3 lineDir,	    // line direction
-                                    udDouble3 mid,	  // midpoint of the line segment
-                                    double halfLength,	    // segment half-length
+static bool AABB_LineSegmentOverlap(udDouble3 lineDir,   // line direction
+                                    udDouble3 mid,       // midpoint of the line segment
+                                    double halfLength,   // segment half-length
                                     udDouble3 boxCenter, // box center/extents
                                     udDouble3 boxExtents)
 {
@@ -191,13 +257,13 @@ static bool AABB_LineSegmentOverlap(udDouble3 lineDir,	    // line direction
 
   // do any of the principal axes form a separating axis?
 
-  if( fabs(t.x) > boxExtents.x + halfLength * fabs(lineDir.x) )
+  if (fabs(t.x) > boxExtents.x + halfLength * fabs(lineDir.x))
     return 0;
 
-  if( fabs(t.y) > boxExtents.y + halfLength * fabs(lineDir.y) )
+  if (fabs(t.y) > boxExtents.y + halfLength * fabs(lineDir.y))
     return 0;
 
-  if( fabs(t.z) > boxExtents.z + halfLength * fabs(lineDir.z) )
+  if (fabs(t.z) > boxExtents.z + halfLength * fabs(lineDir.z))
     return 0;
 
   /* NOTE: Since the separating axis is perpendicular to the line in these
@@ -207,7 +273,7 @@ static bool AABB_LineSegmentOverlap(udDouble3 lineDir,	    // line direction
 
   r = boxExtents.y * fabs(lineDir.z) + boxExtents.z * fabs(lineDir.y);
 
-  if (fabs(t.y*lineDir.z - t.z*lineDir.y) > r)
+  if (fabs(t.y * lineDir.z - t.z * lineDir.y) > r)
     return 0;
 
   //lineDir.cross(y-axis)?

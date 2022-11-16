@@ -2,8 +2,14 @@
 #include "udDebug.h"
 #include "udPlatformUtil.h"
 
-#define RESULTINFO(x) { &(#x)[4], x }
-#define RESULTINFO_CUSTOM(x,str) { str, x }
+#define RESULTINFO(x) \
+  {                   \
+    &(#x)[4], x       \
+  }
+#define RESULTINFO_CUSTOM(x, str) \
+  {                               \
+    str, x                        \
+  }
 
 const char *g_udLastErrorFilename = nullptr;
 int g_udLastErrorLine = 0;
@@ -16,8 +22,7 @@ struct udResultInfo
   udResult result; // Used to make sure the array is correctly filled out
 };
 
-udResultInfo udResultInfoArray[] =
-{
+udResultInfo udResultInfoArray[] = {
   RESULTINFO(udR_Success),
   RESULTINFO(udR_Failure),
   RESULTINFO(udR_NothingToDo),
@@ -75,14 +80,13 @@ udResultInfo udResultInfoArray[] =
   RESULTINFO(udR_InProgress),
 };
 
-UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count*sizeof(udResultInfoArray[0])), "Result code not entered in strings table");
-
+UDCOMPILEASSERT(sizeof(udResultInfoArray) == (udR_Count * sizeof(udResultInfoArray[0])), "Result code not entered in strings table");
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
 const char *udResultAsString(udResult result)
 {
-  if (result < 0  || result > udR_Count)
+  if (result < 0 || result > udR_Count)
     return "Unknown error";
 
   if (result == udR_Count)
@@ -97,4 +101,3 @@ const char *udResultAsString(udResult result)
   }
   return udResultInfoArray[result].pString;
 }
-

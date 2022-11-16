@@ -1,8 +1,8 @@
-#include "udStringUtil.h"
 #include "udCompression.h"
+#include "libdeflate.h"
 #include "udFileHandler.h"
 #include "udMath.h"
-#include "libdeflate.h"
+#include "udStringUtil.h"
 #include <atomic>
 
 // ****************************************************************************
@@ -11,11 +11,16 @@ const char *udCompressionTypeAsString(udCompressionType type)
 {
   switch (type)
   {
-    case udCT_None:         return "None";
-    case udCT_RawDeflate:   return "RawDeflate";
-    case udCT_ZlibDeflate:  return "ZlibDeflate";
-    case udCT_GzipDeflate:  return "GzipDeflate";
-    default:                return nullptr;
+    case udCT_None:
+      return "None";
+    case udCT_RawDeflate:
+      return "RawDeflate";
+    case udCT_ZlibDeflate:
+      return "ZlibDeflate";
+    case udCT_GzipDeflate:
+      return "GzipDeflate";
+    default:
+      return nullptr;
   }
 }
 
@@ -135,69 +140,69 @@ udResult udCompression_Inflate(void *pDest, size_t destSize, const void *pSource
   }
   switch (type)
   {
-  case udCT_None:
-    // Handle the special case of no compression
-    memcpy(pDest, pSource, sourceSize);
-    if (pInflatedSize)
-      *pInflatedSize = sourceSize;
-    break;
+    case udCT_None:
+      // Handle the special case of no compression
+      memcpy(pDest, pSource, sourceSize);
+      if (pInflatedSize)
+        *pInflatedSize = sourceSize;
+      break;
 
-  case udCT_RawDeflate:
-    ldComp = libdeflate_alloc_decompressor();
-    UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+    case udCT_RawDeflate:
+      ldComp = libdeflate_alloc_decompressor();
+      UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
 
-    pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
-    UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+      pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
+      UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
-    lresult = libdeflate_deflate_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
-    if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
-      UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
-    UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
+      lresult = libdeflate_deflate_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
+      if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
+        UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
+      UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
-    if (pInflatedSize)
-      *pInflatedSize = inflatedSize;
-    if (pTemp != pDest)
-      memcpy(pDest, pTemp, inflatedSize);
-    break;
+      if (pInflatedSize)
+        *pInflatedSize = inflatedSize;
+      if (pTemp != pDest)
+        memcpy(pDest, pTemp, inflatedSize);
+      break;
 
-  case udCT_ZlibDeflate:
-    ldComp = libdeflate_alloc_decompressor();
-    UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+    case udCT_ZlibDeflate:
+      ldComp = libdeflate_alloc_decompressor();
+      UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
 
-    pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
-    UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+      pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
+      UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
-    lresult = libdeflate_zlib_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
-    if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
-      UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
-    UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
+      lresult = libdeflate_zlib_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
+      if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
+        UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
+      UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
-    if (pInflatedSize)
-      *pInflatedSize = inflatedSize;
-    if (pTemp != pDest)
-      memcpy(pDest, pTemp, inflatedSize);
-    break;
+      if (pInflatedSize)
+        *pInflatedSize = inflatedSize;
+      if (pTemp != pDest)
+        memcpy(pDest, pTemp, inflatedSize);
+      break;
 
-  case udCT_GzipDeflate:
-    ldComp = libdeflate_alloc_decompressor();
-    UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
+    case udCT_GzipDeflate:
+      ldComp = libdeflate_alloc_decompressor();
+      UD_ERROR_NULL(ldComp, udR_MemoryAllocationFailure);
 
-    pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
-    UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
+      pTemp = (pDest == pSource) ? udAlloc(destSize) : pDest;
+      UD_ERROR_NULL(pTemp, udR_MemoryAllocationFailure);
 
-    lresult = libdeflate_gzip_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
-    if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
-      UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
-    UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
+      lresult = libdeflate_gzip_decompress(ldComp, pSource, sourceSize, pTemp, destSize, &inflatedSize);
+      if (lresult == LIBDEFLATE_INSUFFICIENT_SPACE)
+        UD_ERROR_SET_NO_BREAK(udR_BufferTooSmall);
+      UD_ERROR_IF(lresult != LIBDEFLATE_SUCCESS, udR_CompressionError);
 
-    if (pInflatedSize)
-      *pInflatedSize = inflatedSize;
-    if (pTemp != pDest)
-      memcpy(pDest, pTemp, inflatedSize);
-    break;
+      if (pInflatedSize)
+        *pInflatedSize = inflatedSize;
+      if (pTemp != pDest)
+        memcpy(pDest, pTemp, inflatedSize);
+      break;
 
-  default:
-    UD_ERROR_SET(udR_InvalidParameter);
+    default:
+      UD_ERROR_SET(udR_InvalidParameter);
   }
 
   result = udR_Success;
@@ -212,71 +217,71 @@ epilogue:
 }
 
 // To prevent collisions with other apps using miniz
-#define mz_adler32 udComp_adler32
-#define mz_crc32 udComp_crc32
-#define mz_free udComp_free
-#define mz_version  udComp_version
-#define mz_deflateEnd udComp_deflateEnd
-#define mz_deflateBound udComp_deflateBound
-#define mz_compressBound udComp_compressBound
-#define mz_inflateInit2 udComp_inflateInit2
-#define mz_inflateInit udComp_inflateInit
-#define mz_inflateEnd udComp_inflateEnd
-#define mz_error udComp_error
-#define tinfl_decompress udCompTInf_decompress
-#define tinfl_decompress_mem_to_heap udCompTInf_decompress_mem_to_heap
-#define tinfl_decompress_mem_to_mem udCompTInf_decompress_mem_to_mem
-#define tinfl_decompress_mem_to_callback udCompTInf_decompress_mem_to_callback
-#define tdefl_compress udCompTDefl_compress
-#define tdefl_compress_buffer udCompTDefl_compress_buffer
-#define tdefl_init udCompTDefl_init
-#define tdefl_get_prev_return_status udCompTDefl_get_prev_return_status
-#define tdefl_get_adler32 udCompTDefl_get_adler32
-#define tdefl_compress_mem_to_output udCompTDefl_compress_mem_to_output
-#define tdefl_compress_mem_to_heap udCompTDefl_compress_mem_to_heap
-#define tdefl_compress_mem_to_mem udCompTDefl_compress_mem_to_mem
-#define tdefl_create_comp_flags_from_zip_params udCompTDefl_create_comp_flags_from_zip_params
+#define mz_adler32                                 udComp_adler32
+#define mz_crc32                                   udComp_crc32
+#define mz_free                                    udComp_free
+#define mz_version                                 udComp_version
+#define mz_deflateEnd                              udComp_deflateEnd
+#define mz_deflateBound                            udComp_deflateBound
+#define mz_compressBound                           udComp_compressBound
+#define mz_inflateInit2                            udComp_inflateInit2
+#define mz_inflateInit                             udComp_inflateInit
+#define mz_inflateEnd                              udComp_inflateEnd
+#define mz_error                                   udComp_error
+#define tinfl_decompress                           udCompTInf_decompress
+#define tinfl_decompress_mem_to_heap               udCompTInf_decompress_mem_to_heap
+#define tinfl_decompress_mem_to_mem                udCompTInf_decompress_mem_to_mem
+#define tinfl_decompress_mem_to_callback           udCompTInf_decompress_mem_to_callback
+#define tdefl_compress                             udCompTDefl_compress
+#define tdefl_compress_buffer                      udCompTDefl_compress_buffer
+#define tdefl_init                                 udCompTDefl_init
+#define tdefl_get_prev_return_status               udCompTDefl_get_prev_return_status
+#define tdefl_get_adler32                          udCompTDefl_get_adler32
+#define tdefl_compress_mem_to_output               udCompTDefl_compress_mem_to_output
+#define tdefl_compress_mem_to_heap                 udCompTDefl_compress_mem_to_heap
+#define tdefl_compress_mem_to_mem                  udCompTDefl_compress_mem_to_mem
+#define tdefl_create_comp_flags_from_zip_params    udCompTDefl_create_comp_flags_from_zip_params
 #define tdefl_write_image_to_png_file_in_memory_ex udCompTDefl_write_image_to_png_file_in_memory_ex
-#define tdefl_write_image_to_png_file_in_memory udCompTDefl_write_image_to_png_file_in_memory
-#define mz_deflateInit2 udComp_deflateInit2
-#define mz_deflateReset udComp_deflateReset
-#define mz_deflate udComp_deflate
-#define mz_inflate udComp_inflate
-#define mz_uncompress udComp_uncompress
-#define mz_deflateInit udComp_deflateInit
-#define mz_compress2 udComp_compress2
-#define mz_compress udComp_compress
+#define tdefl_write_image_to_png_file_in_memory    udCompTDefl_write_image_to_png_file_in_memory
+#define mz_deflateInit2                            udComp_deflateInit2
+#define mz_deflateReset                            udComp_deflateReset
+#define mz_deflate                                 udComp_deflate
+#define mz_inflate                                 udComp_inflate
+#define mz_uncompress                              udComp_uncompress
+#define mz_deflateInit                             udComp_deflateInit
+#define mz_compress2                               udComp_compress2
+#define mz_compress                                udComp_compress
 
 #define mz_zip_writer_init_from_reader udComp_zip_writer_init_from_reader
-#define mz_zip_reader_end udComp_mz_zip_reader_end
-#define mz_zip_reader_init_mem udComp_mz_zip_reader_init_mem
-#define mz_zip_reader_locate_file udComp_mz_zip_reader_locate_file
-#define mz_zip_reader_file_stat udComp_mz_zip_reader_file_stat
+#define mz_zip_reader_end              udComp_mz_zip_reader_end
+#define mz_zip_reader_init_mem         udComp_mz_zip_reader_init_mem
+#define mz_zip_reader_locate_file      udComp_mz_zip_reader_locate_file
+#define mz_zip_reader_file_stat        udComp_mz_zip_reader_file_stat
 
 #define MINIZ_NO_STDIO
 #define MINIZ_NO_TIME
 //#define MINIZ_NO_MALLOC Removed because the PNG creator requires malloc
 #if defined(_MSC_VER)
-# pragma warning(push)
-# pragma warning(disable:4334)
+#  pragma warning(push)
+#  pragma warning(disable : 4334)
 #else
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wstrict-aliasing"
-# if __GNUC__ >= 6 && !defined(__clang_major__)
-#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
-# endif
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#  if __GNUC__ >= 6 && !defined(__clang_major__)
+#    pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#  endif
 #endif
 #include "miniz/miniz.c"
 #if defined(_MSC_VER)
-# pragma warning(pop)
+#  pragma warning(pop)
 #else
-# pragma GCC diagnostic pop
+#  pragma GCC diagnostic pop
 #endif
 
 struct udFile_Zip : public udFile
 {
   mz_zip_archive mz;
-  udFile * volatile pZipFile;
+  udFile *volatile pZipFile;
   uint8_t *pFileData;
   int index; // Index within the zip of the current file
   std::atomic<int32_t> lengthRead;
@@ -364,7 +369,7 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
   {
     AbortRead(pZip);
     udFile *pZipFile = pZip->pZipFile;
-    if (pZipFile && udInterlockedCompareExchangePointer((void**)&pZip->pZipFile, nullptr, pZipFile) == pZipFile)
+    if (pZipFile && udInterlockedCompareExchangePointer((void **)&pZip->pZipFile, nullptr, pZipFile) == pZipFile)
       udFile_Close(&pZipFile);
     udDestroyRWLock(&pZip->pRWLock);
     mz_zip_reader_end(&pZip->mz);
@@ -378,7 +383,11 @@ static udResult udFileHandler_MiniZClose(udFile **ppFile)
 static void *udMiniZ_Alloc(void * /*pOpaque*/, size_t items, size_t size) { return udAlloc(items * size); }
 static void *udMiniZ_Realloc(void * /*pOpaque*/, void *address, size_t items, size_t size) { return udRealloc(address, items * size); }
 static void udMiniZ_Free(void * /*pOpaque*/, void *address) { udFree(address); }
-static size_t udMiniZ_Read(void *pOpaque, mz_uint64 fileOffset, void *pBuf, size_t n) { udFile_Read(((udFile_Zip*)pOpaque)->pZipFile, pBuf, n, fileOffset, udFSW_SeekSet, &n); return n; }
+static size_t udMiniZ_Read(void *pOpaque, mz_uint64 fileOffset, void *pBuf, size_t n)
+{
+  udFile_Read(((udFile_Zip *)pOpaque)->pZipFile, pBuf, n, fileOffset, udFSW_SeekSet, &n);
+  return n;
+}
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, October 2018
@@ -517,12 +526,12 @@ udResult udFileHandler_MiniZOpen(udFile **ppFile, const char *pFilename, udFileO
   pZipName = udStrdup(pFilename + 6); // Skip zip://
   // Find a colon, but importantly, AFTER a folder delimiter if one exists (to exclude drive letters / protocols such as raw://)
   pFolderDelim = udStrchr(pZipName, "/\\");
-  pSubFilename = (char*)udStrrchr(pFolderDelim ? pFolderDelim : pZipName, ":");
+  pSubFilename = (char *)udStrrchr(pFolderDelim ? pFolderDelim : pZipName, ":");
   if (pSubFilename)
     *pSubFilename++ = 0; // Skip and null the colon
 
   // Now open the underlying zip file
-  UD_ERROR_CHECK(udFile_Open((udFile**)&pFile->pZipFile, pZipName, udFOF_Read, &zipLen));
+  UD_ERROR_CHECK(udFile_Open((udFile **)&pFile->pZipFile, pZipName, udFOF_Read, &zipLen));
 
   // Initialise the zip reader
   UD_ERROR_IF(!mz_zip_reader_init(&pFile->mz, (mz_uint64)zipLen, 0), udR_OpenFailure);
@@ -573,7 +582,7 @@ epilogue:
   if (pFile)
   {
     mz_zip_reader_end(&pFile->mz);
-    udFileHandler_MiniZClose((udFile**)&pFile);
+    udFileHandler_MiniZClose((udFile **)&pFile);
   }
   udFree(pZipName);
   return result;

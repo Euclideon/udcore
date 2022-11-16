@@ -7,38 +7,40 @@
 // SetThreadName function taken from https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code
 // Usage: SetThreadName ((DWORD)-1, "MainThread");
 //
-#include <windows.h>
+#  include <windows.h>
 const DWORD MS_VC_EXCEPTION = 0x406D1388;
-#pragma pack(push,8)
+#  pragma pack(push, 8)
 typedef struct tagTHREADNAME_INFO
 {
-  DWORD dwType; // Must be 0x1000.
-  LPCSTR szName; // Pointer to name (in user addr space).
+  DWORD dwType;     // Must be 0x1000.
+  LPCSTR szName;    // Pointer to name (in user addr space).
   DWORD dwThreadID; // Thread ID (-1=caller thread).
-  DWORD dwFlags; // Reserved for future use, must be zero.
+  DWORD dwFlags;    // Reserved for future use, must be zero.
 } THREADNAME_INFO;
-#pragma pack(pop)
-static void SetThreadName(DWORD dwThreadID, const char* threadName)
+#  pragma pack(pop)
+static void SetThreadName(DWORD dwThreadID, const char *threadName)
 {
   THREADNAME_INFO info;
   info.dwType = 0x1000;
   info.szName = threadName;
   info.dwThreadID = dwThreadID;
   info.dwFlags = 0;
-#pragma warning(push)
-#pragma warning(disable: 6320 6322)
-  __try {
-    RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+#  pragma warning(push)
+#  pragma warning(disable : 6320 6322)
+  __try
+  {
+    RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR *)&info);
   }
-  __except (EXCEPTION_EXECUTE_HANDLER) {
+  __except (EXCEPTION_EXECUTE_HANDLER)
+  {
   }
-#pragma warning(pop)
+#  pragma warning(pop)
 }
 #else
-#include <sched.h>
-#include <pthread.h>
-#include <errno.h>
-#include <semaphore.h>
+#  include <errno.h>
+#  include <pthread.h>
+#  include <sched.h>
+#  include <semaphore.h>
 
 void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
 {
@@ -54,7 +56,7 @@ void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
 }
 #endif
 
-#define DEBUG_CACHE 0
+#define DEBUG_CACHE        0
 #define MAX_CACHED_THREADS 16
 #define CACHE_WAIT_SECONDS 30
 static volatile udThread *s_pCachedThreads[MAX_CACHED_THREADS ? MAX_CACHED_THREADS : 1];
@@ -62,11 +64,11 @@ static volatile udThread *s_pCachedThreads[MAX_CACHED_THREADS ? MAX_CACHED_THREA
 struct udThread
 {
   // First element of structure is GUARANTEED to be the operating system thread handle
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   HANDLE handle;
-# else
+#else
   pthread_t t;
-# endif
+#endif
   udThreadStart threadStarter;
   void *pThreadData;
   udSemaphore *pCacheSemaphore; // Semaphore is non-null only while on the cached thread list
@@ -141,7 +143,6 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
   return udThreadReturnTypeConvert(threadReturnValue);
 }
 
-
 // ****************************************************************************
 udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void *pThreadData, udThreadCreateFlags /*flags*/, const char *pThreadName)
 {
@@ -153,7 +154,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
   UD_ERROR_NULL(threadStarter, udR_InvalidParameter);
   for (slotIndex = 0; pThread == nullptr && slotIndex < MAX_CACHED_THREADS; ++slotIndex)
   {
-    pThread = const_cast<udThread*>(s_pCachedThreads[slotIndex]);
+    pThread = const_cast<udThread *>(s_pCachedThreads[slotIndex]);
     if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) != pThread)
       pThread = nullptr;
   }
@@ -174,7 +175,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
     pThread->threadStarter = threadStarter;
     pThread->pThreadData = pThreadData;
     pThread->refCount = 1;
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
     pThread->handle = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)udThread_Bootstrap, pThread, 0, NULL);
 #else
     typedef void *(*PTHREAD_START_ROUTINE)(void *);
@@ -210,11 +211,21 @@ void udThread_SetPriority(udThread *pThread, udThreadPriority priority)
 #if UDPLATFORM_WINDOWS
     switch (priority)
     {
-    case udTP_Lowest:   SetThreadPriority(pThread->handle, THREAD_PRIORITY_LOWEST); break;
-    case udTP_Low:      SetThreadPriority(pThread->handle, THREAD_PRIORITY_BELOW_NORMAL); break;
-    case udTP_Normal:   SetThreadPriority(pThread->handle, THREAD_PRIORITY_NORMAL); break;
-    case udTP_High:     SetThreadPriority(pThread->handle, THREAD_PRIORITY_ABOVE_NORMAL); break;
-    case udTP_Highest:  SetThreadPriority(pThread->handle, THREAD_PRIORITY_HIGHEST); break;
+      case udTP_Lowest:
+        SetThreadPriority(pThread->handle, THREAD_PRIORITY_LOWEST);
+        break;
+      case udTP_Low:
+        SetThreadPriority(pThread->handle, THREAD_PRIORITY_BELOW_NORMAL);
+        break;
+      case udTP_Normal:
+        SetThreadPriority(pThread->handle, THREAD_PRIORITY_NORMAL);
+        break;
+      case udTP_High:
+        SetThreadPriority(pThread->handle, THREAD_PRIORITY_ABOVE_NORMAL);
+        break;
+      case udTP_Highest:
+        SetThreadPriority(pThread->handle, THREAD_PRIORITY_HIGHEST);
+        break;
     }
 #elif UDPLATFORM_LINUX
     int policy = sched_getscheduler(0);
@@ -331,23 +342,23 @@ udResult udThread_Join(udThread *pThread, int waitMs)
 }
 
 #if UDPLATFORM_OSX || UDPLATFORM_IOS
-# define UD_USE_PLATFORM_SEMAPHORE 0
-# define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 1
+#  define UD_USE_PLATFORM_SEMAPHORE         0
+#  define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 1
 #else
-# define UD_USE_PLATFORM_SEMAPHORE 0
-# define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 0
+#  define UD_USE_PLATFORM_SEMAPHORE         0
+#  define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 0
 #endif
 
 struct udSemaphore
 {
 #if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   HANDLE handle;
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#  elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
+#    error "Unsupported platform."
+#  else
   sem_t handle;
-# endif
+#  endif
 #else
   udMutex *pMutex;
   udConditionVariable *pCondition;
@@ -363,14 +374,14 @@ udSemaphore *udCreateSemaphore()
   udSemaphore *pSemaphore = udAllocType(udSemaphore, 1, udAF_None);
   UD_ERROR_NULL(pSemaphore, udR_MemoryAllocationFailure);
 #if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   pSemaphore->handle = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
   UD_ERROR_NULL(pSemaphore, udR_Failure);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#  elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
+#    error "Unsupported platform."
+#  else
   UD_ERROR_IF(sem_init(&pSemaphore->handle, 0, 0) == -1, udR_Failure);
-# endif
+#  endif
 #else
   pSemaphore->pMutex = udCreateMutex();
   pSemaphore->pCondition = udCreateConditionVariable();
@@ -406,18 +417,18 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
   if (ppSemaphore == nullptr || *ppSemaphore == nullptr)
     return;
 
-  udSemaphore *pSemaphore = (*(udSemaphore*volatile*)ppSemaphore);
+  udSemaphore *pSemaphore = (*(udSemaphore *volatile *)ppSemaphore);
   if (udInterlockedCompareExchangePointer(ppSemaphore, nullptr, pSemaphore) != pSemaphore)
     return;
 
 #if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   CloseHandle(pSemaphore->handle);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#  elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
+#    error "Unsupported platform."
+#  else
   sem_destroy(&pSemaphore->handle);
-# endif
+#  endif
   udFree(pSemaphore);
 #else
   udLockMutex(pSemaphore->pMutex);
@@ -433,14 +444,14 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
     return;
 
 #if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   ReleaseSemaphore(pSemaphore->handle, count, nullptr);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#  elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
+#    error "Unsupported platform."
+#  else
   while (count-- > 0)
     sem_post(&pSemaphore->handle);
-# endif
+#  endif
 #else
   while (count-- > 0)
   {
@@ -460,18 +471,18 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
     return -1;
 
 #if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#  if UDPLATFORM_WINDOWS
   return WaitForSingleObject(pSemaphore->handle, waitMs);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#  elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
+#    error "Unsupported platform."
+#  else
   if (waitMs == UDTHREAD_WAIT_INFINITE)
   {
     return sem_wait(&pSemaphore->handle);
   }
   else
   {
-    struct  timespec ts;
+    struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
       return -1;
 
@@ -483,7 +494,7 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 
     return sem_timedwait(&pSemaphore->handle, &ts);
   }
-# endif
+#  endif
 #else
   udLockMutex(pSemaphore->pMutex);
   bool retVal;
@@ -543,7 +554,7 @@ udConditionVariable *udCreateConditionVariable()
   pthread_cond_init(pCondition, NULL);
 #endif
 
-  return (udConditionVariable*)pCondition;
+  return (udConditionVariable *)pCondition;
 }
 
 // ****************************************************************************
@@ -568,10 +579,10 @@ void udSignalConditionVariable(udConditionVariable *pConditionVariable, int coun
   while (count-- > 0)
   {
 #if UDPLATFORM_WINDOWS
-    CONDITION_VARIABLE *pCondition = (CONDITION_VARIABLE*)pConditionVariable;
+    CONDITION_VARIABLE *pCondition = (CONDITION_VARIABLE *)pConditionVariable;
     WakeConditionVariable(pCondition);
 #else
-    pthread_cond_t *pCondition = (pthread_cond_t*)pConditionVariable;
+    pthread_cond_t *pCondition = (pthread_cond_t *)pConditionVariable;
     pthread_cond_signal(pCondition);
 #endif
   }
@@ -582,13 +593,13 @@ void udSignalConditionVariable(udConditionVariable *pConditionVariable, int coun
 int udWaitConditionVariable(udConditionVariable *pConditionVariable, udMutex *pMutex, int waitMs)
 {
 #if UDPLATFORM_WINDOWS
-  CONDITION_VARIABLE *pCondition = (CONDITION_VARIABLE*)pConditionVariable;
-  CRITICAL_SECTION *pCriticalSection = (CRITICAL_SECTION*)pMutex;
+  CONDITION_VARIABLE *pCondition = (CONDITION_VARIABLE *)pConditionVariable;
+  CRITICAL_SECTION *pCriticalSection = (CRITICAL_SECTION *)pMutex;
   BOOL retVal = SleepConditionVariableCS(pCondition, pCriticalSection, (waitMs == UDTHREAD_WAIT_INFINITE ? INFINITE : waitMs));
   return (retVal == TRUE ? 0 : 1); // This isn't (!retVal) for clarity.
 #else
-  pthread_cond_t *pCondition = (pthread_cond_t*)pConditionVariable;
-  pthread_mutex_t *pMutexInternal = (pthread_mutex_t*)pMutex;
+  pthread_cond_t *pCondition = (pthread_cond_t *)pConditionVariable;
+  pthread_mutex_t *pMutexInternal = (pthread_mutex_t *)pMutex;
   int retVal = 0;
   if (waitMs == UDTHREAD_WAIT_INFINITE)
   {
@@ -613,12 +624,12 @@ udRWLock *udCreateRWLock()
   SRWLOCK *pRWLock = udAllocType(SRWLOCK, 1, udAF_None);
   if (pRWLock)
     InitializeSRWLock(pRWLock);
-  return (udRWLock*)pRWLock;
+  return (udRWLock *)pRWLock;
 #else
   pthread_rwlock_t *pRWLock = (pthread_rwlock_t *)udAlloc(sizeof(pthread_rwlock_t));
   if (pRWLock)
     pthread_rwlock_init(pRWLock, NULL);
-  return (udRWLock*)pRWLock;
+  return (udRWLock *)pRWLock;
 #endif
 }
 
@@ -633,7 +644,7 @@ void udDestroyRWLock(udRWLock **ppRWLock)
     udFree(*ppRWLock);
 #else
     pthread_rwlock_t *pRWLock = (pthread_rwlock_t *)(*ppRWLock);
-    if (udInterlockedCompareExchangePointer(ppRWLock, nullptr, pRWLock) == (udRWLock*)pRWLock)
+    if (udInterlockedCompareExchangePointer(ppRWLock, nullptr, pRWLock) == (udRWLock *)pRWLock)
     {
       pthread_rwlock_destroy(pRWLock);
       udFree(pRWLock);
@@ -649,11 +660,11 @@ int udReadLockRWLock(udRWLock *pRWLock)
   if (pRWLock)
   {
 #if UDPLATFORM_WINDOWS
-    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    SRWLOCK *pLock = (SRWLOCK *)pRWLock;
     AcquireSRWLockShared(pLock);
     return 0; // Can't fail
 #else
-    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    pthread_rwlock_t *pLock = (pthread_rwlock_t *)pRWLock;
     return pthread_rwlock_rdlock(pLock);
 #endif
   }
@@ -667,11 +678,11 @@ int udWriteLockRWLock(udRWLock *pRWLock)
   if (pRWLock)
   {
 #if UDPLATFORM_WINDOWS
-    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    SRWLOCK *pLock = (SRWLOCK *)pRWLock;
     AcquireSRWLockExclusive(pLock);
     return 0; // Can't fail
 #else
-    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    pthread_rwlock_t *pLock = (pthread_rwlock_t *)pRWLock;
     return pthread_rwlock_wrlock(pLock);
 #endif
   }
@@ -685,10 +696,10 @@ void udReadUnlockRWLock(udRWLock *pRWLock)
   if (pRWLock)
   {
 #if UDPLATFORM_WINDOWS
-    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    SRWLOCK *pLock = (SRWLOCK *)pRWLock;
     ReleaseSRWLockShared(pLock);
 #else
-    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    pthread_rwlock_t *pLock = (pthread_rwlock_t *)pRWLock;
     pthread_rwlock_unlock(pLock);
 #endif
   }
@@ -701,10 +712,10 @@ void udWriteUnlockRWLock(udRWLock *pRWLock)
   if (pRWLock)
   {
 #if UDPLATFORM_WINDOWS
-    SRWLOCK *pLock = (SRWLOCK*)pRWLock;
+    SRWLOCK *pLock = (SRWLOCK *)pRWLock;
     ReleaseSRWLockExclusive(pLock);
 #else
-    pthread_rwlock_t *pLock = (pthread_rwlock_t*)pRWLock;
+    pthread_rwlock_t *pLock = (pthread_rwlock_t *)pRWLock;
     pthread_rwlock_unlock(pLock);
 #endif
   }
@@ -729,7 +740,7 @@ udMutex *udCreateMutex()
     pthread_mutex_init(mutex, &attr);
     pthread_mutexattr_destroy(&attr);
   }
-  return (udMutex*)mutex;
+  return (udMutex *)mutex;
 #endif
 }
 
@@ -739,7 +750,7 @@ void udDestroyMutex(udMutex **ppMutex)
   if (ppMutex && *ppMutex)
   {
 #if UDPLATFORM_WINDOWS
-    CRITICAL_SECTION *pCriticalSection = (CRITICAL_SECTION*)(*ppMutex);
+    CRITICAL_SECTION *pCriticalSection = (CRITICAL_SECTION *)(*ppMutex);
     *ppMutex = NULL;
     DeleteCriticalSection(pCriticalSection);
     udFree(pCriticalSection);
@@ -758,7 +769,7 @@ udMutex *udLockMutex(udMutex *pMutex)
   if (pMutex)
   {
 #if UDPLATFORM_WINDOWS
-    EnterCriticalSection((CRITICAL_SECTION*)pMutex);
+    EnterCriticalSection((CRITICAL_SECTION *)pMutex);
 #else
     pthread_mutex_lock((pthread_mutex_t *)pMutex);
 #endif
@@ -772,11 +783,9 @@ void udReleaseMutex(udMutex *pMutex)
   if (pMutex)
   {
 #if UDPLATFORM_WINDOWS
-    LeaveCriticalSection((CRITICAL_SECTION*)pMutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)pMutex);
 #else
     pthread_mutex_unlock((pthread_mutex_t *)pMutex);
 #endif
   }
 }
-
-
