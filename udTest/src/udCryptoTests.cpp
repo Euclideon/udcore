@@ -1,26 +1,23 @@
-#include "gtest/gtest.h"
 #include "udCrypto.h"
 #include "udJSON.h"
 #include "udStringUtil.h"
+#include "gtest/gtest.h"
 
 TEST(udCryptoTests, AES_CBC_MonteCarlo)
 {
   // Do the first only monte carlo tests for CBC mode (400 tests in official monte carlo)
-  static const unsigned char aes_test_cbc_dec[2][16] =
-  {
+  static const unsigned char aes_test_cbc_dec[2][16] = {
     { 0xFA, 0xCA, 0x37, 0xE0, 0xB0, 0xC8, 0x53, 0x73, 0xDF, 0x70, 0x6E, 0x73, 0xF7, 0xC9, 0xAF, 0x86 },
     { 0x48, 0x04, 0xE1, 0x81, 0x8F, 0xE6, 0x29, 0x75, 0x19, 0xA3, 0xE8, 0x8C, 0x57, 0x31, 0x04, 0x13 }
   };
 
-  static const unsigned char aes_test_cbc_enc[2][16] =
-  {
+  static const unsigned char aes_test_cbc_enc[2][16] = {
     { 0x8A, 0x05, 0xFC, 0x5E, 0x09, 0x5A, 0xF4, 0x84, 0x8A, 0x08, 0xD3, 0x28, 0xD3, 0x68, 0x8E, 0x3D },
     { 0xFE, 0x3C, 0x53, 0x65, 0x3E, 0x2F, 0x45, 0xB5, 0x6F, 0xCD, 0x88, 0xB2, 0xCC, 0x89, 0x8F, 0xF0 }
   };
 
-  static const char *pZeroKeys[2] =
-  {
-    "AAAAAAAAAAAAAAAAAAAAAA==", // 16-bytes of zeros
+  static const char *pZeroKeys[2] = {
+    "AAAAAAAAAAAAAAAAAAAAAA==",                    // 16-bytes of zeros
     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" // 32-bytes of zeros
   };
   unsigned char buf[64];
@@ -67,20 +64,17 @@ TEST(udCryptoTests, AES_CBC_MonteCarlo)
 TEST(udCryptoTests, AES_CTR_MonteCarlo)
 {
   // Do the first only monte carlo tests for CTR mode (400 tests in official monte carlo)
-  static const char *aes_test_ctr_key[3] =
-  {
+  static const char *aes_test_ctr_key[3] = {
     "rmhS+BIQZ8xL96V2VXfzng==", "fiQGeBf64NdD1s4fMlORYw==", "dpG+A15QIKisbmGFKfmg3A=="
   };
 
-  static const udCryptoIV aes_test_ctr_nonce_counter[3] =
-  {
+  static const udCryptoIV aes_test_ctr_nonce_counter[3] = {
     { { 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 } },
     { { 0x00, 0x6C, 0xB6, 0xDB, 0xC0, 0x54, 0x3B, 0x59, 0xDA, 0x48, 0xD9, 0x0B, 0x00, 0x00, 0x00, 0x01 } },
     { { 0x00, 0xE0, 0x01, 0x7B, 0x27, 0x77, 0x7F, 0x3F, 0x4A, 0x17, 0x86, 0xF0, 0x00, 0x00, 0x00, 0x01 } }
   };
 
-  static const unsigned char aes_test_ctr_pt[3][48] =
-  {
+  static const unsigned char aes_test_ctr_pt[3][48] = {
     { 0x53, 0x69, 0x6E, 0x67, 0x6C, 0x65, 0x20, 0x62, 0x6C, 0x6F, 0x63, 0x6B, 0x20, 0x6D, 0x73, 0x67 },
 
     { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -91,8 +85,7 @@ TEST(udCryptoTests, AES_CTR_MonteCarlo)
       0x20, 0x21, 0x22, 0x23 }
   };
 
-  static const unsigned char aes_test_ctr_ct[3][48] =
-  {
+  static const unsigned char aes_test_ctr_ct[3][48] = {
     { 0xE4, 0x09, 0x5D, 0x4F, 0xB7, 0xA7, 0xB3, 0x79, 0x2D, 0x61, 0x75, 0xA3, 0x26, 0x13, 0x11, 0xB8 },
 
     { 0x51, 0x04, 0xA1, 0x06, 0x16, 0x8A, 0x72, 0xD9, 0x79, 0x0D, 0x41, 0xEE, 0x8E, 0xDA, 0xD3, 0x88,
@@ -189,37 +182,31 @@ TEST(udCryptoTests, CipherErrorCodes)
   EXPECT_EQ(udR_InvalidParameter, result);
 }
 
-
 TEST(udCryptoTests, SHA)
 {
   /*
   * FIPS-180-1 test vectors. See https://www.di-mgt.com.au/sha_testvectors.html
   */
-  static const char* s_testMessages[3] =
-  {
+  static const char *s_testMessages[3] = {
     "abc",
     "",
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
   };
 
   static udCryptoHashes s_testHashes[] = { udCH_SHA1, udCH_SHA256, udCH_SHA512 };
-  static const char *s_testHashResults[][3] =
-  {
+  static const char *s_testHashResults[][3] = {
     { // SHA-1
       "qZk+NkcGgWq6PiVxeFDCbJzQ2J0=",
       "2jmj7l5rSw0yVb/vlWAYkK/YBwk=",
-      "hJg+RBw70m66rkqh+VEp5eVGcPE="
-    },
+      "hJg+RBw70m66rkqh+VEp5eVGcPE=" },
     { // SHA-256
       "ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=",
       "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-      "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE="
-    },
+      "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE=" },
     { // SHA-512
       "3a81oZNherrMQXNJriBBMRLm+k6JqX6iCp7u5ktV05ohkpkqJ0/BqDa6PCOj/uu9RU1EI2Q86A4qmslPpUyknw==",
       "z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg==",
-      "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ=="
-    }
+      "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ==" }
   };
 
   for (size_t shaType = 0; shaType < UDARRAYSIZE(s_testHashes); ++shaType)
@@ -258,27 +245,27 @@ TEST(udCryptoTests, Self)
 TEST(udCryptoTests, RSACreateSig)
 {
   static const char *pPrivateKeyText =
-    "{\n"
-    "  'Type': 'RSA',\n"
-    "  'Private': true,\n"
-    "  'Size': 2048,\n"
-    "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
-    "  'E': 'AQAB',\n"
-    "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
-    "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
-    "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
-    "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
-    "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
-    "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
-    "}\n";
+      "{\n"
+      "  'Type': 'RSA',\n"
+      "  'Private': true,\n"
+      "  'Size': 2048,\n"
+      "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
+      "  'E': 'AQAB',\n"
+      "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
+      "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
+      "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
+      "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
+      "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
+      "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
+      "}\n";
 
   static const char *pPublicKeyText =
-    "{\n"
-    "  'Type': 'RSA',\n"
-    "  'Size': 2048,\n"
-    "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
-    "  'E': 'AQAB',\n"
-    "}\n";
+      "{\n"
+      "  'Type': 'RSA',\n"
+      "  'Size': 2048,\n"
+      "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
+      "  'E': 'AQAB',\n"
+      "}\n";
 
   udCryptoSigContext *pPrivCtx = nullptr;
   udCryptoSigContext *pPubCtx = nullptr;
@@ -319,7 +306,7 @@ TEST(udCryptoTests, RSACreateSig)
   EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
 
   // Change the hash slightly to ensure the message isn't verified
-  ((char*)pHash)[1] ^= 1;
+  ((char *)pHash)[1] ^= 1;
   EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, pHash, pSignature, udCH_SHA1));
   EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
 
@@ -389,7 +376,7 @@ TEST(udCryptoTests, ECDSADigiSig)
   EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
 
   // Change the hash slightly to ensure the message isn't verified
-  ((char*)pHash)[1] ^= 1;
+  ((char *)pHash)[1] ^= 1;
   EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPrivCtx, pHash, pSignature, udCH_SHA1));
   EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pSignature, udCH_SHA1));
 
@@ -428,7 +415,7 @@ TEST(udCryptoTests, ECDSADigiSigFromudCloud)
   EXPECT_EQ(udR_Success, udCryptoSig_Verify(pPubCtx, pHash, pExpectedSignature, udCH_SHA256));
 
   // Change the hash slightly to ensure the message isn't verified
-  ((char*)pHash)[1] ^= 1;
+  ((char *)pHash)[1] ^= 1;
   EXPECT_EQ(udR_SignatureMismatch, udCryptoSig_Verify(pPubCtx, pHash, pExpectedSignature, udCH_SHA1));
 
   udCryptoSig_Destroy(&pPubCtx);
@@ -506,7 +493,7 @@ TEST(udCryptoTests, ECDH)
 
   EXPECT_EQ(udR_Success, udCryptoKeyECDH_DeriveFromPartyA(pPublicValueA, &pPublicValueB, &pSecretB));
   EXPECT_EQ(udR_Success, udCryptoKeyECDH_DeriveFromPartyB(pECDH, pPublicValueB, &pSecretA));
-  
+
   EXPECT_STRCASEEQ(pSecretA, pSecretB);
 
   udFree(pPublicValueA);
@@ -565,7 +552,7 @@ TEST(udCryptoTests, Utilities)
 
 TEST(udCryptoTests, PKCS7)
 {
-  static const udCryptoIV iv = { { 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f } };
+  static const udCryptoIV iv = { { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f } };
   static const char *pPlainText = "There are two great days in every person's life; the day we are born and the day we discover why"; // Multiple of 16 characters
   char encryptedText[96 + 16];
   char decryptedText[96]; // Importantly don't add 16 here so that codepaths dealing with pad overrun are tested
@@ -623,19 +610,19 @@ TEST(udCryptoTests, Uninitialised)
   udCryptoSigContext *pPrivCtx = nullptr;
   udCryptoCipherContext *pCipherCtx = nullptr;
   static const char *pPrivateKeyText =
-    "{\n"
-    "  'Type': 'RSA',\n"
-    "  'Private': true,\n"
-    "  'Size': 2048,\n"
-    "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
-    "  'E': 'AQAB',\n"
-    "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
-    "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
-    "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
-    "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
-    "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
-    "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
-    "}\n";
+      "{\n"
+      "  'Type': 'RSA',\n"
+      "  'Private': true,\n"
+      "  'Size': 2048,\n"
+      "  'N': 'n0pMFfJ0/vkZc1DEm4e1T33XoQZYvJxzFskuQ6E7IvTrR/KlTCMAEsU6rm+vNJQBFt+vEiNbv9qrzTQaW5XHp6k9+hwvQfkLKd2moc+G+ru5inbyOBBNpRfMAUjf6VZkyLbDFYrIFp6SJZYXhx2Pf/HpUKxpte4ZDFJARGpTLvE4GtYPs2Gj9xu6C1yRan3nLSa8MJhndNDxNGh5IF92ThMw0I+Pk1YSzpiJ9ZEX8GLqrVzWgORVdeiaYot3YSSMbf5pcDhrsvCDNSFB5396L3fc7IcWy99e9wiZiVcPUvLlNE/ziInNapOwG5EgPqTUk1jtXyLzuHZQDNADl/N/Uw==',\n"
+      "  'E': 'AQAB',\n"
+      "  'D': 'A2GBUenuf8brul3Zfm+X8pL6M6m90msDqlUkzTyr06cdI07MIVyQ0NUs1Kz8LAKEL2caASmM9fp/MQDNGmqIbU+TSC629hCCIyZYNhEAjWvUmVLC+1ulOj7SDqjsT7iMtRHj/B4Q9yHweinAYBbJh+6rhBHUwI7IK1HHmWwkTde6GxKiNxp4hrsxP8AKgX2+lCvPH0YT0jwFdHafcEfFCg0Mk8lIrlZRuD/5XbDVqKdcgrss63AwJthU1cEZztHH19sQfTjp2bEUFGBGQETL/NcJIO+YKbkng1UVvkTDcbJtSZ+PZxrQvzv5EJ4K0YTp26RlNNgTau2feMfyP5o3CQ==',\n"
+      "  'P': '9dJtUa+v2GIwqhCJqcvSR/FdG53rAYwPYu9lJPmKbPxuSbUhtBJh+OzdVGU9H+xxRrw8w95hgEyaPLdGXfZuaGy3mFRHzCI9lfsShIIk37yKbIYbFPpvMu6M9gcB5LwbpK2IBlYZcSMohKvADv0qRaReWWLoIeVpj3M6tTZLaRU=',\n"
+      "  'Q': 'peKuzv6ZYtNcERg3hxWyyWTw9TdbTHRJnmA8lVHb+JqxHipcp9uvcZBxHJiSqYY9nmdWPrEHyQIzXvEIclKtjYboKBt/bNfAZ1iLCR7bkX9wHQj6/PmAI9iFvzvvoQbC05C/RZkX3Ug00p7pR8/5qSYk72jC9hRgasNIjlOVkMc=',\n"
+      "  'DP': 'vTLVUt6+n/OK8wnBer9WPGsHt37G5qzvFr2cgmXR5eov1Gkl5JuVbmqYOyGkdxKbaM7uke5x6raKq5p//UfzWEn80LBlhjcAYZQZf4VPbiiF/dsFsxLBTVkPgziHe45QVGH/ZKkV8d8Wi25JZv/xbiKBP5kBgz04DuGoWNrOFbU=',\n"
+      "  'DQ': 'ePmRpl9CGTIuqEDS7e7DDeBRYWNXb7A2qAti4zppgym9FVSrcbbigZ1nAAW8n2jIsyaFXP7ZwJucPxbkpArripTh5a34BbZqGHQYITShx7/6URJlh+ukqX+UOlxJa1N07blX5De7kaLA8wD0+2wOlG6+7OGnnLJLhlCYL0OBha0=',\n"
+      "  'QP': 'YSPeV0tloK7H8XGZ95KCixJfNYkhT29Lcldbm2kUbtk/rChH5OjGwINMc8CewH8/mZDAD7ZpyU9UyWyfK6PpYUjLguvsdmCWuXGVsURRj6MNsv6rHWjyGpfgxLTe2dUKK/xgIOd1mATTUpM3S3q3HRjccy0IfyTh2HdFHILUorU='\n"
+      "}\n";
   static const char *pExpectedSignature = "jZzErtTWtEjEIDJsf0HRPJA/9z2MLu2tCvd/OgOojinZ9y+hbQSADgnFVN/cGV965Z6x6burvYVWPT8TjF00+9aXIGY3vFncrdRYhM2ynq+cisOxzIacC1AraDcuQgMvyxv9NKjCNWvLJL1GaP6PzKJmuDT5HDiEz9DqNhya5U43dIFoXu3AlTZlT8uuUuSwbxk4G+rkfG2Jm6cj6l8BhvpMhxA7GYmuiA9ByQ7tcU8/G/zi1xY/zIHTOlzGc7h+BfXXkpNH+NdyMOW0NnQg1jfy5VuK3eYeDfP2xSDlvOivvXwwFR9lQCizx4kzSuSpoIg7pW0HvmjgXXcMC29kqg==";
   udCryptoIV iv;
 

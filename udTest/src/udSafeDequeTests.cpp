@@ -1,5 +1,5 @@
-#include "gtest/gtest.h"
 #include "udSafeDeque.h"
+#include "gtest/gtest.h"
 
 TEST(udSafeDequeTests, ValidationTests)
 {

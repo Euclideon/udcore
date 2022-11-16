@@ -12,8 +12,8 @@
 
 enum udCompressionType
 {
-  udCT_None, // No compression (performs a udMemDup)
-  udCT_RawDeflate, // Raw deflate compression
+  udCT_None,        // No compression (performs a udMemDup)
+  udCT_RawDeflate,  // Raw deflate compression
   udCT_ZlibDeflate, // Deflate compression with zlib header and footer
   udCT_GzipDeflate, // Deflate compression with gzip header and footer
 

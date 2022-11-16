@@ -1,15 +1,15 @@
+#include "udCompression.h"
 #include "udFile.h"
 #include "udFileHandler.h"
+#include "udMath.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udCompression.h"
-#include "udMath.h"
 
 // Data URLs support udFile handler
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs
 
-static udFile_SeekReadHandlerFunc   udFileHandler_DataSeekRead;
-static udFile_CloseHandlerFunc      udFileHandler_DataClose;
+static udFile_SeekReadHandlerFunc udFileHandler_DataSeekRead;
+static udFile_CloseHandlerFunc udFileHandler_DataClose;
 
 struct udFile_Data : public udFile
 {

@@ -162,13 +162,17 @@ void udAsyncPause_HandlePause(udAsyncPause *pPause)
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2019
-const char * udAsyncPause_GetErrorContextString(udAsyncPause::Context errorContext)
+const char *udAsyncPause_GetErrorContextString(udAsyncPause::Context errorContext)
 {
   switch (errorContext)
   {
-    case udAsyncPause::EC_None:                 return "No error context";
-    case udAsyncPause::EC_WritingOutputFile:    return "Writing output file, disk full?";
-    case udAsyncPause::EC_WritingTemporaryFile: return "Writing temporary file, disk full?";
-    default:                                    return "(unknown error context)";
+    case udAsyncPause::EC_None:
+      return "No error context";
+    case udAsyncPause::EC_WritingOutputFile:
+      return "Writing output file, disk full?";
+    case udAsyncPause::EC_WritingTemporaryFile:
+      return "Writing temporary file, disk full?";
+    default:
+      return "(unknown error context)";
   }
 }

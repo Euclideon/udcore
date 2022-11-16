@@ -1,9 +1,9 @@
-#include "gtest/gtest.h"
+#include "udFile.h"
 #include "udJSON.h"
+#include "udPlatform.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udPlatform.h"
-#include "udFile.h"
+#include "gtest/gtest.h"
 
 // First-pass most basic tests for udJSON
 // TODO: Fix udMemoryDebugTracking to be useful and test memory leaks
@@ -47,7 +47,6 @@ static void udJSON_TestContent(udJSON &v)
   EXPECT_EQ(true, v.Get("Settings.TestArray[-4]").IsVoid());
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
 TEST(udJSONTests, CreationSimple)
@@ -56,7 +55,7 @@ TEST(udJSONTests, CreationSimple)
 
   // Assign attributes, these are present in both JSON and XML
   EXPECT_EQ(udR_Success, v.Set("Settings.ProjectsPath = '%s'", "C:\\\\Temp&\\\\")); // Note strings need to be escaped
-  EXPECT_EQ(udR_Success, v.Set("Settings.ImportAtFullScale = true")); // Note the true/false is NOT quoted, making it a boolean internally
+  EXPECT_EQ(udR_Success, v.Set("Settings.ImportAtFullScale = true"));               // Note the true/false is NOT quoted, making it a boolean internally
   EXPECT_EQ(udR_Success, v.Set("Settings.TerrainIndex = %d", 2));
   EXPECT_EQ(udR_Success, v.Set("Settings.Inside.Count = %d", 5));
   EXPECT_EQ(udR_Success, v.Set("Settings.Outside.Count = %d", 2));
@@ -68,8 +67,8 @@ TEST(udJSONTests, CreationSimple)
   EXPECT_EQ(udR_Success, v.Set("Settings.Nothing = null"));
   // Of note here is that the input string is currently JSON escaped, so there's some additional backslashes
   EXPECT_EQ(udR_Success, v.Set("Settings.SpecialChars = '%s'", "<>&\\/?[]{}\\\'\\\"%"));
-  EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 0")); // Append
-  EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 1")); // Append
+  EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 0"));  // Append
+  EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[] = 1"));  // Append
   EXPECT_EQ(udR_Success, v.Set("Settings.TestArray[2] = 2")); // Only allowed to create directly when adding last on the array
   udJSON_TestContent(v);
 }
@@ -82,7 +81,7 @@ TEST(udJSONTests, CreationSpecial)
 
   // Assign attributes, these are present in both JSON and XML
   EXPECT_EQ(udR_Success, v.Set("Settings['ProjectsPath'] = '%s'", "C:\\\\Temp&\\\\")); // Note strings need to be escaped
-  EXPECT_EQ(udR_Success, v.Set("Settings['ImportAtFullScale'] = true")); // Note the true/false is NOT quoted, making it a boolean internally
+  EXPECT_EQ(udR_Success, v.Set("Settings['ImportAtFullScale'] = true"));               // Note the true/false is NOT quoted, making it a boolean internally
   EXPECT_EQ(udR_Success, v.Set("Settings['TerrainIndex'] = %d", 2));
   EXPECT_EQ(udR_Success, v.Set("Settings['Inside']['Count'] = %d", 5));
   EXPECT_EQ(udR_Success, v.Set("Settings['Outside']['Count'] = %d", 2));
@@ -94,8 +93,8 @@ TEST(udJSONTests, CreationSpecial)
   EXPECT_EQ(udR_Success, v.Set("Settings['Nothing'] = null"));
   // Of note here is that the input string is currently JSON escaped, so there's some additional backslashes
   EXPECT_EQ(udR_Success, v.Set("Settings['SpecialChars'] = '%s'", "<>&\\/?[]{}\\\'\\\"%"));
-  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 0")); // Append
-  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 1")); // Append
+  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 0"));  // Append
+  EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][] = 1"));  // Append
   EXPECT_EQ(udR_Success, v.Set("Settings['TestArray'][2] = 2")); // Only allowed to create directly when adding last on the array
   udJSON_TestContent(v);
 }
@@ -305,8 +304,7 @@ TEST(udJSONTests, udMathSpecialSupport)
   }
 }
 
-static const char *pTestWKTs[] =
-{
+static const char *pTestWKTs[] = {
   "PROJCS[\"GDA94 / MGA zone 52\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",129],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"28352\"]]",
   "PROJCS[\"GDA94 / MGA zone 53\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",135],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"28353\"]]",
   "PROJCS[\"GDA94 / MGA zone 54\",GEOGCS[\"GDA94\",DATUM[\"Geocentric_Datum_of_Australia_1994\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY[\"EPSG\",\"6283\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4283\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",141],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",10000000],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"28354\"]]",
@@ -353,7 +351,6 @@ TEST(udJSONTests, WKT)
     v.Destroy();
   }
 }
-
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, May 2018
@@ -493,7 +490,6 @@ TEST(udJSONTests, CDATAXML)
   EXPECT_STREQ("{D5D720DD-E02F-4342-9AE1-49D91341FD2F}", json.Get("vectorChild.guid.content").AsString());
   EXPECT_STREQ("Station 018", json.Get("vectorChild.name.content").AsString());
 }
-
 
 #if !UDPLATFORM_EMSCRIPTEN // Disabled because of local file access issues
 TEST(udJSONTests, CDATAXMLE57)

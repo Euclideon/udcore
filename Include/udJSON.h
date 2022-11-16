@@ -8,19 +8,19 @@
 // Module for loading and saving JSON (JavaScript Object Notation), with additional limited support for XML
 //
 
-#include "udPlatform.h"
 #include "udChunkedArray.h"
 #include "udMath.h"
+#include "udPlatform.h"
 
 #if !defined(UDVALUE_DEPRECATED)
-#define udValue udJSON
-#define udValueExportOption udJSONExportOption
-#define udVEO_JSON udJEO_JSON
-#define udVEO_XML udJEO_XML
-#define udVEO_StripWhiteSpace 0
-#define udValueKVPair udJSONKVPair
-#define udValueArray udJSONArray
-#define udValueObject udJSONObject
+#  define udValue               udJSON
+#  define udValueExportOption   udJSONExportOption
+#  define udVEO_JSON            udJEO_JSON
+#  define udVEO_XML             udJEO_XML
+#  define udVEO_StripWhiteSpace 0
+#  define udValueKVPair         udJSONKVPair
+#  define udValueArray          udJSONArray
+#  define udValueObject         udJSONObject
 #endif
 
 /*
@@ -82,7 +82,12 @@
  * v.Destroy(); // To destroy object before waiting to go out of scope
  */
 
-enum udJSONExportOption { udJEO_JSON = 0, udJEO_XML = 1, udJEO_FormatWhiteSpace = 2 };
+enum udJSONExportOption
+{
+  udJEO_JSON = 0,
+  udJEO_XML = 1,
+  udJEO_FormatWhiteSpace = 2
+};
 static inline udJSONExportOption operator|(udJSONExportOption a, udJSONExportOption b) { return (udJSONExportOption)(int(a) | int(b)); }
 
 class udJSON;
@@ -95,13 +100,13 @@ class udJSON
 public:
   enum Type
   {
-    T_Void = 0,  // Guaranteed to be zero, thus a non-zero type indicates value exists
+    T_Void = 0, // Guaranteed to be zero, thus a non-zero type indicates value exists
     T_Bool,
     T_Int64,
     T_Double,
     T_String,
-    T_Array,     // A udChunkedArray of values
-    T_Object,    // An list of key/value pairs (equiv of JSON object, or XML element attributes)
+    T_Array,  // A udChunkedArray of values
+    T_Object, // An list of key/value pairs (equiv of JSON object, or XML element attributes)
     T_Count
   };
 
@@ -111,7 +116,7 @@ public:
   inline udJSON(int64_t v);
   inline udJSON(double v);
   inline void Clear();
-  void Destroy();     // Free any memory associated, expects object to be constructed
+  void Destroy(); // Free any memory associated, expects object to be constructed
   inline ~udJSON();
 
   // Set the value
@@ -122,7 +127,7 @@ public:
 
   // Set to a more complex type requiring memory allocation
   udResult SetString(const char *pStr, size_t charCount = 0); // non-zero charCount specifies maximum characters copied
-  udResult SetArray(); // A dynamic array of JSON elements, whose types can change per element
+  udResult SetArray();                                        // A dynamic array of JSON elements, whose types can change per element
   udResult SetObject();
 
   // Some convenience helpers to create an array of doubles
@@ -141,10 +146,10 @@ public:
   inline bool IsArray() const;
   inline bool IsObject() const;
   inline bool HasMemory() const;
-  inline size_t ArrayLength() const;  // Get the length of the array (always 1 for an object)
-  inline size_t MemberCount() const;  // Get the number of members for an object (zero for all other types)
-  inline const char *GetMemberName(size_t index) const;  // Get the name of a member (null if out of range or not an object)
-  inline const udJSON *GetMember(size_t index) const;  // Get the member value (null if out of range or not an object)
+  inline size_t ArrayLength() const;                                                 // Get the length of the array (always 1 for an object)
+  inline size_t MemberCount() const;                                                 // Get the number of members for an object (zero for all other types)
+  inline const char *GetMemberName(size_t index) const;                              // Get the name of a member (null if out of range or not an object)
+  inline const udJSON *GetMember(size_t index) const;                                // Get the member value (null if out of range or not an object)
   const udJSON *FindMember(const char *pMemberName, size_t *pIndex = nullptr) const; // Get a member of an object
   bool IsEqualTo(const udJSON &other) const;
 
@@ -179,14 +184,18 @@ public:
 
   // Get a pointer to a key's value, this pointer is valid as long as the key remains, ppValue may be null if just testing existence
   // Allowed operators are . and [] to dereference (eg "instances[%d].%s", (int)instanceIndex, (char*)pInstanceKeyName)
-  UD_PRINTF_FORMAT_FUNC(3) udResult Get(udJSON **ppValue, const char *pKeyExpression, ...);
-  UD_PRINTF_FORMAT_FUNC(2) const udJSON &Get(const char *pKeyExpression, ...) const;
+  UD_PRINTF_FORMAT_FUNC(3)
+  udResult Get(udJSON **ppValue, const char *pKeyExpression, ...);
+  UD_PRINTF_FORMAT_FUNC(2)
+  const udJSON &Get(const char *pKeyExpression, ...) const;
 
   // Set a new key/value pair to the store, overwriting a existing key, using = operator in the expression
   // Allowed operators are . and [] to dereference and for version without pValue, = to assign value (eg "obj.value = %d", 5)
   // Set with null for pValue or nothing following the = will remove the key
-  UD_PRINTF_FORMAT_FUNC(3) udResult Set(udJSON *pValue, const char *pKeyExpression, ...);
-  UD_PRINTF_FORMAT_FUNC(2) udResult Set(const char *pKeyExpression, ...);
+  UD_PRINTF_FORMAT_FUNC(3)
+  udResult Set(udJSON *pValue, const char *pKeyExpression, ...);
+  UD_PRINTF_FORMAT_FUNC(2)
+  udResult Set(const char *pKeyExpression, ...);
 
   // Parse a string an assign the type/value, supporting string, integer and float/double, JSON or XML
   udResult Parse(const char *pString, int *pCharCount = nullptr, int *pLineNumber = nullptr);
@@ -202,7 +211,7 @@ public:
   udResult CalculateHMAC(const char **ppHMACBase64, const char *pKeyBase64 = nullptr) const;
 
 protected:
-  typedef udChunkedArray<const char*> LineList;
+  typedef udChunkedArray<const char *> LineList;
 
   udResult ParseJSON(const char *pJSON, int *pCharCount, int *pLineNumber);
   udResult ParseXML(const char *pJSON, int *pCharCount, int *pLineNumber);
@@ -222,7 +231,6 @@ protected:
   uint8_t dPrec; // Number of digits precision of the double value (0 = default, otherwise set when parsed)
   Type type;
 };
-
 
 struct udJSONKVPair
 {

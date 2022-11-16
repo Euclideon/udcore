@@ -1,9 +1,9 @@
 #include "udUUID.h"
 
-#include "udStringUtil.h"
-#include "udMath.h"
 #include "udCrypto.h"
+#include "udMath.h"
 #include "udPlatformUtil.h"
+#include "udStringUtil.h"
 
 // ***************************************************************************
 // Author: Paul Fox, April 2018
@@ -27,19 +27,19 @@ udResult udUUID_SetFromString(udUUID *pUUID, const char *pStr)
 
 // ***************************************************************************
 // Author: Paul Fox, March 2019
-const char* udUUID_GetAsString(const udUUID &UUID)
+const char *udUUID_GetAsString(const udUUID &UUID)
 {
-  return (const char*)UUID.internal_bytes;
+  return (const char *)UUID.internal_bytes;
 }
 
 // ***************************************************************************
 // Author: Paul Fox, April 2018
-const char* udUUID_GetAsString(const udUUID *pUUID)
+const char *udUUID_GetAsString(const udUUID *pUUID)
 {
   if (pUUID == nullptr)
     return nullptr;
 
-  return (const char*)pUUID->internal_bytes;
+  return (const char *)pUUID->internal_bytes;
 }
 
 // ***************************************************************************
@@ -93,7 +93,7 @@ udResult udUUID_GenerateFromRandom(udUUID *pUUID)
       if (i == 19)
         bytes = (bytes & 0x3F) | 0x80; //Variant bits
 
-      udStrUtoa((char*)pUUID->internal_bytes + i, udUUID::udUUID_Length - i + 1, bytes, 16, 2);
+      udStrUtoa((char *)pUUID->internal_bytes + i, udUUID::udUUID_Length - i + 1, bytes, 16, 2);
 
       ++index;
       ++i; //This block writes 2 bytes
@@ -142,7 +142,7 @@ udResult udUUID_GenerateFromString(udUUID *pUUID, const char *pStr)
       if (i == 19)
         bytes = (bytes & 0x3F) | 0x80; //Variant bits
 
-      udStrUtoa((char*)pUUID->internal_bytes + i, udUUID::udUUID_Length - i + 1, bytes, 16, 2);
+      udStrUtoa((char *)pUUID->internal_bytes + i, udUUID::udUUID_Length - i + 1, bytes, 16, 2);
 
       ++index;
       ++i; //This block writes 2 bytes
@@ -181,14 +181,14 @@ epilogue:
 // Author: Paul Fox, March 2019
 bool udUUID_IsValid(const udUUID &UUID)
 {
-  return udUUID_IsValid((const char*)UUID.internal_bytes);
+  return udUUID_IsValid((const char *)UUID.internal_bytes);
 }
 
 // ***************************************************************************
 // Author: Paul Fox, April 2018
 bool udUUID_IsValid(const udUUID *pUUID)
 {
-  return udUUID_IsValid((const char*)pUUID->internal_bytes);
+  return udUUID_IsValid((const char *)pUUID->internal_bytes);
 }
 
 // ***************************************************************************
@@ -208,14 +208,14 @@ uint64_t udUUID_ToNonce(const udUUID *pUUID)
 
 // ***************************************************************************
 // Author: Paul Fox, April 2018
-bool operator ==(const udUUID a, const udUUID b)
+bool operator==(const udUUID a, const udUUID b)
 {
-  return (udStrncmpi((const char*)a.internal_bytes, (const char*)b.internal_bytes, udUUID::udUUID_Length) == 0);
+  return (udStrncmpi((const char *)a.internal_bytes, (const char *)b.internal_bytes, udUUID::udUUID_Length) == 0);
 }
 
 // ***************************************************************************
 // Author: Paul Fox, May 2018
-bool operator !=(const udUUID a, const udUUID b)
+bool operator!=(const udUUID a, const udUUID b)
 {
   return !(a == b);
 }

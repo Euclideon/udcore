@@ -9,11 +9,11 @@
 //  Access-Control-Allow-Headers: Content-Type, Range
 //  Access-Control-Allow-Methods: HEAD, GET, POST, OPTIONS
 
-#include "udPlatformUtil.h"
-#include "udStringUtil.h"
-#include "udFileHandler.h"
-#include "udMath.h"
-#include <emscripten/fetch.h>
+#  include "udFileHandler.h"
+#  include "udMath.h"
+#  include "udPlatformUtil.h"
+#  include "udStringUtil.h"
+#  include <emscripten/fetch.h>
 
 // ----------------------------------------------------------------------------
 // Author: Samuel Surtees, November 2018
@@ -102,7 +102,7 @@ epilogue:
     emscripten_fetch_close(pFetch);
 
   if (pFile)
-    udFileHandler_EmscriptenHTTPClose((udFile**)&pFile);
+    udFileHandler_EmscriptenHTTPClose((udFile **)&pFile);
 
   return result;
 }

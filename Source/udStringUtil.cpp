@@ -2,10 +2,10 @@
 #include "udStringUtil.h"
 #include "udMath.h"
 
-#include <ctype.h>
-#include <string.h>
-#include <stdio.h>
 #include <atomic>
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 
 static char s_udStrEmptyString[] = "";
 
@@ -46,7 +46,7 @@ size_t udStrncpy(char *dest, size_t destLen, const char *src, size_t maxChars)
     return 0;
   }
   memcpy(dest, src, srcChars); // Use crt strcpy as it's likely to be very fast
-  dest[srcChars] = 0; // Nul terminate
+  dest[srcChars] = 0;          // Nul terminate
   return srcChars + 1;
 }
 
@@ -54,8 +54,10 @@ size_t udStrncpy(char *dest, size_t destLen, const char *src, size_t maxChars)
 // Author: Dave Pevreal, March 2014
 size_t udStrcat(char *pDest, size_t destLen, const char *pSrc)
 {
-  if (!pDest) return 0;
-  if (!pSrc) pSrc = s_udStrEmptyString;
+  if (!pDest)
+    return 0;
+  if (!pSrc)
+    pSrc = s_udStrEmptyString;
 
   size_t destChars = strlen(pDest); // Note: Not including terminator
   size_t srcChars = strlen(pSrc);
@@ -69,8 +71,10 @@ size_t udStrcat(char *pDest, size_t destLen, const char *pSrc)
 // Author: Dave Pevreal, March 2014
 int udStrcmp(const char *pStr1, const char *pStr2)
 {
-  if (!pStr1) pStr1 = s_udStrEmptyString;
-  if (!pStr2) pStr2 = s_udStrEmptyString;
+  if (!pStr1)
+    pStr1 = s_udStrEmptyString;
+  if (!pStr2)
+    pStr2 = s_udStrEmptyString;
 
   int result;
   do
@@ -85,8 +89,10 @@ int udStrcmp(const char *pStr1, const char *pStr2)
 // Author: Dave Pevreal, March 2014
 int udStrcmpi(const char *pStr1, const char *pStr2)
 {
-  if (!pStr1) pStr1 = s_udStrEmptyString;
-  if (!pStr2) pStr2 = s_udStrEmptyString;
+  if (!pStr1)
+    pStr1 = s_udStrEmptyString;
+  if (!pStr2)
+    pStr2 = s_udStrEmptyString;
 
   int result;
   do
@@ -101,8 +107,10 @@ int udStrcmpi(const char *pStr1, const char *pStr2)
 // Author: Samuel Surtees, April 2017
 int udStrncmp(const char *pStr1, const char *pStr2, size_t maxChars)
 {
-  if (!pStr1) pStr1 = s_udStrEmptyString;
-  if (!pStr2) pStr2 = s_udStrEmptyString;
+  if (!pStr1)
+    pStr1 = s_udStrEmptyString;
+  if (!pStr2)
+    pStr2 = s_udStrEmptyString;
 
   int result = 0;
   if (maxChars)
@@ -120,8 +128,10 @@ int udStrncmp(const char *pStr1, const char *pStr2, size_t maxChars)
 // Author: Samuel Surtees, April 2017
 int udStrncmpi(const char *pStr1, const char *pStr2, size_t maxChars)
 {
-  if (!pStr1) pStr1 = s_udStrEmptyString;
-  if (!pStr2) pStr2 = s_udStrEmptyString;
+  if (!pStr1)
+    pStr1 = s_udStrEmptyString;
+  if (!pStr2)
+    pStr2 = s_udStrEmptyString;
 
   int result = 0;
   if (maxChars)
@@ -139,7 +149,8 @@ int udStrncmpi(const char *pStr1, const char *pStr2, size_t maxChars)
 // Author: Dave Pevreal, March 2014
 size_t udStrlen(const char *pStr)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
 
   size_t len = 0;
   while (*pStr++)
@@ -152,8 +163,10 @@ size_t udStrlen(const char *pStr)
 // Author: Dave Pevreal, March 2014
 bool udStrBeginsWith(const char *pStr, const char *pPrefix)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pPrefix) pPrefix = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pPrefix)
+    pPrefix = s_udStrEmptyString;
 
   while (*pPrefix)
   {
@@ -167,8 +180,10 @@ bool udStrBeginsWith(const char *pStr, const char *pPrefix)
 // Author: Samuel Surtees, April 2017
 bool udStrBeginsWithi(const char *pStr, const char *pPrefix)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pPrefix) pPrefix = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pPrefix)
+    pPrefix = s_udStrEmptyString;
 
   while (*pPrefix)
   {
@@ -182,8 +197,10 @@ bool udStrBeginsWithi(const char *pStr, const char *pPrefix)
 // Author: Dave Pevreal, August 2018
 bool udStrEndsWith(const char *pStr, const char *pSuffix)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pSuffix) pSuffix = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pSuffix)
+    pSuffix = s_udStrEmptyString;
   size_t sLen = udStrlen(pStr);
   size_t suffixLen = udStrlen(pSuffix);
 
@@ -196,8 +213,10 @@ bool udStrEndsWith(const char *pStr, const char *pSuffix)
 // Author: Dave Pevreal, August 2018
 bool udStrEndsWithi(const char *pStr, const char *pSuffix)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pSuffix) pSuffix = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pSuffix)
+    pSuffix = s_udStrEmptyString;
   size_t sLen = udStrlen(pStr);
   size_t suffixLen = udStrlen(pSuffix);
 
@@ -214,8 +233,10 @@ char *_udStrdup(const char *pStr, size_t additionalChars, const char *pFile, int
 char *udStrdup(const char *pStr, size_t additionalChars)
 #endif
 {
-  if (!pStr && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
-  if (!pStr) pStr = s_udStrEmptyString;
+  if (!pStr && !additionalChars)
+    return nullptr; // This allows us to duplicate null's as null's
+  if (!pStr)
+    pStr = s_udStrEmptyString;
 
   size_t len = udStrlen(pStr) + 1;
   char *pDup = (char *)_udAlloc(sizeof(char) * (len + additionalChars), udAF_None, IF_MEMORY_DEBUG(pFile, line));
@@ -225,13 +246,14 @@ char *udStrdup(const char *pStr, size_t additionalChars)
   return pDup;
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, May 2017
 char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars)
 {
-  if (!pStr && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
-  if (!pStr) pStr = s_udStrEmptyString;
+  if (!pStr && !additionalChars)
+    return nullptr; // This allows us to duplicate null's as null's
+  if (!pStr)
+    pStr = s_udStrEmptyString;
   // Find minimum of maxChars and udStrlen(pStr) without using udStrlen which can be slow
   size_t len = 0;
   while (len < maxChars && pStr[len])
@@ -246,14 +268,15 @@ char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars)
   return pDup;
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 template <bool insensitive>
 const char *udStrchr_Internal(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pCharList) pCharList = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pCharList)
+    pCharList = s_udStrEmptyString;
 
   size_t index;
   size_t listLen = udStrlen(pCharList);
@@ -279,14 +302,12 @@ const char *udStrchr_Internal(const char *pStr, const char *pCharList, size_t *p
   return nullptr;
 }
 
-
 // *********************************************************************
 // Author: Samuel Surtees, December 2020
 const char *udStrchr(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
   return udStrchr_Internal<false>(pStr, pCharList, pIndex, pCharListIndex);
 }
-
 
 // *********************************************************************
 // Author: Samuel Surtees, December 2020
@@ -295,14 +316,15 @@ const char *udStrchri(const char *pStr, const char *pCharList, size_t *pIndex, s
   return udStrchr_Internal<true>(pStr, pCharList, pIndex, pCharListIndex);
 }
 
-
 // *********************************************************************
 // Author: Samuel Surtees, May 2015
 template <bool insensitive>
 const char *udStrrchr_Internal(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pCharList) pCharList = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pCharList)
+    pCharList = s_udStrEmptyString;
 
   size_t sLen = udStrlen(pStr);
   size_t listLen = udStrlen(pCharList);
@@ -328,14 +350,12 @@ const char *udStrrchr_Internal(const char *pStr, const char *pCharList, size_t *
   return nullptr;
 }
 
-
 // *********************************************************************
 // Author: Samuel Surtees, December 2020
 const char *udStrrchr(const char *pStr, const char *pCharList, size_t *pIndex, size_t *pCharListIndex)
 {
   return udStrrchr_Internal<false>(pStr, pCharList, pIndex, pCharListIndex);
 }
-
 
 // *********************************************************************
 // Author: Samuel Surtees, December 2020
@@ -344,14 +364,15 @@ const char *udStrrchri(const char *pStr, const char *pCharList, size_t *pIndex, 
   return udStrrchr_Internal<true>(pStr, pCharList, pIndex, pCharListIndex);
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
 template <bool insensitive>
 const char *udStrstr_Internal(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
-  if (!pSubString) pSubString = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
+  if (!pSubString)
+    pSubString = s_udStrEmptyString;
   size_t i;
   size_t subStringIndex = 0;
 
@@ -381,14 +402,12 @@ const char *udStrstr_Internal(const char *pStr, size_t sLen, const char *pSubStr
   return nullptr;
 }
 
-
 // *********************************************************************
 // Author: Samuel Surtees, December 2020
 const char *udStrstr(const char *pStr, size_t sLen, const char *pSubString, size_t *pIndex)
 {
   return udStrstr_Internal<false>(pStr, sLen, pSubString, pIndex);
 }
-
 
 // *********************************************************************
 // Author: Samuel Surtees, December 2020
@@ -408,15 +427,15 @@ int udStrTokenSplit(char *pLine, const char *pDelimiters, char *pTokenArray[], i
   while (*pLine && tokenCount < maxTokens)
   {
     size_t delimiterIndex;
-    pTokenArray[tokenCount++] = pLine;                  // Assign token
-    if (udStrchr(pLine, pDelimiters, &delimiterIndex))  // Get the index of the delimiter
+    pTokenArray[tokenCount++] = pLine;                 // Assign token
+    if (udStrchr(pLine, pDelimiters, &delimiterIndex)) // Get the index of the delimiter
     {
-      pLine[delimiterIndex] = 0;                        // Null terminate the token
-      pLine += delimiterIndex + 1;                      // Move pLine to 1st char after delimiter (possibly another delimiter)
+      pLine[delimiterIndex] = 0;   // Null terminate the token
+      pLine += delimiterIndex + 1; // Move pLine to 1st char after delimiter (possibly another delimiter)
     }
     else
     {
-      pLine += delimiterIndex;                          // Move pLine to end of the line
+      pLine += delimiterIndex; // Move pLine to end of the line
       break;
     }
   }
@@ -605,13 +624,26 @@ size_t udStrMatchBrace(const char *pLine, char escapeChar)
 
   switch (*pLine)
   {
-  case '{': matchChar = '}'; break;
-  case '[': matchChar = ']'; break;
-  case '(': matchChar = ')'; break;
-  case '<': matchChar = '>'; break;
-  case '\"': matchChar = '\"'; break;
-  case '\'': matchChar = '\''; break;
-  default: return udStrlen(pLine);
+    case '{':
+      matchChar = '}';
+      break;
+    case '[':
+      matchChar = ']';
+      break;
+    case '(':
+      matchChar = ')';
+      break;
+    case '<':
+      matchChar = '>';
+      break;
+    case '\"':
+      matchChar = '\"';
+      break;
+    case '\'':
+      matchChar = '\'';
+      break;
+    default:
+      return udStrlen(pLine);
   }
   int depth = 1;
   for (offset = 1; pLine[offset]; ++offset)
@@ -744,7 +776,8 @@ const char *udStrEscape(const char *pStr, const char *pCharList, bool freeOrigin
 // Author: Dave Pevreal, August 2014
 float udStrAtof(const char *pStr, int *pCharCount)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
   int charCount = 0;
   int tmpCharCount = 0;
 
@@ -783,12 +816,12 @@ float udStrAtof(const char *pStr, int *pCharCount)
   return result * negate;
 }
 
-
 // *********************************************************************
 // Author: Dave Pevreal, August 2014
 double udStrAtof64(const char *pStr, int *pCharCount)
 {
-  if (!pStr) pStr = s_udStrEmptyString;
+  if (!pStr)
+    pStr = s_udStrEmptyString;
   int charCount = 0;
   int tmpCharCount = 0;
 
@@ -847,7 +880,7 @@ int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const 
       offset += curStrLen + 1;
   }
   int newLength = offset + addStrLen + 1;
-  char *newCache = (char*)udRealloc(pStringTable, newLength);
+  char *newCache = (char *)udRealloc(pStringTable, newLength);
   if (!newCache)
     return -1; // A nasty case where memory allocation has failed
   strcpy(newCache + offset, addString);
@@ -857,12 +890,12 @@ int udAddToStringTable(char *&pStringTable, uint32_t *pStringTableLength, const 
 }
 
 #define SMALLSTRING_BUFFER_COUNT 32
-#define SMALLSTRING_BUFFER_SIZE 64
+#define SMALLSTRING_BUFFER_SIZE  64
 static char s_smallStringBuffers[SMALLSTRING_BUFFER_COUNT][SMALLSTRING_BUFFER_SIZE]; // 32 cycling buffers of 64 characters
-static std::atomic<int32_t> s_smallStringBufferIndex(0);  // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
+static std::atomic<int32_t> s_smallStringBufferIndex(0);                             // Cycling index, always and with (SMALLSTRING_BUFFER_COUNT-1) to get buffer index
 
-                                                       // ****************************************************************************
-                                                       // Author: Dave Pevreal, May 2018
+// ****************************************************************************
+// Author: Dave Pevreal, May 2018
 const char *udTempStr(const char *pFormat, ...)
 {
   int32_t bufIndex = (s_smallStringBufferIndex++) & (SMALLSTRING_BUFFER_COUNT - 1);
@@ -1059,95 +1092,117 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
                        // Process formatted string
         switch (*pFormat)
         {
-        case '0': padChar = '0'; break;
-        case 'l': longSpec = true; break;
-        case '+': forcePlus = true; break;
-        case '-': leftJustify = true; break;
-        case '#': hashSpec = true; break;
-        case '%': pInjectStr = pFormat; injectLen = 1; break;
-        case '*': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-        {
-          int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
-          if (!widthSpec)
-            width = (size_t)value;
-          else
-            errorCode = -2;
-          widthSpec = true;
-        }
-        break;
-        case '.':
-        {
-          ++pFormat;
-          int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
-          precision = (size_t)value;
-          precisionSpec = true;
-        }
-        break;
-        case 'c':
-        {
-          numericBuffer[0] = (char)va_arg(args, int); // Chars are passed as integers
-          pInjectStr = numericBuffer;
-          injectLen = 1;
-        }
-        break;
-        case 's':
-        {
-          pInjectStr = va_arg(args, char*);
-          injectLen = udStrlen(pInjectStr);
-        }
-        break;
-        case 'd':
-        case 'i':
-          if (longSpec)
-            udStrItoa64(numericBuffer, va_arg(args, int64_t), 10, precision);
-          else
-            udStrItoa(numericBuffer, va_arg(args, uint32_t), 10, precision);
-          pInjectStr = numericBuffer;
-          injectLen = udStrlen(pInjectStr);
+          case '0':
+            padChar = '0';
+            break;
+          case 'l':
+            longSpec = true;
+            break;
+          case '+':
+            forcePlus = true;
+            break;
+          case '-':
+            leftJustify = true;
+            break;
+          case '#':
+            hashSpec = true;
+            break;
+          case '%':
+            pInjectStr = pFormat;
+            injectLen = 1;
+            break;
+          case '*':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+          case '8':
+          case '9':
+          {
+            int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
+            if (!widthSpec)
+              width = (size_t)value;
+            else
+              errorCode = -2;
+            widthSpec = true;
+          }
           break;
-        case 'u':
-          if (longSpec)
-            udStrUtoa(numericBuffer, va_arg(args, uint64_t), 10, precision);
-          else
-            udStrUtoa(numericBuffer, va_arg(args, uint32_t), 10, precision);
-          pInjectStr = numericBuffer;
-          injectLen = udStrlen(pInjectStr);
+          case '.':
+          {
+            ++pFormat;
+            int value = *pFormat == '*' ? udAbs(va_arg(args, int)) : udStrAtoi(pFormat, &charCount);
+            precision = (size_t)value;
+            precisionSpec = true;
+          }
           break;
-        case 'x':
-        case 'X':
-          udStrcpy(numericBuffer, isupper(*pFormat) ? "0X" : "0x");
-          if (longSpec)
-            udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
-          else
-            udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
-          pInjectStr = numericBuffer + ((hashSpec) ? 0 : 2);
-          injectLen = udStrlen(pInjectStr);
+          case 'c':
+          {
+            numericBuffer[0] = (char)va_arg(args, int); // Chars are passed as integers
+            pInjectStr = numericBuffer;
+            injectLen = 1;
+          }
           break;
-        case 'b':
-          if (longSpec)
-            udStrUtoa(numericBuffer, va_arg(args, uint64_t), 2, precision);
-          else
-            udStrUtoa(numericBuffer, va_arg(args, uint32_t), 2, precision);
-          pInjectStr = numericBuffer;
-          injectLen = udStrlen(pInjectStr);
+          case 's':
+          {
+            pInjectStr = va_arg(args, char *);
+            injectLen = udStrlen(pInjectStr);
+          }
           break;
-        case 'p':
-        case 'P':
-          if (sizeof(pInjectStr) == 8)
-            udStrUtoa(numericBuffer, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
-          else
-            udStrUtoa(numericBuffer, va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
-          pInjectStr = numericBuffer;
-          injectLen = udStrlen(pInjectStr);
-          break;
-        case 'f':
-          udStrFtoa(numericBuffer, va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : udMax((int)width, 1));
-          pInjectStr = numericBuffer;
-          injectLen = udStrlen(pInjectStr);
-          break;
+          case 'd':
+          case 'i':
+            if (longSpec)
+              udStrItoa64(numericBuffer, va_arg(args, int64_t), 10, precision);
+            else
+              udStrItoa(numericBuffer, va_arg(args, uint32_t), 10, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'u':
+            if (longSpec)
+              udStrUtoa(numericBuffer, va_arg(args, uint64_t), 10, precision);
+            else
+              udStrUtoa(numericBuffer, va_arg(args, uint32_t), 10, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'x':
+          case 'X':
+            udStrcpy(numericBuffer, isupper(*pFormat) ? "0X" : "0x");
+            if (longSpec)
+              udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
+            else
+              udStrUtoa(numericBuffer + 2, sizeof(numericBuffer) - 2, va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
+            pInjectStr = numericBuffer + ((hashSpec) ? 0 : 2);
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'b':
+            if (longSpec)
+              udStrUtoa(numericBuffer, va_arg(args, uint64_t), 2, precision);
+            else
+              udStrUtoa(numericBuffer, va_arg(args, uint32_t), 2, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'p':
+          case 'P':
+            if (sizeof(pInjectStr) == 8)
+              udStrUtoa(numericBuffer, va_arg(args, uint64_t), isupper(*pFormat) ? -16 : 16, precision);
+            else
+              udStrUtoa(numericBuffer, va_arg(args, uint32_t), isupper(*pFormat) ? -16 : 16, precision);
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
+          case 'f':
+            udStrFtoa(numericBuffer, va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : udMax((int)width, 1));
+            pInjectStr = numericBuffer;
+            injectLen = udStrlen(pInjectStr);
+            break;
 
-        default:
-          errorCode = -1;
+          default:
+            errorCode = -1;
         }
         pFormat += charCount;
 

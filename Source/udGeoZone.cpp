@@ -1,98 +1,98 @@
 #include "udGeoZone.h"
+#include "udFile.h"
+#include "udJSON.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udJSON.h"
-#include "udFile.h"
 #include "udThread.h"
 
 const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count] = {
   // WKT Sphere name      semiMajor    flattening           authority epsg
-  { "WGS 84",             6378137.000, 1.0 / 298.257223563, 7030 }, // udGZE_WGS84
-  { "Airy 1830",          6377563.396, 1.0 / 299.3249646,   7001 }, // udGZE_Airy1830
-  { "Airy Modified 1849", 6377340.189, 1.0 / 299.3249646,   7002 }, // udGZE_AiryModified
-  { "Bessel 1841",        6377397.155, 1.0 / 299.1528128,   7004 }, // udGZE_Bessel1841
-  { "Bessel Modified",    6377492.018, 1.0 / 299.1528128,   7005 }, // udGZE_BesselModified
-  { "Clarke 1866",        6378206.400, 1.0 / 294.978698214, 7008 }, // udGZE_Clarke1866
-  { "Clarke 1880 (IGN)",  6378249.200, 1.0 / 293.466021294, 7011 }, // udGZE_Clarke1880IGN
-  { "GRS 1980",           6378137.000, 1.0 / 298.257222101, 7019 }, // udGZE_GRS80
-  { "International 1924", 6378388.000, 1.0 / 297.00,        7022 }, // udGZE_Intl1924
-  { "WGS 72",             6378135.000, 1.0 / 298.26,        7043 }, // udGZE_WGS72
-  { "CGCS2000",           6378137.000, 1.0 / 298.257222101, 1024 }, // udGZE_CGCS2000
-  { "Clarke 1858",        6378293.64520876, 1.0 / 294.260676369, 7007 }, // udGZE_Clarke1858
+  { "WGS 84", 6378137.000, 1.0 / 298.257223563, 7030 },                           // udGZE_WGS84
+  { "Airy 1830", 6377563.396, 1.0 / 299.3249646, 7001 },                          // udGZE_Airy1830
+  { "Airy Modified 1849", 6377340.189, 1.0 / 299.3249646, 7002 },                 // udGZE_AiryModified
+  { "Bessel 1841", 6377397.155, 1.0 / 299.1528128, 7004 },                        // udGZE_Bessel1841
+  { "Bessel Modified", 6377492.018, 1.0 / 299.1528128, 7005 },                    // udGZE_BesselModified
+  { "Clarke 1866", 6378206.400, 1.0 / 294.978698214, 7008 },                      // udGZE_Clarke1866
+  { "Clarke 1880 (IGN)", 6378249.200, 1.0 / 293.466021294, 7011 },                // udGZE_Clarke1880IGN
+  { "GRS 1980", 6378137.000, 1.0 / 298.257222101, 7019 },                         // udGZE_GRS80
+  { "International 1924", 6378388.000, 1.0 / 297.00, 7022 },                      // udGZE_Intl1924
+  { "WGS 72", 6378135.000, 1.0 / 298.26, 7043 },                                  // udGZE_WGS72
+  { "CGCS2000", 6378137.000, 1.0 / 298.257222101, 1024 },                         // udGZE_CGCS2000
+  { "Clarke 1858", 6378293.64520876, 1.0 / 294.260676369, 7007 },                 // udGZE_Clarke1858
   { "Clarke 1880 (international foot)", 6378306.369, 1.0 / 293.466307656, 7055 }, // udGZE_Clarke1880FOOT
-  { "Krassowsky 1940",    6378245.000, 1.0 / 298.3,         7024 }, // udGZE_Krassowsky1940
-  { "Everest 1830 Modified",6377304.063, 1.0 / 300.8017,    7018 }, // udGZE_Everest1930M
-  { "Mars_2000_IAU_IAG",  3396190.000, 1.0 / 169.894447224, 49900 },// udGZE_MARS
-  { "Moon_2000_IAU_IAG",  1737400.000, 0.0,                 39064 },// udGZE_MOON
-  { "IAG 1975",           6378140.000, 1.0 / 298.257,       7049 }, // udGZE_IAG1975
-  { "Everest 1830 (1967 Definition)",6377298.556, 1.0 / 300.8017,    7016 }, // udGZE_Everest1830
-  { "GRS 1967",           6378160.000, 1.0 / 298.247167427, 7036 }, // udGZE_GRS67
-  { "Australian National Spheroid",6378160, 1.0 / 298.25,   7003 }, //udGZE_ANS
-  { "Indonesian National Spheroid",6378160, 1.0 / 298.247,  7021 }, //udGZE_INS 
+  { "Krassowsky 1940", 6378245.000, 1.0 / 298.3, 7024 },                          // udGZE_Krassowsky1940
+  { "Everest 1830 Modified", 6377304.063, 1.0 / 300.8017, 7018 },                 // udGZE_Everest1930M
+  { "Mars_2000_IAU_IAG", 3396190.000, 1.0 / 169.894447224, 49900 },               // udGZE_MARS
+  { "Moon_2000_IAU_IAG", 1737400.000, 0.0, 39064 },                               // udGZE_MOON
+  { "IAG 1975", 6378140.000, 1.0 / 298.257, 7049 },                               // udGZE_IAG1975
+  { "Everest 1830 (1967 Definition)", 6377298.556, 1.0 / 300.8017, 7016 },        // udGZE_Everest1830
+  { "GRS 1967", 6378160.000, 1.0 / 298.247167427, 7036 },                         // udGZE_GRS67
+  { "Australian National Spheroid", 6378160, 1.0 / 298.25, 7003 },                //udGZE_ANS
+  { "Indonesian National Spheroid", 6378160, 1.0 / 298.247, 7021 },               //udGZE_INS
 };
 
 // Data for table gathered from https://github.com/chrisveness/geodesy/blob/master/latlon-ellipsoidal.js
 // and cross referenced with http://epsg.io/
 const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[] = {
   // Full Name,                              Short  name        Datum name                                      Ellipsoid index      // ToWGS84 parameters                                               epsg  auth, AxisInfo, ToWGS84
-  { "WGS 84",                                "WGS 84",          "WGS_1984",                                     udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4326, 6326, true,     false },
-  { "ED50",                                  "ED50",            "European_Datum_1950",                          udGZE_Intl1924,      { -87.0, -98.0, -121.0, 0.0, 0.0, 0.0, 0.0 },                       4230, 6320, true,     true  },
-  { "ETRS89",                                "ETRS89",          "European_Terrestrial_Reference_System_1989",   udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4258, 6258, true,     true  },
-  { "TM75",                                  "TM75",            "Geodetic_Datum_of_1965",                       udGZE_AiryModified,  { 482.5, -130.6, 564.6, -1.042, -0.214, -0.631, 8.15 },             4300, 6300, true,     true  },
-  { "NAD27",                                 "NAD27",           "North_American_Datum_1927",                    udGZE_Clarke1866,    { -8.0, 160.0, 176.0, 0.0, 0.0, 0.0, 0.0 },                         4267, 6267, true,     true  },
-  { "NAD27(CGQ77)",                          "NAD27(CGQ77)",    "North_American_Datum_1927_CGQ77",              udGZE_Clarke1866,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4609, 6609, true,     false  },
-  { "NAD83",                                 "NAD83",           "North_American_Datum_1983",                    udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4269, 6269, true,     true  },
-  { "NAD83(CORS96)",                         "NAD83(CORS96)",   "NAD83_National_Spatial_Reference_System_1996", udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              6783, 1133, true,     false },
-  { "NAD83(CSRS)",                           "NAD83(CSRS)",     "NAD83_Canadian_Spatial_Reference_System",      udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              2955, 4617, true,     true  },
-  { "NAD83(NSRS2007)",                       "NAD83(NSRS2007)", "NAD83_National_Spatial_Reference_System_2007", udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              3465, 4759, true,     true  },
-  { "NAD83(2011)",                           "NAD83(2011)",     "NAD83_National_Spatial_Reference_System_2011", udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              6318, 1116, true,     false },
-  { "NTF",                                   "NTF",             "Nouvelle_Triangulation_Francaise",             udGZE_Clarke1880IGN, { -168.0, -60.0, 320.0, 0.0, 0.0, 0.0, 0.0 },                       4275, 6275, true,     true  },
-  { "OSGB 1936",                             "OSGB 1936",       "OSGB_1936",                                    udGZE_Airy1830,      { 446.448, -125.157, 542.06, 0.1502, 0.247, 0.8421, -20.4894 },     4277, 6277, true,     true  },
-  { "PD / 83",                               "PD / 83",         "Potsdam_Datum_83",                             udGZE_Bessel1841,    { 582.0, 105.0, 414.0, -1.04, -0.35, 3.08, 8.3 },                   4746, 6746, true,     true  },
-  { "Tokyo",                                 "Tokyo",           "Tokyo",                                        udGZE_Bessel1841,    { -146.414, 507.337, 680.507, 0.0, 0.0, 0.0, 0.0 },                 7414, 6301, true,     true  },
-  { "WGS 72",                                "WGS 72",          "WGS_1972",                                     udGZE_WGS72,         { 0.0, 0.0, 4.5, 0.0, 0.0, 0.554, 0.2263 },                         4322, 6322, true,     true  },
-  { "JGD2000",                               "JGD2000",         "Japanese_Geodetic_Datum_2000",                 udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4612, 6612, false,    true  },
-  { "JGD2011",                               "JGD2011",         "Japanese_Geodetic_Datum_2011",                 udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              6668, 1128, false,    false },
-  { "GDA94",                                 "GDA94",           "Geocentric_Datum_of_Australia_1994",           udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4283, 6283, true,     true  },
-  { "GDA2020",                               "GDA2020",         "Geocentric_Datum_of_Australia_2020",           udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              7844, 1168, true,     false },
-  { "RGF93",                                 "RGF93",           "Reseau_Geodesique_Francais_1993",              udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4171, 6171, true,     true  },
-  { "NAD83(HARN)",                           "NAD83(HARN)",     "NAD83_High_Accuracy_Reference_Network",        udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4152, 6152, true,     true  },
-  { "China Geodetic Coordinate System 2000", "CGCS2000",        "China_2000",                                   udGZE_CGCS2000,      { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4490, 1043, false,    false },
-  { "Hong Kong 1980",                        "Hong Kong 1980",  "Hong_Kong_1980",                               udGZE_Intl1924,      { -162.619,-276.959,-161.764,0.067753,-2.24365,-1.15883,-1.09425 }, 4611, 6611, false,    true  },
-  { "SVY21",                                 "SVY21",           "SVY21",                                        udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4757, 6757, false,    false },
-  { "MGI",                                   "MGI",             "Militar_Geographische_Institute",              udGZE_Bessel1841,    { 577.326, 90.129, 463.919, 5.137, 1.474, 5.297, 2.4232 },          4312, 6312, false,    true  },
-  { "NZGD2000",                              "NZGD2000",        "New_Zealand_Geodetic_Datum_2000",              udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4167, 6167, false,    true  },
-  { "Amersfoort",                            "Amersfoort",      "Amersfoort",                                   udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4289, 6289, true,     false },
-  { "Trinidad 1903",                         "Trinidad_1903",   "Trinidad_1903",                                udGZE_Clarke1858,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4302, 6302, true,     false },
-  { "Vanua Levu 1915",                       "Vanua_Levu_1915", "Vanua_Levu_1915",                              udGZE_Clarke1880FOOT,{ 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 },                         4748, 6748, false,    true  },
-  { "Dealul Piscului 1970",                  "Dealul_1970",     "Dealul_Piscului_1970",                         udGZE_Krassowsky1940,{ 28,-121,-77, 0, 0, 0, 0 },                                        4317, 6317, false,    true  },
-  { "Singapore Grid",                        "Singapore Grid",  "Singapore Grid",                               udGZE_Everest1930M,  { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4245, 6245, false,    false },
-  { "Mars 2000 Mercator",                    "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, false,true  },
-  { "Mars 2000 / ECEF",                      "Mars 2000",       "D_Mars_2000",                                  udGZE_Mars,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              490000, 490001, true, false },
-  { "Moon 2000 Mercator",                    "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, false,  true  },
-  { "Moon 2000 / ECEF",                      "Moon 2000",       "D_Moon_2000",                                  udGZE_Moon,          { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              39064, 39065, true,   false },
-  { "DB_REF",                                "DB_REF",          "Deutsche_Bahn_Reference_System",               udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              5681, 1081, true,     false },
-  { "DHDN",                                  "DHDN",            "Deutsches_Hauptdreiecksnetz",                  udGZE_Bessel1841,    { 598.1, 73.7, 418.2, 0.202, 0.045, -2.455, 6.7 },                  4314, 6314, false,    true  },
-  { "System of the Unified Trigonometrical Cadastral Network [JTSK03]", "JTSK03", "S-JTSK [JTSK03]",            udGZE_Bessel1841,    { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              8353, 8351, true,     false },
-  { "Pulkovo 1942",                          "Pulkovo_1942",    "Pulkovo_1942",                                 udGZE_Krassowsky1940,{ 23.92, -141.27, -80.9, 0, 0.35, 0.82, -0.12 },                    4284, 6284, true,     true  },
-  { "Pulkovo 1942(58)",                      "Pulkovo_1942_58", "Pulkovo_1942_58",                              udGZE_Krassowsky1940,{ 33.4, -146.6, -76.3, -0.359, -0.053, 0.844, -0.84 },              4179, 6179, true,     true  },
-  { "Pulkovo 1942(83)",                      "Pulkovo_1942_83", "Pulkovo_1942_83",                              udGZE_Krassowsky1940,{ 26.0, -121.0, -78.0, 0.0, 0.0, 0.0, 0 },                          4178, 6178, true,     true  },
-  { "Pulkovo 1995",                          "Pulkovo_1995",    "Pulkovo_1995",                                 udGZE_Krassowsky1940,{ 24.47, -130.89, -81.56, 0, 0, 0.13, -0.22 },                      20004, 4200, true,    true  },
-  { "WGS 72BE",                              "WGS_72BE",        "WGS_1972_Transit_Broadcast_Ephemeris",         udGZE_WGS72,         { 0, 0, 1.9, 0, 0, 0.814, -0.38 },                                  4324, 6324, true,     true  },
-  { "Beijing 1954",                          "Beijing_1954",    "Beijing_1954",                                 udGZE_Krassowsky1940,{ 15.8, -154.4, -82.3, 0, 0, 0, 0 },                                4214, 6214, false,    true  },
-  { "New Beijing",                           "New_Beijing",     "New_Beijing",                                  udGZE_Krassowsky1940,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4555, 1045, false,    false },
-  { "Xian 1980",                             "Xian_1980",       "Xian_1980",                                    udGZE_IAG1975,       { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4610, 6610, false,    false },
-  { "Timbalai 1948 / Tso Borneo (m)",        "Timbalai 1948",   "Timbalai_1948",                                udGZE_Everest1830,   { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              29873, 6298, true,    false },
-  { "NZGD49",                                "NZGD49",          "New_Zealand_Geodetic_Datum_1949",              udGZE_Intl1924,      { 59.47, -5.04, 187.44, 0.47, -0.1, 1.024, -4.5993 },               4272, 6272, true,     true  },
-  { "SWEREF99",                              "SWEREF99",        "SWEREF99",                                     udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4619, 6619, true,     true  },
-  { "SAD69",                                 "SAD69",           "South_American_Datum_1969",                    udGZE_GRS67,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4291, 6291, true,     false },
-  { "GR96",                                  "GR96",            "Greenland_1996",                               udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4747, 6747, false,    true  },
-  { "DGN95",                                 "DGN95",           "Datum_Geodesi_Nasional_1995",                  udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4755, 6755, false,    true  },
-  { "UCS-2000",                              "UCS-2000",        "Ukraine_2000",                                 udGZE_Krassowsky1940,{ 25.0, -141.0, -78.5, 0.0, 0.35, 0.736, 0 },                       5561, 1077, true,     true  },
-  { "Hartebeesthoek94",                      "Hartebeesthoek94","Hartebeesthoek94",                             udGZE_WGS84,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4148, 6148, false,    true  },
-  { "ID74",                                  "ID74",            "Indonesian_Datum_1974",                        udGZE_INS,           { -24.0, -15.0, 5.0, 0.0, 0.0, 0.0, 0 },                            4238, 6238, true,     true  },
-  { "NGO 1948",                              "NGO_1948",        "NGO_1948",                                     udGZE_BesselModified,{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              4273, 6273, true,     false },
-  { "RGF93 v2b",                             "RGF93 v2b",       "Reseau_Geodesique_Francais_1993_v2b",          udGZE_GRS80,         { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },                              9782, 6171, true,     true  },
+  { "WGS 84", "WGS 84", "WGS_1984", udGZE_WGS84, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4326, 6326, true, false },
+  { "ED50", "ED50", "European_Datum_1950", udGZE_Intl1924, { -87.0, -98.0, -121.0, 0.0, 0.0, 0.0, 0.0 }, 4230, 6320, true, true },
+  { "ETRS89", "ETRS89", "European_Terrestrial_Reference_System_1989", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4258, 6258, true, true },
+  { "TM75", "TM75", "Geodetic_Datum_of_1965", udGZE_AiryModified, { 482.5, -130.6, 564.6, -1.042, -0.214, -0.631, 8.15 }, 4300, 6300, true, true },
+  { "NAD27", "NAD27", "North_American_Datum_1927", udGZE_Clarke1866, { -8.0, 160.0, 176.0, 0.0, 0.0, 0.0, 0.0 }, 4267, 6267, true, true },
+  { "NAD27(CGQ77)", "NAD27(CGQ77)", "North_American_Datum_1927_CGQ77", udGZE_Clarke1866, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4609, 6609, true, false },
+  { "NAD83", "NAD83", "North_American_Datum_1983", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4269, 6269, true, true },
+  { "NAD83(CORS96)", "NAD83(CORS96)", "NAD83_National_Spatial_Reference_System_1996", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 6783, 1133, true, false },
+  { "NAD83(CSRS)", "NAD83(CSRS)", "NAD83_Canadian_Spatial_Reference_System", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 2955, 4617, true, true },
+  { "NAD83(NSRS2007)", "NAD83(NSRS2007)", "NAD83_National_Spatial_Reference_System_2007", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 3465, 4759, true, true },
+  { "NAD83(2011)", "NAD83(2011)", "NAD83_National_Spatial_Reference_System_2011", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 6318, 1116, true, false },
+  { "NTF", "NTF", "Nouvelle_Triangulation_Francaise", udGZE_Clarke1880IGN, { -168.0, -60.0, 320.0, 0.0, 0.0, 0.0, 0.0 }, 4275, 6275, true, true },
+  { "OSGB 1936", "OSGB 1936", "OSGB_1936", udGZE_Airy1830, { 446.448, -125.157, 542.06, 0.1502, 0.247, 0.8421, -20.4894 }, 4277, 6277, true, true },
+  { "PD / 83", "PD / 83", "Potsdam_Datum_83", udGZE_Bessel1841, { 582.0, 105.0, 414.0, -1.04, -0.35, 3.08, 8.3 }, 4746, 6746, true, true },
+  { "Tokyo", "Tokyo", "Tokyo", udGZE_Bessel1841, { -146.414, 507.337, 680.507, 0.0, 0.0, 0.0, 0.0 }, 7414, 6301, true, true },
+  { "WGS 72", "WGS 72", "WGS_1972", udGZE_WGS72, { 0.0, 0.0, 4.5, 0.0, 0.0, 0.554, 0.2263 }, 4322, 6322, true, true },
+  { "JGD2000", "JGD2000", "Japanese_Geodetic_Datum_2000", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4612, 6612, false, true },
+  { "JGD2011", "JGD2011", "Japanese_Geodetic_Datum_2011", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 6668, 1128, false, false },
+  { "GDA94", "GDA94", "Geocentric_Datum_of_Australia_1994", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4283, 6283, true, true },
+  { "GDA2020", "GDA2020", "Geocentric_Datum_of_Australia_2020", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 7844, 1168, true, false },
+  { "RGF93", "RGF93", "Reseau_Geodesique_Francais_1993", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4171, 6171, true, true },
+  { "NAD83(HARN)", "NAD83(HARN)", "NAD83_High_Accuracy_Reference_Network", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4152, 6152, true, true },
+  { "China Geodetic Coordinate System 2000", "CGCS2000", "China_2000", udGZE_CGCS2000, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4490, 1043, false, false },
+  { "Hong Kong 1980", "Hong Kong 1980", "Hong_Kong_1980", udGZE_Intl1924, { -162.619, -276.959, -161.764, 0.067753, -2.24365, -1.15883, -1.09425 }, 4611, 6611, false, true },
+  { "SVY21", "SVY21", "SVY21", udGZE_WGS84, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4757, 6757, false, false },
+  { "MGI", "MGI", "Militar_Geographische_Institute", udGZE_Bessel1841, { 577.326, 90.129, 463.919, 5.137, 1.474, 5.297, 2.4232 }, 4312, 6312, false, true },
+  { "NZGD2000", "NZGD2000", "New_Zealand_Geodetic_Datum_2000", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4167, 6167, false, true },
+  { "Amersfoort", "Amersfoort", "Amersfoort", udGZE_Bessel1841, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4289, 6289, true, false },
+  { "Trinidad 1903", "Trinidad_1903", "Trinidad_1903", udGZE_Clarke1858, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4302, 6302, true, false },
+  { "Vanua Levu 1915", "Vanua_Levu_1915", "Vanua_Levu_1915", udGZE_Clarke1880FOOT, { 51.0, 391.0, -36.0, 0.0, 0.0, 0.0, 0.0 }, 4748, 6748, false, true },
+  { "Dealul Piscului 1970", "Dealul_1970", "Dealul_Piscului_1970", udGZE_Krassowsky1940, { 28, -121, -77, 0, 0, 0, 0 }, 4317, 6317, false, true },
+  { "Singapore Grid", "Singapore Grid", "Singapore Grid", udGZE_Everest1930M, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4245, 6245, false, false },
+  { "Mars 2000 Mercator", "Mars 2000", "D_Mars_2000", udGZE_Mars, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 490000, 490001, false, true },
+  { "Mars 2000 / ECEF", "Mars 2000", "D_Mars_2000", udGZE_Mars, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 490000, 490001, true, false },
+  { "Moon 2000 Mercator", "Moon 2000", "D_Moon_2000", udGZE_Moon, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 39064, 39065, false, true },
+  { "Moon 2000 / ECEF", "Moon 2000", "D_Moon_2000", udGZE_Moon, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 39064, 39065, true, false },
+  { "DB_REF", "DB_REF", "Deutsche_Bahn_Reference_System", udGZE_Bessel1841, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 5681, 1081, true, false },
+  { "DHDN", "DHDN", "Deutsches_Hauptdreiecksnetz", udGZE_Bessel1841, { 598.1, 73.7, 418.2, 0.202, 0.045, -2.455, 6.7 }, 4314, 6314, false, true },
+  { "System of the Unified Trigonometrical Cadastral Network [JTSK03]", "JTSK03", "S-JTSK [JTSK03]", udGZE_Bessel1841, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 8353, 8351, true, false },
+  { "Pulkovo 1942", "Pulkovo_1942", "Pulkovo_1942", udGZE_Krassowsky1940, { 23.92, -141.27, -80.9, 0, 0.35, 0.82, -0.12 }, 4284, 6284, true, true },
+  { "Pulkovo 1942(58)", "Pulkovo_1942_58", "Pulkovo_1942_58", udGZE_Krassowsky1940, { 33.4, -146.6, -76.3, -0.359, -0.053, 0.844, -0.84 }, 4179, 6179, true, true },
+  { "Pulkovo 1942(83)", "Pulkovo_1942_83", "Pulkovo_1942_83", udGZE_Krassowsky1940, { 26.0, -121.0, -78.0, 0.0, 0.0, 0.0, 0 }, 4178, 6178, true, true },
+  { "Pulkovo 1995", "Pulkovo_1995", "Pulkovo_1995", udGZE_Krassowsky1940, { 24.47, -130.89, -81.56, 0, 0, 0.13, -0.22 }, 20004, 4200, true, true },
+  { "WGS 72BE", "WGS_72BE", "WGS_1972_Transit_Broadcast_Ephemeris", udGZE_WGS72, { 0, 0, 1.9, 0, 0, 0.814, -0.38 }, 4324, 6324, true, true },
+  { "Beijing 1954", "Beijing_1954", "Beijing_1954", udGZE_Krassowsky1940, { 15.8, -154.4, -82.3, 0, 0, 0, 0 }, 4214, 6214, false, true },
+  { "New Beijing", "New_Beijing", "New_Beijing", udGZE_Krassowsky1940, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4555, 1045, false, false },
+  { "Xian 1980", "Xian_1980", "Xian_1980", udGZE_IAG1975, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4610, 6610, false, false },
+  { "Timbalai 1948 / Tso Borneo (m)", "Timbalai 1948", "Timbalai_1948", udGZE_Everest1830, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 29873, 6298, true, false },
+  { "NZGD49", "NZGD49", "New_Zealand_Geodetic_Datum_1949", udGZE_Intl1924, { 59.47, -5.04, 187.44, 0.47, -0.1, 1.024, -4.5993 }, 4272, 6272, true, true },
+  { "SWEREF99", "SWEREF99", "SWEREF99", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4619, 6619, true, true },
+  { "SAD69", "SAD69", "South_American_Datum_1969", udGZE_GRS67, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4291, 6291, true, false },
+  { "GR96", "GR96", "Greenland_1996", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4747, 6747, false, true },
+  { "DGN95", "DGN95", "Datum_Geodesi_Nasional_1995", udGZE_WGS84, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4755, 6755, false, true },
+  { "UCS-2000", "UCS-2000", "Ukraine_2000", udGZE_Krassowsky1940, { 25.0, -141.0, -78.5, 0.0, 0.35, 0.736, 0 }, 5561, 1077, true, true },
+  { "Hartebeesthoek94", "Hartebeesthoek94", "Hartebeesthoek94", udGZE_WGS84, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4148, 6148, false, true },
+  { "ID74", "ID74", "Indonesian_Datum_1974", udGZE_INS, { -24.0, -15.0, 5.0, 0.0, 0.0, 0.0, 0 }, 4238, 6238, true, true },
+  { "NGO 1948", "NGO_1948", "NGO_1948", udGZE_BesselModified, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 4273, 6273, true, false },
+  { "RGF93 v2b", "RGF93 v2b", "Reseau_Geodesique_Francais_1993_v2b", udGZE_GRS80, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, 9782, 6171, true, true },
 };
 
 UDCOMPILEASSERT(udLengthOf(g_udGZ_GeodeticDatumDescriptors) == udGZGD_Count, "Update above descriptor table!");
@@ -211,7 +211,7 @@ udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pF
 
     pSRIDStr = udStrstr(item.pKey, 0, ":");
     if (pSRIDStr != nullptr)
-      expectedSRID = udStrAtoi(pSRIDStr+1);
+      expectedSRID = udStrAtoi(pSRIDStr + 1);
     else
       expectedSRID = udStrAtoi(item.pKey);
 
@@ -320,7 +320,7 @@ udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEll
   while (lat2 != lat2Temp && isfinite(lat2))
   {
     lat2 = lat2Temp;
-    lat2Temp = udATan((geoCentric.z + eSq*v*udSin(lat2)) / udSqrt(geoCentric.x * geoCentric.x + geoCentric.y * geoCentric.y));
+    lat2Temp = udATan((geoCentric.z + eSq * v * udSin(lat2)) / udSqrt(geoCentric.x * geoCentric.x + geoCentric.y * geoCentric.y));
   }
 
   return udDouble3::create(UD_RAD2DEG(lat2), UD_RAD2DEG(lon), h);
@@ -332,12 +332,12 @@ udDouble3 udGeoZone_ApplyTransform(udDouble3 geoCentric, const udGeoZoneGeodetic
   double rx = UD_DEG2RAD(transform.paramsHelmert7[3] / 3600.0); // x-rotation: normalise arcseconds to radians
   double ry = UD_DEG2RAD(transform.paramsHelmert7[4] / 3600.0); // y-rotation: normalise arcseconds to radians
   double rz = UD_DEG2RAD(transform.paramsHelmert7[5] / 3600.0); // z-rotation: normalise arcseconds to radians
-  double ds = transform.paramsHelmert7[6] / 1000000.0 + 1.0; // scale: normalise parts-per-million to (s+1)
+  double ds = transform.paramsHelmert7[6] / 1000000.0 + 1.0;    // scale: normalise parts-per-million to (s+1)
 
   // apply transform
-  double x2 = transform.paramsHelmert7[0] + (ds * geoCentric.x - geoCentric.y*rz + geoCentric.z*ry);
-  double y2 = transform.paramsHelmert7[1] + (geoCentric.x*rz + ds * geoCentric.y - geoCentric.z*rx);
-  double z2 = transform.paramsHelmert7[2] + (-geoCentric.x*ry + geoCentric.y*rx + ds * geoCentric.z);
+  double x2 = transform.paramsHelmert7[0] + (ds * geoCentric.x - geoCentric.y * rz + geoCentric.z * ry);
+  double y2 = transform.paramsHelmert7[1] + (geoCentric.x * rz + ds * geoCentric.y - geoCentric.z * rx);
+  double z2 = transform.paramsHelmert7[2] + (-geoCentric.x * ry + geoCentric.y * rx + ds * geoCentric.z);
 
   return udDouble3::create(x2, y2, z2);
 }
@@ -497,7 +497,7 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
 
   // The alpha and beta constant below can be cross-referenced with https://geographiclib.sourceforge.io/html/transversemercator.html
   pZone->alpha[0] = 1.0 / 2.0 * pZone->n[1] - 2.0 / 3.0 * pZone->n[2] + 5.0 / 16.0 * pZone->n[3] + 41.0 / 180.0 * pZone->n[4] - 127.0 / 288.0 * pZone->n[5] + 7891.0 / 37800.0 * pZone->n[6] + 72161.0 / 387072.0 * pZone->n[7] - 18975107.0 / 50803200.0 * pZone->n[8] + 60193001.0 / 290304000.0 * pZone->n[9];
-  pZone->alpha[1] = 13.0 / 48.0 * pZone->n[2] - 3.0 / 5.0 * pZone->n[3] + 557.0 / 1440.0 *pZone->n[4] + 281.0 / 630.0 * pZone->n[5] - 1983433.0 / 1935360.0 * pZone->n[6] + 13769.0 / 28800.0 * pZone->n[7] + 148003883.0 / 174182400.0 * pZone->n[8] - 705286231.0 / 465696000.0 * pZone->n[9];
+  pZone->alpha[1] = 13.0 / 48.0 * pZone->n[2] - 3.0 / 5.0 * pZone->n[3] + 557.0 / 1440.0 * pZone->n[4] + 281.0 / 630.0 * pZone->n[5] - 1983433.0 / 1935360.0 * pZone->n[6] + 13769.0 / 28800.0 * pZone->n[7] + 148003883.0 / 174182400.0 * pZone->n[8] - 705286231.0 / 465696000.0 * pZone->n[9];
   pZone->alpha[2] = 61.0 / 240.0 * pZone->n[3] - 103.0 / 140.0 * pZone->n[4] + 15061.0 / 26880.0 * pZone->n[5] + 167603.0 / 181440.0 * pZone->n[6] - 67102379.0 / 29030400.0 * pZone->n[7] + 79682431.0 / 79833600.0 * pZone->n[8] + 6304945039.0 / 2128896000.0 * pZone->n[9];
   pZone->alpha[3] = 49561.0 / 161280.0 * pZone->n[4] - 179.0 / 168.0 * pZone->n[5] + 6601661.0 / 7257600.0 * pZone->n[6] + 97445.0 / 49896.0 * pZone->n[7] - 40176129013.0 / 7664025600.0 * pZone->n[8] + 138471097.0 / 66528000.0 * pZone->n[9];
   pZone->alpha[4] = 34729.0 / 80640.0 * pZone->n[5] - 3418889.0 / 1995840.0 * pZone->n[6] + 14644087.0 / 9123840.0 * pZone->n[7] + 2605413599.0 / 622702080.0 * pZone->n[8] - 31015475399.0 / 2583060480.0 * pZone->n[9];
@@ -516,7 +516,7 @@ static void udGeoZone_SetSpheroid(udGeoZone *pZone)
   pZone->beta[7] = -191773887257.0 / 3719607091200.0 * pZone->n[8] + 17822319343.0 / 336825216000.0 * pZone->n[9];
   pZone->beta[8] = -11025641854267.0 / 158083301376000.0 * pZone->n[9];
 
-  pZone->radius = pZone->semiMajorAxis / (1 + pZone->n[1]) * (1.0 + 1.0 / 4.0 * pZone->n[2] + 1.0 / 64.0 *pZone->n[4] + 1.0 / 256.0 * pZone->n[6] + 25.0 / 16384.0 * pZone->n[8]);
+  pZone->radius = pZone->semiMajorAxis / (1 + pZone->n[1]) * (1.0 + 1.0 / 4.0 * pZone->n[2] + 1.0 / 64.0 * pZone->n[4] + 1.0 / 256.0 * pZone->n[6] + 25.0 / 16384.0 * pZone->n[8]);
 
   if (pZone->firstParallel == 0.0 && pZone->secondParallel == 0.0 && pZone->parallel != 0) // Latitude of origin for Transverse Mercator
   {
@@ -623,34 +623,34 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
 
     switch (sridCode)
     {
-    case 31284:
-      pSuffix = "M28";
-      pZone->meridian = 10.33333333333333;
-      pZone->falseEasting = 150000;
-      break;
+      case 31284:
+        pSuffix = "M28";
+        pZone->meridian = 10.33333333333333;
+        pZone->falseEasting = 150000;
+        break;
 
-    case 31285:
-      pSuffix = "M31";
-      pZone->meridian = 13.33333333333333;
-      pZone->falseEasting = 450000;
-      break;
+      case 31285:
+        pSuffix = "M31";
+        pZone->meridian = 13.33333333333333;
+        pZone->falseEasting = 450000;
+        break;
 
-    case 31286:
-      pSuffix = "M34";
-      pZone->meridian = 16.33333333333333;
-      pZone->falseEasting = 750000;
-      break;
+      case 31286:
+        pSuffix = "M34";
+        pZone->meridian = 16.33333333333333;
+        pZone->falseEasting = 750000;
+        break;
 
-    case 31287:
-      pSuffix = "Lambert";
-      pZone->meridian = 13.33333333333333;
-      pZone->firstParallel = 49;
-      pZone->secondParallel = 46;
-      pZone->falseEasting = 400000;
-      pZone->falseNorthing = 400000;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->parallel = 47.5;
-      break;
+      case 31287:
+        pSuffix = "Lambert";
+        pZone->meridian = 13.33333333333333;
+        pZone->firstParallel = 49;
+        pZone->secondParallel = 46;
+        pZone->falseEasting = 400000;
+        pZone->falseNorthing = 400000;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->parallel = 47.5;
+        break;
     }
 
     udSprintf(pZone->zoneName, "Austria %s", pSuffix);
@@ -672,37 +672,36 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
 
     switch (sridCode)
     {
-    case 31254:
-      pSuffix = "GK West";
-      break;
+      case 31254:
+        pSuffix = "GK West";
+        break;
 
-    case 31255:
-      pZone->meridian = 13.33333333333333;
-      pSuffix = "GK Central";
-      break;
+      case 31255:
+        pZone->meridian = 13.33333333333333;
+        pSuffix = "GK Central";
+        break;
 
-    case 31256:
-      pZone->meridian = 16.33333333333333;
-      pSuffix = "GK East";
-      break;
+      case 31256:
+        pZone->meridian = 16.33333333333333;
+        pSuffix = "GK East";
+        break;
 
-    case 31257:
-      pZone->falseEasting = 150000;
-      pSuffix = "GK M28";
-      break;
+      case 31257:
+        pZone->falseEasting = 150000;
+        pSuffix = "GK M28";
+        break;
 
-    case 31258:
-      pZone->falseEasting = 450000;
-      pZone->meridian = 13.33333333333333;
-      pSuffix = "GK M31";
-      break;
+      case 31258:
+        pZone->falseEasting = 450000;
+        pZone->meridian = 13.33333333333333;
+        pSuffix = "GK M31";
+        break;
 
-    case 31259:
-      pZone->falseEasting = 750000;
-      pZone->meridian = 16.33333333333333;
-      pSuffix = "GK M34";
-      break;
-
+      case 31259:
+        pZone->falseEasting = 750000;
+        pZone->meridian = 16.33333333333333;
+        pSuffix = "GK M34";
+        break;
     }
 
     udSprintf(pZone->zoneName, "Austria %s", pSuffix);
@@ -815,25 +814,25 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
     // {6669-6687} JGD2011 / Japan Plane Rectangular CS I through XIX
 
     const udDouble2 jprcsRegions[] = { // Meridian, Latitude Of Origin
-      { 129.5, 33.0 },
-      { 131.0, 33.0 },
-      { 132.0 + 1.0 / 6.0, 36.0 },
-      { 133.5, 33.0 },
-      { 134.0 + 1.0 / 3.0, 36.0 },
-      { 136.0, 36.0 },
-      { 137.0 + 1.0 / 6.0, 36.0 },
-      { 138.5, 36.0 },
-      { 139.0 + 5.0 / 6.0, 36.0 },
-      { 140.0 + 5.0 / 6.0, 40.0 },
-      { 140.25, 44.0 },
-      { 142.25, 44.0 },
-      { 144.25, 44.0 },
-      { 142.0, 26.0 },
-      { 127.5, 26.0 },
-      { 124.0, 26.0 },
-      { 131.0, 26.0 },
-      { 136.0, 20.0 },
-      { 154.0, 26.0 }
+                                       { 129.5, 33.0 },
+                                       { 131.0, 33.0 },
+                                       { 132.0 + 1.0 / 6.0, 36.0 },
+                                       { 133.5, 33.0 },
+                                       { 134.0 + 1.0 / 3.0, 36.0 },
+                                       { 136.0, 36.0 },
+                                       { 137.0 + 1.0 / 6.0, 36.0 },
+                                       { 138.5, 36.0 },
+                                       { 139.0 + 5.0 / 6.0, 36.0 },
+                                       { 140.0 + 5.0 / 6.0, 40.0 },
+                                       { 140.25, 44.0 },
+                                       { 142.25, 44.0 },
+                                       { 144.25, 44.0 },
+                                       { 142.0, 26.0 },
+                                       { 127.5, 26.0 },
+                                       { 124.0, 26.0 },
+                                       { 131.0, 26.0 },
+                                       { 136.0, 20.0 },
+                                       { 154.0, 26.0 }
     };
     const char *pRomanNumerals[] = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX" };
 
@@ -907,286 +906,288 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
   {
     switch (sridCode)
     {
-    case 84: // LongLat (Not EPSG - CRS:84. There is no EPSG LongLat code)
-      pZone->datum = udGZGD_WGS84;
-      pZone->projection = udGZPT_LongLat;
-      pZone->zone = 0;
-      pZone->scaleFactor = 0.0174532925199433;
-      pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-90, -180);
-      pZone->latLongBoundMax = udDouble2::create(90, 180);
-      break;
-    case 2154: // RGF93 / Lambert-93
-      pZone->datum = udGZGD_RGF93;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, "Lambert-93");
-      pZone->meridian = 3;
-      pZone->parallel = 46.5;
-      pZone->firstParallel = 49;
-      pZone->secondParallel = 44;
-      pZone->falseNorthing = 6600000;
-      pZone->falseEasting = 700000;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(41.1800, -9.6200);
-      pZone->latLongBoundMax = udDouble2::create(51.5400, 10.3000);
-      break;
-    case 9794: // RGF93 / Lambert-93 v2b
-      pZone->datum = udGZGD_RGF93v2b;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, "Lambert-93");
-      pZone->meridian = 3;
-      pZone->parallel = 46.5;
-      pZone->firstParallel = 49;
-      pZone->secondParallel = 44;
-      pZone->falseNorthing = 6600000;
-      pZone->falseEasting = 700000;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(41.1800 , -9.6200);
-      pZone->latLongBoundMax = udDouble2::create(51.5400, 10.3000);
-      break;
-    case 2193: // NZGD2000
-      pZone->datum = udGZGD_NZGD2000;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "New Zealand Transverse Mercator 2000");
-      pZone->meridian = 173;
-      pZone->parallel = 0;
-      pZone->falseNorthing = 10000000;
-      pZone->falseEasting = 1600000;
-      pZone->scaleFactor = 0.9996;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-47.4, 166.33);
-      pZone->latLongBoundMax = udDouble2::create(-34, 178.6);
-      break;
-    case 2230: // NAD83 / California zone 6 (ftUS)
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "California zone 6 (ftUS)");
-      pZone->meridian = -116.25;
-      pZone->parallel = 32.0 + 1.0 / 6.0;
-      pZone->firstParallel = 33.0 + 53.0 / 60.0;
-      pZone->secondParallel = 32.0 + 47.0 / 60.0;
-      pZone->falseNorthing = 1640416.667;
-      pZone->falseEasting = 6561666.667;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(23.81, -172.54);
-      pZone->latLongBoundMax = udDouble2::create(86.46, -47.74);
-      break;
-    case 2238: // NAD83 / Florida North (ftUS)
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "Florida North (ftUS)");
-      pZone->meridian = -84.5;
-      pZone->parallel = 29.0;
-      pZone->firstParallel = 30.75;
-      pZone->secondParallel = 29.0 + 175.0 / 300.0;
-      pZone->falseNorthing = 0.0;
-      pZone->falseEasting = 1968500.0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(29.28, -87.64);
-      pZone->latLongBoundMax = udDouble2::create(31.0, -82.05);
-      break;
-    case 2248: // NAD83 / Maryland (ftUS)
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "Maryland (ftUS)");
-      pZone->meridian = -77.0;
-      pZone->parallel = 37.0 + 2.0 / 3.0;
-      pZone->firstParallel = 39.45;
-      pZone->secondParallel = 38.3;
-      pZone->falseNorthing = 0.0;
-      pZone->falseEasting = 1312333.333;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(37.88, -79.49);
-      pZone->latLongBoundMax = udDouble2::create(39.72, -74.98);
-      break;
-    case 2250: // NAD83 / Massachusetts Island (ftUS)
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "Massachusetts Island (ftUS)");
-      pZone->meridian = -70.5;
-      pZone->parallel = 41.0;
-      pZone->firstParallel = 41.0 + 145.0 / 300.0;
-      pZone->secondParallel = 41.0 + 85.0 / 300.0;;
-      pZone->falseNorthing = 0.0;
-      pZone->falseEasting = 1640416.667;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(41.2, -70.87);
-      pZone->latLongBoundMax = udDouble2::create(41.51, -69.9);
-      break;
-    case 2285: // NAD83 / Washington North (ftUS)
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "Washington North (ftUS)");
-      pZone->meridian = -120 - 25.0 / 30.0;
-      pZone->parallel = 47.0;
-      pZone->firstParallel = 48.0 + 22.0 / 30.0;;
-      pZone->secondParallel = 47.5;
-      pZone->falseNorthing = 0.0;
-      pZone->falseEasting = 1640416.667;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(47.08, -124.75);
-      pZone->latLongBoundMax = udDouble2::create(49.0, -117.03);
-      break;
-    case 2326: // Hong Kong 1980 Grid System
-      pZone->datum = udGZGD_HK1980;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "Hong Kong 1980 Grid System");
-      pZone->meridian = 114.1785555555556;
-      pZone->parallel = 22.31213333333334;
-      pZone->falseNorthing = 819069.8;
-      pZone->falseEasting = 836694.05;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(22.13, 113.76);
-      pZone->latLongBoundMax = udDouble2::create(22.58, 114.51);
-      break;
-    case 2771: // NAD83(HARN) / California zone 6
-      pZone->datum = udGZGD_NAD83_HARN;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, "California zone 6");
-      pZone->meridian = -116.25;
-      pZone->parallel = 32.0 + 1.0 / 6.0;
-      pZone->firstParallel = 33.0 + 265.0 / 300.0;
-      pZone->secondParallel = 32.0 + 235.0 / 300.0;
-      pZone->falseNorthing = 500000.0;
-      pZone->falseEasting = 2000000.0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(32.51, -118.14);
-      pZone->latLongBoundMax = udDouble2::create(34.08, -114.43);
-      break;
-    case 3032: // WGS 84 / Australian Antartic Polar Sterographic
-      pZone->datum = udGZGD_WGS84;//udGZGD_AUST_ANT;
-      pZone->projection = udGZPT_SterographicPolar_vB;
-      udStrcpy(pZone->zoneName, "Australian Antarctic Polar Stereographic");
-      pZone->meridian = 70.0;
-      pZone->parallel = -71.0;
-      pZone->falseEasting = 6000000.0;
-      pZone->falseNorthing = 6000000.0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(45.0, -90.0);
-      pZone->latLongBoundMax = udDouble2::create(160.0, -60.0);
-      break;
-    case 3112: // GDA94 / Geoscience Australia Lambert
-      pZone->datum = udGZGD_GDA94;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, "Geoscience Australia Lambert");
-      pZone->meridian = 134;
-      pZone->parallel = 0;
-      pZone->firstParallel = -18;
-      pZone->secondParallel = -36;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
-      pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
-      break;
-    case 3113: // GDA94 / BCSG02
-      pZone->datum = udGZGD_GDA94;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "BCSG02");
-      pZone->meridian = 153;
-      pZone->parallel = -28;
-      pZone->falseNorthing = 100000;
-      pZone->falseEasting = 50000;
-      pZone->scaleFactor = 0.99999;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
-      pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
-      break;
-    case 3139: // Vanua Levu 1915 / Cassini Soldner Hyperbolic Test
-      pZone->datum = udGZGD_VANUA1915;
-      pZone->projection = udGZPT_CassiniSoldnerHyperbolic;
-      udStrcpy(pZone->zoneName, "Vanua Levu 1915");
-      pZone->meridian = 179 + 1.0 / 3.0;
-      pZone->parallel = -16.25;
-      pZone->falseNorthing = 1662888.5;
-      pZone->falseEasting = 1251331.8;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 0.201168; // Link Unit
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-179.5, -17.05);
-      pZone->latLongBoundMax = udDouble2::create(178.25, -16.0);
-      break;
-    case 3174: // Great Lakes Albers / ALbers Conis Equal Area Projection Test
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_AlbersEqualArea;
-      udStrcpy(pZone->zoneName, "Great Lakes Albers");
-      pZone->meridian = -84.455955;
-      pZone->latProjCentre = 45.568977;
-      pZone->falseNorthing = 1662888.5;
-      pZone->firstParallel = 42.122774;
-      pZone->secondParallel = 49.01518;
-      pZone->falseEasting = 1000000;
-      pZone->falseNorthing = 1000000;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(40.4, -93.21);
-      pZone->latLongBoundMax = udDouble2::create(50.74, -74.50);
-      break;
-    case 3414: // Singapore TM
-      pZone->datum = udGZGD_SVY21;
-      pZone->projection = udGZPT_TransverseMercator;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Singapore TM");
-      pZone->meridian = 103 + (5.0 / 6.0);
-      pZone->parallel = 1 + (11.0 / 30.0);
-      pZone->falseNorthing = 38744.572;
-      pZone->falseEasting = 28001.642;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(1.1200, 103.6200);
-      pZone->latLongBoundMax = udDouble2::create(1.4600, 104.1600);
-      break;
-    case 3433: // Arkansas North
-      pZone->datum = udGZGD_NAD83;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->zone = 0;
-      pZone->parallel = 34.33333333333334; // Can't be the fraction as rounds to '4'
-      pZone->firstParallel = 36.2 + (1.0/30);
-      pZone->secondParallel = 34.9 + (1.0/30);
-      pZone->meridian = -92;
-      pZone->falseNorthing = 0.0;
-      pZone->falseEasting = 1312333.3333;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "Arkansas North (ftUS)");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(34.67,-94.62);
-      pZone->latLongBoundMax = udDouble2::create(36.5,-89.64);
-      break;
-    case 3857: // Web Mercator
-      pZone->datum = udGZGD_WGS84;
-      pZone->projection = udGZPT_WebMercator;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Pseudo-Mercator");
-      pZone->meridian = 0;
-      pZone->parallel = 0;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-85, -180);
-      pZone->latLongBoundMax = udDouble2::create(95, 180);
-      break;
-    case 4087: // WGS84 / World Equidistant Cylindrical
+      case 84: // LongLat (Not EPSG - CRS:84. There is no EPSG LongLat code)
+        pZone->datum = udGZGD_WGS84;
+        pZone->projection = udGZPT_LongLat;
+        pZone->zone = 0;
+        pZone->scaleFactor = 0.0174532925199433;
+        pZone->unitMetreScale = 1.0;
+        udStrcpy(pZone->zoneName, "");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-90, -180);
+        pZone->latLongBoundMax = udDouble2::create(90, 180);
+        break;
+      case 2154: // RGF93 / Lambert-93
+        pZone->datum = udGZGD_RGF93;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        udStrcpy(pZone->zoneName, "Lambert-93");
+        pZone->meridian = 3;
+        pZone->parallel = 46.5;
+        pZone->firstParallel = 49;
+        pZone->secondParallel = 44;
+        pZone->falseNorthing = 6600000;
+        pZone->falseEasting = 700000;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(41.1800, -9.6200);
+        pZone->latLongBoundMax = udDouble2::create(51.5400, 10.3000);
+        break;
+      case 9794: // RGF93 / Lambert-93 v2b
+        pZone->datum = udGZGD_RGF93v2b;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        udStrcpy(pZone->zoneName, "Lambert-93");
+        pZone->meridian = 3;
+        pZone->parallel = 46.5;
+        pZone->firstParallel = 49;
+        pZone->secondParallel = 44;
+        pZone->falseNorthing = 6600000;
+        pZone->falseEasting = 700000;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(41.1800, -9.6200);
+        pZone->latLongBoundMax = udDouble2::create(51.5400, 10.3000);
+        break;
+      case 2193: // NZGD2000
+        pZone->datum = udGZGD_NZGD2000;
+        pZone->projection = udGZPT_TransverseMercator;
+        udStrcpy(pZone->zoneName, "New Zealand Transverse Mercator 2000");
+        pZone->meridian = 173;
+        pZone->parallel = 0;
+        pZone->falseNorthing = 10000000;
+        pZone->falseEasting = 1600000;
+        pZone->scaleFactor = 0.9996;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-47.4, 166.33);
+        pZone->latLongBoundMax = udDouble2::create(-34, 178.6);
+        break;
+      case 2230: // NAD83 / California zone 6 (ftUS)
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "California zone 6 (ftUS)");
+        pZone->meridian = -116.25;
+        pZone->parallel = 32.0 + 1.0 / 6.0;
+        pZone->firstParallel = 33.0 + 53.0 / 60.0;
+        pZone->secondParallel = 32.0 + 47.0 / 60.0;
+        pZone->falseNorthing = 1640416.667;
+        pZone->falseEasting = 6561666.667;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(23.81, -172.54);
+        pZone->latLongBoundMax = udDouble2::create(86.46, -47.74);
+        break;
+      case 2238: // NAD83 / Florida North (ftUS)
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "Florida North (ftUS)");
+        pZone->meridian = -84.5;
+        pZone->parallel = 29.0;
+        pZone->firstParallel = 30.75;
+        pZone->secondParallel = 29.0 + 175.0 / 300.0;
+        pZone->falseNorthing = 0.0;
+        pZone->falseEasting = 1968500.0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(29.28, -87.64);
+        pZone->latLongBoundMax = udDouble2::create(31.0, -82.05);
+        break;
+      case 2248: // NAD83 / Maryland (ftUS)
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "Maryland (ftUS)");
+        pZone->meridian = -77.0;
+        pZone->parallel = 37.0 + 2.0 / 3.0;
+        pZone->firstParallel = 39.45;
+        pZone->secondParallel = 38.3;
+        pZone->falseNorthing = 0.0;
+        pZone->falseEasting = 1312333.333;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(37.88, -79.49);
+        pZone->latLongBoundMax = udDouble2::create(39.72, -74.98);
+        break;
+      case 2250: // NAD83 / Massachusetts Island (ftUS)
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "Massachusetts Island (ftUS)");
+        pZone->meridian = -70.5;
+        pZone->parallel = 41.0;
+        pZone->firstParallel = 41.0 + 145.0 / 300.0;
+        pZone->secondParallel = 41.0 + 85.0 / 300.0;
+        ;
+        pZone->falseNorthing = 0.0;
+        pZone->falseEasting = 1640416.667;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(41.2, -70.87);
+        pZone->latLongBoundMax = udDouble2::create(41.51, -69.9);
+        break;
+      case 2285: // NAD83 / Washington North (ftUS)
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "Washington North (ftUS)");
+        pZone->meridian = -120 - 25.0 / 30.0;
+        pZone->parallel = 47.0;
+        pZone->firstParallel = 48.0 + 22.0 / 30.0;
+        ;
+        pZone->secondParallel = 47.5;
+        pZone->falseNorthing = 0.0;
+        pZone->falseEasting = 1640416.667;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(47.08, -124.75);
+        pZone->latLongBoundMax = udDouble2::create(49.0, -117.03);
+        break;
+      case 2326: // Hong Kong 1980 Grid System
+        pZone->datum = udGZGD_HK1980;
+        pZone->projection = udGZPT_TransverseMercator;
+        udStrcpy(pZone->zoneName, "Hong Kong 1980 Grid System");
+        pZone->meridian = 114.1785555555556;
+        pZone->parallel = 22.31213333333334;
+        pZone->falseNorthing = 819069.8;
+        pZone->falseEasting = 836694.05;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(22.13, 113.76);
+        pZone->latLongBoundMax = udDouble2::create(22.58, 114.51);
+        break;
+      case 2771: // NAD83(HARN) / California zone 6
+        pZone->datum = udGZGD_NAD83_HARN;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        udStrcpy(pZone->zoneName, "California zone 6");
+        pZone->meridian = -116.25;
+        pZone->parallel = 32.0 + 1.0 / 6.0;
+        pZone->firstParallel = 33.0 + 265.0 / 300.0;
+        pZone->secondParallel = 32.0 + 235.0 / 300.0;
+        pZone->falseNorthing = 500000.0;
+        pZone->falseEasting = 2000000.0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(32.51, -118.14);
+        pZone->latLongBoundMax = udDouble2::create(34.08, -114.43);
+        break;
+      case 3032:                     // WGS 84 / Australian Antartic Polar Sterographic
+        pZone->datum = udGZGD_WGS84; //udGZGD_AUST_ANT;
+        pZone->projection = udGZPT_SterographicPolar_vB;
+        udStrcpy(pZone->zoneName, "Australian Antarctic Polar Stereographic");
+        pZone->meridian = 70.0;
+        pZone->parallel = -71.0;
+        pZone->falseEasting = 6000000.0;
+        pZone->falseNorthing = 6000000.0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(45.0, -90.0);
+        pZone->latLongBoundMax = udDouble2::create(160.0, -60.0);
+        break;
+      case 3112: // GDA94 / Geoscience Australia Lambert
+        pZone->datum = udGZGD_GDA94;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        udStrcpy(pZone->zoneName, "Geoscience Australia Lambert");
+        pZone->meridian = 134;
+        pZone->parallel = 0;
+        pZone->firstParallel = -18;
+        pZone->secondParallel = -36;
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
+        pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
+        break;
+      case 3113: // GDA94 / BCSG02
+        pZone->datum = udGZGD_GDA94;
+        pZone->projection = udGZPT_TransverseMercator;
+        udStrcpy(pZone->zoneName, "BCSG02");
+        pZone->meridian = 153;
+        pZone->parallel = -28;
+        pZone->falseNorthing = 100000;
+        pZone->falseEasting = 50000;
+        pZone->scaleFactor = 0.99999;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-60.56, 93.41);
+        pZone->latLongBoundMax = udDouble2::create(-8.47, 173.35);
+        break;
+      case 3139: // Vanua Levu 1915 / Cassini Soldner Hyperbolic Test
+        pZone->datum = udGZGD_VANUA1915;
+        pZone->projection = udGZPT_CassiniSoldnerHyperbolic;
+        udStrcpy(pZone->zoneName, "Vanua Levu 1915");
+        pZone->meridian = 179 + 1.0 / 3.0;
+        pZone->parallel = -16.25;
+        pZone->falseNorthing = 1662888.5;
+        pZone->falseEasting = 1251331.8;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 0.201168; // Link Unit
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-179.5, -17.05);
+        pZone->latLongBoundMax = udDouble2::create(178.25, -16.0);
+        break;
+      case 3174: // Great Lakes Albers / ALbers Conis Equal Area Projection Test
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_AlbersEqualArea;
+        udStrcpy(pZone->zoneName, "Great Lakes Albers");
+        pZone->meridian = -84.455955;
+        pZone->latProjCentre = 45.568977;
+        pZone->falseNorthing = 1662888.5;
+        pZone->firstParallel = 42.122774;
+        pZone->secondParallel = 49.01518;
+        pZone->falseEasting = 1000000;
+        pZone->falseNorthing = 1000000;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(40.4, -93.21);
+        pZone->latLongBoundMax = udDouble2::create(50.74, -74.50);
+        break;
+      case 3414: // Singapore TM
+        pZone->datum = udGZGD_SVY21;
+        pZone->projection = udGZPT_TransverseMercator;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Singapore TM");
+        pZone->meridian = 103 + (5.0 / 6.0);
+        pZone->parallel = 1 + (11.0 / 30.0);
+        pZone->falseNorthing = 38744.572;
+        pZone->falseEasting = 28001.642;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(1.1200, 103.6200);
+        pZone->latLongBoundMax = udDouble2::create(1.4600, 104.1600);
+        break;
+      case 3433: // Arkansas North
+        pZone->datum = udGZGD_NAD83;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->zone = 0;
+        pZone->parallel = 34.33333333333334; // Can't be the fraction as rounds to '4'
+        pZone->firstParallel = 36.2 + (1.0 / 30);
+        pZone->secondParallel = 34.9 + (1.0 / 30);
+        pZone->meridian = -92;
+        pZone->falseNorthing = 0.0;
+        pZone->falseEasting = 1312333.3333;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "Arkansas North (ftUS)");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(34.67, -94.62);
+        pZone->latLongBoundMax = udDouble2::create(36.5, -89.64);
+        break;
+      case 3857: // Web Mercator
+        pZone->datum = udGZGD_WGS84;
+        pZone->projection = udGZPT_WebMercator;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Pseudo-Mercator");
+        pZone->meridian = 0;
+        pZone->parallel = 0;
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-85, -180);
+        pZone->latLongBoundMax = udDouble2::create(95, 180);
+        break;
+      case 4087: // WGS84 / World Equidistant Cylindrical
         pZone->datum = udGZGD_WGS84;
         pZone->projection = udGZPT_EquidistantCylindrical;
         pZone->zone = 0;
@@ -1200,241 +1201,241 @@ udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode)
         pZone->latLongBoundMin = udDouble2::create(-85, -180);
         pZone->latLongBoundMax = udDouble2::create(95, 180);
         break;
-    case 4326: // LatLong
-      pZone->datum = udGZGD_WGS84;
-      pZone->projection = udGZPT_LatLong;
-      pZone->zone = 0;
-      pZone->scaleFactor = 0.0174532925199433;
-      pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-90, -180);
-      pZone->latLongBoundMax = udDouble2::create(90, 180);
-      break;
-    case 4328: // ECEF (Deprecated)
-      pZone->datum = udGZGD_WGS84;
-      pZone->projection = udGZPT_ECEF;
-      pZone->zone = 0;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-90, -180);
-      pZone->latLongBoundMax = udDouble2::create(90, 180);
-      break;
-    case 4936: // ETRS89
-      pZone->datum = udGZGD_ETRS89;
-      pZone->projection = udGZPT_ECEF;
-      pZone->zone = 0;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(34.5, -10.67);
-      pZone->latLongBoundMax = udDouble2::create(71.05, 31.55);
-      break;
-    case 4978: // ECEF
-      pZone->datum = udGZGD_WGS84;
-      pZone->projection = udGZPT_ECEF;
-      pZone->zone = 0;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 1.0;
-      udStrcpy(pZone->zoneName, "");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-90, -180);
-      pZone->latLongBoundMax = udDouble2::create(90, 180);
-      break;
-    case 6411: // Arkansas North
-      pZone->datum = udGZGD_NAD83_2011;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      pZone->zone = 0;
-      pZone->parallel = 34.33333333333334; // Can't be the fraction because it rounds to '4'
-      pZone->firstParallel = 36.2 + (1.0 / 30.0);
-      pZone->secondParallel = 34.9 + (1.0 / 30.0);
-      pZone->meridian = -92;
-      pZone->falseNorthing = 0.0;
-      pZone->falseEasting = 1312333.3333;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 0.3048006096012192;
-      udStrcpy(pZone->zoneName, "Arkansas North (ftUS)");
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(34.67,-94.62);
-      pZone->latLongBoundMax = udDouble2::create(36.5,-89.64);
-      break;
-    case 7845: // GDA2020 / Geoscience Australia Lambert
-      pZone->datum = udGZGD_GDA2020;
-      pZone->projection = udGZPT_LambertConformalConic2SP;
-      udStrcpy(pZone->zoneName, "GA LCC");
-      pZone->meridian = 134;
-      pZone->parallel = 0;
-      pZone->firstParallel = -18;
-      pZone->secondParallel = -36;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-43.7, 112.85);
-      pZone->latLongBoundMax = udDouble2::create(-9.86, 153.69);
-      break;
-    case 8353: // Slovakia Krovak
-      pZone->datum = udGZGD_SJTSK03;
-      pZone->projection = udGZPT_KrovakNorthOrientated;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "JTSK03");
-      pZone->latProjCentre = 49.5000000000003;
-      pZone->coLatConeAxis = 30.2881397527781;
-      pZone->meridian = 24.8333333333336;
-      pZone->parallel = 78.5; //78.5000000000003
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->scaleFactor = 0.9999;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(1.13, 103.59);
-      pZone->latLongBoundMax = udDouble2::create(1.47, 104.07);
-      break;
-    case 8705: // Mars PF
-      pZone->datum = udGZGD_MARS_PCPF;
-      pZone->projection = udGZPT_ECEF;
-      pZone->zone = 0;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
-    case 19920: // Singapore Grid
-      pZone->datum = udGZGD_SINGGRID;
-      pZone->projection = udGZPT_CassiniSoldner;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Singapore Grid");
-      pZone->meridian = 103.853002222;
-      pZone->parallel = 1.287646667;
-      pZone->falseNorthing = 30000;
-      pZone->falseEasting = 30000;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(1.13, 103.59);
-      pZone->latLongBoundMax = udDouble2::create(1.47, 104.07);
-      break;
-    case 27700: // OSGB 1936 / British National Grid
-      pZone->datum = udGZGD_OSGB36;
-      pZone->projection = udGZPT_TransverseMercator;
-      udStrcpy(pZone->zoneName, "British National Grid");
-      pZone->meridian = -2;
-      pZone->parallel = 49.0;
-      pZone->falseNorthing = -100000;
-      pZone->falseEasting = 400000;
-      pZone->scaleFactor = 0.9996012717;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-7.5600, 49.9600);
-      pZone->latLongBoundMax = udDouble2::create(1.7800, 60.8400);
-      break;
-    case 28992: // Amersfoort / Stereographic oblique and Equatorial Projection Test
-      pZone->datum = udGZGD_AMERSFOORT;
-      pZone->projection = udGZPT_SterographicObliqueNEquatorial;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Amersfoort");
-      pZone->meridian = 5.3876388888888888;
-      pZone->parallel = 52.156160555555556;
-      pZone->falseNorthing = 463000;
-      pZone->falseEasting = 155000;
-      pZone->scaleFactor = 0.9999079;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(3.37,50.75);
-      pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
-      break;
-    case 29873: // Timbalai 1948 / Hotine Oblique Mercator Variant B Projection Test
-      pZone->datum = udGZGD_TIMB1948;
-      pZone->projection = udGZPT_HotineObliqueMercatorvB;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Timbalai 1948");
-      pZone->meridian = 115.0;
-      pZone->parallel = 53.13010236111111;
-      pZone->coLatConeAxis = 53.31582047222222;
-      pZone->latProjCentre = 4.0;
-      pZone->falseNorthing = 442857.65;
-      pZone->falseEasting = 590476.87;
-      pZone->scaleFactor = 0.99984;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(0.85, 109.55);
-      pZone->latLongBoundMax = udDouble2::create(7.35, 119.26);
-      break;
-    //case 30100:
-    case 30101: //Moon PF
-      pZone->datum = udGZGD_MOON_PCPF;
-      pZone->projection = udGZPT_ECEF;
-      pZone->zone = 30101;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->meridian = 0;
-      pZone->scaleFactor = 1;
-      pZone->parallel = 0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
-    //case 30174:
-    case 30175: //Moon M
-      pZone->datum = udGZGD_MOON_MERC;
-      pZone->projection = udGZPT_Mercator;
-      udStrcpy(pZone->zoneName, "Moon 2000 Mercator");
-      pZone->zone = 30175;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->meridian = 0;
-      pZone->firstParallel = 0;
-      pZone->scaleFactor = 1.0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
-    case 30200: // Trinidad 1903 / Cassini Soldner Projection Test
-      pZone->datum = udGZGD_TRI1903;
-      pZone->projection = udGZPT_CassiniSoldner;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Trinidad 1903");
-      pZone->meridian = -61.0 - (1.0 / 3.0);
-      pZone->parallel = 10.441 + (2.0 / (3.0 * 1000.0));  
-      pZone->falseNorthing = 325000;
-      pZone->falseEasting = 430000;
-      pZone->scaleFactor = 1.0;
-      pZone->unitMetreScale = 0.201166195164; // Clarke's link Unit
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(-62.08, 9.82);
-      pZone->latLongBoundMax = udDouble2::create(-58.53, 11.68);
-      break;
-    case 31700: // Dealul Piscului 1970/ Stereo 70
-      pZone->datum = udGZGD_DEALUL1970;
-      pZone->projection = udGZPT_SterographicObliqueNEquatorial;
-      pZone->zone = 0;
-      udStrcpy(pZone->zoneName, "Dealul Piscului 1970");
-      pZone->meridian = 25.0;
-      pZone->parallel = 46.0;
-      pZone->falseNorthing = 500000;
-      pZone->falseEasting = 500000;
-      pZone->scaleFactor = 0.99975;
-      udGeoZone_SetSpheroid(pZone);
-      pZone->latLongBoundMin = udDouble2::create(43.62, 20.26);
-      pZone->latLongBoundMax = udDouble2::create(48.26, 31.5);
-      break;
-    //case 49974:
-    case 49975: //Mars M
-      pZone->datum = udGZGD_MARS_MERC;
-      pZone->projection = udGZPT_Mercator;
-      udStrcpy(pZone->zoneName, "Mars 2000 Mercator");
-      pZone->zone = 49975;
-      pZone->falseNorthing = 0;
-      pZone->falseEasting = 0;
-      pZone->meridian = 0;
-      pZone->scaleFactor = 1.0;
-      pZone->firstParallel = 0;
-      udGeoZone_SetSpheroid(pZone);
-      break;
+      case 4326: // LatLong
+        pZone->datum = udGZGD_WGS84;
+        pZone->projection = udGZPT_LatLong;
+        pZone->zone = 0;
+        pZone->scaleFactor = 0.0174532925199433;
+        pZone->unitMetreScale = 1.0;
+        udStrcpy(pZone->zoneName, "");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-90, -180);
+        pZone->latLongBoundMax = udDouble2::create(90, 180);
+        break;
+      case 4328: // ECEF (Deprecated)
+        pZone->datum = udGZGD_WGS84;
+        pZone->projection = udGZPT_ECEF;
+        pZone->zone = 0;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 1.0;
+        udStrcpy(pZone->zoneName, "");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-90, -180);
+        pZone->latLongBoundMax = udDouble2::create(90, 180);
+        break;
+      case 4936: // ETRS89
+        pZone->datum = udGZGD_ETRS89;
+        pZone->projection = udGZPT_ECEF;
+        pZone->zone = 0;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 1.0;
+        udStrcpy(pZone->zoneName, "");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(34.5, -10.67);
+        pZone->latLongBoundMax = udDouble2::create(71.05, 31.55);
+        break;
+      case 4978: // ECEF
+        pZone->datum = udGZGD_WGS84;
+        pZone->projection = udGZPT_ECEF;
+        pZone->zone = 0;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 1.0;
+        udStrcpy(pZone->zoneName, "");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-90, -180);
+        pZone->latLongBoundMax = udDouble2::create(90, 180);
+        break;
+      case 6411: // Arkansas North
+        pZone->datum = udGZGD_NAD83_2011;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        pZone->zone = 0;
+        pZone->parallel = 34.33333333333334; // Can't be the fraction because it rounds to '4'
+        pZone->firstParallel = 36.2 + (1.0 / 30.0);
+        pZone->secondParallel = 34.9 + (1.0 / 30.0);
+        pZone->meridian = -92;
+        pZone->falseNorthing = 0.0;
+        pZone->falseEasting = 1312333.3333;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 0.3048006096012192;
+        udStrcpy(pZone->zoneName, "Arkansas North (ftUS)");
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(34.67, -94.62);
+        pZone->latLongBoundMax = udDouble2::create(36.5, -89.64);
+        break;
+      case 7845: // GDA2020 / Geoscience Australia Lambert
+        pZone->datum = udGZGD_GDA2020;
+        pZone->projection = udGZPT_LambertConformalConic2SP;
+        udStrcpy(pZone->zoneName, "GA LCC");
+        pZone->meridian = 134;
+        pZone->parallel = 0;
+        pZone->firstParallel = -18;
+        pZone->secondParallel = -36;
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-43.7, 112.85);
+        pZone->latLongBoundMax = udDouble2::create(-9.86, 153.69);
+        break;
+      case 8353: // Slovakia Krovak
+        pZone->datum = udGZGD_SJTSK03;
+        pZone->projection = udGZPT_KrovakNorthOrientated;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "JTSK03");
+        pZone->latProjCentre = 49.5000000000003;
+        pZone->coLatConeAxis = 30.2881397527781;
+        pZone->meridian = 24.8333333333336;
+        pZone->parallel = 78.5; //78.5000000000003
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->scaleFactor = 0.9999;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(1.13, 103.59);
+        pZone->latLongBoundMax = udDouble2::create(1.47, 104.07);
+        break;
+      case 8705: // Mars PF
+        pZone->datum = udGZGD_MARS_PCPF;
+        pZone->projection = udGZPT_ECEF;
+        pZone->zone = 0;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        break;
+      case 19920: // Singapore Grid
+        pZone->datum = udGZGD_SINGGRID;
+        pZone->projection = udGZPT_CassiniSoldner;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Singapore Grid");
+        pZone->meridian = 103.853002222;
+        pZone->parallel = 1.287646667;
+        pZone->falseNorthing = 30000;
+        pZone->falseEasting = 30000;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(1.13, 103.59);
+        pZone->latLongBoundMax = udDouble2::create(1.47, 104.07);
+        break;
+      case 27700: // OSGB 1936 / British National Grid
+        pZone->datum = udGZGD_OSGB36;
+        pZone->projection = udGZPT_TransverseMercator;
+        udStrcpy(pZone->zoneName, "British National Grid");
+        pZone->meridian = -2;
+        pZone->parallel = 49.0;
+        pZone->falseNorthing = -100000;
+        pZone->falseEasting = 400000;
+        pZone->scaleFactor = 0.9996012717;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-7.5600, 49.9600);
+        pZone->latLongBoundMax = udDouble2::create(1.7800, 60.8400);
+        break;
+      case 28992: // Amersfoort / Stereographic oblique and Equatorial Projection Test
+        pZone->datum = udGZGD_AMERSFOORT;
+        pZone->projection = udGZPT_SterographicObliqueNEquatorial;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Amersfoort");
+        pZone->meridian = 5.3876388888888888;
+        pZone->parallel = 52.156160555555556;
+        pZone->falseNorthing = 463000;
+        pZone->falseEasting = 155000;
+        pZone->scaleFactor = 0.9999079;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(3.37, 50.75);
+        pZone->latLongBoundMax = udDouble2::create(7.21, 53.47);
+        break;
+      case 29873: // Timbalai 1948 / Hotine Oblique Mercator Variant B Projection Test
+        pZone->datum = udGZGD_TIMB1948;
+        pZone->projection = udGZPT_HotineObliqueMercatorvB;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Timbalai 1948");
+        pZone->meridian = 115.0;
+        pZone->parallel = 53.13010236111111;
+        pZone->coLatConeAxis = 53.31582047222222;
+        pZone->latProjCentre = 4.0;
+        pZone->falseNorthing = 442857.65;
+        pZone->falseEasting = 590476.87;
+        pZone->scaleFactor = 0.99984;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(0.85, 109.55);
+        pZone->latLongBoundMax = udDouble2::create(7.35, 119.26);
+        break;
+      //case 30100:
+      case 30101: //Moon PF
+        pZone->datum = udGZGD_MOON_PCPF;
+        pZone->projection = udGZPT_ECEF;
+        pZone->zone = 30101;
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->meridian = 0;
+        pZone->scaleFactor = 1;
+        pZone->parallel = 0;
+        udGeoZone_SetSpheroid(pZone);
+        break;
+      //case 30174:
+      case 30175: //Moon M
+        pZone->datum = udGZGD_MOON_MERC;
+        pZone->projection = udGZPT_Mercator;
+        udStrcpy(pZone->zoneName, "Moon 2000 Mercator");
+        pZone->zone = 30175;
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->meridian = 0;
+        pZone->firstParallel = 0;
+        pZone->scaleFactor = 1.0;
+        udGeoZone_SetSpheroid(pZone);
+        break;
+      case 30200: // Trinidad 1903 / Cassini Soldner Projection Test
+        pZone->datum = udGZGD_TRI1903;
+        pZone->projection = udGZPT_CassiniSoldner;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Trinidad 1903");
+        pZone->meridian = -61.0 - (1.0 / 3.0);
+        pZone->parallel = 10.441 + (2.0 / (3.0 * 1000.0));
+        pZone->falseNorthing = 325000;
+        pZone->falseEasting = 430000;
+        pZone->scaleFactor = 1.0;
+        pZone->unitMetreScale = 0.201166195164; // Clarke's link Unit
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(-62.08, 9.82);
+        pZone->latLongBoundMax = udDouble2::create(-58.53, 11.68);
+        break;
+      case 31700: // Dealul Piscului 1970/ Stereo 70
+        pZone->datum = udGZGD_DEALUL1970;
+        pZone->projection = udGZPT_SterographicObliqueNEquatorial;
+        pZone->zone = 0;
+        udStrcpy(pZone->zoneName, "Dealul Piscului 1970");
+        pZone->meridian = 25.0;
+        pZone->parallel = 46.0;
+        pZone->falseNorthing = 500000;
+        pZone->falseEasting = 500000;
+        pZone->scaleFactor = 0.99975;
+        udGeoZone_SetSpheroid(pZone);
+        pZone->latLongBoundMin = udDouble2::create(43.62, 20.26);
+        pZone->latLongBoundMax = udDouble2::create(48.26, 31.5);
+        break;
+      //case 49974:
+      case 49975: //Mars M
+        pZone->datum = udGZGD_MARS_MERC;
+        pZone->projection = udGZPT_Mercator;
+        udStrcpy(pZone->zoneName, "Mars 2000 Mercator");
+        pZone->zone = 49975;
+        pZone->falseNorthing = 0;
+        pZone->falseEasting = 0;
+        pZone->meridian = 0;
+        pZone->scaleFactor = 1.0;
+        pZone->firstParallel = 0;
+        udGeoZone_SetSpheroid(pZone);
+        break;
 
-    default:
-    {
-      udScopeLock scopeLock(g_pMutex);
+      default:
+      {
+        udScopeLock scopeLock(g_pMutex);
 
-      int index = udGeoZone_InternalIndexOf(sridCode);
-      if (index >= 0)
-        *pZone = g_InternalGeoZoneList[index];
-      else
-        return udR_NotFound;
-    }
+        int index = udGeoZone_InternalIndexOf(sridCode);
+        if (index >= 0)
+          *pZone = g_InternalGeoZoneList[index];
+        else
+          return udR_NotFound;
+      }
     }
   }
 
@@ -1478,9 +1479,9 @@ static void udGeoZone_MetreScaleSpheroidMaths(udGeoZone *pZone)
   pZone->semiMajorAxis /= pZone->unitMetreScale;
   double a = pZone->semiMajorAxis;
   double f = pZone->flattening;
-  double b = a * (1 - f); // b=a*(1-f)
-  pZone->semiMinorAxis = b; // in feet or metres
-  pZone->eccentricity = udSqrt(a*a - b*b) / a; // e=sqrt(a^2-b^2)/a
+  double b = a * (1 - f);                          // b=a*(1-f)
+  pZone->semiMinorAxis = b;                        // in feet or metres
+  pZone->eccentricity = udSqrt(a * a - b * b) / a; // e=sqrt(a^2-b^2)/a
   pZone->eccentricitySq = udPow(pZone->eccentricity, 2);
   pZone->thirdFlattening = (a - b) / (a + b); // tf=(a-b)/(a+b)
   udGeoZone_SetSpheroid(pZone);
@@ -1733,8 +1734,8 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       else if (udStrstr(pName, 0, "Polar_Stereographic"))
       {
         pZone->projection = udGZPT_SterographicPolar_vB;
-          if (pZone->scaleFactor == 0) // default for Polar Stereo is 1.0
-            pZone->scaleFactor = 1.0;
+        if (pZone->scaleFactor == 0) // default for Polar Stereo is 1.0
+          pZone->scaleFactor = 1.0;
       }
       else if (udStrstr(pName, 0, "Krovak (North Orientated)"))
       {
@@ -1849,9 +1850,9 @@ udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT)
   // if unknown Datum and known spheroid -> fill datumDescriptor table with parameters read from the JSON
   if (!pZone->knownDatum && pZone->zoneSpheroid != udGZE_Count)
   {
-    //                                                             Full Name,        Short  name,           Datum name,       Ellipsoid index,     ToWGS84 parameters,                                                                                                                                                                      epsg,        auth,             AxisInfo,        ToWGS84  
-    g_InternalDatumList.PushBack(udGeoZoneGeodeticDatumDescriptor{ pZone->datumName, pZone->datumShortName, pZone->datumName, pZone->zoneSpheroid, {pZone->paramsHelmert7[0], pZone->paramsHelmert7[1], pZone->paramsHelmert7[2], pZone->paramsHelmert7[3], pZone->paramsHelmert7[4], pZone->paramsHelmert7[5], pZone->paramsHelmert7[6]}, pZone->srid, pZone->datumSrid, pZone->axisInfo, pZone->toWGS84 });
-    pZone->datum = (udGeoZoneGeodeticDatum) ((int)udGZGD_Count + g_InternalDatumList.length);
+    //                                                             Full Name,        Short  name,           Datum name,       Ellipsoid index,     ToWGS84 parameters,                                                                                                                                                                      epsg,        auth,             AxisInfo,        ToWGS84
+    g_InternalDatumList.PushBack(udGeoZoneGeodeticDatumDescriptor{ pZone->datumName, pZone->datumShortName, pZone->datumName, pZone->zoneSpheroid, { pZone->paramsHelmert7[0], pZone->paramsHelmert7[1], pZone->paramsHelmert7[2], pZone->paramsHelmert7[3], pZone->paramsHelmert7[4], pZone->paramsHelmert7[5], pZone->paramsHelmert7[6] }, pZone->srid, pZone->datumSrid, pZone->axisInfo, pZone->toWGS84 });
+    pZone->datum = (udGeoZoneGeodeticDatum)((int)udGZGD_Count + g_InternalDatumList.length);
   }
 
   //reset zone params used above
@@ -1900,15 +1901,16 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   // If the ellipsoid isn't WGS84, then provide parameters to get to WGS84
   if (pDesc->exportToWGS84)
   {
-    int decimalPlaces = zone.datum == udGZGD_HK1980 ? 7 : zone.datum == udGZGD_MGI ? 4 : 3;
+    int decimalPlaces = zone.datum == udGZGD_HK1980 ? 7 : zone.datum == udGZGD_MGI ? 4
+                                                                                   : 3;
     udSprintf(&pWKTToWGS84, ",\nTOWGS84[%s,%s,%s,%s,%s,%s,%s]",
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[0], 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[1], 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[2], 3),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[3], decimalPlaces),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[4], decimalPlaces),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[5], decimalPlaces),
-      udTempStr_TrimDouble(pDesc->paramsHelmert7[6], decimalPlaces));
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[0], 3),
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[1], 3),
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[2], 3),
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[3], decimalPlaces),
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[4], decimalPlaces),
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[5], decimalPlaces),
+              udTempStr_TrimDouble(pDesc->paramsHelmert7[6], decimalPlaces));
   }
 
   udSprintf(&pWKTSpheroid, "SPHEROID[\"%s\",%s,%s,\nAUTHORITY[\"EPSG\",\"%d\"]]", pEllipsoid->pName, udTempStr_TrimDouble(pEllipsoid->semiMajorAxis, 8), pEllipsoid->flattening == 0.0 ? "0.0" : udTempStr_TrimDouble(1.0 / pEllipsoid->flattening, 9), pEllipsoid->authorityEpsg);
@@ -1941,87 +1943,87 @@ udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Transverse_Mercator\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],"
                                "\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-                               udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-                               udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_LambertConformalConic2SP)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Lambert_Conformal_Conic_2SP\"],\nPARAMETER[\"standard_parallel_1\",%s],\nPARAMETER[\"standard_parallel_2\",%s],"
                                "\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-                                udTempStr_TrimDouble(zone.firstParallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.meridian, meridianPrecision),
-                                udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.firstParallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision, 0, true), udTempStr_TrimDouble(zone.meridian, meridianPrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_WebMercator)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Mercator_1SP\"],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-                                udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-                                udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_CassiniSoldner)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Cassini_Soldner\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_CassiniSoldnerHyperbolic)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Hyperbolic_Cassini_Soldner\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_SterographicObliqueNEquatorial)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Oblique_Stereographic\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_Mercator)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Mercator\"],\nPARAMETER[\"False_Easting\",%s],\nPARAMETER[\"False_Northing\",%s],\nPARAMETER[\"Central_Meridian\",%s],\nPARAMETER[\"Standard_Parallel_1\",%s],\n%s",
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision),
-      udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision),
+              udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_SterographicPolar_vB)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Polar_Stereographic\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_Krovak)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Krovak\"],\nPARAMETER[\"latitude_projection_centre\",%s],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"colatitude_cone_axis\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_KrovakNorthOrientated)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Krovak (North Orientated)\"],\nPARAMETER[\"latitude_projection_centre\",%s],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"colatitude_cone_axis\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_HotineObliqueMercatorvA)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_HotineObliqueMercatorvB)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Hotine_Oblique_Mercator_Azimuth_Center\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"azimuth\",%s],\nPARAMETER[\"rectified_grid_angle\",%s],\nPARAMETER[\"scale_factor\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.coLatConeAxis, parallelPrecision), udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.scaleFactor, scalePrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_AlbersEqualArea)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Albers_Conic_Equal_Area\"],\nPARAMETER[\"latitude_of_center\",%s],\nPARAMETER[\"longitude_of_center\",%s],\nPARAMETER[\"standard_parallel_1\",%s],\nPARAMETER[\"standard_parallel_2\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.latProjCentre, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision), udTempStr_TrimDouble(zone.firstParallel, parallelPrecision), udTempStr_TrimDouble(zone.secondParallel, parallelPrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
   else if (zone.projection == udGZPT_EquidistantCylindrical)
   {
     udSprintf(&pWKTProjection, "PROJECTION[\"Equirectangular\"],\nPARAMETER[\"latitude_of_origin\",%s],\nPARAMETER[\"central_meridian\",%s],\nPARAMETER[\"false_easting\",%s],\nPARAMETER[\"false_northing\",%s],\n%s",
-      udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision),
-      udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
+              udTempStr_TrimDouble(zone.parallel, parallelPrecision), udTempStr_TrimDouble(zone.meridian, meridianPrecision),
+              udTempStr_TrimDouble(zone.falseEasting, falseOriginPrecision), udTempStr_TrimDouble(zone.falseNorthing, falseOriginPrecision), pWKTUnit);
   }
 
   // JGD2000, JGD2011 and CGCS2000 doesn't provide axis information
@@ -2079,37 +2081,27 @@ static double udGeoZone_LCCLatConverge(double t, double td, double e)
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
 static double udGeoZone_LCCMeridonial(double phi, double e)
- {
-   double d = e * udSin(phi);
-   return udCos(phi) / udSqrt(1 - d * d);
- }
+{
+  double d = e * udSin(phi);
+  return udCos(phi) / udSqrt(1 - d * d);
+}
 
 // ----------------------------------------------------------------------------
 // Author: Lauren Jones, June 2018
 static double udGeoZone_LCCConformal(double phi, double e)
- {
-   double d = e * udSin(phi);
-   return udTan(UD_PI / 4.0 - phi / 2.0) / udPow((1 - d) / (1 + d), e / 2.0);
- }
+{
+  double d = e * udSin(phi);
+  return udTan(UD_PI / 4.0 - phi / 2.0) / udPow((1 - d) / (1 + d), e / 2.0);
+}
 
 // ----------------------------------------------------------------------------
 // Author: Jules Proust, September 2020
-static double udGeoZone_MeridianArcDistance(const double phi, const double* n)
+static double udGeoZone_MeridianArcDistance(const double phi, const double *n)
 {
   // Helmert's series
   // Maxima:
   // trigreduce( defint(taylor((1-n^2)^2/(2 * n * cos(2*t) + n^2 + 1)^(3/2), n, 0,9),t,0,phi) );
-  return (phi * (82575360.0 + 185794560.0 * n[2] + 290304000.0 * n[4] + 395136000.0 * n[6] + 500094000.0 * n[8])
-    + udSin(2.0 * phi) * (-123863040.0 * n[1] - 232243200.0 * n[3] - 338688000.0 * n[5] - 444528000.0 * n[7] - 550103400.0 * n[9])
-    + udSin(4.0 * phi) * (77414400.0 * n[2] + 135475200.0 * n[4] + 190512000.0 * n[6] + 244490400.0 * n[8])
-    + udSin(6.0 * phi) * (-60211200.0 * n[3] - 101606400.0 * n[5] - 139708800.0 * n[7] - 176576400.0 * n[9])
-    + udSin(8.0 * phi) * (50803200.0 * n[4] + 83825280.0 * n[6] + 113513400.0 * n[8])
-    + udSin(10.0 * phi) * (-44706816.0 * n[5] - 72648576.0 * n[7] - 97297200.0 * n[9])
-    + udSin(12.0 * phi) * (40360320.0 * n[6] + 64864800.0 * n[8])
-    + udSin(14.0 * phi) * (-37065600.0 * n[7] - 59073300.0 * n[9])
-    + udSin(16.0 * phi) * (34459425.0 * n[8])
-    + udSin(18.0 * phi) * (-32332300.0 * n[9])
-    ) / 82575360.0;
+  return (phi * (82575360.0 + 185794560.0 * n[2] + 290304000.0 * n[4] + 395136000.0 * n[6] + 500094000.0 * n[8]) + udSin(2.0 * phi) * (-123863040.0 * n[1] - 232243200.0 * n[3] - 338688000.0 * n[5] - 444528000.0 * n[7] - 550103400.0 * n[9]) + udSin(4.0 * phi) * (77414400.0 * n[2] + 135475200.0 * n[4] + 190512000.0 * n[6] + 244490400.0 * n[8]) + udSin(6.0 * phi) * (-60211200.0 * n[3] - 101606400.0 * n[5] - 139708800.0 * n[7] - 176576400.0 * n[9]) + udSin(8.0 * phi) * (50803200.0 * n[4] + 83825280.0 * n[6] + 113513400.0 * n[8]) + udSin(10.0 * phi) * (-44706816.0 * n[5] - 72648576.0 * n[7] - 97297200.0 * n[9]) + udSin(12.0 * phi) * (40360320.0 * n[6] + 64864800.0 * n[8]) + udSin(14.0 * phi) * (-37065600.0 * n[7] - 59073300.0 * n[9]) + udSin(16.0 * phi) * (34459425.0 * n[8]) + udSin(18.0 * phi) * (-32332300.0 * n[9])) / 82575360.0;
 }
 
 // ----------------------------------------------------------------------------
@@ -2127,11 +2119,8 @@ static double udGeoZone_LatMeridianSameNorthing(const double mu, const double e)
 {
   // Reverted Helmert's series .... Lack of precision need investigation on Maxima
   // http://www.mygeodesy.id.au/documents/Meridian%20Distance.pdf p.20 eq.61
-  return mu
-      + (3.0 / 2.0 * e - 20.0 / 32.0 * udPow(e,3)) * udSin(2 * mu)
-      + (21.0 / 16.0 * udPow(e,2) - 55.0 / 32.0 * udPow(e,4)) * udSin(4 * mu)
-      + 121.0 / 96.0 * udPow(e,3) * udSin(6 * mu)
-      + 1097.0 / 512.0 * udPow(e,4) * udSin(8 * mu);;
+  return mu + (3.0 / 2.0 * e - 20.0 / 32.0 * udPow(e, 3)) * udSin(2 * mu) + (21.0 / 16.0 * udPow(e, 2) - 55.0 / 32.0 * udPow(e, 4)) * udSin(4 * mu) + 121.0 / 96.0 * udPow(e, 3) * udSin(6 * mu) + 1097.0 / 512.0 * udPow(e, 4) * udSin(8 * mu);
+  ;
 }
 
 // ----------------------------------------------------------------------------
@@ -2207,8 +2196,8 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double t2 = udGeoZone_LCCConformal(phi2, e);
     double n = (udLogN(m1) - udLogN(m2)) / (udLogN(t1) - udLogN(t2));
     double F = m1 / (n * udPow(t1, n));
-    double p0 = zone.semiMajorAxis * F *  udPow(tOrigin, n);
-    double p = zone.semiMajorAxis * F *  udPow(t, n);
+    double p0 = zone.semiMajorAxis * F * udPow(tOrigin, n);
+    double p = zone.semiMajorAxis * F * udPow(t, n);
     X = p * udSin(n * omega);
     Y = p0 - p * udCos(n * omega);
 
@@ -2220,7 +2209,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     omega = UD_DEG2RAD(omega - zone.meridian);
 
     X = zone.semiMajorAxis * omega;
-    Y = zone.semiMajorAxis * udLogN(udTan(UD_PI/4.0 + phi/2.0));
+    Y = zone.semiMajorAxis * udLogN(udTan(UD_PI / 4.0 + phi / 2.0));
 
     return udDouble3::create(X + zone.falseEasting, Y + zone.falseNorthing, ellipsoidHeight);
   }
@@ -2268,8 +2257,10 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     phi = UD_DEG2RAD(phi);
 
     double phi0 = UD_DEG2RAD(zone.parallel);
-    double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);; // radius of curvature at the meridian
-    double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));; // radius of curvature at the Transverse
+    double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);
+    ; // radius of curvature at the meridian
+    double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));
+    ; // radius of curvature at the Transverse
 
     double s1 = (1.0 + udSin(phi0)) / (1.0 - udSin(phi0));
     double s2 = (1.0 - e * udSin(phi0)) / (1.0 + e * udSin(phi0));
@@ -2290,7 +2281,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double lambda = n * (UD_DEG2RAD(omega) - lambda0) + lambda0;
     double sA = (1.0 + udSin(phi)) / (1.0 - udSin(phi));
     double sB = (1.0 - e * udSin(phi)) / (1.0 + e * udSin(phi));
-    double w = c * udPow(sA * udPow(sB,e),n);
+    double w = c * udPow(sA * udPow(sB, e), n);
     double chi = udASin((w - 1.0) / (w + 1.0));
 
     double B = (1.0 + udSin(chi) * udSin(chi0) + udCos(chi) * udCos(chi0) * cos(lambda - lambda0));
@@ -2311,7 +2302,6 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double N = zone.falseNorthing + zone.semiMajorAxis * k0 * udLogN(udTan(UD_PI / 4.0 + phi / 2.0) * udPow((1 - zone.eccentricity * udSin(phi)) / (1 + zone.eccentricity * udSin(phi)), zone.eccentricity / 2.0));
 
     return udDouble3::create(E, N, ellipsoidHeight);
-
   }
   else if (zone.projection == udGZPT_SterographicPolar_vB)
   {
@@ -2328,7 +2318,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     if (isNorthPole)
       t = udTan(UD_PI / 4.0 - phi / 2.0) / udPow((1 + e * udSin(phi)) / (1 - e * udSin(phi)), e / 2.0);
 
-    double rho = 2.0 *zone.semiMajorAxis * k0 * t / udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e));
+    double rho = 2.0 * zone.semiMajorAxis * k0 * t / udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e));
     double dE = rho * udSin(theta);
     double dN = rho * udCos(theta);
     double E = dE + zone.falseEasting;
@@ -2340,10 +2330,10 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
   }
   else if (zone.projection == udGZPT_Krovak || zone.projection == udGZPT_KrovakNorthOrientated)
   {
-    double phiC = UD_DEG2RAD(zone.latProjCentre); // latitude of projection centre
-    double alphaC = UD_DEG2RAD(zone.coLatConeAxis);// rotation in plane of meridian of origin || co latitude of the cone axis
-    double phiP = UD_DEG2RAD(zone.parallel); // latitude of pseudo standard parallel
-    double kP = zone.scaleFactor; // scale factor on pseudo standard parallel
+    double phiC = UD_DEG2RAD(zone.latProjCentre);   // latitude of projection centre
+    double alphaC = UD_DEG2RAD(zone.coLatConeAxis); // rotation in plane of meridian of origin || co latitude of the cone axis
+    double phiP = UD_DEG2RAD(zone.parallel);        // latitude of pseudo standard parallel
+    double kP = zone.scaleFactor;                   // scale factor on pseudo standard parallel
     double lambda0 = UD_DEG2RAD(zone.meridian);
     phi = UD_DEG2RAD(phi);
 
@@ -2401,7 +2391,7 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double uC = 0.0;
     if (alphaC == 90)
       uC = A * (lambdaC - lambda0);
-    else 
+    else
       uC = (A / B) * udATan2(udSqrt(D * D - 1), udCos(alphaC)) * sign;
 
     double t = udTan(UD_PI / 4.0 - phi / 2.0) / udPow((1 - e * udSin(phi)) / (1 + e * udSin(phi)), e / 2.0);
@@ -2459,7 +2449,8 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double rho0 = (a * udSqrt(C - n * alpha0)) / n;
     double theta = n * (omega - lambda0);
 
-    double E = zone.falseEasting + rho * udSin(theta);;
+    double E = zone.falseEasting + rho * udSin(theta);
+    ;
     double N = zone.falseNorthing + rho0 - rho * udCos(theta);
 
     return udDouble3::create(E, N, ellipsoidHeight);
@@ -2469,16 +2460,9 @@ udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &l
     double a = zone.semiMajorAxis;
 
     phi = UD_DEG2RAD(phi);
-  
+
     double eSq = zone.eccentricitySq;
-    double M = a * ((1 - (1.0 / 4.0) * eSq - (3.0 / 64.0) * udPow(eSq, 2) - (5.0 / 256.0) * udPow(eSq,3) - (175.0 / 16384.0) * udPow(eSq,4) - (441.0 / 65536.0) * udPow(eSq, 5) - (4851.0 / 1048576.0) * udPow(eSq, 6) - (14157.0 / 4194304.0) * udPow(eSq, 7)) * phi
-      + (-(3.0 / 8.0) * eSq - (3.0 / 32.0) * udPow(eSq,2) - (45.0 / 1024.0) * udPow(eSq,3) - (105.0 / 4096.0) * udPow(eSq,4) - (2205.0 / 131072.0) * udPow(eSq,5) - (6237.0 / 524288.0) * udPow(eSq,6) - (297297.0 / 33554432.0) * udPow(eSq,7)) * udSin(2*phi)
-      + ((15.0 / 256.0) * udPow(eSq,2) + (45.0 / 1024.0) * udPow(eSq,3) + (525.0 / 16384.0) * udPow(eSq,4) + (1575.0 / 65536.0) * udPow(eSq,5) + (155925.0 / 8388608.0) * udPow(eSq,6) + (495495/33554432) * udPow(eSq,7)) * udSin(4*phi)
-      + (-(35.0 / 3072.0) * udPow(eSq,3) - (175.0 / 12288.0) * udPow(eSq,4) - (3675.0 / 262144.0) * udPow(eSq,5) - (13475.0 / 1048576.0) * udPow(eSq,6) - (385385.0 / 33554432.0) * udPow(eSq,7)) * udSin(6*phi)
-      + ((315.0 / 131072.0) * udPow(eSq,4) + (2205.0 / 524288.0) * udPow(eSq,5) + (43659.0 / 8388608.0) * udPow(eSq,6) + (189189.0 / 33554432.0) * udPow(eSq,7)) * udSin(8*phi)
-      + (-(693.0 / 1310720.0) * udPow(eSq,5) - (6237.0 / 5242880.0) * udPow(eSq,6) - (297297.0 / 167772160.0) * udPow(eSq,7)) * udSin(10*phi)
-      + ((1001.0 / 8388608.0) * udPow(eSq,6) + (11011.0 / 33554432.0) * udPow(eSq,7)) * udSin(12*phi)
-      + (-(6435.0 / 234881024.0) * udPow(eSq,7)) * udSin(14* phi));
+    double M = a * ((1 - (1.0 / 4.0) * eSq - (3.0 / 64.0) * udPow(eSq, 2) - (5.0 / 256.0) * udPow(eSq, 3) - (175.0 / 16384.0) * udPow(eSq, 4) - (441.0 / 65536.0) * udPow(eSq, 5) - (4851.0 / 1048576.0) * udPow(eSq, 6) - (14157.0 / 4194304.0) * udPow(eSq, 7)) * phi + (-(3.0 / 8.0) * eSq - (3.0 / 32.0) * udPow(eSq, 2) - (45.0 / 1024.0) * udPow(eSq, 3) - (105.0 / 4096.0) * udPow(eSq, 4) - (2205.0 / 131072.0) * udPow(eSq, 5) - (6237.0 / 524288.0) * udPow(eSq, 6) - (297297.0 / 33554432.0) * udPow(eSq, 7)) * udSin(2 * phi) + ((15.0 / 256.0) * udPow(eSq, 2) + (45.0 / 1024.0) * udPow(eSq, 3) + (525.0 / 16384.0) * udPow(eSq, 4) + (1575.0 / 65536.0) * udPow(eSq, 5) + (155925.0 / 8388608.0) * udPow(eSq, 6) + (495495 / 33554432) * udPow(eSq, 7)) * udSin(4 * phi) + (-(35.0 / 3072.0) * udPow(eSq, 3) - (175.0 / 12288.0) * udPow(eSq, 4) - (3675.0 / 262144.0) * udPow(eSq, 5) - (13475.0 / 1048576.0) * udPow(eSq, 6) - (385385.0 / 33554432.0) * udPow(eSq, 7)) * udSin(6 * phi) + ((315.0 / 131072.0) * udPow(eSq, 4) + (2205.0 / 524288.0) * udPow(eSq, 5) + (43659.0 / 8388608.0) * udPow(eSq, 6) + (189189.0 / 33554432.0) * udPow(eSq, 7)) * udSin(8 * phi) + (-(693.0 / 1310720.0) * udPow(eSq, 5) - (6237.0 / 5242880.0) * udPow(eSq, 6) - (297297.0 / 167772160.0) * udPow(eSq, 7)) * udSin(10 * phi) + ((1001.0 / 8388608.0) * udPow(eSq, 6) + (11011.0 / 33554432.0) * udPow(eSq, 7)) * udSin(12 * phi) + (-(6435.0 / 234881024.0) * udPow(eSq, 7)) * udSin(14 * phi));
 
     double v1 = a / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.parallel)), 2));
 
@@ -2521,7 +2505,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     for (size_t i = 0; i < UDARRAYSIZE(zone.beta); i++)
     {
       double j = (i + 1) * 2.0;
-      xi0  += zone.beta[i] * udSin(j * xi) * udCosh(j * eta);
+      xi0 += zone.beta[i] * udSin(j * xi) * udCosh(j * eta);
       eta0 += zone.beta[i] * udCos(j * xi) * udSinh(j * eta);
     }
 
@@ -2550,7 +2534,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double t2 = udGeoZone_LCCConformal(phi2, e);
     double n = (udLogN(m1) - udLogN(m2)) / (udLogN(t1) - udLogN(t2));
     double F = m1 / (n * udPow(t1, n));
-    double p0 = zone.semiMajorAxis * F *  udPow(tOrigin, n);
+    double p0 = zone.semiMajorAxis * F * udPow(tOrigin, n);
     double p = udSqrt(x * x + (p0 - y) * (p0 - y)); // This is r' in the EPSG specs- it must have the same sign as n
     if (n < 0)
       p = -p;
@@ -2636,8 +2620,10 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double a = zone.semiMajorAxis;
 
     double phi0 = UD_DEG2RAD(zone.parallel);
-    double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);; // radius of curvature at the meridian
-    double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));; // radius of curvature at the Transverse
+    double rho0 = a * (1.0 - eSq) / udPow(1.0 - eSq * udPow(udSin(phi0), 2), 3.0 / 2.0);
+    ; // radius of curvature at the meridian
+    double nu0 = a / udSqrt(1.0 - eSq * udPow(udSin(phi0), 2));
+    ; // radius of curvature at the Transverse
 
     double s1 = (1.0 + udSin(phi0)) / (1.0 - udSin(phi0));
     double s2 = (1.0 - e * udSin(phi0)) / (1.0 + e * udSin(phi0));
@@ -2659,7 +2645,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double i = udATan2((position.x - zone.falseEasting), (h + (position.y - zone.falseNorthing)));
     double j = udATan2((position.x - zone.falseEasting), (g - (position.y - zone.falseNorthing))) - i;
 
-    double chi = chi0 + 2 * udATan(((position.y - zone.falseNorthing) - (position.x - zone.falseEasting)*udTan(j/2.0)) / (2.0 * R * zone.scaleFactor));
+    double chi = chi0 + 2 * udATan(((position.y - zone.falseNorthing) - (position.x - zone.falseEasting) * udTan(j / 2.0)) / (2.0 * R * zone.scaleFactor));
     double lambda = j + 2 * i + UD_DEG2RAD(zone.meridian);
 
     double psi = 0.5 * udLogN((1 + udSin(chi)) / (c * (1 - udSin(chi)))) / n;
@@ -2668,7 +2654,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double phiTmp = 2 * udATan(udExp(psi)) - UD_HALF_PI;
     double psiI = 0;
     double epsilon = udPow(10.0, -14.0);
-    while (fabs(phi- phiTmp) > epsilon && !isnan(phi))
+    while (fabs(phi - phiTmp) > epsilon && !isnan(phi))
     {
       phi = phiTmp;
       psiI = udLogN(udTan(phiTmp / 2.0 + UD_PI / 4.0) * udPow((1 - e * udSin(phiTmp)) / (1 + e * udSin(phiTmp)), (e / 2.0)));
@@ -2684,12 +2670,9 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double eSq = zone.eccentricitySq;
     double k0 = udCos(UD_DEG2RAD(zone.firstParallel)) / udSqrt(1 - eSq * udPow(udSin(UD_DEG2RAD(zone.firstParallel)), 2));
     double B = udExp(1.0);
-    double t = udPow(B, (zone.falseNorthing - position.y)/(zone.semiMajorAxis * k0));
+    double t = udPow(B, (zone.falseNorthing - position.y) / (zone.semiMajorAxis * k0));
     double chi = UD_HALF_PI - 2.0 * udATan(t);
-    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
-      + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
-      + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
-      + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
+    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi) + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi) + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi) + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG((position.x - zone.falseEasting) / (zone.semiMajorAxis * k0) + zone.meridian);
@@ -2708,13 +2691,10 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double tP = rhoP * udSqrt(udPow(1 + e, 1 + e) * udPow(1 - e, 1 - e)) / (2.0 * zone.semiMajorAxis * k0);
 
     double chi = 2.0 * udATan(tP) - UD_HALF_PI;
-    if (isNorthPole)// north pole
+    if (isNorthPole) // north pole
       chi = -chi;
 
-    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
-      + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
-      + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
-      + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
+    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi) + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi) + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi) + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
 
     latLong.x = UD_RAD2DEG(phi);
     if (position.x == zone.falseEasting)
@@ -2739,10 +2719,10 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
       westing *= -1.0;
     }
 
-    double phiC = UD_DEG2RAD(zone.latProjCentre); // latitude of projection centre
-    double alphaC = UD_DEG2RAD(zone.coLatConeAxis);// rotation in plane of meridian of origin || co latitude of the cone axis
-    double phiP = UD_DEG2RAD(zone.parallel); // latitude of pseudo standard parallel
-    double kP = zone.scaleFactor; // scale factor on pseudo standard parallel
+    double phiC = UD_DEG2RAD(zone.latProjCentre);   // latitude of projection centre
+    double alphaC = UD_DEG2RAD(zone.coLatConeAxis); // rotation in plane of meridian of origin || co latitude of the cone axis
+    double phiP = UD_DEG2RAD(zone.parallel);        // latitude of pseudo standard parallel
+    double kP = zone.scaleFactor;                   // scale factor on pseudo standard parallel
 
     double a = zone.semiMajorAxis;
     double eSq = zone.eccentricitySq;
@@ -2823,10 +2803,7 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double tP = udPow(H / udSqrt((1 + Up) / (1 - Up)), 1 / B);
     double chi = UD_HALF_PI - 2.0 * udATan(tP);
 
-    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi)
-      + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi)
-      + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi)
-      + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
+    double phi = chi + (eSq / 2.0 + 5.0 * udPow(eSq, 2) / 24.0 + udPow(eSq, 3) / 12.0 + 13.0 * udPow(eSq, 4) / 360.0) * udSin(2.0 * chi) + (7.0 * udPow(eSq, 2) / 48.0 + 29.0 * udPow(eSq, 3) / 240.0 + 811.0 * udPow(eSq, 4) / 11520.0) * udSin(4.0 * chi) + (7.0 * udPow(eSq, 3) / 120.0 + 81.0 * udPow(eSq, 4) / 1120.0) * udSin(6.0 * chi) + (4279.0 * udPow(eSq, 4) / 161280.0) * udSin(8.0 * chi);
 
     double lambda = lambda0 - udATan2(Sp * udCos(gamma0) - Vp * udSin(gamma0), udCos(B * uP / A)) / B;
 
@@ -2859,18 +2836,15 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     else
       theta = udATan2(-(position.x - zone.falseEasting), -(rho0 - (position.y - zone.falseNorthing)));
 
-    double rhoP = udSqrt(udPow(position.x - zone.falseEasting,2) + udPow(rho0 - (position.y - zone.falseNorthing), 2));
-    double alphaP = (C - (udPow(rhoP, 2) * udPow(n,2) / udPow(a,2))) / n;
-    double betaP = udASin(alphaP / (1 - ((1 - eSq) / (2 * e)) * udLogN ((1 - e) / (1 + e))));
+    double rhoP = udSqrt(udPow(position.x - zone.falseEasting, 2) + udPow(rho0 - (position.y - zone.falseNorthing), 2));
+    double alphaP = (C - (udPow(rhoP, 2) * udPow(n, 2) / udPow(a, 2))) / n;
+    double betaP = udASin(alphaP / (1 - ((1 - eSq) / (2 * e)) * udLogN((1 - e) / (1 + e))));
 
-    double phi = betaP
-      + ((eSq / 3.0 + 31 * udPow(e, 4) / 180 + 517 * udPow(e, 6) / 5040) * udSin(2 * betaP))
-      + ((23 * udPow(e, 4) / 360 + 251 * udPow(e, 6) / 3780) * udSin(4 * betaP))
-      + ((761 * udPow(e, 6) / 45360) * udSin(6 * betaP));
+    double phi = betaP + ((eSq / 3.0 + 31 * udPow(e, 4) / 180 + 517 * udPow(e, 6) / 5040) * udSin(2 * betaP)) + ((23 * udPow(e, 4) / 360 + 251 * udPow(e, 6) / 3780) * udSin(4 * betaP)) + ((761 * udPow(e, 6) / 45360) * udSin(6 * betaP));
     double lambda = UD_DEG2RAD(zone.meridian) + (theta / n);
 
     latLong.x = UD_RAD2DEG(phi);
-    latLong.y = UD_RAD2DEG(-lambda);// West Axis
+    latLong.y = UD_RAD2DEG(-lambda); // West Axis
     latLong.z = position.z;
   }
   else if (zone.projection == udGZPT_EquidistantCylindrical)
@@ -2884,18 +2858,12 @@ udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &p
     double eta = (1 - udSqrt(1 - eSq)) / (1 + udSqrt(1 - eSq));
 
     double lambda = UD_DEG2RAD(zone.meridian) + X * udSqrt(1.0 - eSq * udPow(udSin(zone.parallel), 2)) / (a * udCos(zone.parallel));
-    double phi = mu + ((3.0 / 2.0) * eta - (27.0 / 32.0) * udPow(eta, 3) + (269.0 / 512.0) * udPow(eta, 5) - (6607.0 / 24576.0) * udPow(eta, 7)) * udSin(2 * mu)
-      + ((21.0 / 16.0) * udPow(eta, 2) - (55.0 / 32.0) * udPow(eta, 4) + (6759.0 / 4096.0) * udPow(eta, 6)) * udSin(4 * mu)
-      + ((151.0 / 96.0) * udPow(eta, 3) - (417.0 / 128.0) * udPow(eta, 5) + (87963.0 / 20480.0) * udPow(eta, 7)) * udSin(6 * mu)
-      + ((1097.0 / 512.0) * udPow(eta, 4) - (15543.0 / 2560.0) * udPow(eta, 6)) * udSin(8 * mu)
-      + ((8011.0 / 2560.0) * udPow(eta, 5) - (69119.0 / 6144.0) * udPow(eta, 7)) * udSin(10 * mu)
-      + ((293393.0 / 61440.0) * udPow(eta, 6)) * udSin(12 * mu)
-      + ((6845701.0 / 860160.0) * udPow(eta, 7)) * udSin(14 * mu);
+    double phi = mu + ((3.0 / 2.0) * eta - (27.0 / 32.0) * udPow(eta, 3) + (269.0 / 512.0) * udPow(eta, 5) - (6607.0 / 24576.0) * udPow(eta, 7)) * udSin(2 * mu) + ((21.0 / 16.0) * udPow(eta, 2) - (55.0 / 32.0) * udPow(eta, 4) + (6759.0 / 4096.0) * udPow(eta, 6)) * udSin(4 * mu) + ((151.0 / 96.0) * udPow(eta, 3) - (417.0 / 128.0) * udPow(eta, 5) + (87963.0 / 20480.0) * udPow(eta, 7)) * udSin(6 * mu) + ((1097.0 / 512.0) * udPow(eta, 4) - (15543.0 / 2560.0) * udPow(eta, 6)) * udSin(8 * mu) + ((8011.0 / 2560.0) * udPow(eta, 5) - (69119.0 / 6144.0) * udPow(eta, 7)) * udSin(10 * mu) + ((293393.0 / 61440.0) * udPow(eta, 6)) * udSin(12 * mu) + ((6845701.0 / 860160.0) * udPow(eta, 7)) * udSin(14 * mu);
 
     latLong.x = UD_RAD2DEG(phi);
     latLong.y = UD_RAD2DEG(lambda);
     latLong.z = position.z;
-  } 
+  }
 
   if (datum != zone.datum)
     latLong = udGeoZone_ConvertDatum(latLong, zone.datum, datum);

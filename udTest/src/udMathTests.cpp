@@ -1,14 +1,31 @@
 #include "udMath.h"
-#include "gtest/gtest.h"
-#include "udPlatform.h"
 #include "udMathUtility.h"
+#include "udPlatform.h"
+#include "gtest/gtest.h"
 
 // Due to IEEE-754 supporting two different ways to specify 8.f and 2.f, the next three EXPECT_* calls are different
 // This appears to only occur when using Clang in Release, and only for udFloat4 - SIMD optimizations perhaps?
-#define EXPECT_UDFLOAT2_EQ(expected, _actual) { udFloat2 actual = _actual; EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); }
-#define EXPECT_UDFLOAT3_EQ(expected, _actual) { udFloat3 actual = _actual; EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); EXPECT_FLOAT_EQ(expected.z, actual.z); }
-#define EXPECT_UDFLOAT4_EQ(expected, _actual) { udFloat4 actual = _actual; EXPECT_FLOAT_EQ(expected.x, actual.x); EXPECT_FLOAT_EQ(expected.y, actual.y); EXPECT_FLOAT_EQ(expected.z, actual.z); EXPECT_FLOAT_EQ(expected.w, actual.w); }
-
+#define EXPECT_UDFLOAT2_EQ(expected, _actual) \
+  {                                           \
+    udFloat2 actual = _actual;                \
+    EXPECT_FLOAT_EQ(expected.x, actual.x);    \
+    EXPECT_FLOAT_EQ(expected.y, actual.y);    \
+  }
+#define EXPECT_UDFLOAT3_EQ(expected, _actual) \
+  {                                           \
+    udFloat3 actual = _actual;                \
+    EXPECT_FLOAT_EQ(expected.x, actual.x);    \
+    EXPECT_FLOAT_EQ(expected.y, actual.y);    \
+    EXPECT_FLOAT_EQ(expected.z, actual.z);    \
+  }
+#define EXPECT_UDFLOAT4_EQ(expected, _actual) \
+  {                                           \
+    udFloat4 actual = _actual;                \
+    EXPECT_FLOAT_EQ(expected.x, actual.x);    \
+    EXPECT_FLOAT_EQ(expected.y, actual.y);    \
+    EXPECT_FLOAT_EQ(expected.z, actual.z);    \
+    EXPECT_FLOAT_EQ(expected.w, actual.w);    \
+  }
 
 // This test slerps 2 quaterions rotating about the -Y axis (backwards) q0 theta PI/4 and q1 theta 3PI/4
 template <typename T>
@@ -19,7 +36,7 @@ bool udQuaternion_SlerpBasicUnitTest()
   const T rad1 = T(3.0 * UD_PI / 4.0);
   udQuaternion<T> q0 = udQuaternion<T>::create(axis, rad0);
   udQuaternion<T> q1 = udQuaternion<T>::create(axis, rad1);
-  udVector3<T> v = { T(1.0), T(0.0),  T(0.0) };
+  udVector3<T> v = { T(1.0), T(0.0), T(0.0) };
 
   const int32_t count = 1024;
   const T tCount = T(count);
@@ -212,7 +229,6 @@ bool udQuaternion_SlerpDefinedInputsTest(int incrementCount)
       return false;
   }
 
-
   return true;
 }
 
@@ -363,8 +379,8 @@ TEST(MathTests, MathCPPSuite)
   float f = udDot3(v, v);
   udPow(f, (float)UD_PI);
 
-  v = 2.f*v;
-  v = v*v + v;
+  v = 2.f * v;
+  v = v * v + v;
 
   m.transpose();
   m.determinant();
@@ -390,26 +406,26 @@ TEST(MathTests, MathCPPSuite)
 
 TEST(MathTests, UnitLengthCanaries)
 {
-  EXPECT_TRUE(EqualApproxUnitTest<udVector2<float> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector2<double> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector3<float> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector3<double> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector4<float> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udVector4<double> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<float> >());
-  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<double> >());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector2<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector2<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector3<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector3<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector4<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udVector4<double>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<float>>());
+  EXPECT_TRUE(EqualApproxUnitTest<udQuaternion<double>>());
 
   EXPECT_TRUE(MatrixEqualApproxUnitTest<float>());
   EXPECT_TRUE(MatrixEqualApproxUnitTest<double>());
 
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<float> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<double> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<float> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<double> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<float> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<double> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<float> >());
-  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<double> >());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector2<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector3<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udVector4<double>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<float>>());
+  EXPECT_TRUE(IsUnitLengthUnitTest<udQuaternion<double>>());
 }
 
 TEST(MathTests, QuaternionCanaries)
@@ -1090,34 +1106,34 @@ void udPerpendicular3_Check(const udDouble3 &v, double epsilon, int expectedMode
 TEST(MathTests, UtilityFunctions)
 {
   {
-    double epsilon        = 1e-12;
+    double epsilon = 1e-12;
     double epsilonSmaller = 1e-13;
 
-    udPerpendicular3_Check({1.0, 0.0, 0.0}, epsilon, 0);
-    udPerpendicular3_Check({0.0, 1.0, 0.0}, epsilon, 0);
-    udPerpendicular3_Check({0.0, 0.0, 1.0}, epsilon, 0);
-    udPerpendicular3_Check({1.0, 1.0, 0.0}, epsilon, 0);
-    udPerpendicular3_Check({1.0, 0.0, 1.0}, epsilon, 0);
-    udPerpendicular3_Check({1.0, 1.0, 1.0}, epsilon, 0);
+    udPerpendicular3_Check({ 1.0, 0.0, 0.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 0.0, 1.0, 0.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 0.0, 0.0, 1.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 1.0, 1.0, 0.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 1.0, 0.0, 1.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 1.0, 1.0, 1.0 }, epsilon, 0);
 
-    udPerpendicular3_Check({-1.0, 0.0, 0.0}, epsilon, 0);
-    udPerpendicular3_Check({0.0, -1.0, 0.0}, epsilon, 0);
-    udPerpendicular3_Check({0.0, 0.0, -1.0}, epsilon, 0);
-    udPerpendicular3_Check({-1.0, -1.0, 0.0}, epsilon, 0);
-    udPerpendicular3_Check({-1.0, 0.0, -1.0}, epsilon, 0);
-    udPerpendicular3_Check({-1.0, -1.0, -1.0}, epsilon, 0);
+    udPerpendicular3_Check({ -1.0, 0.0, 0.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 0.0, -1.0, 0.0 }, epsilon, 0);
+    udPerpendicular3_Check({ 0.0, 0.0, -1.0 }, epsilon, 0);
+    udPerpendicular3_Check({ -1.0, -1.0, 0.0 }, epsilon, 0);
+    udPerpendicular3_Check({ -1.0, 0.0, -1.0 }, epsilon, 0);
+    udPerpendicular3_Check({ -1.0, -1.0, -1.0 }, epsilon, 0);
 
-    udPerpendicular3_Check({23.45, -45.89, 4597.13}, epsilon, 0);
-    udPerpendicular3_Check({-3421750394.3, 987715.3457, 184573763.437}, epsilon, 0);
-    udPerpendicular3_Check({-1e43, -2e109, 42.0}, epsilon, 0);
+    udPerpendicular3_Check({ 23.45, -45.89, 4597.13 }, epsilon, 0);
+    udPerpendicular3_Check({ -3421750394.3, 987715.3457, 184573763.437 }, epsilon, 0);
+    udPerpendicular3_Check({ -1e43, -2e109, 42.0 }, epsilon, 0);
 
-    udPerpendicular3_Check({0.0, 0.0, 0.0}, epsilon, 2);
-    udPerpendicular3_Check({epsilonSmaller, 0.0, 0.0}, epsilon, 2);
-    udPerpendicular3_Check({0.0, epsilonSmaller, 0.0}, epsilon, 2);
-    udPerpendicular3_Check({0.0, 0.0, epsilonSmaller}, epsilon, 2);
-    udPerpendicular3_Check({-epsilonSmaller, 0.0, 0.0}, epsilon, 2);
-    udPerpendicular3_Check({0.0, -epsilonSmaller, 0.0}, epsilon, 2);
-    udPerpendicular3_Check({0.0, 0.0, -epsilonSmaller}, epsilon, 2);
+    udPerpendicular3_Check({ 0.0, 0.0, 0.0 }, epsilon, 2);
+    udPerpendicular3_Check({ epsilonSmaller, 0.0, 0.0 }, epsilon, 2);
+    udPerpendicular3_Check({ 0.0, epsilonSmaller, 0.0 }, epsilon, 2);
+    udPerpendicular3_Check({ 0.0, 0.0, epsilonSmaller }, epsilon, 2);
+    udPerpendicular3_Check({ -epsilonSmaller, 0.0, 0.0 }, epsilon, 2);
+    udPerpendicular3_Check({ 0.0, -epsilonSmaller, 0.0 }, epsilon, 2);
+    udPerpendicular3_Check({ 0.0, 0.0, -epsilonSmaller }, epsilon, 2);
   }
 
   {
@@ -1126,36 +1142,36 @@ TEST(MathTests, UtilityFunctions)
     udDouble3 extentsOut = {};
     double epsilon = 1e-12;
 
-    q = udDoubleQuat::create({0, 0, 0});
+    q = udDoubleQuat::create({ 0, 0, 0 });
     EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, extentsIn);
 
-    q = udDoubleQuat::create({UD_HALF_PI, 0, 0});
+    q = udDoubleQuat::create({ UD_HALF_PI, 0, 0 });
     EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(-2, 1, 3));
 
-    q = udDoubleQuat::create({0, UD_HALF_PI, 0});
+    q = udDoubleQuat::create({ 0, UD_HALF_PI, 0 });
     EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(1, -3, 2));
 
-    q = udDoubleQuat::create({0, 0, UD_HALF_PI});
+    q = udDoubleQuat::create({ 0, 0, UD_HALF_PI });
     EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(3, 2, -1));
 
-    q = udDoubleQuat::create({UD_HALF_PI, UD_HALF_PI, UD_HALF_PI});
+    q = udDoubleQuat::create({ UD_HALF_PI, UD_HALF_PI, UD_HALF_PI });
     EXPECT_TRUE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
     EXPECT_EQ(extentsOut, udDouble3::create(-1, 3, 2));
 
-    q = udDoubleQuat::create({3, 0, 0});
+    q = udDoubleQuat::create({ 3, 0, 0 });
     EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
 
-    q = udDoubleQuat::create({0, 2, 0});
+    q = udDoubleQuat::create({ 0, 2, 0 });
     EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
 
-    q = udDoubleQuat::create({0, 0, 1});
+    q = udDoubleQuat::create({ 0, 0, 1 });
     EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
 
-    q = udDoubleQuat::create({3, 2, 1});
+    q = udDoubleQuat::create({ 3, 2, 1 });
     EXPECT_FALSE(udIsRotatedAxisStillAxisAligned(q, extentsIn, extentsOut, epsilon));
   }
 

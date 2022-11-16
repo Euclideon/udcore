@@ -8,8 +8,8 @@
 // Handles fire and forget work by pooling and processing async
 //
 
-#include "udResult.h"
 #include "udCallback.h"
+#include "udResult.h"
 
 // Function definition for async and marshalled work
 using udWorkerPoolCallback = udCallback<void(void *)>;

@@ -44,7 +44,7 @@ TEST(udUUID, ValidationTests)
   EXPECT_FALSE(udUUID_IsValid("DC8EA1A9-BECD-4534-ADAD-900B3972EE8")); // Missing the last character
 
   //Some very invalid UUIDs
-  EXPECT_FALSE(udUUID_IsValid((const char*)nullptr));
+  EXPECT_FALSE(udUUID_IsValid((const char *)nullptr));
   EXPECT_FALSE(udUUID_IsValid(""));
   EXPECT_FALSE(udUUID_IsValid("1234-"));
 }

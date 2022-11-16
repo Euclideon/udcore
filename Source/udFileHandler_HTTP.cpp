@@ -9,15 +9,15 @@
 #include "udPlatform.h"
 #include "udSocket.h"
 
+#include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udFileHandler.h"
 
 #if !UDPLATFORM_EMSCRIPTEN
-static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
-static udFile_SeekReadHandlerFunc                 udFileHandler_HTTPSeekRead;
+static udFile_OpenHandlerFunc udFileHandler_HTTPOpen;
+static udFile_SeekReadHandlerFunc udFileHandler_HTTPSeekRead;
 static udFile_BlockForPipelinedRequestHandlerFunc udFileHandler_HTTPBlockForPipelinedRequest;
-static udFile_CloseHandlerFunc                    udFileHandler_HTTPClose;
+static udFile_CloseHandlerFunc udFileHandler_HTTPClose;
 
 // Register the HTTP handler (optional as it requires networking libraries, WS2_32.lib on Windows platform)
 udResult udFile_RegisterHTTP()
@@ -28,22 +28,19 @@ udResult udFile_RegisterHTTP()
   return result;
 }
 
-
 static char s_HTTPHeaderString[] = "HEAD %s HTTP/1.1\r\nHost: %s\r\nConnection: Keep-Alive\r\nUser-Agent: Euclideon udSDK/2.0\r\n\r\n";
 static char s_HTTPGetString[] = "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Euclideon udSDK/2.0\r\nConnection: Keep-Alive\r\nRange: bytes=%lld-%lld\r\n\r\n";
-
 
 // The udFile derivative for supporting HTTP/S
 struct udFile_HTTP : public udFile
 {
-  udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
+  udMutex *pMutex; // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
   udURL url;
   bool wsInitialised;
   char recvBuffer[1024];
   udSocket *pSocket;
   int sockID; // Each time a socket it created we increment this number, this way pipelined requests from a dead socket can be identified as dead
 };
-
 
 // ----------------------------------------------------------------------------
 // Open the socket
@@ -69,7 +66,6 @@ static udResult udFileHandler_HTTPOpenSocket(udFile_HTTP *pFile)
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Close the socket
 // Author: Dave Pevreal, March 2014
@@ -79,7 +75,6 @@ static void udFileHandler_HTTPCloseSocket(udFile_HTTP *pFile)
   ++pFile->sockID;
 }
 
-
 // ----------------------------------------------------------------------------
 // Send a request
 // Author: Dave Pevreal, March 2014
@@ -88,13 +83,13 @@ static udResult udFileHandler_HTTPSendRequest(udFile_HTTP *pFile, int len)
   udResult result;
 
   UD_ERROR_CHECK(udFileHandler_HTTPOpenSocket(pFile));
-  result = udSocket_SendData(pFile->pSocket, (const uint8_t*)pFile->recvBuffer, (int64_t)len);
+  result = udSocket_SendData(pFile->pSocket, (const uint8_t *)pFile->recvBuffer, (int64_t)len);
   if (result == udR_SocketError)
   {
     // On error, first try closing and re-opening the socket before giving up
     udFileHandler_HTTPCloseSocket(pFile);
     udFileHandler_HTTPOpenSocket(pFile);
-    result = udSocket_SendData(pFile->pSocket, (const uint8_t*)pFile->recvBuffer, (int64_t)len);
+    result = udSocket_SendData(pFile->pSocket, (const uint8_t *)pFile->recvBuffer, (int64_t)len);
   }
 
 epilogue:
@@ -103,7 +98,6 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Receive a response for a GET packet, parsing the string header before
 // delivering the payload
@@ -111,7 +105,7 @@ epilogue:
 static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, size_t bufferLength, size_t *pActualRead)
 {
   udResult result;
-  size_t bytesReceived = 0;      // Number of bytes received from this packet
+  size_t bytesReceived = 0; // Number of bytes received from this packet
   int code;
   size_t headerLength; // length of the response header, before any payload
   const char *s;
@@ -124,19 +118,19 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     udDebugPrintf("Unable to open socket\n");
   UD_ERROR_HANDLE();
 
-  result = udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pFile->recvBuffer, (int64_t)sizeof(pFile->recvBuffer), &actualReceived);
+  result = udSocket_ReceiveData(pFile->pSocket, (uint8_t *)pFile->recvBuffer, (int64_t)sizeof(pFile->recvBuffer), &actualReceived);
   if (result == udR_SocketError)
   {
     // Close and re-open the socket on error
     udFileHandler_HTTPCloseSocket(pFile);
     UD_ERROR_CHECK(udFileHandler_HTTPOpenSocket(pFile));
-    UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pFile->recvBuffer, (int64_t)sizeof(pFile->recvBuffer), &actualReceived));
+    UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t *)pFile->recvBuffer, (int64_t)sizeof(pFile->recvBuffer), &actualReceived));
   }
   bytesReceived += (size_t)actualReceived;
 
   while (udStrstr(pFile->recvBuffer, bytesReceived, "\r\n\r\n", &headerLength) == nullptr && (size_t)bytesReceived < sizeof(pFile->recvBuffer))
   {
-    UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pFile->recvBuffer + bytesReceived, (int64_t)sizeof(pFile->recvBuffer) - bytesReceived, &actualReceived));
+    UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t *)pFile->recvBuffer + bytesReceived, (int64_t)sizeof(pFile->recvBuffer) - bytesReceived, &actualReceived));
     bytesReceived += (size_t)actualReceived;
   }
 
@@ -150,7 +144,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
   }
 
   headerLength += 4;
-  pFile->recvBuffer[headerLength-1] = 0; // null terminate the header part
+  pFile->recvBuffer[headerLength - 1] = 0; // null terminate the header part
   //udDebugPrintf("Received:\n%s--end--\n", pFile->recvBuffer);
 
   // Check for a request from the server to close the connection after dealing with this
@@ -186,7 +180,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
 
     while (bytesReceived < (size_t)contentLength)
     {
-      UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t*)pBuffer + bytesReceived, (int64_t)bufferLength - bytesReceived, &actualReceived));
+      UD_ERROR_CHECK(udSocket_ReceiveData(pFile->pSocket, (uint8_t *)pBuffer + bytesReceived, (int64_t)bufferLength - bytesReceived, &actualReceived));
       bytesReceived += (size_t)actualReceived;
     }
     if (pActualRead)
@@ -204,7 +198,6 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Implementation of OpenHandler via HTTP
 // Author: Dave Pevreal, March 2014
@@ -215,7 +208,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   int actualHeaderLen;
 
   // Automatically fail if trying to write to files on http
-  if (flags & (udFOF_Write|udFOF_Create))
+  if (flags & (udFOF_Write | udFOF_Create))
     UD_ERROR_SET(udR_OpenFailure);
 
   pFile = udAllocType(udFile_HTTP, 1, udAF_Zero);
@@ -235,7 +228,7 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
   UD_ERROR_CHECK(udSocket_InitSystem());
   pFile->wsInitialised = true;
 
-  actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPHeaderString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain());
+  actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer) - 1, s_HTTPHeaderString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain());
   UD_ERROR_IF(actualHeaderLen < 0, udR_Failure);
 
   //udDebugPrintf("Sending:\n%s", pFile->recvBuffer);
@@ -252,11 +245,10 @@ udResult udFileHandler_HTTPOpen(udFile **ppFile, const char *pFilename, udFileOp
 
 epilogue:
   if (pFile)
-    udFileHandler_HTTPClose((udFile**)&pFile);
+    udFileHandler_HTTPClose((udFile **)&pFile);
 
   return result;
 }
-
 
 // ----------------------------------------------------------------------------
 // Implementation of SeekReadHandler via HTTP
@@ -270,7 +262,7 @@ static udResult udFileHandler_HTTPSeekRead(udFile *pBaseFile, void *pBuffer, siz
     udLockMutex(pFile->pMutex);
 
   //udDebugPrintf("\nSeekRead: %lld bytes at offset %lld\n", bufferLength, offset);
-  size_t actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer)-1, s_HTTPGetString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain(), seekOffset, seekOffset + bufferLength-1);
+  size_t actualHeaderLen = snprintf(pFile->recvBuffer, sizeof(pFile->recvBuffer) - 1, s_HTTPGetString, pFile->url.GetPathWithQuery(), pFile->url.GetDomain(), seekOffset, seekOffset + bufferLength - 1);
 
   UD_ERROR_CHECK(udFileHandler_HTTPSendRequest(pFile, (int)actualHeaderLen));
 
@@ -296,7 +288,6 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Implementation of BlockForPipelinedRequest via HTTP
 // Author: Dave Pevreal, March 2014
@@ -308,7 +299,7 @@ static udResult udFileHandler_HTTPBlockForPipelinedRequest(udFile *pBaseFile, ud
   if (pFile->pMutex)
     udLockMutex(pFile->pMutex);
 
-  void *pBuffer = (void*)(pPipelinedRequest->reserved[0]);
+  void *pBuffer = (void *)(pPipelinedRequest->reserved[0]);
   size_t bufferLength = (size_t)(pPipelinedRequest->reserved[1]);
   int sockID = (int)pPipelinedRequest->reserved[2];
   if (sockID != pFile->sockID)
@@ -328,7 +319,6 @@ epilogue:
 
   return result;
 }
-
 
 // ----------------------------------------------------------------------------
 // Implementation of CloseHandler via HTTP

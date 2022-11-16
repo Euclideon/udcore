@@ -20,5 +20,5 @@ TEST(BlankTests, Validate)
   EXPECT_STRCASEEQ(realStringValue, copyStringValue);
   EXPECT_EQ(realHexValue, copyHexValue);
   EXPECT_EQ(realIntValue, copyIntValue);
-  EXPECT_NE((void*)-1, pNullPtr);
+  EXPECT_NE((void *)-1, pNullPtr);
 }

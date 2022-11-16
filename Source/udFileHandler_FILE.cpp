@@ -6,55 +6,53 @@
 
 #define _FILE_OFFSET_BITS 64
 #if defined(_MSC_VER)
-# define _CRT_SECURE_NO_WARNINGS
-# define fseeko _fseeki64
-# define ftello _ftelli64
-# if !defined(_OFF_T_DEFINED)
-    typedef __int64 _off_t;
-    typedef _off_t off_t;
-#   define _OFF_T_DEFINED
-# endif //_OFF_T_DEFINED
+#  define _CRT_SECURE_NO_WARNINGS
+#  define fseeko _fseeki64
+#  define ftello _ftelli64
+#  if !defined(_OFF_T_DEFINED)
+typedef __int64 _off_t;
+typedef _off_t off_t;
+#    define _OFF_T_DEFINED
+#  endif //_OFF_T_DEFINED
 #elif defined(__linux__)
-# if !defined(_LARGEFILE_SOURCE )
-  // This must be set for linux to expose fseeko and ftello
-# define _LARGEFILE_SOURCE
-#endif
+#  if !defined(_LARGEFILE_SOURCE)
+// This must be set for linux to expose fseeko and ftello
+#    define _LARGEFILE_SOURCE
+#  endif
 
 #endif
-
 
 #include "udFile.h"
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
+#include <atomic>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <atomic>
 
 #if UDPLATFORM_NACL
-# define fseeko fseek
-# define ftello ftell
+#  define fseeko fseek
+#  define ftello ftell
 #endif
 
 #define FILE_DEBUG 0
 
 // Declarations of the fall-back standard handler that uses crt FILE as a back-end
-static udFile_SeekReadHandlerFunc   udFileHandler_FILESeekRead;
-static udFile_SeekWriteHandlerFunc  udFileHandler_FILESeekWrite;
-static udFile_ReleaseHandlerFunc    udFileHandler_FILERelease;
-static udFile_CloseHandlerFunc      udFileHandler_FILEClose;
+static udFile_SeekReadHandlerFunc udFileHandler_FILESeekRead;
+static udFile_SeekWriteHandlerFunc udFileHandler_FILESeekWrite;
+static udFile_ReleaseHandlerFunc udFileHandler_FILERelease;
+static udFile_CloseHandlerFunc udFileHandler_FILEClose;
 std::atomic<int32_t> g_udFileHandler_FILEHandleCount;
 #if FILE_DEBUG
-#pragma optimize("", off)
+#  pragma optimize("", off)
 #endif
 
 // The udFile derivative for supporting standard runtime library FILE i/o
 struct udFile_FILE : public udFile
 {
   FILE *pCrtFile;
-  udMutex *pMutex;                        // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
+  udMutex *pMutex; // Used only when the udFOF_Multithread flag is used to ensure safe access from multiple threads
 };
-
 
 // ----------------------------------------------------------------------------
 static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
@@ -63,7 +61,7 @@ static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
   FILE *pFile = nullptr;
 
   if ((flags & udFOF_Read) && (flags & udFOF_Write) && (flags & udFOF_Create))
-    pMode = "w+b";  // Read/write, any existing file destroyed
+    pMode = "w+b"; // Read/write, any existing file destroyed
   else if ((flags & udFOF_Read) && (flags & udFOF_Write))
     pMode = "r+b"; // Read/write, but file must already exist
   else if (flags & udFOF_Read)
@@ -168,14 +166,13 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekReadHandler to access the crt FILE i/o functions
 static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t seekOffset, size_t *pActualRead, udFilePipelinedRequest * /*pPipelinedRequest*/)
 {
   UDTRACE();
-  udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
+  udFile_FILE *pFILE = static_cast<udFile_FILE *>(pFile);
   udResult result;
   size_t actualRead;
 
@@ -210,7 +207,6 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of SeekWriteHandler to access the crt FILE i/o functions
@@ -219,7 +215,7 @@ static udResult udFileHandler_FILESeekWrite(udFile *pFile, const void *pBuffer, 
   UDTRACE();
   udResult result;
   size_t actualWritten;
-  udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
+  udFile_FILE *pFILE = static_cast<udFile_FILE *>(pFile);
 
   UD_ERROR_NULL(pFile, udR_InvalidParameter);
   if (pFILE->pMutex)
@@ -242,14 +238,13 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2016
 // Implementation of Release to release the underlying file handle
 static udResult udFileHandler_FILERelease(udFile *pFile)
 {
   udResult result;
-  udFile_FILE *pFILE = static_cast<udFile_FILE*>(pFile);
+  udFile_FILE *pFILE = static_cast<udFile_FILE *>(pFile);
 
   // Early-exit that doesn't involve locking the mutex
   UD_ERROR_NULL(pFile, udR_InvalidParameter);
@@ -263,7 +258,7 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   UD_ERROR_IF(!pFILE->pCrtFile, udR_NothingToDo);
 
   // Don't support release/reopen on files for create/writing
-  UD_ERROR_IF(!pFile->pFilenameCopy || (pFile->flagsCopy & (udFOF_Create|udFOF_Write)), udR_InvalidConfiguration);
+  UD_ERROR_IF(!pFile->pFilenameCopy || (pFile->flagsCopy & (udFOF_Create | udFOF_Write)), udR_InvalidConfiguration);
 
 #if FILE_DEBUG
   udDebugPrintf("Releasing handle for %s (handleCount=%d) pCrtFile=%p\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount, pFILE->pCrtFile);
@@ -281,7 +276,6 @@ epilogue:
   return result;
 }
 
-
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, March 2014
 // Implementation of CloseHandler to access the crt FILE i/o functions
@@ -289,7 +283,7 @@ static udResult udFileHandler_FILEClose(udFile **ppFile)
 {
   UDTRACE();
   udResult result = udR_Success;
-  udFile_FILE *pFILE = static_cast<udFile_FILE*>(*ppFile);
+  udFile_FILE *pFILE = static_cast<udFile_FILE *>(*ppFile);
   *ppFile = nullptr;
 
   if (pFILE)
@@ -308,5 +302,3 @@ static udResult udFileHandler_FILEClose(udFile **ppFile)
 
   return result;
 }
-
-

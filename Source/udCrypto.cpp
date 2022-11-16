@@ -1,22 +1,22 @@
 // Include any system headers that any files that are also included by code inside the namespace wrap
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <atomic>
 #include "udCrypto.h"
 #include "udJSON.h"
-#include "udThread.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
+#include "udThread.h"
+#include <atomic>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #if UDPLATFORM_WINDOWS
-#pragma warning(disable: 4267 4244)
+#  pragma warning(disable : 4267 4244)
 #else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <time.h>
-#include <sys/time.h>
+#  include <fcntl.h>
+#  include <sys/stat.h>
+#  include <sys/time.h>
+#  include <sys/types.h>
+#  include <time.h>
 #endif
 
 #define MBEDTLS_ALLOW_PRIVATE_ACCESS
@@ -24,18 +24,18 @@
 #include "mbedtls/platform_util.h"
 
 #include "mbedtls/aes.h"
+#include "mbedtls/md5.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/sha512.h"
-#include "mbedtls/md5.h"
 
 #include "mbedtls/dhm.h"
 #include "mbedtls/ecdh.h"
 
-#include "mbedtls/rsa.h"
+#include "mbedtls/ctr_drbg.h"
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/rsa.h"
 #include "mbedtls/threading_alt.h"
 
 enum
@@ -43,13 +43,13 @@ enum
   AES_BLOCK_SIZE = 16
 };
 
-#define TYPESTRING_RSA "RSA"
+#define TYPESTRING_RSA   "RSA"
 #define TYPESTRING_ECDSA "ECDSA"
 
 #define TYPESTRING_CURVE_BP384R1 "BP384R1"
 
 const mbedtls_md_type_t udc_to_mbed_hashfunctions[] = { MBEDTLS_MD_SHA1, MBEDTLS_MD_SHA256, MBEDTLS_MD_SHA512, MBEDTLS_MD_MD5, MBEDTLS_MD_NONE };
-UDCOMPILEASSERT(UDARRAYSIZE(udc_to_mbed_hashfunctions) == udCH_Count+1, "Hash methods array not updated as well!");
+UDCOMPILEASSERT(UDARRAYSIZE(udc_to_mbed_hashfunctions) == udCH_Count + 1, "Hash methods array not updated as well!");
 
 struct udCryptoCipherContext
 {
@@ -145,7 +145,7 @@ epilogue:
 static udResult FromLittleEndianBinary(mbedtls_mpi *pBigNum, uint8_t *&pBuf, size_t &bufLen, int numLen)
 {
   udResult result;
-  uint8_t buf[4096/8];
+  uint8_t buf[4096 / 8];
 
   UD_ERROR_IF(numLen > (int)sizeof(buf), udR_InternalError);
   UD_ERROR_IF(numLen < 0 || (size_t)numLen > bufLen, udR_InternalError);
@@ -172,7 +172,7 @@ void udCrypto_Obscure(const char *pBase64String)
 {
   size_t len = udStrlen(pBase64String);
   for (size_t i = 0; i < len; ++i)
-    const_cast<char*>(pBase64String)[i] ^= (i & 5) + 1; // For now simple xor obscure
+    const_cast<char *>(pBase64String)[i] ^= (i & 5) + 1; // For now simple xor obscure
 }
 
 // ***************************************************************************************
@@ -188,9 +188,9 @@ udResult udCrypto_Random(void *pMem, size_t len)
   UD_ERROR_IF(!udCryptoSharedData::initialised, udR_NotInitialized);
 
   // Seed the random number generator
-  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
   // Generate some random data
-  UD_ERROR_IF(mbedtls_ctr_drbg_random(&ctr_drbg, (unsigned char*)pMem, len) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ctr_drbg_random(&ctr_drbg, (unsigned char *)pMem, len) != 0, udR_InternalCryptoError);
 
   result = udR_Success;
 
@@ -211,7 +211,7 @@ void udCrypto_ThreadingMutexInit(mbedtls_threading_mutex_t *pMutexCtx)
 // Author: Paul Fox, October 2018
 void udCrypto_ThreadingMutexFree(mbedtls_threading_mutex_t *pMutexCtx)
 {
-  udDestroyMutex((udMutex**)&pMutexCtx->pMutex);
+  udDestroyMutex((udMutex **)&pMutexCtx->pMutex);
 }
 
 // ***************************************************************************************
@@ -221,7 +221,7 @@ int udCrypto_ThreadingMutexLock(mbedtls_threading_mutex_t *pMutexCtx)
   if (pMutexCtx == nullptr || pMutexCtx->pMutex == nullptr)
     return -1;
 
-  udLockMutex((udMutex*)pMutexCtx->pMutex);
+  udLockMutex((udMutex *)pMutexCtx->pMutex);
   return 0;
 }
 
@@ -232,7 +232,7 @@ int udCrypto_ThreadingMutexUnlock(mbedtls_threading_mutex_t *pMutexCtx)
   if (pMutexCtx == nullptr || pMutexCtx->pMutex == nullptr)
     return -1;
 
-  udReleaseMutex((udMutex*)pMutexCtx->pMutex);
+  udReleaseMutex((udMutex *)pMutexCtx->pMutex);
   return 0;
 }
 
@@ -355,7 +355,7 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   else
     paddedCliperTextLen = (plainTextLen + pCtx->blockSize) & ~(pCtx->blockSize - 1);
 
-  UD_ERROR_IF((paddedCliperTextLen  & (pCtx->blockSize - 1)) != 0, udR_AlignmentRequired);
+  UD_ERROR_IF((paddedCliperTextLen & (pCtx->blockSize - 1)) != 0, udR_AlignmentRequired);
   UD_ERROR_IF(paddedCliperTextLen > cipherTextLen, udR_BufferTooSmall);
 
   // Trading efficiency for simplicity, just duplicate the source and add the padding bytes
@@ -363,7 +363,7 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   {
     size_t padBytes = paddedCliperTextLen - plainTextLen;
     pPaddedPlainText = udMemDup(pPlainText, plainTextLen, padBytes, udAF_None);
-    memset(udAddBytes((void*)pPaddedPlainText, plainTextLen), (int)padBytes, padBytes);
+    memset(udAddBytes((void *)pPaddedPlainText, plainTextLen), (int)padBytes, padBytes);
   }
   else
   {
@@ -374,34 +374,34 @@ udResult udCryptoCipher_Encrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   {
     case udCC_AES128:
     case udCC_AES256:
+    {
+      switch (pCtx->chainMode)
       {
-        switch (pCtx->chainMode)
-        {
-          case udCCM_CBC:
-            UD_ERROR_NULL(pIV, udR_InvalidParameter);
-            memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
-            UD_ERROR_IF(mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, paddedCliperTextLen, pCtx->iv, (const unsigned char*)pPaddedPlainText, (unsigned char*)pCipherText) != 0, udR_InternalCryptoError);
+        case udCCM_CBC:
+          UD_ERROR_NULL(pIV, udR_InvalidParameter);
+          memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
+          UD_ERROR_IF(mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_ENCRYPT, paddedCliperTextLen, pCtx->iv, (const unsigned char *)pPaddedPlainText, (unsigned char *)pCipherText) != 0, udR_InternalCryptoError);
 
-            // For CBC, the output IV is the last encrypted block
-            if (pOutIV)
-              memcpy(pOutIV, (char*)pCipherText + paddedCliperTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
-            break;
+          // For CBC, the output IV is the last encrypted block
+          if (pOutIV)
+            memcpy(pOutIV, (char *)pCipherText + paddedCliperTextLen - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+          break;
 
-          case udCCM_CTR:
-            UD_ERROR_IF(pIV == nullptr || pOutIV != nullptr, udR_InvalidParameter); // Don't allow output IV in CTR mode (yet)
-            memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
-            {
-              size_t ncoff = 0;
-              unsigned char stream_block[16];
-              UD_ERROR_IF(mbedtls_aes_crypt_ctr(&pCtx->ctx, paddedCliperTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pPaddedPlainText, (unsigned char *)pCipherText) != 0, udR_InternalCryptoError);
-            }
-            break;
+        case udCCM_CTR:
+          UD_ERROR_IF(pIV == nullptr || pOutIV != nullptr, udR_InvalidParameter); // Don't allow output IV in CTR mode (yet)
+          memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
+          {
+            size_t ncoff = 0;
+            unsigned char stream_block[16];
+            UD_ERROR_IF(mbedtls_aes_crypt_ctr(&pCtx->ctx, paddedCliperTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char *)pPaddedPlainText, (unsigned char *)pCipherText) != 0, udR_InternalCryptoError);
+          }
+          break;
 
-          default:
-            UD_ERROR_SET(udR_InvalidConfiguration);
-        }
+        default:
+          UD_ERROR_SET(udR_InvalidConfiguration);
       }
-      break;
+    }
+    break;
     default:
       UD_ERROR_SET(udR_InvalidConfiguration);
   }
@@ -453,7 +453,7 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
             pCtx->ctxInit = true;
           }
           memcpy(pCtx->iv, pIV, sizeof(pCtx->iv));
-          UD_ERROR_IF(mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_DECRYPT, cipherTextLen, pCtx->iv, (const unsigned char*)pCipherText, (unsigned char *)pPaddedPlainText) != 0, udR_InternalCryptoError);
+          UD_ERROR_IF(mbedtls_aes_crypt_cbc(&pCtx->ctx, MBEDTLS_AES_DECRYPT, cipherTextLen, pCtx->iv, (const unsigned char *)pCipherText, (unsigned char *)pPaddedPlainText) != 0, udR_InternalCryptoError);
           if (pOutIV)
             memcpy(pOutIV, pCtx->iv, sizeof(pCtx->iv));
           break;
@@ -469,7 +469,7 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
           {
             size_t ncoff = 0;
             unsigned char stream_block[16];
-            if (mbedtls_aes_crypt_ctr(&pCtx->ctx, cipherTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char*)pCipherText, (unsigned char *)pPaddedPlainText) != 0)
+            if (mbedtls_aes_crypt_ctr(&pCtx->ctx, cipherTextLen, &ncoff, pCtx->iv, stream_block, (const unsigned char *)pCipherText, (unsigned char *)pPaddedPlainText) != 0)
             {
               UD_ERROR_SET(udR_Failure);
             }
@@ -481,8 +481,8 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
       }
     }
     break;
-  default:
-    UD_ERROR_SET(udR_InvalidConfiguration);
+    default:
+      UD_ERROR_SET(udR_InvalidConfiguration);
   }
   if (pCtx->padMode == udCPM_None)
   {
@@ -490,11 +490,11 @@ udResult udCryptoCipher_Decrypt(udCryptoCipherContext *pCtx, const udCryptoIV *p
   }
   else
   {
-    uint8_t padBytes = ((uint8_t*)pPaddedPlainText)[cipherTextLen - 1];
+    uint8_t padBytes = ((uint8_t *)pPaddedPlainText)[cipherTextLen - 1];
     actualPlainTextLen = cipherTextLen - padBytes;
     // Part of PKCS#7 is the padding must be verified
     for (uint8_t i = 0; i < padBytes; ++i)
-      UD_ERROR_IF(((uint8_t*)pPaddedPlainText)[actualPlainTextLen + i] != padBytes, udR_CorruptData);
+      UD_ERROR_IF(((uint8_t *)pPaddedPlainText)[actualPlainTextLen + i] != padBytes, udR_CorruptData);
     if (pPaddedPlainText != pPlainText)
       memcpy(pPlainText, pPaddedPlainText, actualPlainTextLen);
   }
@@ -530,50 +530,44 @@ udResult udCryptoCipher_SelfTest(udCryptoCiphers cipher)
   const char *pKey = nullptr;
   static const size_t keyLengths[udCC_Count] = { udCCKL_AES128KeyLength, udCCKL_AES256KeyLength };
   static const char *pPlainText = "There are two great days in every person's life; the day we are born and the day we discover why"; // Multiple of 16 characters
-  static const udCryptoIV iv = { { 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f } };
-  static const uint64_t nonce = 0xf7f6f5f4f3f2f1f0ULL; // Note the nonce is little endian for udCrypto
+  static const udCryptoIV iv = { { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f } };
+  static const uint64_t nonce = 0xf7f6f5f4f3f2f1f0ULL;   // Note the nonce is little endian for udCrypto
   static const uint64_t counter = 0xf8f9fafbfcfdfeffULL; // The counter is big endian, because standards dictate that it is
-  static const uint8_t cipherTextCBC[udCC_Count][96] =
-  {
+  static const uint8_t cipherTextCBC[udCC_Count][96] = {
     // AES128-CBC
     {
-      0xe6,0x57,0x9a,0x39,0x2a,0x37,0xc7,0xed,0x29,0x27,0x25,0xfb,0xff,0xae,0x2d,0x58,
-      0xcd,0xef,0x10,0xc2,0x56,0x95,0xe8,0x22,0xa0,0xc4,0x05,0xd8,0x2c,0x26,0x30,0x83,
-      0xec,0x31,0xca,0x81,0x2a,0xe8,0xde,0x51,0x16,0xce,0xeb,0x48,0x78,0x3e,0x69,0x2c,
-      0x3c,0xa2,0x00,0x7c,0x65,0x64,0x05,0x12,0x13,0xde,0xa9,0x69,0x6c,0x17,0x16,0x1e,
-      0xf7,0xe6,0x62,0x50,0x96,0x87,0x4b,0x6f,0x80,0xb8,0x97,0x22,0x77,0xec,0xfd,0xa7,
-      0x7a,0xaa,0x6a,0x6e,0x3b,0xbf,0xf2,0x1f,0x70,0x19,0x99,0x0b,0x1a,0x32,0xf9,0xa8
-    },
+        0xe6, 0x57, 0x9a, 0x39, 0x2a, 0x37, 0xc7, 0xed, 0x29, 0x27, 0x25, 0xfb, 0xff, 0xae, 0x2d, 0x58,
+        0xcd, 0xef, 0x10, 0xc2, 0x56, 0x95, 0xe8, 0x22, 0xa0, 0xc4, 0x05, 0xd8, 0x2c, 0x26, 0x30, 0x83,
+        0xec, 0x31, 0xca, 0x81, 0x2a, 0xe8, 0xde, 0x51, 0x16, 0xce, 0xeb, 0x48, 0x78, 0x3e, 0x69, 0x2c,
+        0x3c, 0xa2, 0x00, 0x7c, 0x65, 0x64, 0x05, 0x12, 0x13, 0xde, 0xa9, 0x69, 0x6c, 0x17, 0x16, 0x1e,
+        0xf7, 0xe6, 0x62, 0x50, 0x96, 0x87, 0x4b, 0x6f, 0x80, 0xb8, 0x97, 0x22, 0x77, 0xec, 0xfd, 0xa7,
+        0x7a, 0xaa, 0x6a, 0x6e, 0x3b, 0xbf, 0xf2, 0x1f, 0x70, 0x19, 0x99, 0x0b, 0x1a, 0x32, 0xf9, 0xa8 },
     // AES256-CBC
     {
-      0xb8,0x89,0xea,0xb4,0x22,0x19,0x93,0x4e,0x0c,0x4c,0xa3,0xf9,0x86,0x9a,0xe4,0x9e,
-      0x82,0xf7,0x58,0x64,0xcf,0x90,0x14,0x77,0xc1,0xde,0x44,0x49,0xa4,0x4a,0xbd,0x31,
-      0x63,0xd2,0x80,0x26,0x99,0x0a,0xf3,0xca,0xd9,0x92,0x5f,0x18,0x30,0x6e,0x51,0x02,
-      0xc6,0x7c,0x60,0x55,0x5b,0xc4,0x25,0x1b,0xed,0xf8,0x55,0x5c,0x1f,0x8c,0x6a,0xbc,
-      0x5c,0xdc,0x94,0xf7,0x83,0x2d,0x7e,0x1f,0xef,0x31,0xd4,0xb2,0xf1,0xfa,0x1e,0xf1,
-      0x87,0x8d,0xf1,0xe4,0xee,0xde,0x0e,0x8b,0x6e,0xf0,0xe9,0x8a,0x32,0x02,0x0f,0xad
-    }
+        0xb8, 0x89, 0xea, 0xb4, 0x22, 0x19, 0x93, 0x4e, 0x0c, 0x4c, 0xa3, 0xf9, 0x86, 0x9a, 0xe4, 0x9e,
+        0x82, 0xf7, 0x58, 0x64, 0xcf, 0x90, 0x14, 0x77, 0xc1, 0xde, 0x44, 0x49, 0xa4, 0x4a, 0xbd, 0x31,
+        0x63, 0xd2, 0x80, 0x26, 0x99, 0x0a, 0xf3, 0xca, 0xd9, 0x92, 0x5f, 0x18, 0x30, 0x6e, 0x51, 0x02,
+        0xc6, 0x7c, 0x60, 0x55, 0x5b, 0xc4, 0x25, 0x1b, 0xed, 0xf8, 0x55, 0x5c, 0x1f, 0x8c, 0x6a, 0xbc,
+        0x5c, 0xdc, 0x94, 0xf7, 0x83, 0x2d, 0x7e, 0x1f, 0xef, 0x31, 0xd4, 0xb2, 0xf1, 0xfa, 0x1e, 0xf1,
+        0x87, 0x8d, 0xf1, 0xe4, 0xee, 0xde, 0x0e, 0x8b, 0x6e, 0xf0, 0xe9, 0x8a, 0x32, 0x02, 0x0f, 0xad }
   };
-  static const uint8_t cipherTextCTR[udCC_Count][96] =
-  {
+  static const uint8_t cipherTextCTR[udCC_Count][96] = {
     // AES128-CTR
     {
-      0x44,0x90,0x81,0x06,0x60,0xf7,0x81,0x74,0x3c,0x1f,0x63,0x77,0x6b,0x7e,0xe5,0xd5,
-      0x2c,0x73,0x60,0x99,0x4a,0xbe,0xa8,0xc5,0xa2,0xe4,0xb5,0xc7,0x61,0x43,0x6d,0x86,
-      0x6e,0x07,0xa0,0x98,0xfa,0xa9,0x51,0x09,0xf7,0x21,0x78,0x35,0xb6,0x6b,0x7c,0x02,
-      0xac,0x70,0x76,0x82,0xdc,0x39,0x1a,0x49,0x72,0xfb,0x0c,0x40,0x76,0x2d,0xac,0xeb,
-      0xf9,0x27,0x99,0x9a,0x9c,0x9f,0x51,0xa2,0x3e,0x94,0x53,0xb5,0xf9,0x8d,0xa4,0x87,
-      0x0d,0x5d,0x8b,0x67,0xe4,0x81,0xc4,0xed,0x53,0xa1,0x5c,0x92,0x0a,0x46,0xce,0x1d
-    },
+        0x44, 0x90, 0x81, 0x06, 0x60, 0xf7, 0x81, 0x74, 0x3c, 0x1f, 0x63, 0x77, 0x6b, 0x7e, 0xe5, 0xd5,
+        0x2c, 0x73, 0x60, 0x99, 0x4a, 0xbe, 0xa8, 0xc5, 0xa2, 0xe4, 0xb5, 0xc7, 0x61, 0x43, 0x6d, 0x86,
+        0x6e, 0x07, 0xa0, 0x98, 0xfa, 0xa9, 0x51, 0x09, 0xf7, 0x21, 0x78, 0x35, 0xb6, 0x6b, 0x7c, 0x02,
+        0xac, 0x70, 0x76, 0x82, 0xdc, 0x39, 0x1a, 0x49, 0x72, 0xfb, 0x0c, 0x40, 0x76, 0x2d, 0xac, 0xeb,
+        0xf9, 0x27, 0x99, 0x9a, 0x9c, 0x9f, 0x51, 0xa2, 0x3e, 0x94, 0x53, 0xb5, 0xf9, 0x8d, 0xa4, 0x87,
+        0x0d, 0x5d, 0x8b, 0x67, 0xe4, 0x81, 0xc4, 0xed, 0x53, 0xa1, 0x5c, 0x92, 0x0a, 0x46, 0xce, 0x1d },
     // AES256-CTR
     {
-      0x29,0xd6,0xac,0x22,0x6c,0x2d,0xba,0x7f,0x6a,0xd3,0x94,0x45,0x7a,0x24,0xe9,0x17,
-      0x0d,0x4a,0x3d,0xf9,0x5f,0xd9,0xe0,0xd3,0x3a,0x36,0x77,0xb8,0xe2,0x3d,0x84,0xf0,
-      0x8a,0x89,0x7c,0x53,0x7b,0x05,0x80,0xf7,0x6f,0x0c,0xbb,0x52,0x9d,0x14,0xba,0x69,
-      0xa9,0xf4,0xc2,0xd4,0x72,0x96,0x4a,0x04,0x91,0x35,0x5f,0xa0,0xd6,0x6a,0xcd,0x5c,
-      0xf9,0x82,0xb7,0xa4,0x6b,0x02,0xc1,0xbf,0x52,0xb9,0x68,0xe1,0x3f,0xae,0x81,0xac,
-      0x36,0x2e,0xc0,0x0e,0x62,0x04,0xe4,0x0e,0x3b,0x1a,0x5f,0x06,0x7b,0x28,0xa4,0x99
-    }
+        0x29, 0xd6, 0xac, 0x22, 0x6c, 0x2d, 0xba, 0x7f, 0x6a, 0xd3, 0x94, 0x45, 0x7a, 0x24, 0xe9, 0x17,
+        0x0d, 0x4a, 0x3d, 0xf9, 0x5f, 0xd9, 0xe0, 0xd3, 0x3a, 0x36, 0x77, 0xb8, 0xe2, 0x3d, 0x84, 0xf0,
+        0x8a, 0x89, 0x7c, 0x53, 0x7b, 0x05, 0x80, 0xf7, 0x6f, 0x0c, 0xbb, 0x52, 0x9d, 0x14, 0xba, 0x69,
+        0xa9, 0xf4, 0xc2, 0xd4, 0x72, 0x96, 0x4a, 0x04, 0x91, 0x35, 0x5f, 0xa0, 0xd6, 0x6a, 0xcd, 0x5c,
+        0xf9, 0x82, 0xb7, 0xa4, 0x6b, 0x02, 0xc1, 0xbf, 0x52, 0xb9, 0x68, 0xe1, 0x3f, 0xae, 0x81, 0xac,
+        0x36, 0x2e, 0xc0, 0x0e, 0x62, 0x04, 0xe4, 0x0e, 0x3b, 0x1a, 0x5f, 0x06, 0x7b, 0x28, 0xa4, 0x99 }
   };
   udCryptoIV ctrIV;
   uint8_t cipherText[128];
@@ -684,16 +678,16 @@ udResult udCryptoHash_Digest(udCryptoHashContext *pCtx, const void *pBytes, size
   switch (pCtx->hashMethod)
   {
     case udCH_SHA1:
-      mbedtls_sha1_update(&pCtx->sha1, (const uint8_t*)pBytes, length);
+      mbedtls_sha1_update(&pCtx->sha1, (const uint8_t *)pBytes, length);
       break;
     case udCH_SHA256:
-      mbedtls_sha256_update(&pCtx->sha256, (const uint8_t*)pBytes, length);
+      mbedtls_sha256_update(&pCtx->sha256, (const uint8_t *)pBytes, length);
       break;
     case udCH_SHA512:
-      mbedtls_sha512_update(&pCtx->sha512, (const uint8_t*)pBytes, length);
+      mbedtls_sha512_update(&pCtx->sha512, (const uint8_t *)pBytes, length);
       break;
     case udCH_MD5:
-      mbedtls_md5_update(&pCtx->md5, (const uint8_t*)pBytes, length);
+      mbedtls_md5_update(&pCtx->md5, (const uint8_t *)pBytes, length);
       break;
     default:
       return udR_InvalidParameter;
@@ -786,7 +780,10 @@ udResult udCryptoHash_HMAC(udCryptoHashes hash, const char *pKeyBase64, const vo
   uint8_t *pLongKeyData = nullptr;
   const char *pLongKeyHashBase64 = nullptr;
   const char *pIpadHashBase64 = nullptr;
-  enum { blockSize = 64 };
+  enum
+  {
+    blockSize = 64
+  };
   uint8_t key[blockSize];
   uint8_t opad[blockSize];
   uint8_t ipad[blockSize];
@@ -832,19 +829,17 @@ udResult udCryptoHash_SelfTest(udCryptoHashes hash)
 
   static const char *pHmacKeyBase64 = "SmVmZQ=="; // "Jefe"
   static const char testText[] = { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" };
-  static const char *hashResults[] =
-  {
-    "hJg+RBw70m66rkqh+VEp5eVGcPE=", // udCH_SHA1
-    "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE=", // udCH_SHA256
+  static const char *hashResults[] = {
+    "hJg+RBw70m66rkqh+VEp5eVGcPE=",                                                             // udCH_SHA1
+    "JI1qYdIGOLjlwCaTDD5gOaM85Flk/yFn9uzt1BnbBsE=",                                             // udCH_SHA256
     "IEqPxt2oLwoM7XvrjgikFlfBbvRosiioJ5vjMacDwzWW/RXBOxsH+aodO+pXeJygMa2Fx6cd1wNU7GMSOMo0RQ==", // udCH_SHA512
-    "ghXvB5aiC8qq4RbTh2xmSg==" // udCH_MD5
+    "ghXvB5aiC8qq4RbTh2xmSg=="                                                                  // udCH_MD5
   };
-  static const char *hmacResults[] =
-  {
-    "gNSITHDFNAbgpwcaLiE1yXkDv0k=", // udCH_SHA1
-    "3jREzWMffTaJrx7MExnld3wD5ZrpsNXd3QrAWJZkunc=", // udCH_SHA256
+  static const char *hmacResults[] = {
+    "gNSITHDFNAbgpwcaLiE1yXkDv0k=",                                                             // udCH_SHA1
+    "3jREzWMffTaJrx7MExnld3wD5ZrpsNXd3QrAWJZkunc=",                                             // udCH_SHA256
     "GPopoTHOqaFlvz6rC15hyA7z+VfH6v4ok3R2G0ORm5dyctUPGkvxD6Aakbta9JodqZHFKtc4NBIDFvEW+NMkFg==", // udCH_SHA512
-    "5NqJxWSrcHlNi4YwIo5+Qg==" // udCH_MD5
+    "5NqJxWSrcHlNi4YwIo5+Qg=="                                                                  // udCH_MD5
   };
   const char *pResultBase64 = nullptr;
 
@@ -871,11 +866,10 @@ udResult udCrypto_TestHMAC(udCryptoHashes hash)
   const char *pKeyBase64 = "a2V5";
   const char *pMessage = "The quick brown fox jumps over the lazy dog";
   const char *pHMACBase64 = nullptr;
-  static const char *pHMACResults[udCH_Count] =
-  {
-    "3nybhbi3iqa8ino29wqQcBydtNk=", // udCH_SHA1
+  static const char *pHMACResults[udCH_Count] = {
+    "3nybhbi3iqa8ino29wqQcBydtNk=",                 // udCH_SHA1
     "97yD9DBThCSxMpjmqm+xQ+9NWaFJRhdZl0edvC0aPNg=", // udCH_SHA256
-    nullptr // TODO: Include SHA512
+    nullptr                                         // TODO: Include SHA512
   };
 
   UD_ERROR_IF(hash < udCH_SHA1 || hash > udCH_SHA256, udR_InvalidParameter); // TODO: Include SHA512
@@ -903,9 +897,9 @@ udResult udCryptoKey_DeriveFromPassword(const char **ppKey, size_t keyLen, const
 
   UD_ERROR_IF(!pPassword || !ppKey, udR_InvalidParameter);
 
-                                             // Hash the pass phrase
+  // Hash the pass phrase
   UD_ERROR_CHECK(udCryptoHash_Create(&pCtx, udCH_SHA1));
-  UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, "ud1971", 6)); // This is a special "salt" for our KDF to make it unique to UD
+  UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, "ud1971", 6));                  // This is a special "salt" for our KDF to make it unique to UD
   UD_ERROR_CHECK(udCryptoHash_Digest(pCtx, pPassword, strlen(pPassword))); // This is a special "salt" for our KDF to make it unique to UD
   UD_ERROR_CHECK(udCryptoHash_Finalise(pCtx, &pHashBase64));
   UD_ERROR_CHECK(udCryptoHash_Destroy(&pCtx));
@@ -1010,14 +1004,14 @@ udResult udCryptoDHMContext::Init(size_t keyLength)
   mbedtls_ctr_drbg_init(&ctr_drbg);
   mbedtls_entropy_init(&entropy);
 
-  #define MBEDTLS_DHM_RFC5114_MODP_2048_P "AD107E1E9123A9D0D660FAA79559C51FA20D64E5683B9FD1B54B1597B61D0A75E6FA141DF95A56DBAF9A3C407BA1DF15EB3D688A309C180E1DE6B85A1274A0A66D3F8152AD6AC2129037C9EDEFDA4DF8D91E8FEF55B7394B7AD5B7D0B6C12207C9F98D11ED34DBF6C6BA0B2C8BBC27BE6A00E0A0B9C49708B3BF8A317091883681286130BC8985DB1602E714415D9330278273C7DE31EFDC7310F7121FD5A07415987D9ADC0A486DCDF93ACC44328387315D75E198C641A480CD86A1B9E587E8BE60E69CC928B2B9C52172E413042E9B23F10B0E16E79763C9B53DCF4BA80A29E3FB73C16B8E75B97EF363E2FFA31F71CF9DE5384E71B81C0AC4DFFE0C10E64F"
-  #define MBEDTLS_DHM_RFC5114_MODP_2048_G "AC4032EF4F2D9AE39DF30B5C8FFDAC506CDEBE7B89998CAF74866A08CFE4FFE3A6824A4E10B9A6F0DD921F01A70C4AFAAB739D7700C29F52C57DB17C620A8652BE5E9001A8D66AD7C17669101999024AF4D027275AC1348BB8A762D0521BC98AE247150422EA1ED409939D54DA7460CDB5F6C6B250717CBEF180EB34118E98D119529A45D6F834566E3025E316A330EFBB77A86F0C1AB15B051AE3D428C8F8ACB70A8137150B8EEB10E183EDD19963DDD9E263E4770589EF6AA21E7F5F2FF381B539CCE3409D13CD566AFBB48D6C019181E1BCFE94B30269EDFE72FE9B6AA4BD7B5A0F1C71CFFF4C19C418E1F6EC017981BC087F2A7065B384B890D3191F2BFA"
+#define MBEDTLS_DHM_RFC5114_MODP_2048_P "AD107E1E9123A9D0D660FAA79559C51FA20D64E5683B9FD1B54B1597B61D0A75E6FA141DF95A56DBAF9A3C407BA1DF15EB3D688A309C180E1DE6B85A1274A0A66D3F8152AD6AC2129037C9EDEFDA4DF8D91E8FEF55B7394B7AD5B7D0B6C12207C9F98D11ED34DBF6C6BA0B2C8BBC27BE6A00E0A0B9C49708B3BF8A317091883681286130BC8985DB1602E714415D9330278273C7DE31EFDC7310F7121FD5A07415987D9ADC0A486DCDF93ACC44328387315D75E198C641A480CD86A1B9E587E8BE60E69CC928B2B9C52172E413042E9B23F10B0E16E79763C9B53DCF4BA80A29E3FB73C16B8E75B97EF363E2FFA31F71CF9DE5384E71B81C0AC4DFFE0C10E64F"
+#define MBEDTLS_DHM_RFC5114_MODP_2048_G "AC4032EF4F2D9AE39DF30B5C8FFDAC506CDEBE7B89998CAF74866A08CFE4FFE3A6824A4E10B9A6F0DD921F01A70C4AFAAB739D7700C29F52C57DB17C620A8652BE5E9001A8D66AD7C17669101999024AF4D027275AC1348BB8A762D0521BC98AE247150422EA1ED409939D54DA7460CDB5F6C6B250717CBEF180EB34118E98D119529A45D6F834566E3025E316A330EFBB77A86F0C1AB15B051AE3D428C8F8ACB70A8137150B8EEB10E183EDD19963DDD9E263E4770589EF6AA21E7F5F2FF381B539CCE3409D13CD566AFBB48D6C019181E1BCFE94B30269EDFE72FE9B6AA4BD7B5A0F1C71CFFF4C19C418E1F6EC017981BC087F2A7065B384B890D3191F2BFA"
 
   mbedtls_dhm_init(&dhm);
   mbedtls_mpi_read_string(&dhm.P, 16, MBEDTLS_DHM_RFC5114_MODP_2048_P);
   mbedtls_mpi_read_string(&dhm.G, 16, MBEDTLS_DHM_RFC5114_MODP_2048_G);
 
-  mbErr = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__));
+  mbErr = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)__FUNCTION__, sizeof(__FUNCTION__));
   UD_ERROR_IF(mbErr, udR_InternalCryptoError);
 
   // Generate random parameters to suit the P and G already defined, these are output to tempBuf
@@ -1151,14 +1145,12 @@ void udCryptoKey_DestroyDHM(udCryptoDHMContext **ppDHMCtx)
   }
 }
 
-
 struct udCryptoECDHContext
 {
   mbedtls_ecdh_context ecdh;
   mbedtls_ctr_drbg_context ctr_drbg;
   mbedtls_entropy_context entropy;
 };
-
 
 // ***************************************************************************************
 // Author: Paul Fox, October 2021
@@ -1185,7 +1177,7 @@ udResult udCryptoKeyECDH_CreateContextPartyA(udCryptoECDHContext **ppECDHCtx, co
   mbedtls_ecdh_init(&pCtx->ecdh);
   mbedtls_ecdh_setup(&pCtx->ecdh, MBEDTLS_ECP_DP_BP384R1);
 
-  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&pCtx->ctr_drbg, mbedtls_entropy_func, &pCtx->entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&pCtx->ctr_drbg, mbedtls_entropy_func, &pCtx->entropy, (const unsigned char *)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
 
   // Write the public key
   //UD_ERROR_IF(mbedtls_ecdh_make_public(&pCtx->dhm, &len, buf, udLengthOf(buf), mbedtls_ctr_drbg_random, &pCtx->ctr_drbg) != 0, udR_InternalCryptoError);
@@ -1232,12 +1224,12 @@ udResult udCryptoKeyECDH_DeriveFromPartyA(const char *pPublicValueA, const char 
 
   mbedtls_ecdh_init(&pCtx->ecdh);
 
-  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&pCtx->ctr_drbg, mbedtls_entropy_func, &pCtx->entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&pCtx->ctr_drbg, mbedtls_entropy_func, &pCtx->entropy, (const unsigned char *)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
 
   UD_ERROR_CHECK(udBase64Decode(pPublicValueA, udStrlen(pPublicValueA), buf, udLengthOf(buf), &written));
 
   // Read party A's public key
-  UD_ERROR_IF(mbedtls_ecdh_read_params(&pCtx->ecdh, &pBuf, pBuf+written) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ecdh_read_params(&pCtx->ecdh, &pBuf, pBuf + written) != 0, udR_InternalCryptoError);
   memset(buf, 0x00, sizeof(buf));
 
   // Write the public key for Party B
@@ -1319,7 +1311,7 @@ udResult udCryptoSig_CreateKeyPair(udCryptoSigContext **ppSigCtx, udCryptoSigTyp
   pSigCtx->type = type;
 
   // Seed the DRGB and add this function name as an optional personalisation string
-  mbErr = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__));
+  mbErr = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)__FUNCTION__, sizeof(__FUNCTION__));
   UD_ERROR_IF(mbErr, udR_InternalCryptoError);
 
   switch (type)
@@ -1370,7 +1362,7 @@ udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppK
     case udCST_RSA1024:
     case udCST_RSA2048:
     case udCST_RSA4096:
-    v.Set("Type = '%s'", TYPESTRING_RSA);
+      v.Set("Type = '%s'", TYPESTRING_RSA);
       v.Set("Size = %d", pSigCtx->type);
       UD_ERROR_CHECK(ToValue(pSigCtx->rsa.N, &v, "N"));
       UD_ERROR_CHECK(ToValue(pSigCtx->rsa.E, &v, "E"));
@@ -1384,15 +1376,15 @@ udResult udCryptoSig_ExportKeyPair(udCryptoSigContext *pSigCtx, const char **ppK
         UD_ERROR_CHECK(ToValue(pSigCtx->rsa.QP, &v, "QP"));
       }
       break;
-  case udCST_ECPBP384:
-    v.Set("Type = '%s'", TYPESTRING_ECDSA);
-    v.Set("Curve = '%s'", TYPESTRING_CURVE_BP384R1);
-    UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.Q.X, &v, "X"));
-    UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.Q.Y, &v, "Y"));
-    UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.Q.Z, &v, "Z"));
-    if (exportPrivate)
-      UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.d, &v, "D"));
-    break;
+    case udCST_ECPBP384:
+      v.Set("Type = '%s'", TYPESTRING_ECDSA);
+      v.Set("Curve = '%s'", TYPESTRING_CURVE_BP384R1);
+      UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.Q.X, &v, "X"));
+      UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.Q.Y, &v, "Y"));
+      UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.Q.Z, &v, "Z"));
+      if (exportPrivate)
+        UD_ERROR_CHECK(ToValue(pSigCtx->ecdsa.d, &v, "D"));
+      break;
     default:
       UD_ERROR_SET(udR_InvalidConfiguration);
   }
@@ -1496,8 +1488,8 @@ udResult udCryptoSig_ImportMSBlob(udCryptoSigContext **ppSigCtx, void *pBlob, si
     int32_t magic;
     int32_t bitLen;
   };
-  MSBlob *pPriv = (MSBlob*)pBlob;
-  uint8_t *p = (uint8_t*)(pPriv+1);
+  MSBlob *pPriv = (MSBlob *)pBlob;
+  uint8_t *p = (uint8_t *)(pPriv + 1);
 
   udResult result;
   udJSON v;
@@ -1515,17 +1507,17 @@ udResult udCryptoSig_ImportMSBlob(udCryptoSigContext **ppSigCtx, void *pBlob, si
   mbedtls_rsa_init(&pSigCtx->rsa);
   pSigCtx->rsa.len = pSigCtx->type / 8; // Size of the key
 
-  UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.E,  p, blobLen, 4));
-  UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.N,  p, blobLen, pPriv->bitLen / 8));
+  UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.E, p, blobLen, 4));
+  UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.N, p, blobLen, pPriv->bitLen / 8));
   UD_ERROR_IF(mbedtls_rsa_check_pubkey(&pSigCtx->rsa) != 0, udR_InternalCryptoError);
   if (pPriv->type == 7)
   {
-    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.P,  p, blobLen, pPriv->bitLen / 16));
-    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.Q,  p, blobLen, pPriv->bitLen / 16));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.P, p, blobLen, pPriv->bitLen / 16));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.Q, p, blobLen, pPriv->bitLen / 16));
     UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.DP, p, blobLen, pPriv->bitLen / 16));
     UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.DQ, p, blobLen, pPriv->bitLen / 16));
     UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.QP, p, blobLen, pPriv->bitLen / 16)); // Iq == inv(q % p)
-    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.D,  p, blobLen, pPriv->bitLen / 8));
+    UD_ERROR_CHECK(FromLittleEndianBinary(&pSigCtx->rsa.D, p, blobLen, pPriv->bitLen / 8));
     UD_ERROR_IF(mbedtls_rsa_check_privkey(&pSigCtx->rsa) != 0, udR_InternalCryptoError);
   }
 
@@ -1543,7 +1535,7 @@ epilogue:
 udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, const char **ppSignatureBase64, udCryptoHashes hashMethod, udCryptoSigPadScheme pad)
 {
   udResult result = udR_Failure;
-  unsigned char signature[udCST_RSA4096/8];
+  unsigned char signature[udCST_RSA4096 / 8];
   unsigned char hash[udCHL_MaxHashLength];
   size_t hashLen;
   size_t sigLen = sizeof(signature);
@@ -1561,7 +1553,7 @@ udResult udCryptoSig_Sign(udCryptoSigContext *pSigCtx, const char *pHashBase64, 
   mbedtls_entropy_init(&entropy);
 
   // Seed the random number generator
-  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char*)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
+  UD_ERROR_IF(mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)__FUNCTION__, sizeof(__FUNCTION__)) != 0, udR_InternalCryptoError);
 
   UD_ERROR_CHECK(udBase64Decode(pHashBase64, 0, hash, sizeof(hash), &hashLen));
 
@@ -1662,4 +1654,3 @@ void udCryptoSig_Destroy(udCryptoSigContext **ppSigCtx)
     }
   }
 }
-

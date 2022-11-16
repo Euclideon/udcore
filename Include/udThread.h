@@ -8,8 +8,8 @@
 // Very simple thread/synchronisation API wrapping the various platform implementations
 //
 
-#include "udPlatform.h"
 #include "udCallback.h"
+#include "udPlatform.h"
 
 // Minimalist MOST BASIC cross-platform thread support
 struct udSemaphore;
@@ -17,8 +17,18 @@ struct udConditionVariable;
 struct udRWLock;
 struct udMutex;
 struct udThread;
-enum udThreadPriority { udTP_Lowest, udTP_Low, udTP_Normal, udTP_High, udTP_Highest };
-enum udThreadCreateFlags { udTCF_None }; // For future expansion
+enum udThreadPriority
+{
+  udTP_Lowest,
+  udTP_Low,
+  udTP_Normal,
+  udTP_High,
+  udTP_Highest
+};
+enum udThreadCreateFlags
+{
+  udTCF_None
+}; // For future expansion
 #define UDTHREAD_WAIT_INFINITE -1
 
 using udThreadStart = udCallback<uint32_t(void *)>;
@@ -50,7 +60,7 @@ int udWaitConditionVariable(udConditionVariable *pConditionVariable, udMutex *pM
 
 udRWLock *udCreateRWLock();
 void udDestroyRWLock(udRWLock **ppRWLock);
-int udReadLockRWLock(udRWLock *pRWLock); // Returns zero on success
+int udReadLockRWLock(udRWLock *pRWLock);  // Returns zero on success
 int udWriteLockRWLock(udRWLock *pRWLock); // Returns zero on success
 void udReadUnlockRWLock(udRWLock *pRWLock);
 void udWriteUnlockRWLock(udRWLock *pRWLock);
@@ -64,8 +74,13 @@ void udReleaseMutex(udMutex *pMutex);
 class udScopeLock
 {
 public:
-  udScopeLock(udMutex *mutex) { m_mutex = mutex; udLockMutex(m_mutex); }
+  udScopeLock(udMutex *mutex)
+  {
+    m_mutex = mutex;
+    udLockMutex(m_mutex);
+  }
   ~udScopeLock() { udReleaseMutex(m_mutex); }
+
 protected:
   udMutex *m_mutex;
 };

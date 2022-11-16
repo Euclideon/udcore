@@ -47,14 +47,14 @@ enum udCryptoCipherKeyLength
 enum udCryptoPaddingMode
 {
   udCPM_None,
-  udCPM_PKCS7,      // PKCS5 is identical but was only defined for 8-byte block ciphers
+  udCPM_PKCS7, // PKCS5 is identical but was only defined for 8-byte block ciphers
 };
 
 enum udCryptoChainMode
 {
-  udCCM_None,   // Sentinal meaning no chaining mode has been set yet
-  udCCM_CBC,    // Sequential access, requires IV unique to each call to encrypt
-  udCCM_CTR,    // Random access, requires a nonce unique to file
+  udCCM_None, // Sentinal meaning no chaining mode has been set yet
+  udCCM_CBC,  // Sequential access, requires IV unique to each call to encrypt
+  udCCM_CTR,  // Random access, requires a nonce unique to file
 };
 
 struct udCryptoCipherContext;
@@ -79,7 +79,6 @@ udResult udCryptoCipher_Destroy(udCryptoCipherContext **ppCtx);
 // Internal self-test
 udResult udCryptoCipher_SelfTest(udCryptoCiphers cipher);
 
-
 // **** Hash algorithms ****
 
 enum udCryptoHashes
@@ -100,7 +99,6 @@ enum udCryptoHashLength
 
   udCHL_MaxHashLength = udCHL_SHA512Length
 };
-
 
 struct udCryptoHashContext;
 
@@ -124,7 +122,6 @@ udResult udCryptoHash_HMAC(udCryptoHashes hash, const char *pKeyBase64, const vo
 
 // Internal self-test
 udResult udCryptoHash_SelfTest(udCryptoHashes hash);
-
 
 // **** Key derivation/exchange functions, generated keys are encoded into a string ****
 
@@ -180,7 +177,7 @@ enum udCryptoSigType
 
 enum udCryptoSigPadScheme
 {
-  udCSPS_Deterministic   // A deterministic signature that doesn't require entropy. For RSA PKCS #1.5
+  udCSPS_Deterministic // A deterministic signature that doesn't require entropy. For RSA PKCS #1.5
 };
 
 // Generate a random key-pair

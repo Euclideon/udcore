@@ -5,19 +5,24 @@ T udHighestBitValue(T i)
   while (i)
   {
     result = (i & (~i + 1)); // grab lowest bit
-    i &= ~result; // clear lowest bit
+    i &= ~result;            // clear lowest bit
   }
   return result;
 }
 
-template <typename T> bool udIsPowerOfTwo(T i) {
+template <typename T>
+bool udIsPowerOfTwo(T i)
+{
   return !(i & (i - 1));
 }
-template <typename T> T udPowerOfTwoAbove(T v) {
+template <typename T>
+T udPowerOfTwoAbove(T v)
+{
   return udIsPowerOfTwo(v) ? v : udHighestBitValue(v) << 1;
 }
 
-template <typename T> T udRoundEven(T t)
+template <typename T>
+T udRoundEven(T t)
 {
   int integer = (int)t;
   T integerPart = (integer < 0 ? udCeil(t) : udFloor(t));
@@ -45,15 +50,24 @@ UDFORCE_INLINE float udLog(float f, float base) { return udLogN(f) / udLogN(base
 UDFORCE_INLINE double udLog(double f, double base) { return udLogN(f) / udLogN(base); }
 
 #if defined(_MSC_VER) && _MSC_VER >= 1800
-UDFORCE_INLINE float udLog2(float f) { return log2f(f); }
+UDFORCE_INLINE float udLog2(float f)
+{
+  return log2f(f);
+}
 UDFORCE_INLINE double udLog2(double d) { return log2(d); }
 #else
-UDFORCE_INLINE float udLog2(float f) { return udLog(f, 2.f); }
+UDFORCE_INLINE float udLog2(float f)
+{
+  return udLog(f, 2.f);
+}
 UDFORCE_INLINE double udLog2(double d) { return udLog(d, 2.0); }
 #endif
 
-UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
-UDFORCE_INLINE double udRSqrt(double d) { return 1.0/sqrt(d); }
+UDFORCE_INLINE float udRSqrt(float f)
+{
+  return 1.f / sqrtf(f);
+}
+UDFORCE_INLINE double udRSqrt(double d) { return 1.0 / sqrt(d); }
 UDFORCE_INLINE float udSqrt(float f) { return sqrtf(f); }
 UDFORCE_INLINE double udSqrt(double d) { return sqrt(d); }
 UDFORCE_INLINE float udSin(float f) { return sinf(f); }
@@ -85,123 +99,305 @@ UDFORCE_INLINE double udATanh(double d) { return atanh(d); }
 
 UDFORCE_INLINE float udRound(float f) { return f >= 0.0f ? floorf(f + 0.5f) : ceilf(f - 0.5f); }
 UDFORCE_INLINE double udRound(double d) { return d >= 0.0 ? floor(d + 0.5) : ceil(d - 0.5); }
-template <typename T> udVector2<T> udRound(const udVector2<T> &v)       { return v.create(udRound(v.x), udRound(v.y)); }
-template <typename T> udVector3<T> udRound(const udVector3<T> &v)       { return v.create(udRound(v.x), udRound(v.y), udRound(v.z)); }
-template <typename T> udVector4<T> udRound(const udVector4<T> &v)       { return v.create(udRound(v.x), udRound(v.y), udRound(v.z), udRound(v.w)); }
+template <typename T>
+udVector2<T> udRound(const udVector2<T> &v) { return v.create(udRound(v.x), udRound(v.y)); }
+template <typename T>
+udVector3<T> udRound(const udVector3<T> &v) { return v.create(udRound(v.x), udRound(v.y), udRound(v.z)); }
+template <typename T>
+udVector4<T> udRound(const udVector4<T> &v) { return v.create(udRound(v.x), udRound(v.y), udRound(v.z), udRound(v.w)); }
 
 UDFORCE_INLINE float udFloor(float f) { return floorf(f); }
 UDFORCE_INLINE double udFloor(double d) { return floor(d); }
-template <typename T> udVector2<T> udFloor(const udVector2<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y)); }
-template <typename T> udVector3<T> udFloor(const udVector3<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z)); }
-template <typename T> udVector4<T> udFloor(const udVector4<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z), udFloor(v.w)); }
+template <typename T>
+udVector2<T> udFloor(const udVector2<T> &v) { return v.create(udFloor(v.x), udFloor(v.y)); }
+template <typename T>
+udVector3<T> udFloor(const udVector3<T> &v) { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z)); }
+template <typename T>
+udVector4<T> udFloor(const udVector4<T> &v) { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z), udFloor(v.w)); }
 
 UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
 UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
-template <typename T> udVector2<T> udCeil(const udVector2<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y)); }
-template <typename T> udVector3<T> udCeil(const udVector3<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z)); }
-template <typename T> udVector4<T> udCeil(const udVector4<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z), udCeil(v.w)); }
+template <typename T>
+udVector2<T> udCeil(const udVector2<T> &v) { return v.create(udCeil(v.x), udCeil(v.y)); }
+template <typename T>
+udVector3<T> udCeil(const udVector3<T> &v) { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z)); }
+template <typename T>
+udVector4<T> udCeil(const udVector4<T> &v) { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z), udCeil(v.w)); }
 
 UDFORCE_INLINE float udMod(float f, float den) { return fmodf(f, den); }
 UDFORCE_INLINE double udMod(double d, double den) { return fmod(d, den); }
-template <typename T> udVector2<T> udMod(const udVector2<T> &v)       { return v.create(udMod(v.x), udMod(v.y)); }
-template <typename T> udVector3<T> udMod(const udVector3<T> &v)       { return v.create(udMod(v.x), udMod(v.y), udMod(v.z)); }
-template <typename T> udVector4<T> udMod(const udVector4<T> &v)       { return v.create(udMod(v.x), udMod(v.y), udMod(v.z), udMod(v.w)); }
+template <typename T>
+udVector2<T> udMod(const udVector2<T> &v) { return v.create(udMod(v.x), udMod(v.y)); }
+template <typename T>
+udVector3<T> udMod(const udVector3<T> &v) { return v.create(udMod(v.x), udMod(v.y), udMod(v.z)); }
+template <typename T>
+udVector4<T> udMod(const udVector4<T> &v) { return v.create(udMod(v.x), udMod(v.y), udMod(v.z), udMod(v.w)); }
 
-template <typename T> T            udAbs(T v) { return v < T(0) ? -v : v; }
-template <typename T> udVector2<T> udAbs(const udVector2<T> &v) { udVector2<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y }; return r; }
-template <typename T> udVector3<T> udAbs(const udVector3<T> &v) { udVector3<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y, v.z<T(0)?-v.z:v.z }; return r; }
-template <typename T> udVector4<T> udAbs(const udVector4<T> &v) { udVector4<T> r = { v.x<T(0)?-v.x:v.x, v.y<T(0)?-v.y:v.y, v.z<T(0)?-v.z:v.z, v.w<T(0)?-v.w:v.w }; return r; }
-template <typename T> udQuaternion<T> udAbs(const udQuaternion<T> &q) { udQuaternion<T> r = { q.x<T(0) ? -q.x : q.x, q.y<T(0) ? -q.y : q.y, q.z<T(0) ? -q.z : q.z, q.w<T(0) ? -q.w : q.w }; return r; }
+template <typename T>
+T udAbs(T v) { return v < T(0) ? -v : v; }
+template <typename T>
+udVector2<T> udAbs(const udVector2<T> &v)
+{
+  udVector2<T> r = { v.x < T(0) ? -v.x : v.x, v.y < T(0) ? -v.y : v.y };
+  return r;
+}
+template <typename T>
+udVector3<T> udAbs(const udVector3<T> &v)
+{
+  udVector3<T> r = { v.x < T(0) ? -v.x : v.x, v.y < T(0) ? -v.y : v.y, v.z < T(0) ? -v.z : v.z };
+  return r;
+}
+template <typename T>
+udVector4<T> udAbs(const udVector4<T> &v)
+{
+  udVector4<T> r = { v.x < T(0) ? -v.x : v.x, v.y < T(0) ? -v.y : v.y, v.z < T(0) ? -v.z : v.z, v.w < T(0) ? -v.w : v.w };
+  return r;
+}
+template <typename T>
+udQuaternion<T> udAbs(const udQuaternion<T> &q)
+{
+  udQuaternion<T> r = { q.x < T(0) ? -q.x : q.x, q.y < T(0) ? -q.y : q.y, q.z < T(0) ? -q.z : q.z, q.w < T(0) ? -q.w : q.w };
+  return r;
+}
 
-template <typename T> udVector2<T> udMin(const udVector2<T> &v1, const udVector2<T> &v2) { udVector2<T> r = { v1.x<v2.x?v1.x:v2.x, v1.y<v2.y?v1.y:v2.y }; return r; }
-template <typename T> udVector3<T> udMin(const udVector3<T> &v1, const udVector3<T> &v2) { udVector3<T> r = { v1.x<v2.x?v1.x:v2.x, v1.y<v2.y?v1.y:v2.y, v1.z<v2.z?v1.z:v2.z }; return r; }
-template <typename T> udVector4<T> udMin(const udVector4<T> &v1, const udVector4<T> &v2) { udVector4<T> r = { v1.x<v2.x?v1.x:v2.x, v1.y<v2.y?v1.y:v2.y, v1.z<v2.z?v1.z:v2.z, v1.w<v2.w?v1.w:v2.w }; return r; }
-template <typename T> T            udMinElement(const udVector2<T> &v) { return udMin(v.x, v.y); }
-template <typename T> T            udMinElement(const udVector3<T> &v) { return udMin(udMin(v.x, v.y), v.z); }
-template <typename T> T            udMinElement(const udVector4<T> &v) { return udMin(udMin(v.x, v.y), udMin(v.z, v.w)); }
-template <typename T> udVector2<T> udMax(const udVector2<T> &v1, const udVector2<T> &v2) { udVector2<T> r = { v1.x>v2.x?v1.x:v2.x, v1.y>v2.y?v1.y:v2.y }; return r; }
-template <typename T> udVector3<T> udMax(const udVector3<T> &v1, const udVector3<T> &v2) { udVector3<T> r = { v1.x>v2.x?v1.x:v2.x, v1.y>v2.y?v1.y:v2.y, v1.z>v2.z?v1.z:v2.z }; return r; }
-template <typename T> udVector4<T> udMax(const udVector4<T> &v1, const udVector4<T> &v2) { udVector4<T> r = { v1.x>v2.x?v1.x:v2.x, v1.y>v2.y?v1.y:v2.y, v1.z>v2.z?v1.z:v2.z, v1.w>v2.w?v1.w:v2.w }; return r; }
-template <typename T> T            udMaxElement(const udVector2<T> &v) { return udMax(v.x, v.y); }
-template <typename T> T            udMaxElement(const udVector3<T> &v) { return udMax(udMax(v.x, v.y), v.z); }
-template <typename T> T            udMaxElement(const udVector4<T> &v) { return udMax(udMax(v.x, v.y), udMax(v.z, v.w)); }
-template <typename T> T            udClamp(T v, T _min, T _max) { return v<_min?_min:(v>_max?_max:v); }
-template <typename T> udVector2<T> udClamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max) { udVector2<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y) }; return r; }
-template <typename T> udVector3<T> udClamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max) { udVector3<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y), v.z<_min.z?_min.z:(v.z>_max.z?_max.z:v.z) }; return r; }
-template <typename T> udVector4<T> udClamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max) { udVector4<T> r = { v.x<_min.x?_min.x:(v.x>_max.x?_max.x:v.x), v.y<_min.y?_min.y:(v.y>_max.y?_max.y:v.y), v.z<_min.z?_min.z:(v.z>_max.z?_max.z:v.z), v.w<_min.w?_min.w:(v.w>_max.w?_max.w:v.w) }; return r; }
+template <typename T>
+udVector2<T> udMin(const udVector2<T> &v1, const udVector2<T> &v2)
+{
+  udVector2<T> r = { v1.x < v2.x ? v1.x : v2.x, v1.y < v2.y ? v1.y : v2.y };
+  return r;
+}
+template <typename T>
+udVector3<T> udMin(const udVector3<T> &v1, const udVector3<T> &v2)
+{
+  udVector3<T> r = { v1.x < v2.x ? v1.x : v2.x, v1.y < v2.y ? v1.y : v2.y, v1.z < v2.z ? v1.z : v2.z };
+  return r;
+}
+template <typename T>
+udVector4<T> udMin(const udVector4<T> &v1, const udVector4<T> &v2)
+{
+  udVector4<T> r = { v1.x < v2.x ? v1.x : v2.x, v1.y < v2.y ? v1.y : v2.y, v1.z < v2.z ? v1.z : v2.z, v1.w < v2.w ? v1.w : v2.w };
+  return r;
+}
+template <typename T>
+T udMinElement(const udVector2<T> &v) { return udMin(v.x, v.y); }
+template <typename T>
+T udMinElement(const udVector3<T> &v) { return udMin(udMin(v.x, v.y), v.z); }
+template <typename T>
+T udMinElement(const udVector4<T> &v) { return udMin(udMin(v.x, v.y), udMin(v.z, v.w)); }
+template <typename T>
+udVector2<T> udMax(const udVector2<T> &v1, const udVector2<T> &v2)
+{
+  udVector2<T> r = { v1.x > v2.x ? v1.x : v2.x, v1.y > v2.y ? v1.y : v2.y };
+  return r;
+}
+template <typename T>
+udVector3<T> udMax(const udVector3<T> &v1, const udVector3<T> &v2)
+{
+  udVector3<T> r = { v1.x > v2.x ? v1.x : v2.x, v1.y > v2.y ? v1.y : v2.y, v1.z > v2.z ? v1.z : v2.z };
+  return r;
+}
+template <typename T>
+udVector4<T> udMax(const udVector4<T> &v1, const udVector4<T> &v2)
+{
+  udVector4<T> r = { v1.x > v2.x ? v1.x : v2.x, v1.y > v2.y ? v1.y : v2.y, v1.z > v2.z ? v1.z : v2.z, v1.w > v2.w ? v1.w : v2.w };
+  return r;
+}
+template <typename T>
+T udMaxElement(const udVector2<T> &v) { return udMax(v.x, v.y); }
+template <typename T>
+T udMaxElement(const udVector3<T> &v) { return udMax(udMax(v.x, v.y), v.z); }
+template <typename T>
+T udMaxElement(const udVector4<T> &v) { return udMax(udMax(v.x, v.y), udMax(v.z, v.w)); }
+template <typename T>
+T udClamp(T v, T _min, T _max) { return v < _min ? _min : (v > _max ? _max : v); }
+template <typename T>
+udVector2<T> udClamp(const udVector2<T> &v, const udVector2<T> &_min, const udVector2<T> &_max)
+{
+  udVector2<T> r = { v.x < _min.x ? _min.x : (v.x > _max.x ? _max.x : v.x), v.y < _min.y ? _min.y : (v.y > _max.y ? _max.y : v.y) };
+  return r;
+}
+template <typename T>
+udVector3<T> udClamp(const udVector3<T> &v, const udVector3<T> &_min, const udVector3<T> &_max)
+{
+  udVector3<T> r = { v.x < _min.x ? _min.x : (v.x > _max.x ? _max.x : v.x), v.y < _min.y ? _min.y : (v.y > _max.y ? _max.y : v.y), v.z < _min.z ? _min.z : (v.z > _max.z ? _max.z : v.z) };
+  return r;
+}
+template <typename T>
+udVector4<T> udClamp(const udVector4<T> &v, const udVector4<T> &_min, const udVector4<T> &_max)
+{
+  udVector4<T> r = { v.x < _min.x ? _min.x : (v.x > _max.x ? _max.x : v.x), v.y < _min.y ? _min.y : (v.y > _max.y ? _max.y : v.y), v.z < _min.z ? _min.z : (v.z > _max.z ? _max.z : v.z), v.w < _min.w ? _min.w : (v.w > _max.w ? _max.w : v.w) };
+  return r;
+}
 
-template <typename T> T            udSaturate(const T &v) { return udClamp(v, (T)0, (T)1); }
-template <typename T> udVector2<T> udSaturate(const udVector2<T> &v) { return udClamp(v, udVector2<T>::zero(), udVector2<T>::one()); }
-template <typename T> udVector3<T> udSaturate(const udVector3<T> &v) { return udClamp(v, udVector3<T>::zero(), udVector3<T>::one()); }
-template <typename T> udVector4<T> udSaturate(const udVector4<T> &v) { return udClamp(v, udVector4<T>::zero(), udVector4<T>::one()); }
+template <typename T>
+T udSaturate(const T &v) { return udClamp(v, (T)0, (T)1); }
+template <typename T>
+udVector2<T> udSaturate(const udVector2<T> &v) { return udClamp(v, udVector2<T>::zero(), udVector2<T>::one()); }
+template <typename T>
+udVector3<T> udSaturate(const udVector3<T> &v) { return udClamp(v, udVector3<T>::zero(), udVector3<T>::one()); }
+template <typename T>
+udVector4<T> udSaturate(const udVector4<T> &v) { return udClamp(v, udVector4<T>::zero(), udVector4<T>::one()); }
 
-template <typename V, typename T> bool udIsUnitLength(const V &v, T epsilon) { return udAbs(typename V::ElementType(1) - udMag(v)) < typename V::ElementType(epsilon); }
+template <typename V, typename T>
+bool udIsUnitLength(const V &v, T epsilon) { return udAbs(typename V::ElementType(1) - udMag(v)) < typename V::ElementType(epsilon); }
 
-template <typename T> UDFORCE_INLINE T udDot(const udVector2<T> &v1, const udVector2<T> &v2) { return udDot2(v1, v2); }
-template <typename T> UDFORCE_INLINE T udDot(const udVector3<T> &v1, const udVector3<T> &v2) { return udDot3(v1, v2); }
-template <typename T> UDFORCE_INLINE T udDot(const udVector4<T> &v1, const udVector4<T> &v2) { return udDot4(v1, v2); }
-template <typename T> UDFORCE_INLINE T udDot(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return udDotQ(q1, q2); }
+template <typename T>
+UDFORCE_INLINE T udDot(const udVector2<T> &v1, const udVector2<T> &v2) { return udDot2(v1, v2); }
+template <typename T>
+UDFORCE_INLINE T udDot(const udVector3<T> &v1, const udVector3<T> &v2) { return udDot3(v1, v2); }
+template <typename T>
+UDFORCE_INLINE T udDot(const udVector4<T> &v1, const udVector4<T> &v2) { return udDot4(v1, v2); }
+template <typename T>
+UDFORCE_INLINE T udDot(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return udDotQ(q1, q2); }
 
-template <typename T> T udDot2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
-template <typename T> T udDot2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
-template <typename T> T udDot2(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
-template <typename T> T udDot3(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z; }
-template <typename T> T udDot3(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z; }
-template <typename T> T udDot4(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z + v1.w*v2.w; }
-template <typename T> T udDoth(const udVector3<T> &v3, const udVector4<T> &v4) { return v3.x*v4.x + v3.y*v4.y + v3.z*v4.z + v4.w; }
-template <typename T> T udDotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return q1.x*q2.x + q1.y*q2.y + q1.z*q2.z + q1.w*q2.w; }
+template <typename T>
+T udDot2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x * v2.x + v1.y * v2.y; }
+template <typename T>
+T udDot2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x * v2.x + v1.y * v2.y; }
+template <typename T>
+T udDot2(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x * v2.x + v1.y * v2.y; }
+template <typename T>
+T udDot3(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+template <typename T>
+T udDot3(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+template <typename T>
+T udDot4(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w; }
+template <typename T>
+T udDoth(const udVector3<T> &v3, const udVector4<T> &v4) { return v3.x * v4.x + v3.y * v4.y + v3.z * v4.z + v4.w; }
+template <typename T>
+T udDotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w; }
 
+template <typename T>
+T UDFORCE_INLINE udMagSq(const udVector2<T> &v) { return udMagSq2(v); }
+template <typename T>
+T UDFORCE_INLINE udMagSq(const udVector3<T> &v) { return udMagSq3(v); }
+template <typename T>
+T UDFORCE_INLINE udMagSq(const udVector4<T> &v) { return udMagSq4(v); }
+template <typename T>
+T UDFORCE_INLINE udMagSq(const udQuaternion<T> &q) { return udMagSqQ(q); }
 
-template <typename T> T UDFORCE_INLINE udMagSq(const udVector2<T> &v) { return udMagSq2(v); }
-template <typename T> T UDFORCE_INLINE udMagSq(const udVector3<T> &v) { return udMagSq3(v); }
-template <typename T> T UDFORCE_INLINE udMagSq(const udVector4<T> &v) { return udMagSq4(v); }
-template <typename T> T UDFORCE_INLINE udMagSq(const udQuaternion<T> &q) { return udMagSqQ(q); }
+template <typename T>
+T udMagSq2(const udVector2<T> &v) { return v.x * v.x + v.y * v.y; }
+template <typename T>
+T udMagSq2(const udVector3<T> &v) { return v.x * v.x + v.y * v.y; }
+template <typename T>
+T udMagSq2(const udVector4<T> &v) { return v.x * v.x + v.y * v.y; }
+template <typename T>
+T udMagSq3(const udVector3<T> &v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
+template <typename T>
+T udMagSq3(const udVector4<T> &v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
+template <typename T>
+T udMagSq4(const udVector4<T> &v) { return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w; }
+template <typename T>
+T udMagSqQ(const udQuaternion<T> &q) { return q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w; }
 
-template <typename T> T udMagSq2(const udVector2<T> &v) { return v.x*v.x + v.y*v.y; }
-template <typename T> T udMagSq2(const udVector3<T> &v) { return v.x*v.x + v.y*v.y; }
-template <typename T> T udMagSq2(const udVector4<T> &v) { return v.x*v.x + v.y*v.y; }
-template <typename T> T udMagSq3(const udVector3<T> &v) { return v.x*v.x + v.y*v.y + v.z*v.z; }
-template <typename T> T udMagSq3(const udVector4<T> &v) { return v.x*v.x + v.y*v.y + v.z*v.z; }
-template <typename T> T udMagSq4(const udVector4<T> &v) { return v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w; }
-template <typename T> T udMagSqQ(const udQuaternion<T> &q) { return q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w; }
+template <typename T>
+T UDFORCE_INLINE udMag(const udVector2<T> &v) { return udMag2(v); }
+template <typename T>
+T UDFORCE_INLINE udMag(const udVector3<T> &v) { return udMag3(v); }
+template <typename T>
+T UDFORCE_INLINE udMag(const udVector4<T> &v) { return udMag4(v); }
+template <typename T>
+T UDFORCE_INLINE udMag(const udQuaternion<T> &v) { return udMagQ(v); }
 
+template <typename T>
+T udMag2(const udVector2<T> &v) { return udSqrt(v.x * v.x + v.y * v.y); }
+template <typename T>
+T udMag2(const udVector3<T> &v) { return udSqrt(v.x * v.x + v.y * v.y); }
+template <typename T>
+T udMag2(const udVector4<T> &v) { return udSqrt(v.x * v.x + v.y * v.y); }
+template <typename T>
+T udMag3(const udVector3<T> &v) { return udSqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
+template <typename T>
+T udMag3(const udVector4<T> &v) { return udSqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
+template <typename T>
+T udMag4(const udVector4<T> &v) { return udSqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w); }
+template <typename T>
+T udMagQ(const udQuaternion<T> &q) { return udSqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w); }
 
-template <typename T> T UDFORCE_INLINE udMag(const udVector2<T> &v) { return udMag2(v); }
-template <typename T> T UDFORCE_INLINE udMag(const udVector3<T> &v) { return udMag3(v); }
-template <typename T> T UDFORCE_INLINE udMag(const udVector4<T> &v) { return udMag4(v); }
-template <typename T> T UDFORCE_INLINE udMag(const udQuaternion<T> &v) { return udMagQ(v); }
+template <typename T>
+UDFORCE_INLINE T udCross(const udVector2<T> &v1, const udVector2<T> &v2) { return udCross2(v1, v2); }
+template <typename T>
+UDFORCE_INLINE udVector3<T> udCross(const udVector3<T> &v1, const udVector3<T> &v2) { return udCross3(v1, v2); }
 
-template <typename T> T udMag2(const udVector2<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
-template <typename T> T udMag2(const udVector3<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
-template <typename T> T udMag2(const udVector4<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
-template <typename T> T udMag3(const udVector3<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
-template <typename T> T udMag3(const udVector4<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
-template <typename T> T udMag4(const udVector4<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); }
-template <typename T> T udMagQ(const udQuaternion<T> &q) { return udSqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w); }
+template <typename T>
+T udCross2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x * v2.y - v1.y * v2.x; }
+template <typename T>
+T udCross2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x * v2.y - v1.y * v2.x; }
+template <typename T>
+T udCross2(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x * v2.y - v1.y * v2.x; }
 
-template <typename T> UDFORCE_INLINE T udCross(const udVector2<T> &v1, const udVector2<T> &v2) { return udCross2(v1, v2); }
-template <typename T> UDFORCE_INLINE udVector3<T> udCross(const udVector3<T> &v1, const udVector3<T> &v2) { return udCross3(v1, v2); }
+template <typename T>
+udVector3<T> udCross3(const udVector3<T> &v1, const udVector3<T> &v2)
+{
+  udVector3<T> r = { v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x };
+  return r;
+}
+template <typename T>
+udVector3<T> udCross3(const udVector4<T> &v1, const udVector4<T> &v2)
+{
+  udVector3<T> r = { v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x };
+  return r;
+}
 
-template <typename T> T udCross2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
-template <typename T> T udCross2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
-template <typename T> T udCross2(const udVector4<T> &v1, const udVector4<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
+template <typename T>
+UDFORCE_INLINE udVector2<T> udNormalize(const udVector2<T> &v) { return udNormalize2(v); }
+template <typename T>
+UDFORCE_INLINE udVector3<T> udNormalize(const udVector3<T> &v) { return udNormalize3(v); }
+template <typename T>
+UDFORCE_INLINE udVector4<T> udNormalize(const udVector4<T> &v) { return udNormalize4(v); }
+template <typename T>
+UDFORCE_INLINE udQuaternion<T> udNormalize(const udQuaternion<T> &q) { return udNormalizeQ(q); }
 
-template <typename T> udVector3<T> udCross3(const udVector3<T> &v1, const udVector3<T> &v2) { udVector3<T> r = { v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x }; return r; }
-template <typename T> udVector3<T> udCross3(const udVector4<T> &v1, const udVector4<T> &v2) { udVector3<T> r = { v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x }; return r; }
-
-
-template <typename T> UDFORCE_INLINE udVector2<T> udNormalize(const udVector2<T> &v) { return udNormalize2(v); }
-template <typename T> UDFORCE_INLINE udVector3<T> udNormalize(const udVector3<T> &v) { return udNormalize3(v); }
-template <typename T> UDFORCE_INLINE udVector4<T> udNormalize(const udVector4<T> &v) { return udNormalize4(v); }
-template <typename T> UDFORCE_INLINE udQuaternion<T> udNormalize(const udQuaternion<T> &q) { return udNormalizeQ(q); }
-
-template <typename T> udVector2<T> udNormalize2(const udVector2<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector2<T> r = { v.x*s, v.y*s }; return r; }
-template <typename T> udVector3<T> udNormalize2(const udVector3<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector3<T> r = { v.x*s, v.y*s, v.z }; return r; }
-template <typename T> udVector4<T> udNormalize2(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector4<T> r = { v.x*s, v.y*s, v.z, v.w }; return r; }
-template <typename T> udVector3<T> udNormalize3(const udVector3<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z); udVector3<T> r = { v.x*s, v.y*s, v.z*s }; return r; }
-template <typename T> udVector4<T> udNormalize3(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z); udVector4<T> r = { v.x*s, v.y*s, v.z*s, v.w }; return r; }
-template <typename T> udVector4<T> udNormalize4(const udVector4<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udVector4<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
-template <typename T> udQuaternion<T> udNormalizeQ(const udQuaternion<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); udQuaternion<T> r = { v.x*s, v.y*s, v.z*s, v.w*s }; return r; }
+template <typename T>
+udVector2<T> udNormalize2(const udVector2<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y);
+  udVector2<T> r = { v.x * s, v.y * s };
+  return r;
+}
+template <typename T>
+udVector3<T> udNormalize2(const udVector3<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y);
+  udVector3<T> r = { v.x * s, v.y * s, v.z };
+  return r;
+}
+template <typename T>
+udVector4<T> udNormalize2(const udVector4<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y);
+  udVector4<T> r = { v.x * s, v.y * s, v.z, v.w };
+  return r;
+}
+template <typename T>
+udVector3<T> udNormalize3(const udVector3<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+  udVector3<T> r = { v.x * s, v.y * s, v.z * s };
+  return r;
+}
+template <typename T>
+udVector4<T> udNormalize3(const udVector4<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+  udVector4<T> r = { v.x * s, v.y * s, v.z * s, v.w };
+  return r;
+}
+template <typename T>
+udVector4<T> udNormalize4(const udVector4<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+  udVector4<T> r = { v.x * s, v.y * s, v.z * s, v.w * s };
+  return r;
+}
+template <typename T>
+udQuaternion<T> udNormalizeQ(const udQuaternion<T> &v)
+{
+  T s = udRSqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+  udQuaternion<T> r = { v.x * s, v.y * s, v.z * s, v.w * s };
+  return r;
+}
 
 template <typename V>
 inline bool udEqualApprox(const V &a, const V &b, typename V::ElementType epsilon)
@@ -271,59 +467,59 @@ udVector3<T> udDirectionToYPR(const udVector3<T> &direction)
 template <typename T, typename U>
 udMatrix4x4<T> udMul(const udMatrix4x4<T> &m, U f)
 {
-  udMatrix4x4<T> r = {{{ T(m.a[0] * f), T(m.a[1] * f), T(m.a[2] * f), T(m.a[3] * f),
-                         T(m.a[4] * f), T(m.a[5] * f), T(m.a[6] * f), T(m.a[7] * f),
-                         T(m.a[8] * f), T(m.a[9] * f), T(m.a[10] * f),T(m.a[11] * f),
-                         T(m.a[12] * f),T(m.a[13] * f),T(m.a[14] * f),T(m.a[15] * f) }}};
+  udMatrix4x4<T> r = { { { T(m.a[0] * f), T(m.a[1] * f), T(m.a[2] * f), T(m.a[3] * f),
+                           T(m.a[4] * f), T(m.a[5] * f), T(m.a[6] * f), T(m.a[7] * f),
+                           T(m.a[8] * f), T(m.a[9] * f), T(m.a[10] * f), T(m.a[11] * f),
+                           T(m.a[12] * f), T(m.a[13] * f), T(m.a[14] * f), T(m.a[15] * f) } } };
   return r;
 }
 template <typename T>
 udVector2<T> udMul(const udMatrix4x4<T> &m, const udVector2<T> &v)
 {
   udVector2<T> r;
-  r.x = m.m._00*v.x + m.m._01*v.y + m.m._03;
-  r.y = m.m._10*v.x + m.m._11*v.y + m.m._13;
+  r.x = m.m._00 * v.x + m.m._01 * v.y + m.m._03;
+  r.y = m.m._10 * v.x + m.m._11 * v.y + m.m._13;
   return r;
 }
 template <typename T>
 udVector3<T> udMul(const udMatrix4x4<T> &m, const udVector3<T> &v)
 {
   udVector3<T> r;
-  r.x = m.m._00*v.x + m.m._01*v.y + m.m._02*v.z + m.m._03;
-  r.y = m.m._10*v.x + m.m._11*v.y + m.m._12*v.z + m.m._13;
-  r.z = m.m._20*v.x + m.m._21*v.y + m.m._22*v.z + m.m._23;
+  r.x = m.m._00 * v.x + m.m._01 * v.y + m.m._02 * v.z + m.m._03;
+  r.y = m.m._10 * v.x + m.m._11 * v.y + m.m._12 * v.z + m.m._13;
+  r.z = m.m._20 * v.x + m.m._21 * v.y + m.m._22 * v.z + m.m._23;
   return r;
 }
 template <typename T>
 udVector4<T> udMul(const udMatrix4x4<T> &m, const udVector4<T> &v)
 {
   udVector4<T> r;
-  r.x = m.m._00*v.x + m.m._01*v.y + m.m._02*v.z + m.m._03*v.w;
-  r.y = m.m._10*v.x + m.m._11*v.y + m.m._12*v.z + m.m._13*v.w;
-  r.z = m.m._20*v.x + m.m._21*v.y + m.m._22*v.z + m.m._23*v.w;
-  r.w = m.m._30*v.x + m.m._31*v.y + m.m._32*v.z + m.m._33*v.w;
+  r.x = m.m._00 * v.x + m.m._01 * v.y + m.m._02 * v.z + m.m._03 * v.w;
+  r.y = m.m._10 * v.x + m.m._11 * v.y + m.m._12 * v.z + m.m._13 * v.w;
+  r.z = m.m._20 * v.x + m.m._21 * v.y + m.m._22 * v.z + m.m._23 * v.w;
+  r.w = m.m._30 * v.x + m.m._31 * v.y + m.m._32 * v.z + m.m._33 * v.w;
   return r;
 }
 template <typename T>
 udMatrix4x4<T> udMul(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2)
 {
   udMatrix4x4<T> r;
-  r.m._00 = m1.m._00*m2.m._00 + m1.m._01*m2.m._10 + m1.m._02*m2.m._20 + m1.m._03*m2.m._30;
-  r.m._01 = m1.m._00*m2.m._01 + m1.m._01*m2.m._11 + m1.m._02*m2.m._21 + m1.m._03*m2.m._31;
-  r.m._02 = m1.m._00*m2.m._02 + m1.m._01*m2.m._12 + m1.m._02*m2.m._22 + m1.m._03*m2.m._32;
-  r.m._03 = m1.m._00*m2.m._03 + m1.m._01*m2.m._13 + m1.m._02*m2.m._23 + m1.m._03*m2.m._33;
-  r.m._10 = m1.m._10*m2.m._00 + m1.m._11*m2.m._10 + m1.m._12*m2.m._20 + m1.m._13*m2.m._30;
-  r.m._11 = m1.m._10*m2.m._01 + m1.m._11*m2.m._11 + m1.m._12*m2.m._21 + m1.m._13*m2.m._31;
-  r.m._12 = m1.m._10*m2.m._02 + m1.m._11*m2.m._12 + m1.m._12*m2.m._22 + m1.m._13*m2.m._32;
-  r.m._13 = m1.m._10*m2.m._03 + m1.m._11*m2.m._13 + m1.m._12*m2.m._23 + m1.m._13*m2.m._33;
-  r.m._20 = m1.m._20*m2.m._00 + m1.m._21*m2.m._10 + m1.m._22*m2.m._20 + m1.m._23*m2.m._30;
-  r.m._21 = m1.m._20*m2.m._01 + m1.m._21*m2.m._11 + m1.m._22*m2.m._21 + m1.m._23*m2.m._31;
-  r.m._22 = m1.m._20*m2.m._02 + m1.m._21*m2.m._12 + m1.m._22*m2.m._22 + m1.m._23*m2.m._32;
-  r.m._23 = m1.m._20*m2.m._03 + m1.m._21*m2.m._13 + m1.m._22*m2.m._23 + m1.m._23*m2.m._33;
-  r.m._30 = m1.m._30*m2.m._00 + m1.m._31*m2.m._10 + m1.m._32*m2.m._20 + m1.m._33*m2.m._30;
-  r.m._31 = m1.m._30*m2.m._01 + m1.m._31*m2.m._11 + m1.m._32*m2.m._21 + m1.m._33*m2.m._31;
-  r.m._32 = m1.m._30*m2.m._02 + m1.m._31*m2.m._12 + m1.m._32*m2.m._22 + m1.m._33*m2.m._32;
-  r.m._33 = m1.m._30*m2.m._03 + m1.m._31*m2.m._13 + m1.m._32*m2.m._23 + m1.m._33*m2.m._33;
+  r.m._00 = m1.m._00 * m2.m._00 + m1.m._01 * m2.m._10 + m1.m._02 * m2.m._20 + m1.m._03 * m2.m._30;
+  r.m._01 = m1.m._00 * m2.m._01 + m1.m._01 * m2.m._11 + m1.m._02 * m2.m._21 + m1.m._03 * m2.m._31;
+  r.m._02 = m1.m._00 * m2.m._02 + m1.m._01 * m2.m._12 + m1.m._02 * m2.m._22 + m1.m._03 * m2.m._32;
+  r.m._03 = m1.m._00 * m2.m._03 + m1.m._01 * m2.m._13 + m1.m._02 * m2.m._23 + m1.m._03 * m2.m._33;
+  r.m._10 = m1.m._10 * m2.m._00 + m1.m._11 * m2.m._10 + m1.m._12 * m2.m._20 + m1.m._13 * m2.m._30;
+  r.m._11 = m1.m._10 * m2.m._01 + m1.m._11 * m2.m._11 + m1.m._12 * m2.m._21 + m1.m._13 * m2.m._31;
+  r.m._12 = m1.m._10 * m2.m._02 + m1.m._11 * m2.m._12 + m1.m._12 * m2.m._22 + m1.m._13 * m2.m._32;
+  r.m._13 = m1.m._10 * m2.m._03 + m1.m._11 * m2.m._13 + m1.m._12 * m2.m._23 + m1.m._13 * m2.m._33;
+  r.m._20 = m1.m._20 * m2.m._00 + m1.m._21 * m2.m._10 + m1.m._22 * m2.m._20 + m1.m._23 * m2.m._30;
+  r.m._21 = m1.m._20 * m2.m._01 + m1.m._21 * m2.m._11 + m1.m._22 * m2.m._21 + m1.m._23 * m2.m._31;
+  r.m._22 = m1.m._20 * m2.m._02 + m1.m._21 * m2.m._12 + m1.m._22 * m2.m._22 + m1.m._23 * m2.m._32;
+  r.m._23 = m1.m._20 * m2.m._03 + m1.m._21 * m2.m._13 + m1.m._22 * m2.m._23 + m1.m._23 * m2.m._33;
+  r.m._30 = m1.m._30 * m2.m._00 + m1.m._31 * m2.m._10 + m1.m._32 * m2.m._20 + m1.m._33 * m2.m._30;
+  r.m._31 = m1.m._30 * m2.m._01 + m1.m._31 * m2.m._11 + m1.m._32 * m2.m._21 + m1.m._33 * m2.m._31;
+  r.m._32 = m1.m._30 * m2.m._02 + m1.m._31 * m2.m._12 + m1.m._32 * m2.m._22 + m1.m._33 * m2.m._32;
+  r.m._33 = m1.m._30 * m2.m._03 + m1.m._31 * m2.m._13 + m1.m._32 * m2.m._23 + m1.m._33 * m2.m._33;
   return r;
 }
 
@@ -331,22 +527,22 @@ template <typename T>
 udMatrix4x4<T> udAdd(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2)
 {
   udMatrix4x4<T> r;
-  r.m._00 = m1.m._00+m2.m._00;
-  r.m._01 = m1.m._01+m2.m._01;
-  r.m._02 = m1.m._02+m2.m._02;
-  r.m._03 = m1.m._03+m2.m._03;
-  r.m._10 = m1.m._10+m2.m._10;
-  r.m._11 = m1.m._11+m2.m._11;
-  r.m._12 = m1.m._12+m2.m._12;
-  r.m._13 = m1.m._13+m2.m._13;
-  r.m._20 = m1.m._20+m2.m._20;
-  r.m._21 = m1.m._21+m2.m._21;
-  r.m._22 = m1.m._22+m2.m._22;
-  r.m._23 = m1.m._23+m2.m._23;
-  r.m._30 = m1.m._30+m2.m._30;
-  r.m._31 = m1.m._31+m2.m._31;
-  r.m._32 = m1.m._32+m2.m._32;
-  r.m._33 = m1.m._33+m2.m._33;
+  r.m._00 = m1.m._00 + m2.m._00;
+  r.m._01 = m1.m._01 + m2.m._01;
+  r.m._02 = m1.m._02 + m2.m._02;
+  r.m._03 = m1.m._03 + m2.m._03;
+  r.m._10 = m1.m._10 + m2.m._10;
+  r.m._11 = m1.m._11 + m2.m._11;
+  r.m._12 = m1.m._12 + m2.m._12;
+  r.m._13 = m1.m._13 + m2.m._13;
+  r.m._20 = m1.m._20 + m2.m._20;
+  r.m._21 = m1.m._21 + m2.m._21;
+  r.m._22 = m1.m._22 + m2.m._22;
+  r.m._23 = m1.m._23 + m2.m._23;
+  r.m._30 = m1.m._30 + m2.m._30;
+  r.m._31 = m1.m._31 + m2.m._31;
+  r.m._32 = m1.m._32 + m2.m._32;
+  r.m._33 = m1.m._33 + m2.m._33;
   return r;
 }
 
@@ -377,9 +573,9 @@ template <typename T>
 udQuaternion<T> udMul(const udQuaternion<T> &q1, const udQuaternion<T> &q2)
 {
   udQuaternion<T> r;
-  r.x =  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x;
+  r.x = q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x;
   r.y = -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y;
-  r.z =  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z;
+  r.z = q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z;
   r.w = -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w;
   return r;
 }
@@ -387,13 +583,13 @@ udQuaternion<T> udMul(const udQuaternion<T> &q1, const udQuaternion<T> &q2)
 template <typename T>
 T udLerp(T a, T b, double t)
 {
-  return T(a + (b-a)*t);
+  return T(a + (b - a) * t);
 }
 
 template <typename T>
 T udBiLerp(T a, T b, T c, T d, double t1, double t2)
 {
-  return udLerp(udLerp(a, b, t1), udLerp(c, d, t1),t2);
+  return udLerp(udLerp(a, b, t1), udLerp(c, d, t1), t2);
 }
 
 template <typename T>
@@ -401,8 +597,8 @@ udVector2<T> udLerp(const udVector2<T> &v1, const udVector2<T> &v2, double t)
 {
   udVector2<T> r;
   double invT = 1.0 - t;
-  r.x = T(v1.x*invT + v2.x*t);
-  r.y = T(v1.y*invT + v2.y*t);
+  r.x = T(v1.x * invT + v2.x * t);
+  r.y = T(v1.y * invT + v2.y * t);
   return r;
 }
 template <typename T>
@@ -410,9 +606,9 @@ udVector3<T> udLerp(const udVector3<T> &v1, const udVector3<T> &v2, double t)
 {
   udVector3<T> r;
   double invT = 1.0 - t;
-  r.x = T(v1.x*invT + v2.x*t);
-  r.y = T(v1.y*invT + v2.y*t);
-  r.z = T(v1.z*invT + v2.z*t);
+  r.x = T(v1.x * invT + v2.x * t);
+  r.y = T(v1.y * invT + v2.y * t);
+  r.z = T(v1.z * invT + v2.z * t);
   return r;
 }
 template <typename T>
@@ -420,26 +616,26 @@ udVector4<T> udLerp(const udVector4<T> &v1, const udVector4<T> &v2, double t)
 {
   udVector4<T> r;
   double invT = 1.0 - t;
-  r.x = T(v1.x*invT + v2.x*t);
-  r.y = T(v1.y*invT + v2.y*t);
-  r.z = T(v1.z*invT + v2.z*t);
-  r.w = T(v1.w*invT + v2.w*t);
+  r.x = T(v1.x * invT + v2.x * t);
+  r.y = T(v1.y * invT + v2.y * t);
+  r.z = T(v1.z * invT + v2.z * t);
+  r.w = T(v1.w * invT + v2.w * t);
   return r;
 }
 template <typename T>
 udMatrix4x4<T> udLerp(const udMatrix4x4<T> &m1, const udMatrix4x4<T> &m2, double t)
 {
-  return (1.0-t)*m1 + t*m2;
+  return (1.0 - t) * m1 + t * m2;
 }
 template <typename T>
 udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, double t)
 {
   udQuaternion<T> r;
   double invT = 1.0 - t;
-  r.x = T(q1.x*invT + q2.x*t);
-  r.y = T(q1.y*invT + q2.y*t);
-  r.z = T(q1.z*invT + q2.z*t);
-  r.w = T(q1.w*invT + q2.w*t);
+  r.x = T(q1.x * invT + q2.x * t);
+  r.y = T(q1.y * invT + q2.y * t);
+  r.z = T(q1.z * invT + q2.z * t);
+  r.w = T(q1.w * invT + q2.w * t);
   return r;
 }
 
@@ -485,51 +681,51 @@ udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, d
 template <typename T>
 udMatrix4x4<T> udTranspose(const udMatrix4x4<T> &m)
 {
-  udMatrix4x4<T> r = {{{ m.a[0], m.a[4], m.a[8], m.a[12],
-                         m.a[1], m.a[5], m.a[9], m.a[13],
-                         m.a[2], m.a[6], m.a[10], m.a[14],
-                         m.a[3], m.a[7], m.a[11], m.a[15] }}};
+  udMatrix4x4<T> r = { { { m.a[0], m.a[4], m.a[8], m.a[12],
+                           m.a[1], m.a[5], m.a[9], m.a[13],
+                           m.a[2], m.a[6], m.a[10], m.a[14],
+                           m.a[3], m.a[7], m.a[11], m.a[15] } } };
   return r;
 }
 
 template <typename T>
 T udDeterminant(const udMatrix4x4<T> &m)
 {
-  return m.m._03*m.m._12*m.m._21*m.m._30 - m.m._02*m.m._13*m.m._21*m.m._30 - m.m._03*m.m._11*m.m._22*m.m._30 + m.m._01*m.m._13*m.m._22*m.m._30 +
-         m.m._02*m.m._11*m.m._23*m.m._30 - m.m._01*m.m._12*m.m._23*m.m._30 - m.m._03*m.m._12*m.m._20*m.m._31 + m.m._02*m.m._13*m.m._20*m.m._31 +
-         m.m._03*m.m._10*m.m._22*m.m._31 - m.m._00*m.m._13*m.m._22*m.m._31 - m.m._02*m.m._10*m.m._23*m.m._31 + m.m._00*m.m._12*m.m._23*m.m._31 +
-         m.m._03*m.m._11*m.m._20*m.m._32 - m.m._01*m.m._13*m.m._20*m.m._32 - m.m._03*m.m._10*m.m._21*m.m._32 + m.m._00*m.m._13*m.m._21*m.m._32 +
-         m.m._01*m.m._10*m.m._23*m.m._32 - m.m._00*m.m._11*m.m._23*m.m._32 - m.m._02*m.m._11*m.m._20*m.m._33 + m.m._01*m.m._12*m.m._20*m.m._33 +
-         m.m._02*m.m._10*m.m._21*m.m._33 - m.m._00*m.m._12*m.m._21*m.m._33 - m.m._01*m.m._10*m.m._22*m.m._33 + m.m._00*m.m._11*m.m._22*m.m._33;
+  return m.m._03 * m.m._12 * m.m._21 * m.m._30 - m.m._02 * m.m._13 * m.m._21 * m.m._30 - m.m._03 * m.m._11 * m.m._22 * m.m._30 + m.m._01 * m.m._13 * m.m._22 * m.m._30 +
+         m.m._02 * m.m._11 * m.m._23 * m.m._30 - m.m._01 * m.m._12 * m.m._23 * m.m._30 - m.m._03 * m.m._12 * m.m._20 * m.m._31 + m.m._02 * m.m._13 * m.m._20 * m.m._31 +
+         m.m._03 * m.m._10 * m.m._22 * m.m._31 - m.m._00 * m.m._13 * m.m._22 * m.m._31 - m.m._02 * m.m._10 * m.m._23 * m.m._31 + m.m._00 * m.m._12 * m.m._23 * m.m._31 +
+         m.m._03 * m.m._11 * m.m._20 * m.m._32 - m.m._01 * m.m._13 * m.m._20 * m.m._32 - m.m._03 * m.m._10 * m.m._21 * m.m._32 + m.m._00 * m.m._13 * m.m._21 * m.m._32 +
+         m.m._01 * m.m._10 * m.m._23 * m.m._32 - m.m._00 * m.m._11 * m.m._23 * m.m._32 - m.m._02 * m.m._11 * m.m._20 * m.m._33 + m.m._01 * m.m._12 * m.m._20 * m.m._33 +
+         m.m._02 * m.m._10 * m.m._21 * m.m._33 - m.m._00 * m.m._12 * m.m._21 * m.m._33 - m.m._01 * m.m._10 * m.m._22 * m.m._33 + m.m._00 * m.m._11 * m.m._22 * m.m._33;
 }
 
 template <typename T>
 udMatrix4x4<T> udInverse(const udMatrix4x4<T> &m)
 {
   udMatrix4x4<T> r;
-  r.m._00 = m.m._12*m.m._23*m.m._31 - m.m._13*m.m._22*m.m._31 + m.m._13*m.m._21*m.m._32 - m.m._11*m.m._23*m.m._32 - m.m._12*m.m._21*m.m._33 + m.m._11*m.m._22*m.m._33;
-  r.m._01 = m.m._03*m.m._22*m.m._31 - m.m._02*m.m._23*m.m._31 - m.m._03*m.m._21*m.m._32 + m.m._01*m.m._23*m.m._32 + m.m._02*m.m._21*m.m._33 - m.m._01*m.m._22*m.m._33;
-  r.m._02 = m.m._02*m.m._13*m.m._31 - m.m._03*m.m._12*m.m._31 + m.m._03*m.m._11*m.m._32 - m.m._01*m.m._13*m.m._32 - m.m._02*m.m._11*m.m._33 + m.m._01*m.m._12*m.m._33;
-  r.m._03 = m.m._03*m.m._12*m.m._21 - m.m._02*m.m._13*m.m._21 - m.m._03*m.m._11*m.m._22 + m.m._01*m.m._13*m.m._22 + m.m._02*m.m._11*m.m._23 - m.m._01*m.m._12*m.m._23;
-  r.m._10 = m.m._13*m.m._22*m.m._30 - m.m._12*m.m._23*m.m._30 - m.m._13*m.m._20*m.m._32 + m.m._10*m.m._23*m.m._32 + m.m._12*m.m._20*m.m._33 - m.m._10*m.m._22*m.m._33;
-  r.m._11 = m.m._02*m.m._23*m.m._30 - m.m._03*m.m._22*m.m._30 + m.m._03*m.m._20*m.m._32 - m.m._00*m.m._23*m.m._32 - m.m._02*m.m._20*m.m._33 + m.m._00*m.m._22*m.m._33;
-  r.m._12 = m.m._03*m.m._12*m.m._30 - m.m._02*m.m._13*m.m._30 - m.m._03*m.m._10*m.m._32 + m.m._00*m.m._13*m.m._32 + m.m._02*m.m._10*m.m._33 - m.m._00*m.m._12*m.m._33;
-  r.m._13 = m.m._02*m.m._13*m.m._20 - m.m._03*m.m._12*m.m._20 + m.m._03*m.m._10*m.m._22 - m.m._00*m.m._13*m.m._22 - m.m._02*m.m._10*m.m._23 + m.m._00*m.m._12*m.m._23;
-  r.m._20 = m.m._11*m.m._23*m.m._30 - m.m._13*m.m._21*m.m._30 + m.m._13*m.m._20*m.m._31 - m.m._10*m.m._23*m.m._31 - m.m._11*m.m._20*m.m._33 + m.m._10*m.m._21*m.m._33;
-  r.m._21 = m.m._03*m.m._21*m.m._30 - m.m._01*m.m._23*m.m._30 - m.m._03*m.m._20*m.m._31 + m.m._00*m.m._23*m.m._31 + m.m._01*m.m._20*m.m._33 - m.m._00*m.m._21*m.m._33;
-  r.m._22 = m.m._01*m.m._13*m.m._30 - m.m._03*m.m._11*m.m._30 + m.m._03*m.m._10*m.m._31 - m.m._00*m.m._13*m.m._31 - m.m._01*m.m._10*m.m._33 + m.m._00*m.m._11*m.m._33;
-  r.m._23 = m.m._03*m.m._11*m.m._20 - m.m._01*m.m._13*m.m._20 - m.m._03*m.m._10*m.m._21 + m.m._00*m.m._13*m.m._21 + m.m._01*m.m._10*m.m._23 - m.m._00*m.m._11*m.m._23;
-  r.m._30 = m.m._12*m.m._21*m.m._30 - m.m._11*m.m._22*m.m._30 - m.m._12*m.m._20*m.m._31 + m.m._10*m.m._22*m.m._31 + m.m._11*m.m._20*m.m._32 - m.m._10*m.m._21*m.m._32;
-  r.m._31 = m.m._01*m.m._22*m.m._30 - m.m._02*m.m._21*m.m._30 + m.m._02*m.m._20*m.m._31 - m.m._00*m.m._22*m.m._31 - m.m._01*m.m._20*m.m._32 + m.m._00*m.m._21*m.m._32;
-  r.m._32 = m.m._02*m.m._11*m.m._30 - m.m._01*m.m._12*m.m._30 - m.m._02*m.m._10*m.m._31 + m.m._00*m.m._12*m.m._31 + m.m._01*m.m._10*m.m._32 - m.m._00*m.m._11*m.m._32;
-  r.m._33 = m.m._01*m.m._12*m.m._20 - m.m._02*m.m._11*m.m._20 + m.m._02*m.m._10*m.m._21 - m.m._00*m.m._12*m.m._21 - m.m._01*m.m._10*m.m._22 + m.m._00*m.m._11*m.m._22;
-  return r*(T(1)/udDeterminant(m));
+  r.m._00 = m.m._12 * m.m._23 * m.m._31 - m.m._13 * m.m._22 * m.m._31 + m.m._13 * m.m._21 * m.m._32 - m.m._11 * m.m._23 * m.m._32 - m.m._12 * m.m._21 * m.m._33 + m.m._11 * m.m._22 * m.m._33;
+  r.m._01 = m.m._03 * m.m._22 * m.m._31 - m.m._02 * m.m._23 * m.m._31 - m.m._03 * m.m._21 * m.m._32 + m.m._01 * m.m._23 * m.m._32 + m.m._02 * m.m._21 * m.m._33 - m.m._01 * m.m._22 * m.m._33;
+  r.m._02 = m.m._02 * m.m._13 * m.m._31 - m.m._03 * m.m._12 * m.m._31 + m.m._03 * m.m._11 * m.m._32 - m.m._01 * m.m._13 * m.m._32 - m.m._02 * m.m._11 * m.m._33 + m.m._01 * m.m._12 * m.m._33;
+  r.m._03 = m.m._03 * m.m._12 * m.m._21 - m.m._02 * m.m._13 * m.m._21 - m.m._03 * m.m._11 * m.m._22 + m.m._01 * m.m._13 * m.m._22 + m.m._02 * m.m._11 * m.m._23 - m.m._01 * m.m._12 * m.m._23;
+  r.m._10 = m.m._13 * m.m._22 * m.m._30 - m.m._12 * m.m._23 * m.m._30 - m.m._13 * m.m._20 * m.m._32 + m.m._10 * m.m._23 * m.m._32 + m.m._12 * m.m._20 * m.m._33 - m.m._10 * m.m._22 * m.m._33;
+  r.m._11 = m.m._02 * m.m._23 * m.m._30 - m.m._03 * m.m._22 * m.m._30 + m.m._03 * m.m._20 * m.m._32 - m.m._00 * m.m._23 * m.m._32 - m.m._02 * m.m._20 * m.m._33 + m.m._00 * m.m._22 * m.m._33;
+  r.m._12 = m.m._03 * m.m._12 * m.m._30 - m.m._02 * m.m._13 * m.m._30 - m.m._03 * m.m._10 * m.m._32 + m.m._00 * m.m._13 * m.m._32 + m.m._02 * m.m._10 * m.m._33 - m.m._00 * m.m._12 * m.m._33;
+  r.m._13 = m.m._02 * m.m._13 * m.m._20 - m.m._03 * m.m._12 * m.m._20 + m.m._03 * m.m._10 * m.m._22 - m.m._00 * m.m._13 * m.m._22 - m.m._02 * m.m._10 * m.m._23 + m.m._00 * m.m._12 * m.m._23;
+  r.m._20 = m.m._11 * m.m._23 * m.m._30 - m.m._13 * m.m._21 * m.m._30 + m.m._13 * m.m._20 * m.m._31 - m.m._10 * m.m._23 * m.m._31 - m.m._11 * m.m._20 * m.m._33 + m.m._10 * m.m._21 * m.m._33;
+  r.m._21 = m.m._03 * m.m._21 * m.m._30 - m.m._01 * m.m._23 * m.m._30 - m.m._03 * m.m._20 * m.m._31 + m.m._00 * m.m._23 * m.m._31 + m.m._01 * m.m._20 * m.m._33 - m.m._00 * m.m._21 * m.m._33;
+  r.m._22 = m.m._01 * m.m._13 * m.m._30 - m.m._03 * m.m._11 * m.m._30 + m.m._03 * m.m._10 * m.m._31 - m.m._00 * m.m._13 * m.m._31 - m.m._01 * m.m._10 * m.m._33 + m.m._00 * m.m._11 * m.m._33;
+  r.m._23 = m.m._03 * m.m._11 * m.m._20 - m.m._01 * m.m._13 * m.m._20 - m.m._03 * m.m._10 * m.m._21 + m.m._00 * m.m._13 * m.m._21 + m.m._01 * m.m._10 * m.m._23 - m.m._00 * m.m._11 * m.m._23;
+  r.m._30 = m.m._12 * m.m._21 * m.m._30 - m.m._11 * m.m._22 * m.m._30 - m.m._12 * m.m._20 * m.m._31 + m.m._10 * m.m._22 * m.m._31 + m.m._11 * m.m._20 * m.m._32 - m.m._10 * m.m._21 * m.m._32;
+  r.m._31 = m.m._01 * m.m._22 * m.m._30 - m.m._02 * m.m._21 * m.m._30 + m.m._02 * m.m._20 * m.m._31 - m.m._00 * m.m._22 * m.m._31 - m.m._01 * m.m._20 * m.m._32 + m.m._00 * m.m._21 * m.m._32;
+  r.m._32 = m.m._02 * m.m._11 * m.m._30 - m.m._01 * m.m._12 * m.m._30 - m.m._02 * m.m._10 * m.m._31 + m.m._00 * m.m._12 * m.m._31 + m.m._01 * m.m._10 * m.m._32 - m.m._00 * m.m._11 * m.m._32;
+  r.m._33 = m.m._01 * m.m._12 * m.m._20 - m.m._02 * m.m._11 * m.m._20 + m.m._02 * m.m._10 * m.m._21 - m.m._00 * m.m._12 * m.m._21 - m.m._01 * m.m._10 * m.m._22 + m.m._00 * m.m._11 * m.m._22;
+  return r * (T(1) / udDeterminant(m));
 }
 template <typename T>
 udQuaternion<T> udInverse(const udQuaternion<T> &q)
 {
-  T s = T(1)/(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
-  udQuaternion<T> r = { -q.x*s, -q.y*s, -q.z*s, q.w*s };
+  T s = T(1) / (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+  udQuaternion<T> r = { -q.x * s, -q.y * s, -q.z * s, q.w * s };
   return r;
 }
 
@@ -548,8 +744,8 @@ udRay<T> udRay<T>::rotationAround(const udRay<T> &ray, const udVector3<T> &cente
 
   udQuaternion<T> rotation = udQuaternion<T>::create(axis, angle);
 
-  udVector3<T> direction = ray.position - center; // find current direction relative to center
-  r.position = center + rotation.apply(direction); // define new position
+  udVector3<T> direction = ray.position - center;                                                                        // find current direction relative to center
+  r.position = center + rotation.apply(direction);                                                                       // define new position
   r.direction = udDirectionFromYPR((rotation * udQuaternion<T>::create(udDirectionToYPR(ray.direction))).eulerAngles()); // rotate object to keep looking at the center
 
   return r;
@@ -584,7 +780,7 @@ bool udPlane<T>::intersects(const udRay<T> &ray, udVector3<T> *pIntersectionPoin
 
 // udMatrix4x4 members
 template <typename T>
-udMatrix4x4<T>& udMatrix4x4<T>::transpose()
+udMatrix4x4<T> &udMatrix4x4<T>::transpose()
 {
   *this = udTranspose(*this);
   return *this;
@@ -597,7 +793,7 @@ T udMatrix4x4<T>::determinant()
 }
 
 template <typename T>
-udMatrix4x4<T>& udMatrix4x4<T>::inverse()
+udMatrix4x4<T> &udMatrix4x4<T>::inverse()
 {
   *this = udInverse(*this);
   return *this;
@@ -623,17 +819,17 @@ udVector3<T> udMatrix4x4<T>::extractYPR() const
   Sp = my.z;
 
   // use trig identity (cos(p))^2 + (sin(p))^2 = 1, to find cos(p)
-  Cp = udSqrt(1.0f - Sp*Sp);
+  Cp = udSqrt(1.0f - Sp * Sp);
 
   // There's an edge case when
   if (Cp >= 0.00001f)
   {
     // find the rest from other cells
-    T factor = T(1)/Cp;
-    Sy = -my.x*factor;
-    Cy = my.y*factor;
-    Sr = -mx.z*factor;
-    Cr = mz.z*factor;
+    T factor = T(1) / Cp;
+    Sy = -my.x * factor;
+    Cy = my.y * factor;
+    Sr = -mx.z * factor;
+    Cr = mz.z * factor;
   }
   else
   {
@@ -707,7 +903,7 @@ udQuaternion<T> udMatrix4x4<T>::extractQuaternion() const
   return udNormalize(retVal);
 }
 
-template<typename T>
+template <typename T>
 void udMatrix4x4<T>::extractTransforms(udVector3<T> &position, udVector3<T> &scale, udQuaternion<T> &orientation) const
 {
   udMatrix4x4<T> mat = *this; //Copy it so we can make changes
@@ -727,14 +923,14 @@ void udMatrix4x4<T>::extractTransforms(udVector3<T> &position, udVector3<T> &sca
 
 // udQuaternion members
 template <typename T>
-udQuaternion<T>& udQuaternion<T>::inverse()
+udQuaternion<T> &udQuaternion<T>::inverse()
 {
   *this = udInverse(*this);
   return *this;
 }
 
 template <typename T>
-udQuaternion<T>& udQuaternion<T>::conjugate()
+udQuaternion<T> &udQuaternion<T>::conjugate()
 {
   *this = udConjugate(*this);
   return *this;
@@ -745,13 +941,13 @@ udVector3<T> udQuaternion<T>::apply(const udVector3<T> &v) const
 {
   udVector3<T> r;
 
-  T a = w*w - (x*x + y*y + z*z);
-  T b = 2.0f*w;
-  T c = 2.0f*(x*v.x + y*v.y + z*v.z);
+  T a = w * w - (x * x + y * y + z * z);
+  T b = 2.0f * w;
+  T c = 2.0f * (x * v.x + y * v.y + z * v.z);
 
-  r.x = a*v.x + b*(y*v.z - z*v.y) + c*x;
-  r.y = a*v.y + b*(z*v.x - x*v.z) + c*y;
-  r.z = a*v.z + b*(x*v.y - y*v.x) + c*z;
+  r.x = a * v.x + b * (y * v.z - z * v.y) + c * x;
+  r.y = a * v.y + b * (z * v.x - x * v.z) + c * y;
+  r.z = a * v.z + b * (x * v.y - y * v.x) + c * z;
 
   return r;
 }
@@ -777,40 +973,40 @@ udVector3<T> udQuaternion<T>::eulerAngles() const
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::identity()
 {
-  udMatrix4x4<T> r = {{{ T(1),T(0),T(0),T(0),
-                         T(0),T(1),T(0),T(0),
-                         T(0),T(0),T(1),T(0),
-                         T(0),T(0),T(0),T(1) }}};
+  udMatrix4x4<T> r = { { { T(1), T(0), T(0), T(0),
+                           T(0), T(1), T(0), T(0),
+                           T(0), T(0), T(1), T(0),
+                           T(0), T(0), T(0), T(1) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::create(const T m[16])
 {
-  udMatrix4x4<T> r = {{{ m[0], m[1], m[2], m[3],
-                         m[4], m[5], m[6], m[7],
-                         m[8], m[9], m[10],m[11],
-                         m[12],m[13],m[14],m[15] }}};
+  udMatrix4x4<T> r = { { { m[0], m[1], m[2], m[3],
+                           m[4], m[5], m[6], m[7],
+                           m[8], m[9], m[10], m[11],
+                           m[12], m[13], m[14], m[15] } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::create(T _00, T _10, T _20, T _30, T _01, T _11, T _21, T _31, T _02, T _12, T _22, T _32, T _03, T _13, T _23, T _33)
 {
-  udMatrix4x4<T> r = {{{ _00, _10, _20, _30,  // NOTE: remember, this looks a bit funny because we store columns (axiis) contiguous!
-                         _01, _11, _21, _31,
-                         _02, _12, _22, _32,
-                         _03, _13, _23, _33 }}};
+  udMatrix4x4<T> r = { { { _00, _10, _20, _30, // NOTE: remember, this looks a bit funny because we store columns (axiis) contiguous!
+                           _01, _11, _21, _31,
+                           _02, _12, _22, _32,
+                           _03, _13, _23, _33 } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::create(const udVector4<T> &xColumn, const udVector4<T> &yColumn, const udVector4<T> &zColumn, const udVector4<T> &wColumn)
 {
-  udMatrix4x4<T> r = {{{ xColumn.x, xColumn.y, xColumn.z, xColumn.w,
-                         yColumn.x, yColumn.y, yColumn.z, yColumn.w,
-                         zColumn.x, zColumn.y, zColumn.z, zColumn.w,
-                         wColumn.x, wColumn.y, wColumn.z, wColumn.w }}};
+  udMatrix4x4<T> r = { { { xColumn.x, xColumn.y, xColumn.z, xColumn.w,
+                           yColumn.x, yColumn.y, yColumn.z, yColumn.w,
+                           zColumn.x, zColumn.y, zColumn.z, zColumn.w,
+                           wColumn.x, wColumn.y, wColumn.z, wColumn.w } } };
   return r;
 }
 
@@ -818,10 +1014,10 @@ template <typename T>
 template <typename U>
 udMatrix4x4<T> udMatrix4x4<T>::create(const udMatrix4x4<U> &_m)
 {
-  udMatrix4x4<T> r = {{{ T(_m.m._00), T(_m.m._10), T(_m.m._20), T(_m.m._30),
-                         T(_m.m._01), T(_m.m._11), T(_m.m._21), T(_m.m._31),
-                         T(_m.m._02), T(_m.m._12), T(_m.m._22), T(_m.m._32),
-                         T(_m.m._03), T(_m.m._13), T(_m.m._23), T(_m.m._33) }}};
+  udMatrix4x4<T> r = { { { T(_m.m._00), T(_m.m._10), T(_m.m._20), T(_m.m._30),
+                           T(_m.m._01), T(_m.m._11), T(_m.m._21), T(_m.m._31),
+                           T(_m.m._02), T(_m.m._12), T(_m.m._22), T(_m.m._32),
+                           T(_m.m._03), T(_m.m._13), T(_m.m._23), T(_m.m._33) } } };
   return r;
 }
 
@@ -830,10 +1026,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationX(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = {{{ T(1),T(0),T(0),T(0),
-                         T(0),  c ,  s ,T(0),
-                         T(0), -s ,  c ,T(0),
-                         t.x, t.y, t.z, T(1) }}};
+  udMatrix4x4<T> r = { { { T(1), T(0), T(0), T(0),
+                           T(0), c, s, T(0),
+                           T(0), -s, c, T(0),
+                           t.x, t.y, t.z, T(1) } } };
   return r;
 }
 
@@ -842,10 +1038,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationY(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = {{{   c ,T(0), -s, T(0),
-                         T(0),T(1),T(0),T(0),
-                           s ,T(0),  c ,T(0),
-                         t.x, t.y, t.z, T(1) }}};
+  udMatrix4x4<T> r = { { { c, T(0), -s, T(0),
+                           T(0), T(1), T(0), T(0),
+                           s, T(0), c, T(0),
+                           t.x, t.y, t.z, T(1) } } };
   return r;
 }
 
@@ -854,10 +1050,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationZ(T rad, const udVector3<T> &t)
 {
   T c = udCos(rad);
   T s = udSin(rad);
-  udMatrix4x4<T> r = {{{   c ,  s ,T(0),T(0),
-                          -s ,  c ,T(0),T(0),
-                         T(0),T(0),T(1),T(0),
-                         t.x, t.y, t.z, T(1) }}};
+  udMatrix4x4<T> r = { { { c, s, T(0), T(0),
+                           -s, c, T(0), T(0),
+                           T(0), T(0), T(1), T(0),
+                           t.x, t.y, t.z, T(1) } } };
   return r;
 }
 
@@ -868,10 +1064,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationAxis(const udVector3<T> &axis, T rad, con
   T s = udSin(rad);
   udVector3<T> n = axis;
   udVector3<T> a = (T(1) - c) * axis;
-  udMatrix4x4<T> r = {{{ a.x*n.x + c,     a.x*n.y + s*n.z, a.x*n.z - s*n.y, T(0),
-                         a.y*n.x - s*n.z, a.y*n.y + c,     a.y*n.z + s*n.x, T(0),
-                         a.z*n.x + s*n.y, a.z*n.y - s*n.x, a.z*n.z + c,     T(0),
-                         t.x,             t.y,             t.z,             T(1) }}};
+  udMatrix4x4<T> r = { { { a.x * n.x + c, a.x * n.y + s * n.z, a.x * n.z - s * n.y, T(0),
+                           a.y * n.x - s * n.z, a.y * n.y + c, a.y * n.z + s * n.x, T(0),
+                           a.z * n.x + s * n.y, a.z * n.y - s * n.x, a.z * n.z + c, T(0),
+                           t.x, t.y, t.z, T(1) } } };
   return r;
 }
 
@@ -880,10 +1076,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 {
   T c1 = udCos(y), c2 = udCos(p), c3 = udCos(r);
   T s1 = udSin(y), s2 = udSin(p), s3 = udSin(r);
-  udMatrix4x4<T> result = {{{  c1*c3-s1*s2*s3, c3*s1+c1*s2*s3, -c2*s3, T(0),
-                              -c2*s1,          c1*c2,           s2,    T(0),
-                               c1*s3+c3*s1*s2, s1*s3-c1*c3*s2,  c2*c3, T(0),
-                               t.x,            t.y,             t.z,   T(1) }}};
+  udMatrix4x4<T> result = { { { c1 * c3 - s1 * s2 * s3, c3 * s1 + c1 * s2 * s3, -c2 * s3, T(0),
+                                -c2 * s1, c1 * c2, s2, T(0),
+                                c1 * s3 + c3 * s1 * s2, s1 * s3 - c1 * c3 * s2, c2 * c3, T(0),
+                                t.x, t.y, t.z, T(1) } } };
   return result;
 }
 
@@ -896,12 +1092,10 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVe
   T qy2 = q.y * q.y;
   T qz2 = q.z * q.z;
 
-  udMatrix4x4<T> r = {{{
-    1 - 2 * qy2 - 2 * qz2,      2 * q.x*q.y + 2 * q.z*q.w,  2 * q.x*q.z - 2 * q.y*q.w,  T(0),
-    2 * q.x*q.y - 2 * q.z*q.w,  1 - 2 * qx2 - 2 * qz2    ,  2 * q.y*q.z + 2 * q.x*q.w,  T(0),
-    2 * q.x*q.z + 2 * q.y*q.w,  2 * q.y*q.z - 2 * q.x*q.w,  1 - 2 * qx2 - 2 * qy2,      T(0),
-    t.x,                        t.y,                        t.z,                        T(1)
-  }}};
+  udMatrix4x4<T> r = { { { 1 - 2 * qy2 - 2 * qz2, 2 * q.x * q.y + 2 * q.z * q.w, 2 * q.x * q.z - 2 * q.y * q.w, T(0),
+                           2 * q.x * q.y - 2 * q.z * q.w, 1 - 2 * qx2 - 2 * qz2, 2 * q.y * q.z + 2 * q.x * q.w, T(0),
+                           2 * q.x * q.z + 2 * q.y * q.w, 2 * q.y * q.z - 2 * q.x * q.w, 1 - 2 * qx2 - 2 * qy2, T(0),
+                           t.x, t.y, t.z, T(1) } } };
 
   return r;
 }
@@ -909,20 +1103,20 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVe
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::translation(T x, T y, T z)
 {
-  udMatrix4x4<T> r = {{{ T(1),T(0),T(0),T(0),
-                         T(0),T(1),T(0),T(0),
-                         T(0),T(0),T(1),T(0),
-                         x,   y,   z, T(1) }}};
+  udMatrix4x4<T> r = { { { T(1), T(0), T(0), T(0),
+                           T(0), T(1), T(0), T(0),
+                           T(0), T(0), T(1), T(0),
+                           x, y, z, T(1) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::scaleNonUniform(T x, T y, T z, const udVector3<T> &t)
 {
-  udMatrix4x4<T> r = {{{   x,  T(0), T(0), T(0),
-                         T(0),   y,  T(0), T(0),
-                         T(0), T(0),   z,  T(0),
-                         t.x,  t.y,  t.z,  T(1) }}};
+  udMatrix4x4<T> r = { { { x, T(0), T(0), T(0),
+                           T(0), y, T(0), T(0),
+                           T(0), T(0), z, T(0),
+                           t.x, t.y, t.z, T(1) } } };
   return r;
 }
 
@@ -930,10 +1124,10 @@ template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::perspectiveZO(T fovY, T aspectRatio, T zNear, T zFar)
 {
   T fov = udTan(fovY / T(2));
-  udMatrix4x4<T> r = {{{ T(1) / (aspectRatio*fov), T(0),         T(0),                                       T(0),
-                         T(0),                     T(0),         zFar / (zFar - zNear),                      T(1),
-                         T(0),                     T(1)/fov,     T(0),                                       T(0),
-                         T(0),                     T(0),         -(zFar * zNear) / (zFar - zNear),           T(0) }}};
+  udMatrix4x4<T> r = { { { T(1) / (aspectRatio * fov), T(0), T(0), T(0),
+                           T(0), T(0), zFar / (zFar - zNear), T(1),
+                           T(0), T(1) / fov, T(0), T(0),
+                           T(0), T(0), -(zFar * zNear) / (zFar - zNear), T(0) } } };
   return r;
 }
 
@@ -941,60 +1135,60 @@ template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::perspectiveNO(T fovY, T aspectRatio, T zNear, T zFar)
 {
   T fov = udTan(fovY / T(2));
-  udMatrix4x4<T> r = {{{ T(1) / (aspectRatio*fov), T(0),         T(0),                                       T(0),
-                         T(0),                     T(0),         (zFar + zNear) / (zFar - zNear),            T(1),
-                         T(0),                     T(1) / fov,   T(0),                                       T(0),
-                         T(0),                     T(0),         -(T(2) * zFar * zNear) / (zFar - zNear),    T(0) } } };
+  udMatrix4x4<T> r = { { { T(1) / (aspectRatio * fov), T(0), T(0), T(0),
+                           T(0), T(0), (zFar + zNear) / (zFar - zNear), T(1),
+                           T(0), T(1) / fov, T(0), T(0),
+                           T(0), T(0), -(T(2) * zFar * zNear) / (zFar - zNear), T(0) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::orthoNO(T left, T right, T bottom, T top, T znear, T zfar)
 {
-  udMatrix4x4<T> r = {{{ T(2) / (right - left),            T(0),                             T(0),                             T(0),
-                         T(0),                             T(0),                             T(2) / (zfar - znear),            T(0),
-                         T(0),                             T(2) / (top - bottom),            T(0),                             T(0),
-                         -(right + left) / (right - left), -(top + bottom) / (top - bottom), -(zfar + znear) / (zfar - znear), T(1) }}};
+  udMatrix4x4<T> r = { { { T(2) / (right - left), T(0), T(0), T(0),
+                           T(0), T(0), T(2) / (zfar - znear), T(0),
+                           T(0), T(2) / (top - bottom), T(0), T(0),
+                           -(right + left) / (right - left), -(top + bottom) / (top - bottom), -(zfar + znear) / (zfar - znear), T(1) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::orthoZO(T left, T right, T bottom, T top, T znear, T zfar)
 {
-  udMatrix4x4<T> r = {{{ T(2) / (right - left),            T(0),                             T(0),                             T(0),
-                         T(0),                             T(0),                             T(1) / (zfar - znear),            T(0),
-                         T(0),                             T(2) / (top - bottom),            T(0),                             T(0),
-                         -(right + left) / (right - left), -(top + bottom) / (top - bottom), -znear / (zfar - znear),          T(1) }}};
+  udMatrix4x4<T> r = { { { T(2) / (right - left), T(0), T(0), T(0),
+                           T(0), T(0), T(1) / (zfar - znear), T(0),
+                           T(0), T(2) / (top - bottom), T(0), T(0),
+                           -(right + left) / (right - left), -(top + bottom) / (top - bottom), -znear / (zfar - znear), T(1) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::orthoForScreen(T width, T height, T znear, T zfar)
 {
-  udMatrix4x4<T> r = {{{ T(2) / width, T(0),           T(0),                            T(0),
-                         T(0),         -T(2) / height, T(0),                            T(0),
-                         T(0),         T(0),           T(2) / (zfar - znear),           T(0),
-                         T(-1),        T(1),          -(zfar + znear) / (zfar - znear), T(1) }}};
+  udMatrix4x4<T> r = { { { T(2) / width, T(0), T(0), T(0),
+                           T(0), -T(2) / height, T(0), T(0),
+                           T(0), T(0), T(2) / (zfar - znear), T(0),
+                           T(-1), T(1), -(zfar + znear) / (zfar - znear), T(1) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::frustumZO(T left, T right, T bottom, T top, T znear, T zfar)
 {
-  udMatrix4x4<T> r = { {{ T(2) * znear / (right - left),  T(0),                              T(0),                              T(0),
-                        (right + left) / (right - left),  (top + bottom) / (top - bottom),   zfar / (zfar - znear),             T(1),
-                        T(0),                             T(2) * znear / (top - bottom),     T(0),                              T(0),
-                        T(0),                             T(0),                             -(zfar * znear) / (zfar - znear),   T(0) }}};
+  udMatrix4x4<T> r = { { { T(2) * znear / (right - left), T(0), T(0), T(0),
+                           (right + left) / (right - left), (top + bottom) / (top - bottom), zfar / (zfar - znear), T(1),
+                           T(0), T(2) * znear / (top - bottom), T(0), T(0),
+                           T(0), T(0), -(zfar * znear) / (zfar - znear), T(0) } } };
   return r;
 }
 
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::frustumNO(T left, T right, T bottom, T top, T znear, T zfar)
 {
-  udMatrix4x4<T> r = { {{ T(2) * znear / (right - left),  T(0),                             T(0),                                     T(0),
-                        (right + left) / (right - left),  (top + bottom) / (top - bottom),  (zfar + znear) / (zfar - znear),          T(1),
-                        T(0),                             T(2) * znear / (top - bottom),    T(0),                                     T(0),
-                        T(0),                             T(0),                            -(T(2) * zfar * znear) / (zfar - znear),   T(0) } } };
+  udMatrix4x4<T> r = { { { T(2) * znear / (right - left), T(0), T(0), T(0),
+                           (right + left) / (right - left), (top + bottom) / (top - bottom), (zfar + znear) / (zfar - znear), T(1),
+                           T(0), T(2) * znear / (top - bottom), T(0), T(0),
+                           T(0), T(0), -(T(2) * zfar * znear) / (zfar - znear), T(0) } } };
   return r;
 }
 
@@ -1004,10 +1198,10 @@ udMatrix4x4<T> udMatrix4x4<T>::lookAt(const udVector3<T> &from, const udVector3<
   udVector3<T> y = udNormalize3(at - from);
   udVector3<T> x = udNormalize3(udCross3(y, up));
   udVector3<T> z = udCross3(x, y);
-  udMatrix4x4<T> r = {{{ x.x,    x.y,    x.z,    0,
-                         y.x,    y.y,    y.z,    0,
-                         z.x,    z.y,    z.z,    0,
-                         from.x, from.y, from.z, 1 }}};
+  udMatrix4x4<T> r = { { { x.x, x.y, x.z, 0,
+                           y.x, y.y, y.z, 0,
+                           z.x, z.y, z.z, 0,
+                           from.x, from.y, from.z, 1 } } };
   return r;
 }
 
@@ -1015,11 +1209,11 @@ template <typename T>
 udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &axis, T rad)
 {
   UDASSERT(udIsUnitLength(axis, T(1.0 / 4096)), "axis is not normalized, magnitude %f\n", udMag(axis));
-  T a = rad*T(0.5);
+  T a = rad * T(0.5);
   T s = udSin(a);
-  udQuaternion<T> r = { axis.x*s,
-                        axis.y*s,
-                        axis.z*s,
+  udQuaternion<T> r = { axis.x * s,
+                        axis.y * s,
+                        axis.z * s,
                         udCos(a) };
   return r;
 }

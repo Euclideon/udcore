@@ -1,7 +1,7 @@
-#include "gtest/gtest.h"
 #include "udChunkedArray.h"
-#include <iterator>
+#include "gtest/gtest.h"
 #include <algorithm>
+#include <iterator>
 
 TEST(udChunkedArrayTests, ToArray)
 {
@@ -48,25 +48,25 @@ TEST(udChunkedArrayTests, Basic)
 
   array.Init(8);
 
-  array.PushBack(10);         // 10
+  array.PushBack(10); // 10
   EXPECT_EQ(1, array.length);
-  array.PushBack(20);         // 10,20
+  array.PushBack(20); // 10,20
   EXPECT_EQ(2, array.length);
-  array.PushBack(40);         // 10,20,40
+  array.PushBack(40); // 10,20,40
   EXPECT_EQ(3, array.length);
-  array.PushBack(50);         // 10,20,40,50
+  array.PushBack(50); // 10,20,40,50
   EXPECT_EQ(4, array.length);
   temp = 30;
-  array.Insert(2, &temp);     // 10,20,30,40,50
+  array.Insert(2, &temp); // 10,20,30,40,50
   EXPECT_EQ(30, array[2]);
   EXPECT_EQ(5, array.length);
 
-  array.PopFront(&temp);      // 20,30,40,50
+  array.PopFront(&temp); // 20,30,40,50
   EXPECT_EQ(10, temp);
   EXPECT_EQ(4, array.length);
   EXPECT_EQ(1, array.inset);
 
-  array.PopBack(&temp);       // 20,30,40
+  array.PopBack(&temp); // 20,30,40
   EXPECT_EQ(50, temp);
   EXPECT_EQ(3, array.length);
   EXPECT_EQ(1, array.inset);
@@ -92,25 +92,25 @@ TEST(udChunkedArrayTests, Basic)
 
   // Now insert again, but this time with an inset, in second chunk
   temp = 105;
-  array.Insert(9, &temp);     // 20,30,40,50,60,70,80,90,100,105,110,120
+  array.Insert(9, &temp); // 20,30,40,50,60,70,80,90,100,105,110,120
   EXPECT_EQ(105, array[9]);
   EXPECT_EQ(1, array.inset);
 
   // Now insert again, but this time with an inset, in first chunk (special case to eliminate inset)
   temp = 65;
-  array.Insert(5, &temp);     // 20,30,40,50,60,65,70,80,90,100,105,110,120
+  array.Insert(5, &temp); // 20,30,40,50,60,65,70,80,90,100,105,110,120
   EXPECT_EQ(65, array[5]);
   EXPECT_EQ(0, array.inset);
 
   // Insert at start
   temp = 15;
-  array.Insert(0, &temp);     // 15,20,30,40,50,60,65,70,80,90,100,105,110,120
+  array.Insert(0, &temp); // 15,20,30,40,50,60,65,70,80,90,100,105,110,120
   EXPECT_EQ(15, array[0]);
   EXPECT_EQ(0, array.inset);
 
   // Insert at end
   temp = 125;
-  array.Insert(14, &temp);     // 15,20,30,40,50,60,65,70,80,90,100,105,110,120,125
+  array.Insert(14, &temp); // 15,20,30,40,50,60,65,70,80,90,100,105,110,120,125
   EXPECT_EQ(125, array[14]);
   EXPECT_EQ(0, array.inset);
 
@@ -154,7 +154,6 @@ TEST(udChunkedArrayTests, ZeroMemory)
   array.Deinit();
 }
 
-
 TEST(udChunkedArrayTests, FullChunkInsert)
 {
   // Test to insert at all positions with the chunk being completely full
@@ -184,7 +183,7 @@ TEST(udChunkedArrayTests, FullChunkInsert)
   }
 }
 
-template<typename T>
+template <typename T>
 bool iteratorIsValid(const udChunkedArrayIterator<T> &it, const udChunkedArray<T> array)
 {
   udResult result = udR_Success;
@@ -225,7 +224,6 @@ TEST(udChunkedArrayTests, Iterator)
   }
   EXPECT_EQ(array.length, i);
 
-
   // Iterates partially filled chunks correct
   array.PopBack();
 
@@ -248,7 +246,7 @@ TEST(udChunkedArrayTests, Iterator)
   }
   EXPECT_EQ(array.length, i - 1);
   // array.end() is over the end of the array and not valid by this definition (dereferencable)
-  EXPECT_TRUE(iteratorIsValid(array.end() - 1, array)); 
+  EXPECT_TRUE(iteratorIsValid(array.end() - 1, array));
   udChunkedArrayIterator<int> it = array.begin();
   EXPECT_TRUE(iteratorIsValid(it, array));
 
@@ -299,7 +297,7 @@ TEST(udChunkedArrayTests, Iterator)
     EXPECT_EQ(*iter, i);
     auto iter2 = array.begin() + i;
     //test that indexing into the array by adding to an interator will give the same result as dereferencing the iterator
-    EXPECT_EQ(*(iter2 - 1), *iter); 
+    EXPECT_EQ(*(iter2 - 1), *iter);
     ++i;
   }
   EXPECT_EQ(i, array.length + 1);
@@ -309,7 +307,7 @@ TEST(udChunkedArrayTests, Iterator)
     --i;
     EXPECT_EQ(*iter, i);
     //test that indexing into the array using an interator will give the same result as dereferencing the iterator
-    EXPECT_EQ(array.begin()[i - 1], *iter); 
+    EXPECT_EQ(array.begin()[i - 1], *iter);
   }
 
   EXPECT_EQ(array.end() - array.begin(), (int)array.length);
@@ -346,4 +344,3 @@ TEST(udChunkedArrayTests, Iterator)
 
   array.Deinit();
 }
-

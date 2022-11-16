@@ -21,7 +21,7 @@ enum udSocketConnectionFlags
   udSCF_IsServer = 1 << 0,
   udSCF_UseTLS = 1 << 1
 };
-inline udSocketConnectionFlags operator |(udSocketConnectionFlags a, udSocketConnectionFlags b) { return (udSocketConnectionFlags)(((int)a) | ((int)b)); }
+inline udSocketConnectionFlags operator|(udSocketConnectionFlags a, udSocketConnectionFlags b) { return (udSocketConnectionFlags)(((int)a) | ((int)b)); }
 
 // Initialisation
 udResult udSocket_InitSystem();
