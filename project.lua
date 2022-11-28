@@ -29,6 +29,10 @@ project ("udCore" .. (projectSuffix or ""))
 	filter { "action:xcode4" }
 		removeflags { "FatalWarnings" }
 
+	-- VS2022 adds a define that is now a default define in the newer NDK, so FatalWarnings needs to be off to build
+	filter { "action:vs2022", "system:android" }
+		removeflags { "FatalWarnings" }
+
 	filter { "configurations:Release", "system:Windows" }
 		symbols "On"
 
