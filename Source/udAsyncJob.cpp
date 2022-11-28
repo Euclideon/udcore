@@ -1,6 +1,5 @@
-#include "udAsyncJob.h"
-#include "udThread.h"
 #include <atomic>
+#include "udAsyncJob.h"
 
 #define RESULT_SENTINAL -1 // A sentinal value used to determine when valid result has been written
 #define RESULT_PENDING  -2 // A sentinal value used to determine when async call has been made and not returned
