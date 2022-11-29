@@ -3,6 +3,7 @@
 
 #include "udFile.h"
 #include "udThread.h"
+#include "udStringUtil.h"
 #define VIRTUALCHUNKEDARRAY_DEBUGGING 0
 
 // Minimal implementation currently, will only work for simple typed non-sparse arrays with elements read-only after being added
