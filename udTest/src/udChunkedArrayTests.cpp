@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "udChunkedArray.h"
+#include "udVirtualChunkedArray.h"
 #include <iterator>
 #include <algorithm>
 
@@ -346,4 +347,3 @@ TEST(udChunkedArrayTests, Iterator)
 
   array.Deinit();
 }
-
