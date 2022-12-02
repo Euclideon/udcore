@@ -74,7 +74,7 @@ solution "udCore"
 
 	pic "On"
 	editorintegration "on"
-	cppdialect "C++14"
+	cppdialect "C++17"
 
 	startproject "udTest"
 
