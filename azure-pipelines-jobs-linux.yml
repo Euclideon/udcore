@@ -7,7 +7,7 @@ jobs:
 - job: ${{ parameters.name }}
   displayName: ${{ parameters.displayName }}
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-20.04'
   container:
     image: ${{ parameters.container }}
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
