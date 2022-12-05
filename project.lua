@@ -1,7 +1,6 @@
 project ("udCore" .. (projectSuffix or ""))
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++14"
 	staticruntime "On"
 	flags { "OmitDefaultLibrary", "FatalWarnings" }
 
@@ -51,6 +50,5 @@ project ("udCore" .. (projectSuffix or ""))
 	filter { "system:uwp" }
 		staticruntime "Off"
 		exceptionhandling "On"
-		cppdialect "C++17"
 
 	filter {}
