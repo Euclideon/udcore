@@ -64,6 +64,14 @@ TEST(udJSONTests, CreationSimple)
   g_udBreakOnError = false;
   EXPECT_NE(udR_Success, v.Set("Settings.Something"));
   g_udBreakOnError = true;
+
+  EXPECT_EQ(udR_Success, v.Set("Settings.MyString1 = 'has ' quote'")); // Literals accept quote character mid-string as a special case
+  EXPECT_EQ(udR_Success, v.Set("Settings.MyString2 = 'has \\' quote'")); // Quote character escaped
+  EXPECT_EQ(0, udStrcmp(v.Get("Settings.MyString1").AsString(), v.Get("Settings.MyString2").AsString()));
+  EXPECT_EQ(udR_Success, v.Set("Settings.MyString3 = \"has \\\" quote\"   ")); // Test with double-quote character and trailing spaces
+  EXPECT_EQ(udR_Success, v.Set("Settings.MyString4 = 'has \" quote'   ")); // Test with double-quote character and trailing spaces
+  EXPECT_EQ(0, udStrcmp(v.Get("Settings.MyString3").AsString(), v.Get("Settings.MyString4").AsString()));
+
   EXPECT_EQ(udR_Success, v.Set("Settings.EmptyArray = []"));
   EXPECT_EQ(udR_Success, v.Set("Settings.Nothing = null"));
   // Of note here is that the input string is currently JSON escaped, so there's some additional backslashes
