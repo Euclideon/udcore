@@ -1163,3 +1163,22 @@ TEST(MathTests, UtilityFunctions)
   EXPECT_FALSE(udIsFinite(NAN));
   EXPECT_FALSE(udIsFinite(INFINITY));
 }
+
+bool scCheckLinePlaneIntersection(udDouble3 linePoint, udDouble3 lineDirection, udDouble3 planePoint, udDouble3 planeNormal, udDouble3 expected)
+{
+  udPlane<double> plane = udPlane<double>::create(planePoint, planeNormal);
+  udRay<double> ray = udRay<double>::create(linePoint, lineDirection);
+  udDouble3 intersectionPoint = {};
+
+  bool result = plane.intersects(ray, &intersectionPoint, nullptr);
+  return result && udMag3(intersectionPoint - expected) < UD_EPSILON;
+}
+
+TEST(MathTests, LinePlaneInstersection)
+{
+  EXPECT_TRUE(scCheckLinePlaneIntersection({ 0.0, 0.0, 2.0 }, { 0.0, 0.0, -1.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 0.0, 0.0 })); // line and plane normal are colinear, (0,0,2) projected on (0,0,0)
+  EXPECT_TRUE(scCheckLinePlaneIntersection({ 0.0, 0.0, 2.0 }, { 0.0, -1.0, -1.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, -2.0, 0.0 })); // 45degree between line and plane normal
+  EXPECT_FALSE(scCheckLinePlaneIntersection({ 0.0, 0.0, -4.0 }, { 0.0, -1.0, -1.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, -2.0, 0.0 })); // same as previous test but line is behind the plane
+  EXPECT_FALSE(scCheckLinePlaneIntersection({ 0.0, 2.0, 0.0 }, { -1.0, -1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 0.0, 0.0 })); // line and plane normal are perpendicular
+  EXPECT_TRUE(scCheckLinePlaneIntersection({ 2.0, 0.0, 0.0 }, { -1.0, 0.0, -1.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 2.0, 0.0, 0.0 })); // linePoint in already on the plane
+}
