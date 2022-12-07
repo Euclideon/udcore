@@ -42,6 +42,12 @@ Expression syntax for Get/Set:
   v.Set("Settings.TestArray[] = 2"); // Append a numeric type to an array
   v.Set("Settings.TestArray[] = { 'member': 100, 'something': 200 }"); // Append an object to an array
 ```
+* Strings that have quote characters break the normal Set method, so if the string is not KNOWN to be safe, use SetMemberString:
+```cpp
+  const char *pMyString = "'quoted'";
+  v.SetMemberString(pMyString, "Settings.TestArray[%d]", 1); // Recommended for any non-literal string, sets Settings.TestArrray[1] to 'quoted'
+```
+
 * To remove a key, use set without setting to anything (any children/subkeys are also removed)
 ```cpp
   v.Set("Settings"); // Remove the Settings key and all it's children
@@ -203,6 +209,7 @@ v.Get("key").AsFloat() == 3.14159
 Relevant methods:
 
   * udJSON::SetString(const char *pStr) - A copy of pStr is taken, if pStr is NULL this will fail and set to T_Void
+  * udJSON::SetMemberString(const char *pStr, const char *pExpression, ...) - A copy of pStr is taken, if pStr is NULL this will fail and set to T_Void
   * udJSON::AsBool() - Returns true if the string is "true" (ignores case) or is a numeric value >= 1.0
   * udJSON::AsInt() - Returns the result of udStrAtoi
   * udJSON::AsInt64() - Returns the result of udStrAtoi64

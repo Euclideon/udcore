@@ -939,6 +939,19 @@ udResult udJSON::Set(udJSON *pValue, const char *pKeyExpression, ...)
 
 // ****************************************************************************
 // Author: Dave Pevreal, April 2017
+udResult udJSON::SetMemberString(const char *pString, const char *pKeyExpression, ...)
+{
+  udJSON strValue;
+  strValue.SetString(pString);
+  va_list ap;
+  va_start(ap, pKeyExpression);
+  udResult result = udJSON_SetVA(this, &strValue, pKeyExpression, ap);
+  va_end(ap);
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, April 2017
 udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
 {
   udResult result;
@@ -1007,6 +1020,12 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
     type = T_String;
     u.pStr = pStr;
     totalCharCount += (int)endPos;
+    if (!pCharCount)
+    {
+      // Ensure nothing following the quotes
+      const char *pCheckEnd = udStrSkipWhiteSpace(pString + endPos);
+      UD_ERROR_IF(*pCheckEnd, udR_ParseError);
+    }
   }
   else
   {
