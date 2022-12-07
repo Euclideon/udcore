@@ -968,7 +968,13 @@ udResult udJSON::Parse(const char *pString, int *pCharCount, int *pLineNumber)
   }
   else if (*pString == '\"' || *pString == '\'') // Allow single quotes
   {
-    size_t endPos = udStrMatchBrace(pString, '\\');
+    size_t endPos;
+    if (pCharCount)
+      endPos = udStrMatchBrace(pString, '\\');
+    else
+      endPos = udStrlen(pString);
+    while (pString[endPos - 1] == ' ' || pString[endPos - 1] == '\t')
+      --endPos;
     // Force a parse error if the string isn't quoted properly
     UD_ERROR_IF(pString[endPos - 1] != pString[0], udR_ParseError);
     char *pStr = udAllocType(char, endPos, udAF_None);
