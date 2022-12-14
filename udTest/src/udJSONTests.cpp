@@ -63,7 +63,10 @@ TEST(udJSONTests, CreationSimple)
   EXPECT_EQ(udR_Success, v.Set("Settings.Outside.content = 'windy'")); // This is a special member that will export as content text to the XML element
   g_udBreakOnError = false;
   EXPECT_NE(udR_Success, v.Set("Settings.Something"));
+  EXPECT_NE(udR_Success, v.Set("Settings.MyString = 'has ' quote'")); // Should fail because of errant quote character
   g_udBreakOnError = true;
+  EXPECT_EQ(udR_Success, v.Set("Settings.MyString = 'has \\' quote'")); // Quote character escaped
+  EXPECT_EQ(0, udStrcmp(v.Get("Settings.MyString").AsString(), "has ' quote"));
   EXPECT_EQ(udR_Success, v.Set("Settings.EmptyArray = []"));
   EXPECT_EQ(udR_Success, v.Set("Settings.Nothing = null"));
   // Of note here is that the input string is currently JSON escaped, so there's some additional backslashes
@@ -403,26 +406,13 @@ TEST(udJSONTests, SpecialCharacterCompliance)
   const char *pExportText = nullptr;
   const char validStr[] = R"str({"quotationMark":"\"","reverseSolidus":"\\","backspace":"\b","formFeed":"\f","lineFeed":"\n","carriageReturn":"\r","tabulation":"\t"})str";
 
-  temp.SetString("\"");
-  in.Set(&temp, "quotationMark");
-
-  temp.SetString("\\");
-  in.Set(&temp, "reverseSolidus");
-
-  temp.SetString("\b");
-  in.Set(&temp, "backspace");
-
-  temp.SetString("\f");
-  in.Set(&temp, "formFeed");
-
-  temp.SetString("\n");
-  in.Set(&temp, "lineFeed");
-
-  temp.SetString("\r");
-  in.Set(&temp, "carriageReturn");
-
-  temp.SetString("\t");
-  in.Set(&temp, "tabulation");
+  in.SetMemberString("\"", "quotationMark");
+  in.SetMemberString("\\", "reverseSolidus");
+  in.SetMemberString("\b", "backspace");
+  in.SetMemberString("\f", "formFeed");
+  in.SetMemberString("\n", "lineFeed");
+  in.SetMemberString("\r", "carriageReturn");
+  in.SetMemberString("\t", "tabulation");
 
   ASSERT_EQ(udR_Success, in.Export(&pExportText));
   EXPECT_TRUE(udStrEqual(validStr, pExportText));

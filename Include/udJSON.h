@@ -185,8 +185,9 @@ public:
   // Set a new key/value pair to the store, overwriting a existing key, using = operator in the expression
   // Allowed operators are . and [] to dereference and for version without pValue, = to assign value (eg "obj.value = %d", 5)
   // Set with null for pValue or nothing following the = will remove the key
-  UD_PRINTF_FORMAT_FUNC(3) udResult Set(udJSON *pValue, const char *pKeyExpression, ...);
   UD_PRINTF_FORMAT_FUNC(2) udResult Set(const char *pKeyExpression, ...);
+  UD_PRINTF_FORMAT_FUNC(3) udResult Set(udJSON *pValue, const char *pKeyExpression, ...);
+  UD_PRINTF_FORMAT_FUNC(3) udResult SetMemberString(const char *pStringValue, const char *pKeyExpression, ...);
 
   // Parse a string an assign the type/value, supporting string, integer and float/double, JSON or XML
   udResult Parse(const char *pString, int *pCharCount = nullptr, int *pLineNumber = nullptr);
