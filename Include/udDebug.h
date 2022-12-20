@@ -28,12 +28,12 @@ public:
   const char *functionName;
   udTrace *next;
   bool entryPrinted;
-  static UDTHREADLOCAL udTrace *head;
-  static UDTHREADLOCAL int depth;
+  static thread_local udTrace *head;
+  static thread_local int depth;
   static int GetThreadId();
 
 private:
-  static UDTHREADLOCAL int threadId;
+  static thread_local int threadId;
 };
 
 template <typename T>

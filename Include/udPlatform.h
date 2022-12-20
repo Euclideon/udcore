@@ -162,7 +162,6 @@ inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U
 # endif // UD_32BIT
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
-# define UDTHREADLOCAL __declspec(thread)
 
 #elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
 #include <unistd.h>
@@ -182,11 +181,6 @@ template <typename T, typename U>
 inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U *comparand) { return (T*)__sync_val_compare_and_swap((void * volatile*)dest, (void*)comparand, (void*)exchange); }
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
-# if defined(__INTELLISENSE__)
-#   define UDTHREADLOCAL
-# else
-#   define UDTHREADLOCAL __thread
-# endif
 
 #else
 #error Unknown platform
