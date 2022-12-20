@@ -65,8 +65,6 @@ solution "udCore"
 		targetextension ".bc"
 		filter { "kind:*App" }
 			targetextension ".js"
-		filter { "files:**.cpp" }
-			buildoptions { "-std=c++14" }
 		filter {}
 	else
 		platforms { "x64" }
