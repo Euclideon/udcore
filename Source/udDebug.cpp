@@ -65,9 +65,9 @@ void udDebugPrintf(const char *format, ...)
   }
 }
 
-UDTHREADLOCAL udTrace *udTrace::head = NULL;
-UDTHREADLOCAL int udTrace::depth = 0;
-UDTHREADLOCAL int udTrace::threadId = -1;
+thread_local udTrace *udTrace::head = NULL;
+thread_local int udTrace::depth = 0;
+thread_local int udTrace::threadId = -1;
 static std::atomic<int32_t> nextThreadId;
 
 // ***************************************************************************************
