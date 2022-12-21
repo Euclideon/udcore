@@ -25,13 +25,6 @@
 void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags, const char *pFile, int line)
 {
   void *pDuplicated = _udAlloc(size + additionalBytes, udAF_None, pFile, line);
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pDuplicated)
-  {
-    udDebugPrintf("udMemDup failure, %llu", size + additionalBytes);
-    __debugbreak();
-  }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 
   if (pDuplicated)
   {
@@ -39,6 +32,11 @@ void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllo
 
     if (additionalBytes && (flags & udAF_Zero))
       memset(udAddBytes(pDuplicated, size), 0, additionalBytes);
+  }
+  else if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
+  {
+    udDebugPrintf("udMemDup failure, %zu", size + additionalBytes);
+    __debugbreak();
   }
 
   return pDuplicated;
@@ -57,13 +55,15 @@ void *_udAlloc(size_t size, udAllocationFlags flags, const char *pFile, int line
 
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pMemory)
+  if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
-    udDebugPrintf("udAlloc failure, %llu", size);
-    __debugbreak();
+    if (!pMemory)
+    {
+      udDebugPrintf("udAlloc failure, %zu", size);
+      __debugbreak();
+    }
   }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
+
   return pMemory;
 }
 
@@ -74,13 +74,14 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags, co
 #if defined(_MSC_VER)
   void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc_dbg(nullptr, size, 1, alignment, pFile, line) : _aligned_malloc_dbg(size, alignment, pFile, line);
 
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pMemory)
+  if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
-    udDebugPrintf("udAllocAligned failure, %llu", size);
-    __debugbreak();
+    if (!pMemory)
+    {
+      udDebugPrintf("udAllocAligned failure, %zu", size);
+      __debugbreak();
+    }
   }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 
 #elif defined(__GNUC__)
   if (alignment < sizeof(size_t))
@@ -117,15 +118,16 @@ void *_udRealloc(void *pMemory, size_t size, const char *pFile, int line)
   pMemory = realloc(pMemory, size);
 #endif // defined(_MSC_VER)
 
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pMemory)
+  if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
-    udDebugPrintf("udRealloc failure, %llu", size);
-    __debugbreak();
+    if (!pMemory)
+    {
+      udDebugPrintf("udRealloc failure, %zu", size);
+      __debugbreak();
+    }
   }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
+  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
 
   return pMemory;
 }
@@ -137,13 +139,15 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char
   DebugTrackMemoryFree(pMemory, pFile, line);
 #if defined(_MSC_VER)
   pMemory = _aligned_realloc_dbg(pMemory, size, alignment, pFile, line);
-#if __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-  if (!pMemory)
+
+  if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
-    udDebugPrintf("udReallocAligned failure, %llu", size);
-    __debugbreak();
+    if (!pMemory)
+    {
+      udDebugPrintf("udReallocAligned failure, %zu", size);
+      __debugbreak();
+    }
   }
-#endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 #elif defined(__GNUC__)
   if (!pMemory)
   {
@@ -163,7 +167,6 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char
 # error "Unsupported platform!"
 #endif
   DebugTrackMemoryAlloc(pMemory, size, pFile, line);
-
 
   return pMemory;
 }

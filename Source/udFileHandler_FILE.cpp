@@ -76,12 +76,13 @@ static FILE *OpenWithFlags(const char *pFilename, udFileOpenFlags flags)
 
   if (pFile)
     ++g_udFileHandler_FILEHandleCount;
-#if FILE_DEBUG
-  if (pFile)
-    udDebugPrintf("Opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount);
-  else
-    udDebugPrintf("Error opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount);
-#endif
+  if constexpr (FILE_DEBUG)
+  {
+    if (pFile)
+      udDebugPrintf("Opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount.load());
+    else
+      udDebugPrintf("Error opening %s (%s) handleCount=%d\n", pFilename, pMode, g_udFileHandler_FILEHandleCount.load());
+  }
 
   return pFile;
 }
@@ -180,9 +181,9 @@ static udResult udFileHandler_FILESeekRead(udFile *pFile, void *pBuffer, size_t 
 
   if (pFILE->pCrtFile == nullptr)
   {
-#if FILE_DEBUG
-    udDebugPrintf("Reopening handle for %s (handleCount=%d)\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount);
-#endif
+    if constexpr (FILE_DEBUG)
+      udDebugPrintf("Reopening handle for %s (handleCount=%d)\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount.load());
+
     pFILE->pCrtFile = OpenWithFlags(pFile->pFilenameCopy, pFile->flagsCopy);
     UD_ERROR_NULL(pFILE->pCrtFile, udR_OpenFailure);
   }
@@ -260,9 +261,9 @@ static udResult udFileHandler_FILERelease(udFile *pFile)
   // Don't support release/reopen on files for create/writing
   UD_ERROR_IF(!pFile->pFilenameCopy || (pFile->flagsCopy & (udFOF_Create|udFOF_Write)), udR_InvalidConfiguration);
 
-#if FILE_DEBUG
-  udDebugPrintf("Releasing handle for %s (handleCount=%d) pCrtFile=%p\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount, pFILE->pCrtFile);
-#endif
+  if constexpr (FILE_DEBUG)
+    udDebugPrintf("Releasing handle for %s (handleCount=%d) pCrtFile=%p\n", pFile->pFilenameCopy, g_udFileHandler_FILEHandleCount.load(), (void*)pFILE->pCrtFile);
+
   fclose(pFILE->pCrtFile);
   pFILE->pCrtFile = nullptr;
   --g_udFileHandler_FILEHandleCount;

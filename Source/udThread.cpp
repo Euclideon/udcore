@@ -89,10 +89,12 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
   UDASSERT(pThread->threadStarter, "No starter function");
   do
   {
-#if DEBUG_CACHE
-    if (reclaimed)
-      udDebugPrintf("Successfully reclaimed thread %p\n", pThread);
-#endif
+    if constexpr (DEBUG_CACHE)
+    {
+      if (reclaimed)
+        udDebugPrintf("Successfully reclaimed thread %p\n", (void *)pThread);
+    }
+
     threadReturnValue = pThread->threadStarter ? pThread->threadStarter(pThread->pThreadData) : 0;
 
     pThread->threadStarter = nullptr;
@@ -106,22 +108,21 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
       {
         if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], pThread, nullptr) == nullptr)
         {
-#if DEBUG_CACHE
-          udDebugPrintf("Making thread %p available for cache (slot %d)\n", pThread, slotIndex);
-#endif
+          if constexpr (DEBUG_CACHE)
+            udDebugPrintf("Making thread %p available for cache (slot %d)\n", (void *)pThread, slotIndex);
+
           // Successfully added to the cache, now wait to see if anyone wants to dance
           int timeoutWakeup = udWaitSemaphore(pThread->pCacheSemaphore, CACHE_WAIT_SECONDS * 1000);
           if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) == pThread)
           {
-#if DEBUG_CACHE
-            udDebugPrintf("Allowing thread %p to die\n", pThread);
-#endif
+            if constexpr (DEBUG_CACHE)
+              udDebugPrintf("Allowing thread %p to die\n", (void *)pThread);
           }
           else
           {
-#if DEBUG_CACHE
-            udDebugPrintf("Reclaiming thread %p\n", pThread);
-#endif
+            if constexpr (DEBUG_CACHE)
+              udDebugPrintf("Reclaiming thread %p\n", (void *)pThread);
+
             // If it was woken via timeout, AND it was reclaimed, there's an outstanding semaphore ref
             if (timeoutWakeup)
               udWaitSemaphore(pThread->pCacheSemaphore);
@@ -168,9 +169,9 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
     pThread = udAllocType(udThread, 1, udAF_Zero);
     UD_ERROR_NULL(pThread, udR_MemoryAllocationFailure);
     pThread->pCacheSemaphore = udCreateSemaphore();
-#if DEBUG_CACHE
-    udDebugPrintf("Creating udThread %p\n", pThread);
-#endif
+    if constexpr (DEBUG_CACHE)
+      udDebugPrintf("Creating udThread %p\n", (void *)pThread);
+
     pThread->threadStarter = threadStarter;
     pThread->pThreadData = pThreadData;
     pThread->refCount = 1;

@@ -33,8 +33,9 @@ udResult udImage_Load(udImage **ppImage, const char *pFilename, bool infoOnly)
     UD_ERROR_CHECK(udFile_Load(pFilename, &pMem, &fileLen));
   }
   UD_ERROR_CHECK(udImage_LoadFromMemory(ppImage, pMem, (size_t)fileLen, infoOnly));
-  // Uncomment for debugging
-  //udDebugPrintf("%s %d x %d to %p (%s)\n", infoOnly ? "Read header" : "Loaded", (*ppImage)->width, (*ppImage)->height, (void*)*ppImage, pFilename);
+  // Set to true for debugging
+  if constexpr (false)
+    udDebugPrintf("%s %d x %d to %p (%s)\n", infoOnly ? "Read header" : "Loaded", (*ppImage)->width, (*ppImage)->height, (void*)*ppImage, pFilename);
 
 epilogue:
   udFile_Close(&pFile);
