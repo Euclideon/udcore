@@ -203,9 +203,9 @@ udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pF
     if (udGeoZone_SetFromWKT(&zone, pWKT->AsString()) != udR_Success)
     {
       ++failed;
-#if UD_DEBUG
-      udDebugPrintf("%s\n", pWKT->AsString());
-#endif
+      if constexpr (UD_DEBUG)
+        udDebugPrintf("%s\n", pWKT->AsString());
+
       continue;
     }
 
@@ -1533,10 +1533,8 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         pZone->coLatConeAxis = wkt->Get("%s.values[0]", pElem).AsDouble();
       else if (udStrEqual(pName, "rectified_grid_angle"))
         pZone->parallel = wkt->Get("%s.values[0]", pElem).AsDouble();
-#if UD_DEBUG
-      else
+      else if constexpr (UD_DEBUG)
         udDebugPrintf("Unknown PARAMETER: %s\n", pName);
-#endif
     }
     else if (udStrEqual(pType, "UNIT"))
     {
@@ -1626,13 +1624,14 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         }
       }
 
-#if UD_DEBUG
-      if (j == udGZGD_Count)
+      if constexpr (UD_DEBUG)
       {
-        udStrcpy(pZone->datumShortName, pName);
-        udDebugPrintf("Unknown Datum: %s\n", pName);
+        if (j == udGZGD_Count)
+        {
+          udStrcpy(pZone->datumShortName, pName);
+          udDebugPrintf("Unknown Datum: %s\n", pName);
+        }
       }
-#endif
     }
     else if (udStrEqual(pType, "GEOCCS"))
     {
@@ -1683,9 +1682,8 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
       if (j == udGZGD_Count)
       {
         udStrcpy(pZone->datumShortName, pName);
-#if UD_DEBUG
-        udDebugPrintf("Unknown Datum: %s\n", pName);
-#endif //UD_DEBUG
+        if constexpr (UD_DEBUG)
+          udDebugPrintf("Unknown Datum: %s\n", pName);
       }
     }
     else if (udStrEqual(pType, "DATUM"))
@@ -1778,12 +1776,10 @@ static void udGeoZone_JSONTreeSearch(udGeoZone *pZone, udJSON *wkt, const char *
         if (pZone->scaleFactor == 0) // default for EquiCylindrical is 1.0
           pZone->scaleFactor = 1.0;
       }
-#if UD_DEBUG
-      else
+      else if constexpr (UD_DEBUG)
       {
         udDebugPrintf("Unsupported Projection: %s\n", pName);
       }
-#endif
     }
     else if (udStrEqual(pType, "SPHEROID"))
     {
