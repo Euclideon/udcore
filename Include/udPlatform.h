@@ -24,7 +24,7 @@
 # define UD_WORD_MAX    0x7fffffffffffffffLL
   typedef signed long long udIWord;
   typedef unsigned long long udUWord;
-#elif defined(_WIN32) || defined(__i386__)  || defined(__arm__) || defined(__native_client__) || defined(EMSCRIPTEN)
+#elif defined(_WIN32) || defined(__i386__)  || defined(__arm__) || defined(EMSCRIPTEN)
    //32-bit code
 # define UD_64BIT (0)
 # define UD_32BIT (1)
@@ -38,12 +38,7 @@
 # error "Unknown architecture (32/64 bit)"
 #endif
 
-#if defined(__native_client__)
-# include <string.h>
-# include <limits.h>
-# define UDPLATFORM_NACL 1
-# define USE_GLES
-#elif defined(EMSCRIPTEN)
+#if defined(EMSCRIPTEN)
 # include <stddef.h>
 # include <limits.h>
 # include <memory.h>
@@ -112,10 +107,6 @@
 # define UDPLATFORM_IOS 0
 #endif
 
-#ifndef UDPLATFORM_NACL
-# define UDPLATFORM_NACL 0
-#endif
-
 #ifndef UDPLATFORM_EMSCRIPTEN
 # define UDPLATFORM_EMSCRIPTEN 0
 #endif
@@ -129,16 +120,8 @@
 #endif
 
 #if UDPLATFORM_WINDOWS
-# define udU64L(x) x##ULL
-# define udI64L(x) x##LL
 # define UDFORCE_INLINE __forceinline
-#elif UDPLATFORM_NACL || UDPLATFORM_EMSCRIPTEN
-# define udU64L(x) x##ULL
-# define udI64L(x) x##LL
-# define UDFORCE_INLINE inline
 #else
-# define udU64L(x) x##UL
-# define udI64L(x) x##L
 # define UDFORCE_INLINE inline
 #endif
 
@@ -163,7 +146,7 @@ inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
 
-#elif UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
+#elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
 #include <unistd.h>
 #include <sched.h>
 #include <cstddef> // Required for std::nullptr_t below
@@ -241,19 +224,13 @@ template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T
 # define UD_NO_DISCARD_(reason)
 #endif
 
-#if defined(__clang__) || defined(__GNUC__)
-# if !UDCPP11 && !defined(nullptr)
-#   define nullptr NULL
-# endif // !UDCPP11 && !defined(nullptr)
-#endif // defined(__clang__) || defined(__GNUC__)
-
 #if UDCPP11 && !defined(_MSC_VER)
 # include <cstddef>
   using std::nullptr_t;
 #endif //!defined(_MSC_VER)
 
 
-#if UDPLATFORM_LINUX || UDPLATFORM_NACL || UDPLATFORM_EMSCRIPTEN
+#if UDPLATFORM_LINUX || UDPLATFORM_EMSCRIPTEN
 #include <alloca.h>
 #elif UDPLATFORM_UWP
 #include <malloc.h>

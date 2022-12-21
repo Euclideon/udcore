@@ -956,8 +956,6 @@ struct udFindDirData : public udFindDir
     pFilename = pDirent->d_name;
     isDirectory = !!(pDirent->d_type & DT_DIR);
   }
-#elif UDPLATFORM_NACL
-  //Do nothing
 #else
 #error "Unsupported platform"
 #endif
@@ -1105,9 +1103,6 @@ udResult udOpenDir(udFindDir **ppFindDir, const char *pFolder)
   pFindData->pDirent = readdir(pFindData->pDir);
   UD_ERROR_NULL(pFindData->pDirent, udR_NotFound);
   pFindData->SetMembers();
-#elif UDPLATFORM_NACL
-  // TODO: See if this implementation is required
-  UD_ERROR_SET(udR_NotFound);
 #else
   #error "Unsupported Platform"
 #endif
@@ -1141,8 +1136,6 @@ udResult udReadDir(udFindDir *pFindDir)
   if (!pFindData->pDirent)
     return udR_NotFound;
   pFindData->SetMembers();
-#elif UDPLATFORM_NACL
-  // Do nothing
 #else
   #error "Unsupported Platform"
 #endif
@@ -1164,8 +1157,6 @@ udResult udCloseDir(udFindDir **ppFindDir)
   udFindDirData *pFindData = static_cast<udFindDirData *>(*ppFindDir);
   if (pFindData->pDir)
     closedir(pFindData->pDir);
-#elif UDPLATFORM_NACL
-  // Do nothing
 #else
   #error "Unsupported Platform"
 #endif
