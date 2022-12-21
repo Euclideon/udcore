@@ -31,11 +31,6 @@
 #include <sys/stat.h>
 #include <atomic>
 
-#if UDPLATFORM_NACL
-# define fseeko fseek
-# define ftello ftell
-#endif
-
 #define FILE_DEBUG 0
 
 // Declarations of the fall-back standard handler that uses crt FILE as a back-end

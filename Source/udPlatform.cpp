@@ -82,9 +82,6 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags, co
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
 
-#elif UDPLATFORM_NACL
-  void *pMemory =  (flags & udAF_Zero) ? calloc(size, 1) : malloc(size);
-
 #elif defined(__GNUC__)
   if (alignment < sizeof(size_t))
   {
@@ -147,8 +144,6 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char
     __debugbreak();
   }
 #endif // __BREAK_ON_MEMORY_ALLOCATION_FAILURE
-#elif UDPLATFORM_NACL
-  pMemory = realloc(pMemory, size);
 #elif defined(__GNUC__)
   if (!pMemory)
   {
