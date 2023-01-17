@@ -72,7 +72,18 @@ solution "udCore"
 
 	pic "On"
 	editorintegration "on"
-	cppdialect "C++17"
+	cppdialect "C++20"
+	filter { "system:android", "files:**.cpp" }
+		buildoptions { "-std=c++20" }
+	filter {}
+	if os.target() == premake.LINUX then
+		-- Ubuntu 20.04 only supports C++2a
+		local pipe = io.popen("gcc -std=c++20 2>&1")
+		local result = pipe:read('*a')
+		if string.find(result, "did you mean ‘-std=c++2a’?", 0, true) then
+			cppdialect "C++2a"
+		end
+	end
 
 	startproject "udTest"
 
