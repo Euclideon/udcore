@@ -352,7 +352,7 @@ struct udSemaphore
 #else
   udMutex *pMutex;
   udConditionVariable *pCondition;
-  volatile int count;
+  std::atomic<int> count;
 #endif
 };
 
