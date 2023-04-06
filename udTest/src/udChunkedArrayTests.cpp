@@ -347,3 +347,181 @@ TEST(udChunkedArrayTests, Iterator)
 
   array.Deinit();
 }
+
+template<typename T>
+bool iteratorIsValid(const udChunkedArrayConstIterator<T> &it, const udChunkedArray<T> array)
+{
+  udResult result = udR_Success;
+  UD_ERROR_IF(it.ppCurrChunk < array.ppChunks, udR_Failure);
+  UD_ERROR_IF(it.ppCurrChunk > array.ppChunks + array.chunkCount, udR_Failure);
+  if (it.ppCurrChunk == array.ppChunks)
+  {
+    UD_ERROR_IF(it.currChunkElementIndex < array.inset, udR_Failure);
+  }
+  else if (it.ppCurrChunk == array.ppChunks + array.chunkCount - 1)
+  {
+    UD_ERROR_IF(it.currChunkElementIndex > array.length % array.chunkElementCount, udR_Failure);
+  }
+  else
+  {
+    UD_ERROR_IF(it.currChunkElementIndex < 0, udR_Failure);
+    UD_ERROR_IF(it.currChunkElementIndex >= array.chunkElementCount, udR_Failure);
+  }
+epilogue:
+  return result == udR_Success;
+}
+
+TEST(udChunkedArrayTests, ConstIterator)
+{
+  udChunkedArray<int> tempArray;
+  tempArray.Init(8);
+  for (int i = 0; i < 32; ++i)
+    tempArray.PushBack(i);
+
+  int i;
+  {
+    const udChunkedArray<int> array = tempArray;
+
+    // Iterates across chunk boundaries correctly
+    i = 0;
+    for (auto x : array)
+    {
+      EXPECT_EQ(i, x);
+      ++i;
+    }
+    EXPECT_EQ(array.length, i);
+  }
+
+  // Iterates partially filled chunks correct
+  {
+    tempArray.PopBack();
+    const udChunkedArray<int> array = tempArray;
+
+    i = 0;
+    for (auto x : array)
+    {
+      EXPECT_EQ(i, x);
+      ++i;
+    }
+    EXPECT_EQ(array.length, i);
+  }
+
+  // Iterates with inset chunk correctly
+  {
+    tempArray.PopFront();
+    const udChunkedArray<int> array = tempArray;
+
+    i = 1;
+    for (auto x : array)
+    {
+      EXPECT_EQ(i, x);
+      ++i;
+    }
+    EXPECT_EQ(array.length, i - 1);
+  }
+
+  {
+    const udChunkedArray<int> array = tempArray;
+    // array.end() is over the end of the array and not valid by this definition (dereferencable)
+    EXPECT_TRUE(iteratorIsValid(array.end() - 1, array));
+    udChunkedArrayConstIterator<int> it = array.begin();
+    EXPECT_TRUE(iteratorIsValid(it, array));
+
+    EXPECT_EQ(it.currChunkElementIndex, array.inset);
+    EXPECT_EQ(it.ppCurrChunk, array.ppChunks);
+
+    udChunkedArrayConstIterator<int> copy = ++it;
+    EXPECT_EQ(copy, it);
+    EXPECT_EQ(*it, 2);
+
+    copy = --it;
+    EXPECT_EQ(copy, it);
+    EXPECT_EQ(*it, 1);
+
+    it += 3;
+    EXPECT_EQ(*it, 4);
+
+    it -= 2;
+    EXPECT_EQ(*it, 2);
+
+    EXPECT_EQ(it[3], 5);
+    EXPECT_EQ(*it, 2); //unchanged
+
+    //defintion of comparisons
+    copy = it;
+
+    EXPECT_EQ(it < copy, false);
+    EXPECT_EQ(it > copy, false);
+    EXPECT_EQ(it <= copy, true);
+    EXPECT_EQ(it >= copy, true);
+
+    EXPECT_EQ(it != copy, false);
+    EXPECT_EQ(it == copy, true);
+
+    EXPECT_EQ(it < (it + 3), true);
+    EXPECT_EQ(it < (it - 1), false);
+
+    EXPECT_EQ(it > (it + 3), false);
+    EXPECT_EQ(it > (it - 1), true);
+
+    auto it2 = it - 2;
+    --it;
+    EXPECT_EQ(it2, --it);
+
+    i = 1;
+    for (auto iter = array.begin(); iter < array.end(); ++iter)
+    {
+      EXPECT_EQ(*iter, i);
+      auto iter2 = array.begin() + i;
+      //test that indexing into the array by adding to an interator will give the same result as dereferencing the iterator
+      EXPECT_EQ(*(iter2 - 1), *iter);
+      ++i;
+    }
+    EXPECT_EQ(i, array.length + 1);
+
+    for (auto iter = array.end() - 1; iter > array.begin(); --iter)
+    {
+      --i;
+      EXPECT_EQ(*iter, i);
+      //test that indexing into the array using an interator will give the same result as dereferencing the iterator
+      EXPECT_EQ(array.begin()[i - 1], *iter);
+    }
+
+    EXPECT_EQ(array.end() - array.begin(), (int)array.length);
+  }
+
+  {
+    tempArray.Deinit();
+    tempArray.Init(16);
+    for (i = 0; i < 32; ++i) // at least 2 chunks
+    {
+      tempArray.PushBack(i % 4);
+    }
+
+    // do the test on an array with an inset:
+    tempArray.PopFront();
+    std::sort(tempArray.begin(), tempArray.end());
+    const udChunkedArray<int> array = tempArray;
+
+    int previous = array[0];
+    for (int el : array)
+    {
+      EXPECT_TRUE(previous <= el);
+      previous = el;
+    }
+
+    //testing std::reverse_iterator: should return reverse order
+    auto reverseStart = std::reverse_iterator<udChunkedArrayConstIterator<int>>(array.end());
+    auto reverseEnd = std::reverse_iterator<udChunkedArrayConstIterator<int>>(array.begin());
+
+    EXPECT_EQ(reverseEnd - reverseStart, (int)array.length);
+    previous = *reverseStart;
+    for (auto iter = reverseStart; iter < reverseEnd; iter++)
+    {
+      EXPECT_TRUE(*iter <= previous);
+      previous = *iter;
+    }
+  }
+
+  tempArray.Deinit();
+}
