@@ -38,7 +38,12 @@ static void SetThreadName(DWORD dwThreadID, const char* threadName)
 #include <sched.h>
 #include <pthread.h>
 #include <errno.h>
-#include <semaphore.h>
+
+#if UDPLATFORM_OSX || UDPLATFORM_IOS || UDPLATFORM_IOS_SIMULATOR
+# include <dispatch/dispatch.h>
+#else
+# include <semaphore.h>
+#endif
 
 void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
 {
@@ -331,28 +336,14 @@ udResult udThread_Join(udThread *pThread, int waitMs)
   return udR_Success;
 }
 
-#if UDPLATFORM_OSX || UDPLATFORM_IOS
-# define UD_USE_PLATFORM_SEMAPHORE 0
-# define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 1
-#else
-# define UD_USE_PLATFORM_SEMAPHORE 0
-# define UD_UNSUPPORTED_PLATFORM_SEMAPHORE 0
-#endif
-
 struct udSemaphore
 {
-#if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   HANDLE handle;
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
-  sem_t handle;
-# endif
+#elif UDPLATFORM_OSX || UDPLATFORM_IOS || UDPLATFORM_IOS_SIMULATOR
+  dispatch_semaphore_t handle;
 #else
-  udMutex *pMutex;
-  udConditionVariable *pCondition;
-  std::atomic<int> count;
+  sem_t handle;
 #endif
 };
 
@@ -363,19 +354,14 @@ udSemaphore *udCreateSemaphore()
   udResult result;
   udSemaphore *pSemaphore = udAllocType(udSemaphore, 1, udAF_None);
   UD_ERROR_NULL(pSemaphore, udR_MemoryAllocationFailure);
-#if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   pSemaphore->handle = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
-  UD_ERROR_NULL(pSemaphore, udR_Failure);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
-  UD_ERROR_IF(sem_init(&pSemaphore->handle, 0, 0) == -1, udR_Failure);
-# endif
+  UD_ERROR_NULL(pSemaphore->handle, udR_Failure);
+#elif UDPLATFORM_OSX || UDPLATFORM_IOS || UDPLATFORM_IOS_SIMULATOR
+  pSemaphore->handle = dispatch_semaphore_create(0);
+  UD_ERROR_NULL(pSemaphore->handle, udR_Failure);
 #else
-  pSemaphore->pMutex = udCreateMutex();
-  pSemaphore->pCondition = udCreateConditionVariable();
-  pSemaphore->count = 0;
+  UD_ERROR_IF(sem_init(&pSemaphore->handle, 0, 0) == -1, udR_Failure);
 #endif
 
   result = udR_Success;
@@ -383,22 +369,6 @@ udSemaphore *udCreateSemaphore()
 epilogue:
   return pSemaphore;
 }
-
-#if !UD_USE_PLATFORM_SEMAPHORE
-// ----------------------------------------------------------------------------
-// Author: Samuel Surtees, August 2017
-void udDestroySemaphore_Internal(udSemaphore *pSemaphore)
-{
-  if (pSemaphore == nullptr)
-    return;
-
-  udReleaseMutex(pSemaphore->pMutex);
-  udDestroyMutex(&pSemaphore->pMutex);
-  udDestroyConditionVariable(&pSemaphore->pCondition);
-
-  udFree(pSemaphore);
-}
-#endif // !UD_USE_PLATFORM_SEMAPHORE
 
 // ****************************************************************************
 // Author: Samuel Surtees, August 2017
@@ -411,19 +381,14 @@ void udDestroySemaphore(udSemaphore **ppSemaphore)
   if (udInterlockedCompareExchangePointer(ppSemaphore, nullptr, pSemaphore) != pSemaphore)
     return;
 
-#if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   CloseHandle(pSemaphore->handle);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
-  sem_destroy(&pSemaphore->handle);
-# endif
-  udFree(pSemaphore);
+#elif UDPLATFORM_OSX || UDPLATFORM_IOS || UDPLATFORM_IOS_SIMULATOR
+  dispatch_release(pSemaphore->handle);
 #else
-  udLockMutex(pSemaphore->pMutex);
-  udDestroySemaphore_Internal(pSemaphore);
+  sem_destroy(&pSemaphore->handle);
 #endif
+  udFree(pSemaphore);
 }
 
 // ****************************************************************************
@@ -433,23 +398,14 @@ void udIncrementSemaphore(udSemaphore *pSemaphore, int count)
   if (pSemaphore == nullptr)
     return;
 
-#if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   ReleaseSemaphore(pSemaphore->handle, count, nullptr);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#elif UDPLATFORM_OSX || UDPLATFORM_IOS || UDPLATFORM_IOS_SIMULATOR
   while (count-- > 0)
-    sem_post(&pSemaphore->handle);
-# endif
+    dispatch_semaphore_signal(pSemaphore->handle);
 #else
   while (count-- > 0)
-  {
-    udLockMutex(pSemaphore->pMutex);
-    ++(pSemaphore->count);
-    udSignalConditionVariable(pSemaphore->pCondition);
-    udReleaseMutex(pSemaphore->pMutex);
-  }
+    sem_post(&pSemaphore->handle);
 #endif
 }
 
@@ -460,12 +416,15 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
   if (pSemaphore == nullptr)
     return -1;
 
-#if UD_USE_PLATFORM_SEMAPHORE
-# if UDPLATFORM_WINDOWS
+#if UDPLATFORM_WINDOWS
   return WaitForSingleObject(pSemaphore->handle, waitMs);
-# elif UD_UNSUPPORTED_PLATFORM_SEMAPHORE
-#  error "Unsupported platform."
-# else
+#elif UDPLATFORM_OSX || UDPLATFORM_IOS || UDPLATFORM_IOS_SIMULATOR
+  dispatch_time_t timeout = DISPATCH_TIME_FOREVER;
+  if (waitMs != UDTHREAD_WAIT_INFINITE)
+    timeout = dispatch_time(DISPATCH_TIME_NOW, waitMs * NSEC_PER_SEC / 1000);
+
+  return (int)dispatch_semaphore_wait(pSemaphore->handle, timeout);
+#else
   if (waitMs == UDTHREAD_WAIT_INFINITE)
   {
     return sem_wait(&pSemaphore->handle);
@@ -484,51 +443,6 @@ int udWaitSemaphore(udSemaphore *pSemaphore, int waitMs)
 
     return sem_timedwait(&pSemaphore->handle, &ts);
   }
-# endif
-#else
-  udLockMutex(pSemaphore->pMutex);
-  bool retVal;
-  if (pSemaphore->count > 0)
-  {
-    retVal = true;
-    pSemaphore->count--;
-  }
-  else
-  {
-    if (waitMs == UDTHREAD_WAIT_INFINITE)
-    {
-      retVal = true;
-      while (pSemaphore->count == 0)
-      {
-        retVal = (udWaitConditionVariable(pSemaphore->pCondition, pSemaphore->pMutex, waitMs) == 0);
-
-        // If something went wrong, exit the loop
-        if (!retVal)
-          break;
-      }
-
-      if (retVal)
-        pSemaphore->count--;
-    }
-    else
-    {
-      retVal = (udWaitConditionVariable(pSemaphore->pCondition, pSemaphore->pMutex, waitMs) == 0);
-
-      if (retVal)
-      {
-        // Check for spurious wake-up
-        if (pSemaphore->count > 0)
-          pSemaphore->count--;
-        else
-          retVal = false;
-      }
-    }
-  }
-
-  udReleaseMutex(pSemaphore->pMutex);
-
-  // 0 is success, not 0 is failure
-  return !retVal;
 #endif
 }
 
