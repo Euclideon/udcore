@@ -1,9 +1,9 @@
 #include "udUUID.h"
 
 #include "udStringUtil.h"
-#include "udMath.h"
 #include "udCrypto.h"
 #include "udPlatformUtil.h"
+#include <algorithm>
 
 // ***************************************************************************
 // Author: Paul Fox, April 2018
@@ -20,7 +20,7 @@ udResult udUUID_SetFromString(udUUID *pUUID, const char *pStr)
     return udR_InvalidParameter;
 
   memset(pUUID, 0, sizeof(udUUID));
-  memcpy(pUUID->internal_bytes, pStr, udMin((size_t)udUUID::udUUID_Length, udStrlen(pStr)));
+  memcpy(pUUID->internal_bytes, pStr, std::min((size_t)udUUID::udUUID_Length, udStrlen(pStr)));
 
   return udR_Success;
 }

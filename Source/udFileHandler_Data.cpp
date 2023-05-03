@@ -3,7 +3,7 @@
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udCompression.h"
-#include "udMath.h"
+#include <algorithm>
 
 // Data URLs support udFile handler
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs
@@ -89,7 +89,7 @@ static udResult udFileHandler_DataSeekRead(udFile *pFile, void *pBuffer, size_t 
   size_t actualRead;
 
   UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pData->dataLen, udR_InvalidParameter);
-  actualRead = udMin(bufferLength, pData->dataLen - (size_t)seekOffset);
+  actualRead = std::min(bufferLength, pData->dataLen - (size_t)seekOffset);
   memcpy(pBuffer, pData->pData + seekOffset, actualRead);
 
   if (pActualRead)
