@@ -7,7 +7,7 @@
 
 const char *g_udLastErrorFilename = nullptr;
 int g_udLastErrorLine = 0;
-bool g_udBreakOnError = true;
+int g_udBreakOnError = true;
 unsigned g_udLastErrorHelpCode;
 
 struct udResultInfo

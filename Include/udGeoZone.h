@@ -9,6 +9,7 @@
 //
 
 #include "udMath.h"
+#include "udResult.h"
 
 enum udGeoZoneEllipsoid
 {

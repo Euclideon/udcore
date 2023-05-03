@@ -11,7 +11,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-extern bool g_udBreakOnError;      // Set to true normally, unset and reset around sections of code (eg tests) that aren't unexpected
+extern int g_udBreakOnError;      // Set to true normally, unset and reset around sections of code (eg tests) that aren't unexpected
 extern const char *g_udLastErrorFilename;
 extern int g_udLastErrorLine;
 
@@ -98,6 +98,6 @@ enum udResult
 };
 
 // Return a human-friendly string for a given result code
-const char *udResultAsString(udResult result);
+const char *udResultAsString(enum udResult result);
 
 #endif // UDRESULT_H

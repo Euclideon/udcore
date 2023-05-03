@@ -8,6 +8,7 @@
 // TCP and TLS socket implementation
 //
 
+#include "udResult.h"
 #include "udMath.h"
 
 // This module is based heavily on the one from lorCore, http://github.com/LORgames/lorcore/

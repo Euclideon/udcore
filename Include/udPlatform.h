@@ -132,6 +132,8 @@
 # endif
 #include <Windows.h>
 #include <Intrin.h>
+
+#if __cplusplus
 # if UD_32BIT
 template <typename T, typename U>
 inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return (T*)_InterlockedExchange((volatile long*)dest, (long)exchange); }
@@ -143,10 +145,16 @@ inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return
 template <typename T, typename U>
 inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U *comparand) { return (T*)_InterlockedCompareExchangePointer((volatile PVOID*)dest, (PVOID)exchange, (PVOID)comparand); }
 # endif // UD_32BIT
+# else // !__cplusplus
+inline void *udInterlockedExchangePointer(void *volatile *dest, void *exchange) { return _InterlockedExchangePointer((volatile PVOID *)dest, (PVOID)exchange); }
+inline void *udInterlockedCompareExchangePointer(void *volatile *dest, void *exchange, void *comparand) { return _InterlockedCompareExchangePointer((volatile PVOID *)dest, (PVOID)exchange, (PVOID)comparand); }
+#endif // __cplusplus
+
 # define udSleep(x) Sleep(x)
 # define udYield() SwitchToThread()
 
 #elif UDPLATFORM_LINUX || UDPLATFORM_OSX || UDPLATFORM_IOS_SIMULATOR || UDPLATFORM_IOS || UDPLATFORM_ANDROID || UDPLATFORM_EMSCRIPTEN
+#if __cplusplus
 #include <unistd.h>
 #include <sched.h>
 #include <cstddef> // Required for std::nullptr_t below
@@ -162,12 +170,21 @@ inline T *udInterlockedExchangePointer(T * volatile* dest, U *exchange) { return
 #endif
 template <typename T, typename U>
 inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U *comparand) { return (T*)__sync_val_compare_and_swap((void * volatile*)dest, (void*)comparand, (void*)exchange); }
+#else // !__cplusplus
+inline void *udInterlockedExchangePointer(void *volatile *dest, void *exchange) { return __sync_lock_test_and_set((void *volatile *)dest, (void *)exchange); }
+inline void *udInterlockedCompareExchangePointer(void *volatile *dest, void *exchange, void *comparand) { return __sync_val_compare_and_swap((void *volatile *)dest, (void *)comparand, (void *)exchange); }
+#endif // __cplusplus
+
 # define udSleep(x) usleep((x)*1000)
 # define udYield(x) sched_yield()
 
 #else
 #error Unknown platform
 #endif
+
+#if __cplusplus
+template <typename T, size_t N> constexpr size_t udLengthOf(T(&)[N]) { return N; }
+#define UDARRAYSIZE udLengthOf
 
 // nullptr helpers
 template <typename T> inline T *udInterlockedExchangePointer(T * volatile* dest, std::nullptr_t) { return udInterlockedExchangePointer(dest, (T*)nullptr); }
@@ -178,6 +195,7 @@ template <typename T> T             udMax(T a, T b) { return (a > b) ? a : b; }
 template <typename T> T             udMin(T a, T b) { return (a < b) ? a : b; }
 template <typename T, typename U> T udMax(T a, U b) { return (a > (T)b) ? a : (T)b; }
 template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T)b; }
+#endif
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 
@@ -250,16 +268,13 @@ enum udAllocationFlags
   udAF_Zero = 1
 };
 
-// Inline of operator to allow flags to be combined and retain type-safety
-inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
-
-void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags, const char *pFile, int line);
+void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, enum udAllocationFlags flags, const char *pFile, int line);
 #define udMemDup(pMemory, size, additionalBytes, flags) _udMemDup(pMemory, size, additionalBytes, flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-void *_udAlloc(size_t size, udAllocationFlags flags, const char *pFile, int line);
+void *_udAlloc(size_t size, enum udAllocationFlags flags, const char *pFile, int line);
 #define udAlloc(size) _udAlloc(size, udAF_None, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags, const char *pFile, int line);
+void *_udAllocAligned(size_t size, size_t alignment, enum udAllocationFlags flags, const char *pFile, int line);
 #define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 #define udAllocFlags(size, flags) _udAlloc(size, flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
@@ -273,6 +288,7 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char
 #define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 void _udFreeInternal(void *pMemory, const char *pFile, int line);
+#if __cplusplus
 template <typename T>
 void _udFree(T *&pMemory, const char *pFile, int line)
 {
@@ -283,7 +299,19 @@ void _udFree(T *&pMemory, const char *pFile, int line)
   }
 }
 #define udFree(pMemory) _udFree(pMemory, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+#else
+inline void _udFree(void **ppMemory, const char *pFile, int line)
+{
+  void *pActualPtr = *ppMemory;
+  if (pActualPtr && udInterlockedCompareExchangePointer(ppMemory, NULL, pActualPtr) == pActualPtr)
+  {
+    _udFreeInternal((void *)pActualPtr, pFile, line);
+  }
+}
+#define udFree(pMemory) _udFree(&pMemory, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+#endif
 
+#if __cplusplus
 // A secure free will overwrite the memory (to the size specified) with a random 32-bit
 // constant. For example cryptographic functions use this to overwrite key data before freeing
 template <typename T>
@@ -305,6 +333,7 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
   }
 }
 #define udFreeSecure(pMemory, size) _udFreeSecure(pMemory, size, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+#endif
 
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat warning
 #define udAllocStack(type, count, flags)   ((flags & udAF_Zero) ? (type*)udSetZero(alloca(sizeof(type) * (count)), sizeof(type) * (count)) : (type*)alloca(sizeof(type) * (count)))
@@ -350,16 +379,15 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
 
 #define MAKE_FOURCC(a, b, c, d) (  (((uint32_t)(a)) << 0) | (((uint32_t)(b)) << 8) | (((uint32_t)(c)) << 16) | (((uint32_t)(d)) << 24) )
 
-template <typename T, size_t N> constexpr size_t udLengthOf(T(&)[N]) { return N; }
-#define UDARRAYSIZE udLengthOf
-
 // Get physical memory available if possible, otherwise outputs 0 to *pTotalMemory and returns udR_Failure
-udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
+enum udResult udGetTotalPhysicalMemory(uint64_t *pTotalMemory);
 
 // CPU Feature tests
-bool udCPUSupportsAVX();
-bool udCPUSupportsAVX2();
+int udCPUSupportsAVX();
+int udCPUSupportsAVX2();
 
+#if __cplusplus
 #include "udDebug.h"
+#endif
 
 #endif // UDPLATFORM_H

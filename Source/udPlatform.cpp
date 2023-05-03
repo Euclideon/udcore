@@ -249,13 +249,13 @@ static udCPUFeatureDetection s_cpuFeatureDetectionStartup;
 static bool s_udCPUSupportsAVX = false;
 static bool s_udCPUSupportsAVX2 = false;
 
-bool udCPUSupportsAVX()
+int udCPUSupportsAVX()
 {
   udCPUFeatureDetection::DetectFeatures();
   return s_udCPUSupportsAVX;
 }
 
-bool udCPUSupportsAVX2()
+int udCPUSupportsAVX2()
 {
   udCPUFeatureDetection::DetectFeatures();
   return s_udCPUSupportsAVX2;
