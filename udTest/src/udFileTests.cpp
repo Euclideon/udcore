@@ -4,7 +4,6 @@
 #include "udCrypto.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
-#include "udMath.h"
 
 static const size_t s_QBF_Len = 43; // Not including NUL character
 static const char *s_pQBF_Text = "The quick brown fox jumps over the lazy dog";
@@ -38,7 +37,7 @@ TEST(udFileTests, GeneralFileTests)
   EXPECT_EQ(udR_Success, udFileExists(pFilename, &size, &modifyTime));
 
   EXPECT_EQ(18, size);
-  EXPECT_GT(2, udAbs(currentTime - modifyTime));
+  EXPECT_GT(2, currentTime - modifyTime);
 
   EXPECT_EQ(udR_Success, udFileDelete(pFilename));
   EXPECT_EQ(udR_NotFound, udFileExists(pFilename));

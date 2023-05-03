@@ -1,11 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "udStringUtil.h"
-#include "udMath.h"
 
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 #include <atomic>
+#include <algorithm>
+#include <math.h>
 
 static char s_udStrEmptyString[] = "";
 
@@ -508,7 +509,7 @@ uint64_t udStrAtou64(const char *pStr, int *pCharCount, int radix)
 size_t udStrUtoa(char *pStr, size_t strLen, uint64_t value, int radix, size_t minChars)
 {
   int upperCase = (radix < 0) ? 36 : 0;
-  radix = udAbs(radix);
+  radix = radix < 0 ? -radix : radix;
   if (radix < 2 || radix > 36)
     return 0;
   static const char *pLetters = "0123456789abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -579,13 +580,13 @@ size_t udStrFtoa(char *pStr, size_t strLen, double value, int precision, size_t 
   size_t charCount = 0;
   if (charCount < (strLen - 1) && negative)
     pStr[charCount++] = '-';
-  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole, 10, (size_t)udMax(1, int(minChars) - int(charCount) - (precision ? precision + 1 : 0)));
+  charCount += udStrUtoa(pStr + charCount, strLen, (uint64_t)whole, 10, (size_t)std::max(1, int(minChars) - int(charCount) - (precision ? precision + 1 : 0)));
   if (charCount < (strLen - 1) && precision > 0)
   {
     pStr[charCount++] = '.';
     while (precision)
     {
-      int localPrecision = udMin(precision, 16); // Asciify in small batches to avoid overflowing the whole component of the double
+      int localPrecision = std::min(precision, 16); // Asciify in small batches to avoid overflowing the whole component of the double
       frac = frac * pow(10.0, localPrecision);
       charCount += udStrItoa64(pStr + charCount, strLen - charCount, (int64_t)frac, 10, localPrecision);
       frac = frac - floor(frac); // no need for proper trunc as frac is always positive
@@ -886,7 +887,7 @@ retry:
     int expectedPrev = previous + 1;
     s_smallStringBufferIndex.compare_exchange_strong(expectedPrev, previous);
 
-    int requiredBufferCount = udMin(SMALLSTRING_BUFFER_COUNT, (charCount + SMALLSTRING_BUFFER_SIZE) / SMALLSTRING_BUFFER_SIZE);
+    int requiredBufferCount = std::min(SMALLSTRING_BUFFER_COUNT, (charCount + SMALLSTRING_BUFFER_SIZE) / SMALLSTRING_BUFFER_SIZE);
     bufferSize = requiredBufferCount * SMALLSTRING_BUFFER_SIZE;
     // Try to allocate a number of sequential buffers, understanding that another thread can allocate one also
     while ((((bufIndex = s_smallStringBufferIndex) & (SMALLSTRING_BUFFER_COUNT - 1)) + requiredBufferCount) <= SMALLSTRING_BUFFER_COUNT)
@@ -1141,7 +1142,7 @@ int udSprintfVA(char *pDest, size_t destLength, const char *pFormat, va_list arg
           injectLen = udStrlen(pInjectStr);
           break;
         case 'f':
-          udStrFtoa(numericBuffer, va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : udMax((int)width, 1));
+          udStrFtoa(numericBuffer, va_arg(args, double), precisionSpec ? precision : 6, padChar == ' ' ? 1 : std::max((int)width, 1));
           pInjectStr = numericBuffer;
           injectLen = udStrlen(pInjectStr);
           break;

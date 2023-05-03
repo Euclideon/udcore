@@ -5,9 +5,9 @@
 #include "udChunkedArray.h"
 #include "udPlatformUtil.h"
 #include "udThread.h"
-#include "udMath.h"
 #include "udStringUtil.h"
 #include <atomic>
+#include <algorithm>
 
 struct udWorkerPoolThread
 {
@@ -229,7 +229,7 @@ bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /
   udReleaseMutex(pPool->pQueuedTasks->pMutex);
 
   if (pActiveThreads)
-    *pActiveThreads = (size_t)udMax(activeThreads, 0);
+    *pActiveThreads = (size_t)std::max(activeThreads, 0);
 
   if (pQueuedTasks)
     *pQueuedTasks = queuedTasks;
