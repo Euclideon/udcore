@@ -47,7 +47,7 @@
 #  error "PTHREADS are not being used!"
 # endif
 #elif defined(_MSC_VER) || defined(__MINGW32__)
-# define NOMINMAX
+#define NOMINMAX
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
 # include <winapifamily.h>
@@ -174,11 +174,6 @@ inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, U
 template <typename T> inline T *udInterlockedExchangePointer(T * volatile* dest, std::nullptr_t) { return udInterlockedExchangePointer(dest, (T*)nullptr); }
 template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, std::nullptr_t, U *comparand) { return udInterlockedCompareExchangePointer(dest, (U*)nullptr, comparand); }
 template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, std::nullptr_t) { return udInterlockedCompareExchangePointer(dest, exchange, (U*)nullptr); }
-
-template <typename T> T             udMax(T a, T b) { return (a > b) ? a : b; }
-template <typename T> T             udMin(T a, T b) { return (a < b) ? a : b; }
-template <typename T, typename U> T udMax(T a, U b) { return (a > (T)b) ? a : (T)b; }
-template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T)b; }
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))
 

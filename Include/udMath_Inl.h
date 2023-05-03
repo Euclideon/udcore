@@ -33,76 +33,76 @@ template <typename T> T udRoundEven(T t)
     return integerPart + T(1.0);
 }
 
-UDFORCE_INLINE float udPow(float f, float n) { return powf(f, n); }
-UDFORCE_INLINE double udPow(double d, double n) { return pow(d, n); }
-UDFORCE_INLINE float udExp(float f) { return expf(f); }
-UDFORCE_INLINE double udExp(double d) { return exp(d); }
-UDFORCE_INLINE float udLogN(float f) { return logf(f); }
-UDFORCE_INLINE double udLogN(double d) { return log(d); }
-UDFORCE_INLINE float udLog10(float f) { return log10f(f); }
-UDFORCE_INLINE double udLog10(double d) { return log10(d); }
-UDFORCE_INLINE float udLog(float f, float base) { return udLogN(f) / udLogN(base); }
-UDFORCE_INLINE double udLog(double f, double base) { return udLogN(f) / udLogN(base); }
+inline float udPow(float f, float n) { return powf(f, n); }
+inline double udPow(double d, double n) { return pow(d, n); }
+inline float udExp(float f) { return expf(f); }
+inline double udExp(double d) { return exp(d); }
+inline float udLogN(float f) { return logf(f); }
+inline double udLogN(double d) { return log(d); }
+inline float udLog10(float f) { return log10f(f); }
+inline double udLog10(double d) { return log10(d); }
+inline float udLog(float f, float base) { return udLogN(f) / udLogN(base); }
+inline double udLog(double f, double base) { return udLogN(f) / udLogN(base); }
 
 #if defined(_MSC_VER) && _MSC_VER >= 1800
-UDFORCE_INLINE float udLog2(float f) { return log2f(f); }
-UDFORCE_INLINE double udLog2(double d) { return log2(d); }
+inline float udLog2(float f) { return log2f(f); }
+inline double udLog2(double d) { return log2(d); }
 #else
-UDFORCE_INLINE float udLog2(float f) { return udLog(f, 2.f); }
-UDFORCE_INLINE double udLog2(double d) { return udLog(d, 2.0); }
+inline float udLog2(float f) { return udLog(f, 2.f); }
+inline double udLog2(double d) { return udLog(d, 2.0); }
 #endif
 
-UDFORCE_INLINE float udRSqrt(float f) { return 1.f/sqrtf(f); }
-UDFORCE_INLINE double udRSqrt(double d) { return 1.0/sqrt(d); }
-UDFORCE_INLINE float udSqrt(float f) { return sqrtf(f); }
-UDFORCE_INLINE double udSqrt(double d) { return sqrt(d); }
-UDFORCE_INLINE float udSin(float f) { return sinf(f); }
-UDFORCE_INLINE double udSin(double d) { return sin(d); }
-UDFORCE_INLINE float udCos(float f) { return cosf(f); }
-UDFORCE_INLINE double udCos(double d) { return cos(d); }
-UDFORCE_INLINE float udTan(float f) { return tanf(f); }
-UDFORCE_INLINE double udTan(double d) { return tan(d); }
-UDFORCE_INLINE float udSinh(float f) { return sinhf(f); }
-UDFORCE_INLINE double udSinh(double d) { return sinh(d); }
-UDFORCE_INLINE float udCosh(float f) { return coshf(f); }
-UDFORCE_INLINE double udCosh(double d) { return cosh(d); }
-UDFORCE_INLINE float udTanh(float f) { return tanhf(f); }
-UDFORCE_INLINE double udTanh(double d) { return tanh(d); }
-UDFORCE_INLINE float udASin(float f) { return asinf(f); }
-UDFORCE_INLINE double udASin(double d) { return asin(d); }
-UDFORCE_INLINE float udACos(float f) { return acosf(f); }
-UDFORCE_INLINE double udACos(double d) { return acos(d); }
-UDFORCE_INLINE float udATan(float f) { return atanf(f); }
-UDFORCE_INLINE double udATan(double d) { return atan(d); }
-UDFORCE_INLINE float udATan2(float y, float x) { return atan2f(y, x); }
-UDFORCE_INLINE double udATan2(double y, double x) { return atan2(y, x); }
-UDFORCE_INLINE float udASinh(float f) { return asinhf(f); }
-UDFORCE_INLINE double udASinh(double d) { return asinh(d); }
-UDFORCE_INLINE float udACosh(float f) { return acoshf(f); }
-UDFORCE_INLINE double udACosh(double d) { return acosh(d); }
-UDFORCE_INLINE float udATanh(float f) { return atanhf(f); }
-UDFORCE_INLINE double udATanh(double d) { return atanh(d); }
+inline float udRSqrt(float f) { return 1.f/sqrtf(f); }
+inline double udRSqrt(double d) { return 1.0/sqrt(d); }
+inline float udSqrt(float f) { return sqrtf(f); }
+inline double udSqrt(double d) { return sqrt(d); }
+inline float udSin(float f) { return sinf(f); }
+inline double udSin(double d) { return sin(d); }
+inline float udCos(float f) { return cosf(f); }
+inline double udCos(double d) { return cos(d); }
+inline float udTan(float f) { return tanf(f); }
+inline double udTan(double d) { return tan(d); }
+inline float udSinh(float f) { return sinhf(f); }
+inline double udSinh(double d) { return sinh(d); }
+inline float udCosh(float f) { return coshf(f); }
+inline double udCosh(double d) { return cosh(d); }
+inline float udTanh(float f) { return tanhf(f); }
+inline double udTanh(double d) { return tanh(d); }
+inline float udASin(float f) { return asinf(f); }
+inline double udASin(double d) { return asin(d); }
+inline float udACos(float f) { return acosf(f); }
+inline double udACos(double d) { return acos(d); }
+inline float udATan(float f) { return atanf(f); }
+inline double udATan(double d) { return atan(d); }
+inline float udATan2(float y, float x) { return atan2f(y, x); }
+inline double udATan2(double y, double x) { return atan2(y, x); }
+inline float udASinh(float f) { return asinhf(f); }
+inline double udASinh(double d) { return asinh(d); }
+inline float udACosh(float f) { return acoshf(f); }
+inline double udACosh(double d) { return acosh(d); }
+inline float udATanh(float f) { return atanhf(f); }
+inline double udATanh(double d) { return atanh(d); }
 
-UDFORCE_INLINE float udRound(float f) { return f >= 0.0f ? floorf(f + 0.5f) : ceilf(f - 0.5f); }
-UDFORCE_INLINE double udRound(double d) { return d >= 0.0 ? floor(d + 0.5) : ceil(d - 0.5); }
+inline float udRound(float f) { return f >= 0.0f ? floorf(f + 0.5f) : ceilf(f - 0.5f); }
+inline double udRound(double d) { return d >= 0.0 ? floor(d + 0.5) : ceil(d - 0.5); }
 template <typename T> udVector2<T> udRound(const udVector2<T> &v)       { return v.create(udRound(v.x), udRound(v.y)); }
 template <typename T> udVector3<T> udRound(const udVector3<T> &v)       { return v.create(udRound(v.x), udRound(v.y), udRound(v.z)); }
 template <typename T> udVector4<T> udRound(const udVector4<T> &v)       { return v.create(udRound(v.x), udRound(v.y), udRound(v.z), udRound(v.w)); }
 
-UDFORCE_INLINE float udFloor(float f) { return floorf(f); }
-UDFORCE_INLINE double udFloor(double d) { return floor(d); }
+inline float udFloor(float f) { return floorf(f); }
+inline double udFloor(double d) { return floor(d); }
 template <typename T> udVector2<T> udFloor(const udVector2<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y)); }
 template <typename T> udVector3<T> udFloor(const udVector3<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z)); }
 template <typename T> udVector4<T> udFloor(const udVector4<T> &v)       { return v.create(udFloor(v.x), udFloor(v.y), udFloor(v.z), udFloor(v.w)); }
 
-UDFORCE_INLINE float udCeil(float f) { return ceilf(f); }
-UDFORCE_INLINE double udCeil(double d) { return ceil(d); }
+inline float udCeil(float f) { return ceilf(f); }
+inline double udCeil(double d) { return ceil(d); }
 template <typename T> udVector2<T> udCeil(const udVector2<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y)); }
 template <typename T> udVector3<T> udCeil(const udVector3<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z)); }
 template <typename T> udVector4<T> udCeil(const udVector4<T> &v)       { return v.create(udCeil(v.x), udCeil(v.y), udCeil(v.z), udCeil(v.w)); }
 
-UDFORCE_INLINE float udMod(float f, float den) { return fmodf(f, den); }
-UDFORCE_INLINE double udMod(double d, double den) { return fmod(d, den); }
+inline float udMod(float f, float den) { return fmodf(f, den); }
+inline double udMod(double d, double den) { return fmod(d, den); }
 template <typename T> udVector2<T> udMod(const udVector2<T> &v)       { return v.create(udMod(v.x), udMod(v.y)); }
 template <typename T> udVector3<T> udMod(const udVector3<T> &v)       { return v.create(udMod(v.x), udMod(v.y), udMod(v.z)); }
 template <typename T> udVector4<T> udMod(const udVector4<T> &v)       { return v.create(udMod(v.x), udMod(v.y), udMod(v.z), udMod(v.w)); }
@@ -137,10 +137,10 @@ template <typename T> udVector4<T> udSaturate(const udVector4<T> &v) { return ud
 
 template <typename V, typename T> bool udIsUnitLength(const V &v, T epsilon) { return udAbs(typename V::ElementType(1) - udMag(v)) < typename V::ElementType(epsilon); }
 
-template <typename T> UDFORCE_INLINE T udDot(const udVector2<T> &v1, const udVector2<T> &v2) { return udDot2(v1, v2); }
-template <typename T> UDFORCE_INLINE T udDot(const udVector3<T> &v1, const udVector3<T> &v2) { return udDot3(v1, v2); }
-template <typename T> UDFORCE_INLINE T udDot(const udVector4<T> &v1, const udVector4<T> &v2) { return udDot4(v1, v2); }
-template <typename T> UDFORCE_INLINE T udDot(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return udDotQ(q1, q2); }
+template <typename T> inline T udDot(const udVector2<T> &v1, const udVector2<T> &v2) { return udDot2(v1, v2); }
+template <typename T> inline T udDot(const udVector3<T> &v1, const udVector3<T> &v2) { return udDot3(v1, v2); }
+template <typename T> inline T udDot(const udVector4<T> &v1, const udVector4<T> &v2) { return udDot4(v1, v2); }
+template <typename T> inline T udDot(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return udDotQ(q1, q2); }
 
 template <typename T> T udDot2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
 template <typename T> T udDot2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.x + v1.y*v2.y; }
@@ -152,10 +152,10 @@ template <typename T> T udDoth(const udVector3<T> &v3, const udVector4<T> &v4) {
 template <typename T> T udDotQ(const udQuaternion<T> &q1, const udQuaternion<T> &q2) { return q1.x*q2.x + q1.y*q2.y + q1.z*q2.z + q1.w*q2.w; }
 
 
-template <typename T> T UDFORCE_INLINE udMagSq(const udVector2<T> &v) { return udMagSq2(v); }
-template <typename T> T UDFORCE_INLINE udMagSq(const udVector3<T> &v) { return udMagSq3(v); }
-template <typename T> T UDFORCE_INLINE udMagSq(const udVector4<T> &v) { return udMagSq4(v); }
-template <typename T> T UDFORCE_INLINE udMagSq(const udQuaternion<T> &q) { return udMagSqQ(q); }
+template <typename T> T inline udMagSq(const udVector2<T> &v) { return udMagSq2(v); }
+template <typename T> T inline udMagSq(const udVector3<T> &v) { return udMagSq3(v); }
+template <typename T> T inline udMagSq(const udVector4<T> &v) { return udMagSq4(v); }
+template <typename T> T inline udMagSq(const udQuaternion<T> &q) { return udMagSqQ(q); }
 
 template <typename T> T udMagSq2(const udVector2<T> &v) { return v.x*v.x + v.y*v.y; }
 template <typename T> T udMagSq2(const udVector3<T> &v) { return v.x*v.x + v.y*v.y; }
@@ -166,10 +166,10 @@ template <typename T> T udMagSq4(const udVector4<T> &v) { return v.x*v.x + v.y*v
 template <typename T> T udMagSqQ(const udQuaternion<T> &q) { return q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w; }
 
 
-template <typename T> T UDFORCE_INLINE udMag(const udVector2<T> &v) { return udMag2(v); }
-template <typename T> T UDFORCE_INLINE udMag(const udVector3<T> &v) { return udMag3(v); }
-template <typename T> T UDFORCE_INLINE udMag(const udVector4<T> &v) { return udMag4(v); }
-template <typename T> T UDFORCE_INLINE udMag(const udQuaternion<T> &v) { return udMagQ(v); }
+template <typename T> T inline udMag(const udVector2<T> &v) { return udMag2(v); }
+template <typename T> T inline udMag(const udVector3<T> &v) { return udMag3(v); }
+template <typename T> T inline udMag(const udVector4<T> &v) { return udMag4(v); }
+template <typename T> T inline udMag(const udQuaternion<T> &v) { return udMagQ(v); }
 
 template <typename T> T udMag2(const udVector2<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
 template <typename T> T udMag2(const udVector3<T> &v) { return udSqrt(v.x*v.x + v.y*v.y); }
@@ -179,8 +179,8 @@ template <typename T> T udMag3(const udVector4<T> &v) { return udSqrt(v.x*v.x + 
 template <typename T> T udMag4(const udVector4<T> &v) { return udSqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w); }
 template <typename T> T udMagQ(const udQuaternion<T> &q) { return udSqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w); }
 
-template <typename T> UDFORCE_INLINE T udCross(const udVector2<T> &v1, const udVector2<T> &v2) { return udCross2(v1, v2); }
-template <typename T> UDFORCE_INLINE udVector3<T> udCross(const udVector3<T> &v1, const udVector3<T> &v2) { return udCross3(v1, v2); }
+template <typename T> inline T udCross(const udVector2<T> &v1, const udVector2<T> &v2) { return udCross2(v1, v2); }
+template <typename T> inline udVector3<T> udCross(const udVector3<T> &v1, const udVector3<T> &v2) { return udCross3(v1, v2); }
 
 template <typename T> T udCross2(const udVector2<T> &v1, const udVector2<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
 template <typename T> T udCross2(const udVector3<T> &v1, const udVector3<T> &v2) { return v1.x*v2.y - v1.y*v2.x; }
@@ -190,10 +190,10 @@ template <typename T> udVector3<T> udCross3(const udVector3<T> &v1, const udVect
 template <typename T> udVector3<T> udCross3(const udVector4<T> &v1, const udVector4<T> &v2) { udVector3<T> r = { v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x }; return r; }
 
 
-template <typename T> UDFORCE_INLINE udVector2<T> udNormalize(const udVector2<T> &v) { return udNormalize2(v); }
-template <typename T> UDFORCE_INLINE udVector3<T> udNormalize(const udVector3<T> &v) { return udNormalize3(v); }
-template <typename T> UDFORCE_INLINE udVector4<T> udNormalize(const udVector4<T> &v) { return udNormalize4(v); }
-template <typename T> UDFORCE_INLINE udQuaternion<T> udNormalize(const udQuaternion<T> &q) { return udNormalizeQ(q); }
+template <typename T> inline udVector2<T> udNormalize(const udVector2<T> &v) { return udNormalize2(v); }
+template <typename T> inline udVector3<T> udNormalize(const udVector3<T> &v) { return udNormalize3(v); }
+template <typename T> inline udVector4<T> udNormalize(const udVector4<T> &v) { return udNormalize4(v); }
+template <typename T> inline udQuaternion<T> udNormalize(const udQuaternion<T> &q) { return udNormalizeQ(q); }
 
 template <typename T> udVector2<T> udNormalize2(const udVector2<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector2<T> r = { v.x*s, v.y*s }; return r; }
 template <typename T> udVector3<T> udNormalize2(const udVector3<T> &v) { T s = udRSqrt(v.x*v.x + v.y*v.y); udVector3<T> r = { v.x*s, v.y*s, v.z }; return r; }
@@ -446,15 +446,15 @@ udQuaternion<T> udLerp(const udQuaternion<T> &q1, const udQuaternion<T> &q2, dou
 template <typename T>
 udQuaternion<T> udSlerp(const udQuaternion<T> &q1, const udQuaternion<T> &_q2, double t)
 {
-#if UDASSERT_ON
-  const double epsilon = 1.0 / 4096;
-#endif
   const double thetaEpsilon = UD_PI / (180.0 * 100.0); // 1/100 of a degree
 
   udQuaternion<T> q2 = _q2;
 
+#if defined(UDASSERT_ON) && UDASSERT_ON
+  const double epsilon = 1.0 / 4096;
   UDASSERT(udIsUnitLength(q1, epsilon), "q1 is not normalized, magnitude %f\n", udMagQ(q1));
   UDASSERT(udIsUnitLength(q2, epsilon), "q2 is not normalized, magnitude %f\n", udMagQ(q2));
+#endif
 
   double cosHalfTheta = udDotQ(q1, q2); // Dot product of 2 quaterions results in cos(theta/2)
 
@@ -890,7 +890,6 @@ udMatrix4x4<T> udMatrix4x4<T>::rotationYPR(T y, T p, T r, const udVector3<T> &t)
 template <typename T>
 udMatrix4x4<T> udMatrix4x4<T>::rotationQuat(const udQuaternion<T> &q, const udVector3<T> &t)
 {
-  UDASSERT(udIsUnitLength(q, T(1.0 / 4096)), "q is not normalized, magnitude %f\n", udMagQ(q));
   //This function makes the assumption the quaternion is normalized
   T qx2 = q.x * q.x;
   T qy2 = q.y * q.y;
@@ -1014,7 +1013,9 @@ udMatrix4x4<T> udMatrix4x4<T>::lookAt(const udVector3<T> &from, const udVector3<
 template <typename T>
 udQuaternion<T> udQuaternion<T>::create(const udVector3<T> &axis, T rad)
 {
+#if defined(UDASSERT_ON) && UDASSERT_ON
   UDASSERT(udIsUnitLength(axis, T(1.0 / 4096)), "axis is not normalized, magnitude %f\n", udMag(axis));
+#endif
   T a = rad*T(0.5);
   T s = udSin(a);
   udQuaternion<T> r = { axis.x*s,
