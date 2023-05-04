@@ -139,6 +139,12 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
     }
   } while (reclaimed && pThread->threadStarter);
 
+#if !UDPLATFORM_WINDOWS
+  // Thread won't be joined, detach thread so resources are cleaned up
+  if (pThread->refCount == 1)
+    pthread_detach(pThread->t);
+#endif
+
   // Call to destroy here will decrement reference count, and only destroy if
   // the original creator of the thread didn't take a reference themselves
   if (pThread)
