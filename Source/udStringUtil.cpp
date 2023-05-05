@@ -1,6 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "udStringUtil.h"
-#include "udMath.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -508,7 +507,7 @@ uint64_t udStrAtou64(const char *pStr, int *pCharCount, int radix)
 size_t udStrUtoa(char *pStr, size_t strLen, uint64_t value, int radix, size_t minChars)
 {
   int upperCase = (radix < 0) ? 36 : 0;
-  radix = udAbs(radix);
+  radix = radix < 0 ? -radix : radix;
   if (radix < 2 || radix > 36)
     return 0;
   static const char *pLetters = "0123456789abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";

@@ -180,6 +180,14 @@ epilogue:
   return result;
 }
 
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2023
+template <typename T>
+inline T udImage_Clamp(T v, T minv, T maxv)
+{
+  return v < minv ? minv : v > maxv ? maxv : v;
+}
+
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
 uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags flags)
@@ -189,8 +197,8 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
 
   if (flags & udISF_Clamp)
   {
-    u = udClamp(u, 0.f, 1.f);
-    v = udClamp(v, 0.f, 1.f);
+    u = udImage_Clamp(u, 0.f, 1.f);
+    v = udImage_Clamp(v, 0.f, 1.f);
   }
 
   u =  u * pImage->width;
@@ -200,9 +208,9 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
     v = -v * pImage->height;
 
   while (u < 0.0f || u >= pImage->width)
-    u = u - pImage->width * udFloor((u / pImage->width));
+    u = u - pImage->width * floorf((u / pImage->width));
   while (v < 0.0f || v >= pImage->height)
-    v = v - pImage->height * udFloor((v / pImage->height));
+    v = v - pImage->height * floorf((v / pImage->height));
 
   int x = (int)u;
   int y = (int)v;
@@ -213,10 +221,10 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
     int u0 = 256 - u1;
     int v0 = 256 - v1;
 
-    int x0 = udClamp(x + 0, 0, (int)pImage->width - 1);
-    int x1 = udClamp(x + 1, 0, (int)pImage->width - 1);
-    int y0 = udClamp(y + 0, 0, (int)pImage->height - 1);
-    int y1 = udClamp(y + 1, 0, (int)pImage->height - 1);
+    int x0 = udImage_Clamp(x + 0, 0, (int)pImage->width - 1);
+    int x1 = udImage_Clamp(x + 1, 0, (int)pImage->width - 1);
+    int y0 = udImage_Clamp(y + 0, 0, (int)pImage->height - 1);
+    int y1 = udImage_Clamp(y + 1, 0, (int)pImage->height - 1);
 
     int a = u0 * v0;
     int b = u1 * v0;
@@ -455,11 +463,11 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
 
   if (flags & udISF_Clamp)
   {
-    u = udClamp(u, 0.f, 1.f);
-    v = udClamp(v, 0.f, 1.f);
+    u = udImage_Clamp(u, 0.f, 1.f);
+    v = udImage_Clamp(v, 0.f, 1.f);
   }
 
-  pMip = &pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
+  pMip = &pImage->mips[udImage_Clamp((int)mipLevel, 0, pImage->mipCount - 1)];
   u = u * pMip->width;
   if (flags & udISF_TopLeft)
     v = v * pMip->height;
@@ -467,9 +475,9 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
     v = -v * pMip->height;
 
   while (u < 0.0f || u >= pMip->width)
-    u = u - pMip->width * udFloor((u / pMip->width));
+    u = u - pMip->width * floorf((u / pMip->width));
   while (v < 0.0f || v >= pMip->height)
-    v = v - pMip->height * udFloor((v / pMip->height));
+    v = v - pMip->height * floorf((v / pMip->height));
 
   uint32_t x = (uint32_t)u;
   uint32_t y = (uint32_t)v;
@@ -544,7 +552,7 @@ udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexD
     uint32_t cellY = (cellIndexData >> 16) & 0xff;
 
     UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter);
-    udImageStreaming::Mip *pMip = &pImage->mips[udClamp((int)mipLevel, 0, pImage->mipCount - 1)];
+    udImageStreaming::Mip *pMip = &pImage->mips[udImage_Clamp((int)mipLevel, 0, pImage->mipCount - 1)];
     UD_ERROR_IF(cellX >= pMip->gridW, udR_InvalidParameter);
     UD_ERROR_IF(cellY >= pMip->gridH, udR_InvalidParameter);
 

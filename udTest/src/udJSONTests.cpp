@@ -214,72 +214,55 @@ TEST(udJSONTests, udMathSpecialSupport)
 {
   udJSON v;
 
-  udDouble3 vec3 = udDouble3::create(1.0, 2.0, 3.0);
-  udDouble4 vec4 = udDouble4::create(1.0, 2.0, 3.0, 4.0);
-  udDoubleQuat quat = udDoubleQuat::identity();
-  quat.x = 1.0;
-  quat.y = 2.0;
-  quat.z = 3.0;
-  quat.w = 4.0;
-  udDouble4x4 mat3 = udDouble4x4::create(1.0, 2.0, 3.0, 0.0, 4.0, 5.0, 6.0, 0.0, 7.0, 8.0, 9.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-  udDouble4x4 mat4 = udDouble4x4::create(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0);
+  double zero3[3] = { 0.0, 0.0, 0.0 };
+  double one3[3] = { 1.0, 1.0, 1.0 };
+  double ident4x4[16] = { 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+  double vec3[3] = { 1.0, 2.0, 3.0 };
+  double vec4[4] = { 1.0, 2.0, 3.0, 4.0 };
+  double mat3[16] = { 1.0, 2.0, 3.0, 0.0, 4.0, 5.0, 6.0, 0.0, 7.0, 8.0, 9.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+  double mat4[16] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0 };
 
   EXPECT_EQ(udR_Success, v.Set("vec2 = [ 1.0, 2.0 ]"));
   EXPECT_EQ(udR_Success, v.Set("vec3 = [ 1.0, 2.0, 3.0 ]"));
   EXPECT_EQ(udR_Success, v.Set("vec4 = [ 1.0, 2.0, 3.0, 4.0 ]"));
-  EXPECT_EQ(udR_Success, v.Set("quat = [ 1.0, 2.0, 3.0, 4.0 ]"));
   EXPECT_EQ(udR_Success, v.Set("mat3 = [ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 ]"));
   EXPECT_EQ(udR_Success, v.Set("mat4 = [ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0 ]"));
 
-  EXPECT_EQ(vec3, v.Get("vec3").AsDouble3());
-  EXPECT_EQ(vec4, v.Get("vec4").AsDouble4());
-  // udQuaternion doesn't have an equal operator overload,
-  // I believe this is due to the complexity of comparing two quaternions.
-  // In this particular case, we're satisfied with the simple case.
-  EXPECT_EQ(quat.toVector4(), v.Get("quat").AsQuaternion().toVector4());
-  EXPECT_EQ(mat3, v.Get("mat3").AsDouble4x4());
-  EXPECT_EQ(mat4, v.Get("mat4").AsDouble4x4());
+  double tempSpace[16];
+  EXPECT_TRUE(!memcmp(vec3, v.Get("vec3").AsDoubleArray(tempSpace, 3), sizeof(vec3)));
+  EXPECT_TRUE(!memcmp(vec4, v.Get("vec4").AsDoubleArray(tempSpace, 4), sizeof(vec4)));
+  EXPECT_FALSE(!memcmp(mat3, v.Get("mat3").AsDoubleArray(tempSpace, 16, nullptr, false), sizeof(mat3)));
+  EXPECT_TRUE(!memcmp(mat3, v.Get("mat3").AsDoubleArray(tempSpace, 16, nullptr, true), sizeof(mat3)));
+  EXPECT_TRUE(!memcmp(mat4, v.Get("mat4").AsDoubleArray(tempSpace, 16), sizeof(mat4)));
 
   // Expected failures
-  EXPECT_EQ(udDouble3::zero(), v.Get("vec2").AsDouble3());
-  EXPECT_EQ(udDouble4::zero(), v.Get("vec2").AsDouble4());
-  EXPECT_EQ(udDoubleQuat::identity().toVector4(), v.Get("vec2").AsQuaternion().toVector4());
-  EXPECT_EQ(udDouble4x4::identity(), v.Get("vec2").AsDouble4x4());
-  EXPECT_EQ(udDouble4x4::identity(), v.Get("vec2").AsDouble4x4());
+  EXPECT_TRUE(!memcmp(zero3, v.Get("vec2").AsDoubleArray(tempSpace, 3), sizeof(zero3)));
+  EXPECT_TRUE(!memcmp(one3, v.Get("vec2").AsDoubleArray(tempSpace, 3, one3), sizeof(one3)));
+  EXPECT_TRUE(!memcmp(ident4x4, v.Get("vec2").AsDoubleArray(tempSpace, 16, ident4x4), sizeof(ident4x4)));
 
   // Set udFloat3 function
   v.Destroy();
-  EXPECT_EQ(udR_Success, v.Set(vec3));
+  EXPECT_EQ(udR_Success, v.SetDoubleArray(vec3, udLengthOf(vec3)));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(3, v.ArrayLength());
-  for (int i = 0; i < (int)vec3.ElementCount; i++)
+  for (int i = 0; i < (int)3; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
 
   // Set udFloat4 function
   v.Destroy();
-  EXPECT_EQ(udR_Success, v.Set(vec4));
+  EXPECT_EQ(udR_Success, v.SetDoubleArray(vec4, udLengthOf(vec4)));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(4, v.ArrayLength());
-  for (int i = 0; i < (int)vec4.ElementCount; i++)
+  for (int i = 0; i < 4; i++)
   {
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
 
-  // Set udQuaternion function
+  // Set 3x3 matrix - minimally
   v.Destroy();
-  EXPECT_EQ(udR_Success, v.Set(quat));
-  EXPECT_TRUE(v.IsArray());
-  EXPECT_EQ(4, v.ArrayLength());
-  for (int i = 0; i < (int)quat.ElementCount; i++)
-  {
-    EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
-  }
-
-  // Set udFloat3x3 function - minimally
-  v.Destroy();
-  EXPECT_EQ(udR_Success, v.Set(mat3, true));
+  EXPECT_EQ(udR_Success, v.SetDoubleArray(mat3, udLengthOf(mat3), true));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(9, v.ArrayLength());
   for (int i = 0; i < 9; i++)
@@ -287,9 +270,9 @@ TEST(udJSONTests, udMathSpecialSupport)
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", i).AsDouble());
   }
 
-  // Set udFloat3x3 function - not minimally
+  // Set 3x3 matrix - not minimally
   v.Destroy();
-  EXPECT_EQ(udR_Success, v.Set(mat3, false));
+  EXPECT_EQ(udR_Success, v.SetDoubleArray(mat3, udLengthOf(mat3), false));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(16, v.ArrayLength());
   for (int i = 0; i < 9; i++)
@@ -297,9 +280,9 @@ TEST(udJSONTests, udMathSpecialSupport)
     EXPECT_EQ(double(i) + 1.0, v.Get("[%d]", (i / 3) * 4 + (i % 3)).AsDouble());
   }
 
-  // Set udFloat4x4 function
+  // Set 4x4 function
   v.Destroy();
-  EXPECT_EQ(udR_Success, v.Set(mat4));
+  EXPECT_EQ(udR_Success, v.SetDoubleArray(mat4, udLengthOf(mat4)));
   EXPECT_TRUE(v.IsArray());
   EXPECT_EQ(16, v.ArrayLength());
   for (int i = 0; i < 16; i++)
