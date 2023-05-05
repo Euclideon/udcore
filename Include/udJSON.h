@@ -10,18 +10,7 @@
 
 #include "udPlatform.h"
 #include "udChunkedArray.h"
-#include "udMath.h"
 
-#if !defined(UDVALUE_DEPRECATED)
-#define udValue udJSON
-#define udValueExportOption udJSONExportOption
-#define udVEO_JSON udJEO_JSON
-#define udVEO_XML udJEO_XML
-#define udVEO_StripWhiteSpace 0
-#define udValueKVPair udJSONKVPair
-#define udValueArray udJSONArray
-#define udValueObject udJSONObject
-#endif
 
 /*
  * Expression syntax:
@@ -125,11 +114,10 @@ public:
   udResult SetArray(); // A dynamic array of JSON elements, whose types can change per element
   udResult SetObject();
 
-  // Some convenience helpers to create an array of doubles
-  udResult Set(const udDouble3 &v);
-  udResult Set(const udDouble4 &v);
-  udResult Set(const udQuaternion<double> &v);
-  udResult Set(const udDouble4x4 &v, bool shrink = false); // If shrink true, 3x3's and 3x4's are detected and stored minimally
+  // Convenience helpers to create arrays of floats/doubles (typically for vectors/matrices)
+  // If shrinkMatrix is true and length is 16, matrices that are effectively 3x3/3x4 are set to the json as 9/12 element arrays
+  udResult SetFloatArray(const float *pArray, size_t length, bool shrinkMatrix = false);
+  udResult SetDoubleArray(const double *pArray, size_t length, bool shrinkMatrix = false);
 
   // Accessors
   inline Type GetType() const;
@@ -156,15 +144,11 @@ public:
   double AsDouble(double defaultValue = 0.0) const;
   const char *AsString(const char *pDefaultValue = nullptr) const; // Returns "true"/"false" for bools, pDefaultValue for any other non-string
 
-  // Some convenience accessors that expect the udJSON to be a array of numbers
-  udFloat2 AsFloat2(const udFloat2 &defaultValue = udFloat2::zero()) const;
-  udFloat3 AsFloat3(const udFloat3 &defaultValue = udFloat3::zero()) const;
-  udFloat4 AsFloat4(const udFloat4 &defaultValue = udFloat4::zero()) const;
-  udDouble2 AsDouble2(const udDouble2 &defaultValue = udDouble2::zero()) const;
-  udDouble3 AsDouble3(const udDouble3 &defaultValue = udDouble3::zero()) const;
-  udDouble4 AsDouble4(const udDouble4 &defaultValue = udDouble4::zero()) const;
-  udQuaternion<double> AsQuaternion(const udQuaternion<double> &defaultValue = udQuaternion<double>::identity()) const;
-  udDouble4x4 AsDouble4x4(const udDouble4x4 &defaultValue = udDouble4x4::identity()) const;
+  // Accessors to interpret arrays of doubles/floats. pDefaults can be null to have non-existent keys initialised to zero.
+  // If expandMatrix is true and length is 16, a 9/12-element json array is expanded to 16 as a 3x3 or 3x4 matrix respectively
+  // In all cases, pArray is returned for convenience and parity with the above As<Type> functions
+  float *AsFloatArray(float *pResultArray, size_t length, const float *pDefaults = nullptr, bool expandMatrix = false) const;
+  double *AsDoubleArray(double *pResultArray, size_t length, const double *pDefaults = nullptr, bool expandMatrix = false) const;
 
   inline udJSONArray *AsArray() const;
   inline udJSONObject *AsObject() const;
