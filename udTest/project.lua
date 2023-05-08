@@ -36,3 +36,7 @@ project ("udTest" .. (projectSuffix or ""))
 	exceptionhandling "Default"
 
 	debugdir "../"
+	
+	filter { "configurations:Release", "system:macosx" }
+		optimize "On"
+	filter {}
