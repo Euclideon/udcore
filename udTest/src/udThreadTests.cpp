@@ -45,7 +45,7 @@ TEST(udThreadTests, Thread)
 {
   int value = 0;
   udThread *pThread;
-  udThreadStart startFunc = [](void *data) -> unsigned int { int *pValue = (int*)data; (*pValue) = 1; return 0; };
+  udThreadStart startFunc = [](void *data) -> unsigned int { udSleep(100); int *pValue = (int *)data; (*pValue) = 1; return 0; };
   udResult result = udThread_Create(&pThread, startFunc, (void*)&value);
 
   EXPECT_EQ(udR_Success, result);
