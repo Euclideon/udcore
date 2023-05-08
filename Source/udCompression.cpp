@@ -1,9 +1,10 @@
+#define NOMINMAX // Required on Windows in order to use std::min/std::max from <algorithm>
 #include "udStringUtil.h"
 #include "udCompression.h"
 #include "udFileHandler.h"
-#include "udMath.h"
 #include "libdeflate.h"
 #include <atomic>
+#include <algorithm>
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2018
@@ -319,7 +320,7 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
   if (pZip->pFileData)
   {
     UD_ERROR_IF(seekOffset < 0 || seekOffset >= pZip->fileLength, udR_InvalidParameter);
-    bufferLength = udMin(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
+    bufferLength = std::min(bufferLength, (size_t)pZip->fileLength - (size_t)seekOffset);
 
     // Passive wait for the read to complete
     while (!pZip->readComplete && pZip->lengthRead < int32_t(seekOffset + bufferLength))
@@ -330,7 +331,7 @@ static udResult udFileHandler_MiniZSeekRead(udFile *pFile, void *pBuffer, size_t
     }
     UD_ERROR_IF(int64_t(pZip->lengthRead) <= seekOffset, udR_ReadFailure);
 
-    actualRead = udMin(bufferLength, pZip->lengthRead - (size_t)seekOffset);
+    actualRead = std::min(bufferLength, pZip->lengthRead - (size_t)seekOffset);
     udReadLockRWLock(pZip->pRWLock);
     locked = true;
     UD_ERROR_NULL(pZip->pFileData, udR_ReadFailure);

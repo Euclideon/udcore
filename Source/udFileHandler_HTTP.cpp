@@ -5,6 +5,7 @@
 //
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define NOMINMAX // Required on Windows in order to use std::min/std::max from <algorithm>
 
 #include "udPlatform.h"
 #include "udSocket.h"
@@ -12,6 +13,7 @@
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udFileHandler.h"
+#include <algorithm>
 
 #if !UDPLATFORM_EMSCRIPTEN
 static udFile_OpenHandlerFunc                     udFileHandler_HTTPOpen;
@@ -181,7 +183,7 @@ static udResult udFileHandler_HTTPRecvGET(udFile_HTTP *pFile, void *pBuffer, siz
     }
 
     // Some servers send more data after the content, we should throw it out
-    bytesReceived = udMin((int64_t)bytesReceived - (int64_t)headerLength, contentLength);
+    bytesReceived = std::min((int64_t)bytesReceived - (int64_t)headerLength, contentLength);
     memcpy(pBuffer, pFile->recvBuffer + headerLength, bytesReceived);
 
     while (bytesReceived < (size_t)contentLength)

@@ -1,9 +1,10 @@
+#define NOMINMAX // Required on Windows in order to use std::min/std::max from <algorithm>
 #include "udFile.h"
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udCompression.h"
-#include "udMath.h"
+#include <algorithm>
 
 // Raw support udFile handler
 // To encode to base64 use this: https://www.browserling.com/tools/file-to-base64
@@ -86,7 +87,7 @@ udResult udFile_GenerateRawFilename(const char **ppResultFilename, const void *p
   else
   {
     uint32_t i = (uint32_t)declareLen;
-    charsPerLine = udMax(charsPerLine, i);
+    charsPerLine = std::max(charsPerLine, i);
     udDebugPrintf("\"%s%.*s\"\n", pDeclare, (charsPerLine - i), pBase64);
     i = charsPerLine - i;
     for (; i < base64Len; i += charsPerLine)
@@ -254,7 +255,7 @@ static udResult udFileHandler_RawSeekRead(udFile *pFile, void *pBuffer, size_t b
   size_t actualRead;
 
   UD_ERROR_IF(seekOffset < 0 || seekOffset >= (int64_t)pRaw->dataLen, udR_InvalidParameter);
-  actualRead = udMin(bufferLength, pRaw->dataLen - (size_t)seekOffset);
+  actualRead = std::min(bufferLength, pRaw->dataLen - (size_t)seekOffset);
   memcpy(pBuffer, pRaw->pData + seekOffset, actualRead);
 
   if (pActualRead)

@@ -190,11 +190,6 @@ template <typename T, size_t N> constexpr size_t udLengthOf(T(&)[N]) { return N;
 template <typename T> inline T *udInterlockedExchangePointer(T * volatile* dest, std::nullptr_t) { return udInterlockedExchangePointer(dest, (T*)nullptr); }
 template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, std::nullptr_t, U *comparand) { return udInterlockedCompareExchangePointer(dest, (U*)nullptr, comparand); }
 template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(T * volatile* dest, U *exchange, std::nullptr_t) { return udInterlockedCompareExchangePointer(dest, exchange, (U*)nullptr); }
-
-template <typename T> T             udMax(T a, T b) { return (a > b) ? a : b; }
-template <typename T> T             udMin(T a, T b) { return (a < b) ? a : b; }
-template <typename T, typename U> T udMax(T a, U b) { return (a > (T)b) ? a : (T)b; }
-template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T)b; }
 #endif
 
 #define UDALIGN_POWEROF2(x,b) (((x)+(b)-1) & -(b))

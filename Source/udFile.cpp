@@ -4,6 +4,7 @@
 // Creator: Dave Pevreal, March 2014
 //
 
+#define NOMINMAX // Required on Windows in order to use std::min/std::max from <algorithm>
 #include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
@@ -16,6 +17,7 @@
 #else
 # include <pwd.h>
 #endif
+#include <algorithm>
 
 #define MAX_HANDLERS 16
 #define CONTENT_LOAD_CHUNK_SIZE 65536 // When loading an entire file of unknown size, read in chunks of this many bytes
@@ -311,7 +313,7 @@ udResult udFile_Read(udFile *pFile, void *pBuffer, size_t bufferLength, int64_t 
     UD_ERROR_HANDLE();
     result = udCryptoCipher_Decrypt(pFile->pCipherCtx, &iv, pCipherText, alignedActual, pCipherText, alignedActual);
     UD_ERROR_HANDLE();
-    actualRead = udMin(bufferLength, udMax((size_t)0, alignedActual - (size_t)inset));
+    actualRead = std::min(bufferLength, std::max((size_t)0, alignedActual - (size_t)inset));
     if (pCipherText != pBuffer)
       memcpy(pBuffer, udAddBytes(pCipherText, inset), actualRead);
   }
@@ -373,7 +375,7 @@ udResult udFile_Write(udFile *pFile, const void *pBuffer, size_t bufferLength, i
   pFile->msAccumulator -= udGetTimeMs();
   result = pFile->fpWrite(pFile, pBuffer, bufferLength, offset, &actualWritten);
   pFile->filePos = offset + actualWritten;
-  pFile->fileLength = udMax(pFile->fileLength, pFile->filePos);
+  pFile->fileLength = std::max(pFile->fileLength, pFile->filePos);
 
   // Update the performance stats unless it's a supported pipelined request (in which case the stats are updated in the block function)
   udUpdateFilePerformance(pFile, actualWritten);

@@ -1,6 +1,6 @@
+#define NOMINMAX // Required on Windows in order to use std::min/std::max from <algorithm>
 #include "udImage.h"
 #include "udFile.h"
-#include "udMath.h"
 #include "udCompression.h"
 #include "udStringUtil.h"
 #include "udThread.h"
@@ -8,6 +8,7 @@
 #include "stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
+#include <algorithm>
 
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
@@ -180,14 +181,6 @@ epilogue:
   return result;
 }
 
-// ----------------------------------------------------------------------------
-// Author: Dave Pevreal, May 2023
-template <typename T>
-inline T udImage_Clamp(T v, T minv, T maxv)
-{
-  return v < minv ? minv : v > maxv ? maxv : v;
-}
-
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
 uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags flags)
@@ -197,8 +190,8 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
 
   if (flags & udISF_Clamp)
   {
-    u = udImage_Clamp(u, 0.f, 1.f);
-    v = udImage_Clamp(v, 0.f, 1.f);
+    u = std::clamp(u, 0.f, 1.f);
+    v = std::clamp(v, 0.f, 1.f);
   }
 
   u =  u * pImage->width;
@@ -221,10 +214,10 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
     int u0 = 256 - u1;
     int v0 = 256 - v1;
 
-    int x0 = udImage_Clamp(x + 0, 0, (int)pImage->width - 1);
-    int x1 = udImage_Clamp(x + 1, 0, (int)pImage->width - 1);
-    int y0 = udImage_Clamp(y + 0, 0, (int)pImage->height - 1);
-    int y1 = udImage_Clamp(y + 1, 0, (int)pImage->height - 1);
+    int x0 = std::clamp(x + 0, 0, (int)pImage->width - 1);
+    int x1 = std::clamp(x + 1, 0, (int)pImage->width - 1);
+    int y0 = std::clamp(y + 0, 0, (int)pImage->height - 1);
+    int y1 = std::clamp(y + 1, 0, (int)pImage->height - 1);
 
     int a = u0 * v0;
     int b = u1 * v0;
@@ -291,8 +284,8 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
   do
   {
     saveSize += mipW * mipH * 3;
-    mipW = udMax(1, mipW >> 1);
-    mipH = udMax(1, mipH >> 1);
+    mipW = std::max(1U, mipW >> 1);
+    mipH = std::max(1U, mipH >> 1);
     ++mipCount;
   } while (mipW > 1 && mipH > 1);
 
@@ -336,8 +329,8 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
         for (uint32_t cellX = 0; cellX < cellCountX; ++cellX)
         {
           //udDebugPrintf("Writing cell %d,%d at offset %llx\n", cellX, cellY, pOut - ((uint8_t *)pOnDisk));
-          uint32_t cellW = udMin(udImageStreamingOnDisk::TileSize, mipW - (cellX * udImageStreamingOnDisk::TileSize));
-          uint32_t cellH = udMin(udImageStreamingOnDisk::TileSize, mipH - (cellY * udImageStreamingOnDisk::TileSize));
+          uint32_t cellW = std::min((uint32_t)udImageStreamingOnDisk::TileSize, mipW - (cellX * udImageStreamingOnDisk::TileSize));
+          uint32_t cellH = std::min((uint32_t)udImageStreamingOnDisk::TileSize, mipH - (cellY * udImageStreamingOnDisk::TileSize));
           for (uint32_t y = 0; y < cellH; ++y)
           {
             pIn = p24BitData + ((cellY * udImageStreamingOnDisk::TileSize + y) * (mipW * 3)) + (cellX * udImageStreamingOnDisk::TileSize * 3);
@@ -381,8 +374,8 @@ udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **p
           pB += 3 * 2;
         }
       }
-      mipW = udMax(1, mipW >> 1);
-      mipH = udMax(1, mipH >> 1);
+      mipW = std::max(1U, mipW >> 1);
+      mipH = std::max(1U, mipH >> 1);
     }
 
     *ppOnDisk = pOnDisk;
@@ -463,11 +456,11 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
 
   if (flags & udISF_Clamp)
   {
-    u = udImage_Clamp(u, 0.f, 1.f);
-    v = udImage_Clamp(v, 0.f, 1.f);
+    u = std::clamp(u, 0.f, 1.f);
+    v = std::clamp(v, 0.f, 1.f);
   }
 
-  pMip = &pImage->mips[udImage_Clamp((int)mipLevel, 0, pImage->mipCount - 1)];
+  pMip = &pImage->mips[std::clamp((int)mipLevel, 0, pImage->mipCount - 1)];
   u = u * pMip->width;
   if (flags & udISF_TopLeft)
     v = v * pMip->height;
@@ -484,7 +477,7 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
   uint32_t cellX = x / udImageStreaming::TileSize;
   uint32_t cellY = y / udImageStreaming::TileSize;
   uint32_t cellIndex = cellY * pMip->gridW + cellX;
-  uint32_t cellWidth = udMin(udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
+  uint32_t cellWidth = std::min((uint32_t)udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
   if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex])
   {
     texel = mipLevel | (cellX << 8) | (cellY << 16);
@@ -535,8 +528,8 @@ udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexD
         else
         {
           pImage->mips[mip].offset = pImage->mips[mip - 1].offset + (pImage->mips[mip - 1].width * pImage->mips[mip - 1].height * 3);
-          pImage->mips[mip].width = udMax(1, pImage->mips[mip - 1].width >> 1);
-          pImage->mips[mip].height = udMax(1, pImage->mips[mip - 1].height >> 1);
+          pImage->mips[mip].width = std::max(1U, pImage->mips[mip - 1].width >> 1);
+          pImage->mips[mip].height = std::max(1U, pImage->mips[mip - 1].height >> 1);
         }
 
         pImage->mips[mip].gridW = (uint16_t)(pImage->mips[mip].width + udImageStreamingOnDisk::TileSize - 1) / udImageStreamingOnDisk::TileSize;
@@ -552,12 +545,12 @@ udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexD
     uint32_t cellY = (cellIndexData >> 16) & 0xff;
 
     UD_ERROR_IF(mipLevel >= pImage->mipCount, udR_InvalidParameter);
-    udImageStreaming::Mip *pMip = &pImage->mips[udImage_Clamp((int)mipLevel, 0, pImage->mipCount - 1)];
+    udImageStreaming::Mip *pMip = &pImage->mips[std::clamp((int)mipLevel, 0, pImage->mipCount - 1)];
     UD_ERROR_IF(cellX >= pMip->gridW, udR_InvalidParameter);
     UD_ERROR_IF(cellY >= pMip->gridH, udR_InvalidParameter);
 
     uint32_t cellIndex = cellY * pMip->gridW + cellX;
-    uint32_t cellWidth = udMin(udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
+    uint32_t cellWidth = std::min((uint32_t)udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
     if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex])
     {
       if (!pLocked)
@@ -569,7 +562,7 @@ udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexD
           pMip->ppCellImage = udAllocType(uint8_t *, pMip->gridW * pMip->gridH, udAF_Zero);
           UD_ERROR_NULL(pMip->ppCellImage, udR_MemoryAllocationFailure);
         }
-        uint32_t cellHeight = udMin(udImageStreaming::TileSize, pMip->height - (cellY * udImageStreaming::TileSize));
+        uint32_t cellHeight = std::min((uint32_t)udImageStreaming::TileSize, pMip->height - (cellY * udImageStreaming::TileSize));
         uint32_t cellSizeBytes = cellWidth * cellHeight * 3;
         uint32_t cellOffset = (cellY * udImageStreaming::TileSize * pMip->width * 3) + (cellX * udImageStreaming::TileSize * udImageStreaming::TileSize * 3);
         // Read into locally allocated block

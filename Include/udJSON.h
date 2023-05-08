@@ -10,18 +10,7 @@
 
 #include "udPlatform.h"
 #include "udChunkedArray.h"
-#include "udMath.h"
 
-#if !defined(UDVALUE_DEPRECATED)
-#define udValue udJSON
-#define udValueExportOption udJSONExportOption
-#define udVEO_JSON udJEO_JSON
-#define udVEO_XML udJEO_XML
-#define udVEO_StripWhiteSpace 0
-#define udValueKVPair udJSONKVPair
-#define udValueArray udJSONArray
-#define udValueObject udJSONObject
-#endif
 
 /*
  * Expression syntax:
