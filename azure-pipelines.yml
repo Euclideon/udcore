@@ -4,11 +4,6 @@ stages:
 - stage: build
   displayName: 'Build'
   jobs:
-  - template: azure-pipelines-jobs-linux.yml
-    parameters:
-      name: ubuntu1804
-      displayName: 'Ubuntu 18.04'
-      container: euclideon/vault:dev-bionic-v1
   - template: azure-pipelines-jobs-linux-containerless.yml
     parameters:
       name: ubuntu2004
