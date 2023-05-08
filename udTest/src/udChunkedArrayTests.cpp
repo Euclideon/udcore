@@ -525,3 +525,49 @@ TEST(udChunkedArrayTests, ConstIterator)
 
   tempArray.Deinit();
 }
+
+TEST(udChunkedArrayTests, SortLambda)
+{
+  struct LambdaTestData
+  {
+    size_t Number;
+    const char *pName;
+  };
+
+  udChunkedArray<LambdaTestData> array;
+  array.Init(8);
+
+  const char *Names[] = { "Zebra", "Zoo", "Zealot", "Apple", "Aardvark", "Monkey" };
+  const char *NamesExpectedOrder[] = { "Aardvark", "Apple", "Monkey", "Zealot", "Zebra", "Zoo" };
+  const int NumbersExpectedOrder[] = { 1, 2, 0, 3, 5, 4 };
+
+  // Iterates across chunk boundaries correctly
+  for (size_t i = 0; i < udLengthOf(Names); ++i)
+  {
+    array.PushBack({ udLengthOf(Names) - i - 1, Names[i] });
+  }
+
+  // Sort into number order (basically reversed)
+  std::sort(array.begin(), array.end(), [](const LambdaTestData &a, const LambdaTestData &b) {
+    return (a.Number < b.Number);
+  });
+
+  for (size_t i = 0; i < array.length; ++i)
+  {
+    EXPECT_EQ(i, array[i].Number);
+    EXPECT_STREQ(Names[udLengthOf(Names) - i - 1], array[i].pName);
+  }
+
+  // Sort into alphabetic order
+  std::sort(array.begin(), array.end(), [](const LambdaTestData &a, const LambdaTestData &b) {
+    return (udStrcmp(a.pName, b.pName) < 0);
+  });
+
+  for (size_t i = 0; i < array.length; ++i)
+  {
+    EXPECT_EQ(NumbersExpectedOrder[i], array[i].Number);
+    EXPECT_STREQ(NamesExpectedOrder[i], array[i].pName);
+  }
+
+  array.Deinit();
+}
