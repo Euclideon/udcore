@@ -1307,3 +1307,11 @@ TEST(udGeoZone, TransformMatrix)
   }
 }
 
+TEST(udGeoZone, UnsupportedDatum)
+{
+  udGeoZone zone;
+  const char unsupportedWKT[] = R"geozone(COMPD_CS["MGI / Austria GK East edit",PROJCS["MGI / Austria GK East edit",GEOGCS["MGI / Austria GK East edit",DATUM["MGI",SPHEROID["Bessel 1841",6377397.155,299.152812800,AUTHORITY["EPSG","7004"]],AUTHORITY["EPSG","6312"]],PRIMEM["Greenwich",0.0000000000000000,AUTHORITY["EPSG","8901"]],UNIT["Degree",0.01745329251994329547,AUTHORITY["EPSG","9102"]],AUTHORITY["EPSG","31256"]],PROJECTION["Transverse_Mercator",AUTHORITY["EPSG","9807"]],PARAMETER["latitude_of_origin",0.0000000000000000],PARAMETER["central_meridian",16.3333333333333321],PARAMETER["scale_factor",1.0000000000000000],PARAMETER["false_easting",0.000],PARAMETER["false_northing",-5000000.000],UNIT["Meter",1.00000000000000000000,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","31256"]],VERT_CS["Ellipsoidal Heights",VERT_DATUM["Ellipsoidal Heights",2002,AUTHORITY["EPSG","0"]],UNIT["Meter",1.00000000000000000000,AUTHORITY["EPSG","9001"]],AXIS["Height",UP]]])geozone";
+  ASSERT_EQ(udR_Failure, udGeoZone_SetFromWKT(&zone, unsupportedWKT));
+  ASSERT_FALSE(zone.knownDatum);
+  ASSERT_NE(udGZE_Count, zone.zoneSpheroid);
+}

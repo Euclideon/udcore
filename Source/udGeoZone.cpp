@@ -123,9 +123,13 @@ public:
   udGeoZone_GlobalInit() noexcept
   {
     g_pMutex = udCreateMutex();
+    g_InternalGeoZoneList.Init(64);
+    g_InternalDatumList.Init(64);
   }
   ~udGeoZone_GlobalInit() noexcept
   {
+    g_InternalDatumList.Deinit();
+    g_InternalGeoZoneList.Deinit();
     udDestroyMutex(&g_pMutex);
   }
 } g_initGeoZone;
@@ -170,12 +174,6 @@ udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pF
 
   int highestLoaded = 0;
   udChunkedArray<udJSONKVPair> *pMembers = nullptr;
-
-  if (g_InternalGeoZoneList.chunkCount == 0)
-    UD_ERROR_CHECK(g_InternalGeoZoneList.Init(64));
-
-  if (g_InternalDatumList.chunkCount == 0)
-    UD_ERROR_CHECK(g_InternalDatumList.Init(64));
 
   UD_ERROR_CHECK(zones.Parse(pJSONStr));
   UD_ERROR_IF(!zones.IsObject(), udR_FormatVariationNotSupported);
@@ -267,14 +265,15 @@ udResult udGeoZone_UnloadZones()
 {
   udScopeLock scopeLock(g_pMutex);
 
-  if (g_InternalGeoZoneList.chunkCount == 0 && g_InternalDatumList.chunkCount == 0)
-    return udR_Success;
+  udResult result;
+  UD_ERROR_CHECK(g_InternalDatumList.Deinit());
+  UD_ERROR_CHECK(g_InternalGeoZoneList.Deinit());
+  UD_ERROR_CHECK(g_InternalGeoZoneList.Init(64));
+  UD_ERROR_CHECK(g_InternalDatumList.Init(64));
 
-  udResult result = g_InternalGeoZoneList.Deinit();
-  if (result != udR_Success)
-    return result;
-
-  return g_InternalDatumList.Deinit();
+  result = udR_Success;
+epilogue:
+  return result;
 }
 
 udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllipsoidInfo &ellipsoid)
