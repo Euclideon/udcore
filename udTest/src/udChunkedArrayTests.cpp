@@ -285,7 +285,11 @@ TEST(udChunkedArrayTests, Iterator)
   EXPECT_EQ(it == copy, true);
 
   EXPECT_EQ(it < (it + 3), true);
+  EXPECT_EQ(it < (3 + it), true);
+  EXPECT_EQ(it + 3, 3 + it);
   EXPECT_EQ(it < (it - 1), false);
+  EXPECT_EQ(it < (1 - it), false);
+  EXPECT_EQ(it - 1, 1 - it);
 
   EXPECT_EQ(it > (it + 3), false);
   EXPECT_EQ(it > (it - 1), true);
@@ -459,7 +463,11 @@ TEST(udChunkedArrayTests, ConstIterator)
     EXPECT_EQ(it == copy, true);
 
     EXPECT_EQ(it < (it + 3), true);
+    EXPECT_EQ(it < (3 + it), true);
+    EXPECT_EQ(it + 3, 3 + it);
     EXPECT_EQ(it < (it - 1), false);
+    EXPECT_EQ(it < (1 - it), false);
+    EXPECT_EQ(it - 1, 1 - it);
 
     EXPECT_EQ(it > (it + 3), false);
     EXPECT_EQ(it > (it - 1), true);
@@ -570,4 +578,41 @@ TEST(udChunkedArrayTests, SortLambda)
   }
 
   array.Deinit();
+}
+
+TEST(udChunkedArrayTests, RandomAccessIterator)
+{
+#if UDCPP20
+  static_assert(std::random_access_iterator<udChunkedArrayIterator<int>>, "Iterator does not meet requirements!");
+  static_assert(std::random_access_iterator<udChunkedArrayConstIterator<int>>, "Iterator does not meet requirements!");
+#endif
+
+  constexpr size_t chunkSize = 32;
+  udChunkedArray<int> items{};
+  items.Init(chunkSize);
+
+  // Add multiple chunks worth of items
+  // A potential fix worked when end() wasn't at the end of a chunk, but failed when it was.
+  // This test will ensure we cover any other edge cases when going back to the start of a chunk.
+  for (int i = 0; i < chunkSize * 4; i++)
+    items.PushBack(i + 1);
+
+  // Ensure that we cover all cases.
+  while(true)
+  {
+    // Check that going back to the start actually works
+    auto begin = items.end() - items.length;
+    ASSERT_EQ(items.begin(), begin);
+
+    // Check the const iterator too
+    const udChunkedArray<int> constItems = items;
+    auto constBegin = constItems.end() - constItems.length;
+    ASSERT_EQ(constItems.begin(), constBegin);
+
+    // Try again with one less item, include no items, until we can't pop another item
+    if (!items.PopBack())
+      break;
+  }
+
+  items.Deinit();
 }
