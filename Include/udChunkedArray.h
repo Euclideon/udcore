@@ -199,7 +199,7 @@ template <typename T>
 inline udChunkedArrayIterator<T> udChunkedArrayIterator<T>::operator++(int)
 {
   udChunkedArrayIterator<T> ret = *this;
-  ret++;
+  operator++();
   return ret;
 }
 
@@ -219,7 +219,7 @@ template <typename T>
 inline udChunkedArrayIterator<T> udChunkedArrayIterator<T>::operator--(int)
 {
   udChunkedArrayIterator<T> ret = *this;
-  ret--;
+  operator--();
   return ret;
 }
 
@@ -313,7 +313,7 @@ template <typename T>
 inline udChunkedArrayConstIterator<T> udChunkedArrayConstIterator<T>::operator++(int)
 {
   udChunkedArrayConstIterator<T> ret = *this;
-  ret++;
+  operator++();
   return ret;
 }
 
@@ -333,7 +333,7 @@ template <typename T>
 inline udChunkedArrayConstIterator<T> udChunkedArrayConstIterator<T>::operator--(int)
 {
   udChunkedArrayConstIterator<T> ret = *this;
-  ret--;
+  operator--();
   return ret;
 }
 
