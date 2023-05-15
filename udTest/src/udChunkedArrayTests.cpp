@@ -264,6 +264,11 @@ TEST(udChunkedArrayTests, Iterator)
   EXPECT_EQ(copy, it);
   EXPECT_EQ(*it, 1);
 
+  copy = it;
+  EXPECT_EQ(copy, it++);
+  copy = it;
+  EXPECT_EQ(copy, it--);
+
   it += 3;
   EXPECT_EQ(*it, 4);
 
@@ -441,6 +446,11 @@ TEST(udChunkedArrayTests, ConstIterator)
     copy = --it;
     EXPECT_EQ(copy, it);
     EXPECT_EQ(*it, 1);
+
+    copy = it;
+    EXPECT_EQ(copy, it++);
+    copy = it;
+    EXPECT_EQ(copy, it--);
 
     it += 3;
     EXPECT_EQ(*it, 4);
