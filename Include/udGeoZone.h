@@ -256,21 +256,23 @@ enum udResult udGeoZone_UpdateSphereoidInfo(struct udGeoZone *pZone);
 #ifdef __cplusplus
 }
 
-inline int32_t udGeoZone_FindSRID(const udDouble3 &latLong, bool flipFromLongLat = false, enum udGeoZoneGeodeticDatum datum = udGZGD_WGS84)
+inline udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84)
 {
+  udResult result;
   int32_t SRIDCode = 0;
   if (flipFromLongLat)
   {
     udDouble3 flipped = udDouble3::create(latLong.y, latLong.x, latLong.z);
-    udGeoZone_FindSRID(&SRIDCode, &flipped, datum);
+    result = udGeoZone_FindSRID(&SRIDCode, &flipped, datum);
   }
   else
   {
-    udGeoZone_FindSRID(&SRIDCode, &latLong, datum);
+    result = udGeoZone_FindSRID(&SRIDCode, &latLong, datum);
   }
-  return SRIDCode;
+  if (pSRIDCode)
+    *pSRIDCode = SRIDCode;
+  return result;
 }
-
 
 inline udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84)
 {
