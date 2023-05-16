@@ -2,7 +2,6 @@
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udFile.h"
-#include "udMath.h"
 #include "udJSON.h"
 
 #include <sys/stat.h>
@@ -25,45 +24,6 @@ static const uint64_t nsec_per_msec = 1000000;   // 1 million nanoseconds in one
 #endif
 
 static char s_udStrEmptyString[] = "";
-
-// *********************************************************************
-// Author: Dave Pevreal, October 2016
-void udUpdateCamera(double camera[16], double yawRadians, double pitchRadians, double tx, double ty, double tz)
-{
-  udDouble4x4 rotation = udDouble4x4::create(camera);
-  udDouble3 pos = rotation.axis.t.toVector3();
-  rotation.axis.t = udDouble4::identity();
-
-  if (yawRadians != 0.0)
-    rotation = udDouble4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
-  if (pitchRadians != 0.0)
-    rotation = rotation * udDouble4x4::rotationX(pitchRadians); // Pitch on local axis
-  udDouble3 trans = udDouble3::zero();
-  trans += rotation.axis.x.toVector3() * tx;
-  trans += rotation.axis.y.toVector3() * ty;
-  trans += rotation.axis.z.toVector3() * tz;
-  rotation.axis.t = udDouble4::create(pos + trans, 1.0);
-
-  memcpy(camera, rotation.a, sizeof(rotation));
-}
-
-// *********************************************************************
-// Author: Dave Pevreal, October 2016
-void udUpdateCamera(float camera[16], float yawRadians, float pitchRadians, float tx, float ty, float tz)
-{
-  udFloat4x4 rotation = udFloat4x4::create(camera);
-  udFloat3 pos = rotation.axis.t.toVector3();
-  rotation.axis.t = udFloat4::identity();
-
-  rotation = udFloat4x4::rotationZ(yawRadians) * rotation;   // Yaw on global axis
-  rotation = rotation * udFloat4x4::rotationX(pitchRadians); // Pitch on local axis
-  pos += rotation.axis.x.toVector3() * tx;
-  pos += rotation.axis.y.toVector3() * ty;
-  pos += rotation.axis.z.toVector3() * tz;
-  rotation.axis.t = udFloat4::create(pos, 1.0);
-
-  memcpy(camera, rotation.a, sizeof(rotation));
-}
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
