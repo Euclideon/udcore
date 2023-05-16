@@ -1,9 +1,9 @@
 #include "gtest/gtest.h"
 #include "udCompression.h"
-#include "udMath.h"
 #include "udFile.h"
 #include "udPlatform.h"
 #include "udStringUtil.h"
+#include <algorithm>
 
 TEST(udCompressionTests, Basic)
 {
@@ -21,12 +21,12 @@ TEST(udCompressionTests, Basic)
     EXPECT_EQ(udR_Success, udCompression_Deflate(&pDeflated, &deflatedSize, input, UDARRAYSIZE(input), compressionType));
     EXPECT_NE(input, pDeflated);
     EXPECT_NE(UDARRAYSIZE(input), deflatedSize);
-    EXPECT_NE(0, memcmp(input, pDeflated, udMin(UDARRAYSIZE(input), deflatedSize)));
+    EXPECT_NE(0, memcmp(input, pDeflated, std::min(UDARRAYSIZE(input), deflatedSize)));
 
     // Decompress
     EXPECT_EQ(udR_Success, udCompression_Inflate(inflated, UDARRAYSIZE(input), pDeflated, deflatedSize, &inflatedSize, compressionType));
     EXPECT_EQ(UDARRAYSIZE(input), inflatedSize);
-    EXPECT_EQ(0, memcmp(input, inflated, udMin(UDARRAYSIZE(input), inflatedSize)));
+    EXPECT_EQ(0, memcmp(input, inflated, std::min(UDARRAYSIZE(input), inflatedSize)));
 
     udFree(pDeflated);
   }
@@ -48,7 +48,7 @@ TEST(udCompressionTests, EnsureBufferTooSmallResult)
     EXPECT_EQ(udR_Success, udCompression_Deflate(&pDeflated, &deflatedSize, input, UDARRAYSIZE(input), compressionType));
     EXPECT_NE(input, pDeflated);
     EXPECT_NE(UDARRAYSIZE(input), deflatedSize);
-    EXPECT_NE(0, memcmp(input, pDeflated, udMin(UDARRAYSIZE(input), deflatedSize)));
+    EXPECT_NE(0, memcmp(input, pDeflated, std::min(UDARRAYSIZE(input), deflatedSize)));
 
     // Decompress
     EXPECT_EQ(udR_BufferTooSmall, udCompression_Inflate(inflated, UDARRAYSIZE(inflated), pDeflated, deflatedSize, &inflatedSize, compressionType));
@@ -81,7 +81,7 @@ TEST(udCompressionTests, Complex)
     }
 
     EXPECT_LT(deflatedSize, UDARRAYSIZE(input)); // Expect some compression to have occured
-    EXPECT_NE(0, memcmp(input, deflated, udMin(UDARRAYSIZE(input), deflatedSize)));
+    EXPECT_NE(0, memcmp(input, deflated, std::min(UDARRAYSIZE(input), deflatedSize)));
 
     // Decompress
     EXPECT_EQ(udR_Success, udCompression_Inflate(inflated, UDARRAYSIZE(inflated), deflated, deflatedSize, &inflatedSize, compressionType));
@@ -154,7 +154,7 @@ TEST(udCompressionTests, Zip)
   EXPECT_EQ(udR_Success, result);
   EXPECT_EQ(tocLen, len); // TOC is opened and length returned
 
-  pDOC = udAllocType(char, udMax(doc1Len, udMax(doc2Len, doc3Len)) + 1, udAF_None); // Extra byte for nul terminator
+  pDOC = udAllocType(char, std::max(doc1Len, std::max(doc2Len, doc3Len)) + 1, udAF_None); // Extra byte for nul terminator
 
   result = udFile_SetSubFilename(pFile, pFilenames[0], &len);
   EXPECT_EQ(udR_Success, result);

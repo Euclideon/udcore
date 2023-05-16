@@ -13,6 +13,7 @@
 #include "mbedtls/error.h"
 
 #include <atomic>
+#include <algorithm>
 
 #if UDPLATFORM_WINDOWS
 # include <windows.h>
@@ -720,7 +721,7 @@ void udSocketSet_AddSocket(udSocketSet *pSocketSet, udSocket *pSocket)
 
   SOCKET socketHandle = pSocket->isSecure ? pSocket->tlsClient.socketContext.fd : pSocket->basicSocket;
 
-  pSocketSet->highestSocketHandle = udMax(socketHandle, pSocketSet->highestSocketHandle);
+  pSocketSet->highestSocketHandle = std::max(socketHandle, pSocketSet->highestSocketHandle);
   FD_SET(socketHandle, &pSocketSet->set);
 }
 
@@ -760,13 +761,13 @@ int udSocketSet_Select(size_t timeoutMilliseconds, udSocketSet *pReadSocketSet, 
 
   if (pWriteSocketSet != nullptr)
   {
-    nfds = udMax(nfds, pWriteSocketSet->highestSocketHandle);
+    nfds = std::max(nfds, pWriteSocketSet->highestSocketHandle);
     pWriteSet = &pWriteSocketSet->set;
   }
 
   if (pExceptSocketSet != nullptr)
   {
-    nfds = udMax(nfds, pExceptSocketSet->highestSocketHandle);
+    nfds = std::max(nfds, pExceptSocketSet->highestSocketHandle);
     pExceptSet = &pExceptSocketSet->set;
   }
 

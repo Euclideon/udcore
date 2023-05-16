@@ -47,6 +47,7 @@
 #  error "PTHREADS are not being used!"
 # endif
 #elif defined(_MSC_VER) || defined(__MINGW32__)
+# define NOMINMAX
 # include <memory.h>
 # define UDPLATFORM_WINDOWS 1
 # include <winapifamily.h>

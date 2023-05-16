@@ -12,8 +12,8 @@
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udFileHandler.h"
-#include "udMath.h"
 #include <emscripten/fetch.h>
+#include <algorithm>
 
 // ----------------------------------------------------------------------------
 // Author: Samuel Surtees, November 2018
@@ -41,9 +41,9 @@ static udResult udFileHandler_EmscriptenHTTPSeekRead(udFile *pFile, void *pBuffe
     } while (ret == EMSCRIPTEN_RESULT_TIMED_OUT);
   }
   UD_ERROR_IF(pFetch->status != 200 && pFetch->status != 206, udR_ReadFailure);
-  memcpy(pBuffer, pFetch->data, udMin(pFetch->numBytes, (uint64_t)bufferLength));
+  memcpy(pBuffer, pFetch->data, std::min(pFetch->numBytes, (uint64_t)bufferLength));
   if (pActualRead)
-    *pActualRead = udMin(pFetch->numBytes, (uint64_t)bufferLength);
+    *pActualRead = std::min(pFetch->numBytes, (uint64_t)bufferLength);
 
 epilogue:
   if (pFetch)
