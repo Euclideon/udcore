@@ -42,7 +42,7 @@ TEST(udGeoZone, LoadingZones)
   int badReads = 0;
   EXPECT_EQ(udR_Success, udGeoZone_LoadZonesFromJSON(pBuffer, &goodReads, &badReads));
   double percent = double(goodReads) / double(goodReads + badReads);
-  udDebugPrintf("%f\n", percent);
+  EXPECT_GT(percent, 0.78) << "Good:" << goodReads << ", Bad:" << badReads;
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, ZoneIDInSpatialRefButNotEmbedded));
   EXPECT_EQ(udR_Success, udGeoZone_UnloadZones());
 
@@ -55,8 +55,9 @@ TEST(udGeoZone, FindSRID)
 {
   udResult result;
   int32_t sridCode;
+  udDouble3 latLong = udDouble3::create(42, 153, 0);
 
-  result = udGeoZone_FindSRID(&sridCode, udDouble3::create(153, 42, 0), true);
+  result = udGeoZone_FindSRID(&sridCode, &latLong, udGZGD_WGS84);
   EXPECT_EQ(udR_Success, result);
   EXPECT_EQ(32656, sridCode);
 
@@ -66,7 +67,8 @@ TEST(udGeoZone, FindSRID)
     {
       udGeoZone zone;
 
-      result = udGeoZone_FindSRID(&sridCode, udDouble3::create(lat, lon, 0));
+      latLong = udDouble3::create(lat, lon, 0);
+      result = udGeoZone_FindSRID(&sridCode, &latLong, udGZGD_WGS84);
       EXPECT_EQ(udR_Success, result);
       result = udGeoZone_SetFromSRID(&zone, sridCode);
       EXPECT_EQ(udR_Success, result);
@@ -133,28 +135,22 @@ TEST(udGeoZone, RoundTripPrecision)
 
     // Test that the long form method works
     udDouble3 latLong = udDouble3::create(data[i].latitude, data[i].longitude, 0.f);
-    udDouble3 cartesianLatLong = udGeoZone_LatLongToCartesian(zone, latLong);
-    udDouble3 latLong2 = udGeoZone_CartesianToLatLong(zone, cartesianLatLong);
+    udDouble3 cartesianLatLong, latLong2;
+    udGeoZone_LatLongToCartesian(&cartesianLatLong, &zone, &latLong, udGZGD_WGS84);
+    udGeoZone_CartesianToLatLong(&latLong2, &zone, &cartesianLatLong, udGZGD_WGS84);
 
-    udDouble3 longLat = udDouble3::create(data[i].longitude, data[i].latitude, 0.f);
-    udDouble3 cartesianLongLat = udGeoZone_LatLongToCartesian(zone, longLat, true);
-    udDouble3 longLat2 = udGeoZone_CartesianToLatLong(zone, cartesianLongLat, true);
-    
     EXPECT_EQ(int64_t(udRound(latLong.x * testPrecision)), int64_t(udRound(latLong2.x * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
     EXPECT_EQ(int64_t(udRound(latLong.y * testPrecision)), int64_t(udRound(latLong2.y * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
 
-    EXPECT_EQ(int64_t(udRound(longLat.x * testPrecision)), int64_t(udRound(longLat2.x * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
-    EXPECT_EQ(int64_t(udRound(longLat.y * testPrecision)), int64_t(udRound(longLat2.y * testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
-
-    EXPECT_EQ(int64_t(udRound(cartesianLatLong.x * localPrecision)), int64_t(udRound(cartesianLongLat.x * localPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
-    EXPECT_EQ(int64_t(udRound(cartesianLatLong.y * localPrecision)), int64_t(udRound(cartesianLongLat.y * localPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
-
     // Additionally test that the TransformPoint version works
-    udDouble3 cartesianLatLong2 = udGeoZone_TransformPoint(latLong, wgs84LatLong, zone);
-    udDouble3 latLong3 = udGeoZone_TransformPoint(cartesianLatLong2, zone, wgs84LatLong);
+    udDouble3 cartesianLatLong2, latLong3;
+    udGeoZone_TransformPoint(&cartesianLatLong2, &latLong, &wgs84LatLong, &zone);
+    udGeoZone_TransformPoint(&latLong3, &cartesianLatLong2, &zone, &wgs84LatLong);
 
-    udDouble3 cartesianLongLat2 = udGeoZone_TransformPoint(longLat, wgs84LongLat, zone);
-    udDouble3 longLat3 = udGeoZone_TransformPoint(cartesianLongLat2, zone, wgs84LongLat);
+    udDouble3 cartesianLongLat2, longLat3;
+    udDouble3 longLat = udDouble3::create(data[i].longitude, data[i].latitude, 0.f);
+    udGeoZone_TransformPoint(&cartesianLongLat2, &longLat, &wgs84LongLat, &zone);
+    udGeoZone_TransformPoint(&longLat3, &cartesianLongLat2, &zone, &wgs84LongLat);
 
     EXPECT_EQ(int64_t(udRound(latLong.x *testPrecision)), int64_t(udRound(latLong3.x *testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
     EXPECT_EQ(int64_t(udRound(latLong.y *testPrecision)), int64_t(udRound(latLong3.y *testPrecision))) << "PointSet:" << i << ", SRID:" << data[i].srid;
@@ -195,8 +191,8 @@ TEST(udGeoZone, LCC)
   {
     udGeoZone zone;
     EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&zone, testInput[i].srid));
-    localSpace = udGeoZone_LatLongToCartesian(zone, testInput[i].latLon);
-    latLong = udGeoZone_CartesianToLatLong(zone, testInput[i].localSpace);
+    udGeoZone_LatLongToCartesian(&localSpace, &zone, &testInput[i].latLon, udGZGD_WGS84);
+    udGeoZone_CartesianToLatLong(&latLong, &zone, &testInput[i].localSpace, udGZGD_WGS84);
 
     EXPECT_EQ(int64_t(udRound(testInput[i].latLon.x * angularPrecision)), int64_t(udRound(latLong.x * angularPrecision))) << "PointSet:" << i;
     EXPECT_EQ(int64_t(udRound(testInput[i].latLon.y * angularPrecision)), int64_t(udRound(latLong.y * angularPrecision))) << "PointSet:" << i;
@@ -221,11 +217,13 @@ TEST(udGeoZone, CassiniSoldner)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 30200)); //Trinidad 1903
   EXPECT_EQ(geoZone.datum, udGZGD_TRI1903);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
   //EXPECT_EQ(udRound(pos.x * localPrecision), udRound(66644.94 * localPrecision));
   //EXPECT_EQ(udRound(pos.y * localPrecision), udRound(82536.22 * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -245,11 +243,13 @@ TEST(udGeoZone, CassiniSoldnerHyperbolic)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 3139)); // Vanua Levu 1915
   EXPECT_EQ(geoZone.datum, udGZGD_VANUA1915);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
   //EXPECT_EQ(udRound(pos.x* localPrecision), udRound(1601528.90 * localPrecision));
   //EXPECT_EQ(udRound(pos.y* localPrecision), udRound(1336966.01 * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -271,12 +271,14 @@ TEST(udGeoZone, HongKongGrid)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 2326)); // Hong Kong 1980
   EXPECT_EQ(geoZone.datum, udGZGD_HK1980);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
   EXPECT_EQ(udRound(818097.267 * localPrecision), udRound(pos.x * localPrecision));
   EXPECT_EQ(udRound(838477.970 * localPrecision), udRound(pos.y * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -292,12 +294,14 @@ TEST(udGeoZone, ETRS89)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 4936)); // ETRS89 EPSG:4936
   EXPECT_EQ(geoZone.datum, udGZGD_ETRS89);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
   EXPECT_EQ(udRound(4232504.94 * localPrecision), udRound(pos.x * localPrecision));
   EXPECT_EQ(udRound(3023.18 * localPrecision), udRound(pos.y * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -319,12 +323,14 @@ TEST(udGeoZone, Lambert93)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 2154)); // Lambert-93
   EXPECT_EQ(geoZone.datum, udGZGD_RGF93);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
   EXPECT_EQ(udRound(882408.3 * localPrecision), udRound(pos.x * localPrecision));
   EXPECT_EQ(udRound(6543019.6 * localPrecision), udRound(pos.y * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -344,11 +350,13 @@ TEST(udGeoZone, StereographicOblique)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 28992)); // Amersfoort
   EXPECT_EQ(geoZone.datum, udGZGD_AMERSFOORT);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
   //EXPECT_EQ(udRound(pos.x * localPrecision), udRound(196105.283 * localPrecision));
   //EXPECT_EQ(udRound(pos.y * localPrecision), udRound(557057.739 * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -368,9 +376,11 @@ TEST(udGeoZone, StereographicPolar)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 3032)); // Amersfoort
   EXPECT_EQ(geoZone.datum, udGZGD_WGS84);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -389,9 +399,11 @@ TEST(udGeoZone, Mercator)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 30175)); // Moon Mercator
   EXPECT_EQ(geoZone.datum, udGZGD_MOON_MERC);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -421,8 +433,8 @@ TEST(udGeoZone, WebMercator)
   // The ordering for the tests in this loop is important- if 27700-4277 or 4326-4277 aren't accurate the last one can't be either
   for (size_t i = 0; i < udLengthOf(testInput); ++i)
   {
-    localSpace = udGeoZone_LatLongToCartesian(zone, testInput[i].latLon);
-    latLong = udGeoZone_CartesianToLatLong(zone, testInput[i].localSpace);
+    udGeoZone_LatLongToCartesian(&localSpace, &zone, &testInput[i].latLon, udGZGD_WGS84);
+    udGeoZone_CartesianToLatLong(&latLong, &zone, &testInput[i].localSpace, udGZGD_WGS84);
 
     EXPECT_EQ(int64_t(udRound(testInput[i].latLon.x * angularPrecision)), int64_t(udRound(latLong.x * angularPrecision))) << "PointSet:" << i;
     EXPECT_EQ(int64_t(udRound(testInput[i].latLon.y * angularPrecision)), int64_t(udRound(latLong.y * angularPrecision))) << "PointSet:" << i;
@@ -445,11 +457,13 @@ TEST(udGeoZone, Krovak)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 8353)); // Amersfoort
   EXPECT_EQ(geoZone.datum, udGZGD_SJTSK03);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
   //EXPECT_EQ(udRound(pos.x * localPrecision), udRound(-1050538.64 * localPrecision));
   //EXPECT_EQ(udRound(pos.y * localPrecision), udRound(-568991.00 * localPrecision));
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -467,9 +481,11 @@ TEST(udGeoZone, HotineObliqueMercator)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 29873)); // Amersfoort
   EXPECT_EQ(geoZone.datum, udGZGD_TIMB1948);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
-  udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
+  udDouble3 latLongRes;
+  udGeoZone_CartesianToLatLong(&latLongRes, &geoZone, &pos, udGZGD_WGS84);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
   EXPECT_EQ(udRound(latLong.y * localPrecision), udRound(latLongRes.y * localPrecision));
 }
@@ -487,7 +503,8 @@ TEST(udGeoZone, AlbersConicEqualArea)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 3174)); // Amersfoort
   EXPECT_EQ(geoZone.datum, udGZGD_NAD83);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
   EXPECT_EQ(udRound(pos.x * localPrecision), udRound(1466493.492 * localPrecision));
   EXPECT_EQ(udRound(pos.y * localPrecision), udRound(702903.006 * localPrecision));
 }
@@ -505,7 +522,8 @@ TEST(udGeoZone, EquidistantCylindrical)
   EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&geoZone, 4087)); // Amersfoort
   EXPECT_EQ(geoZone.datum, udGZGD_WGS84);
 
-  udDouble3 pos = udGeoZone_LatLongToCartesian(geoZone, latLong);
+  udDouble3 pos;
+  udGeoZone_LatLongToCartesian(&pos, &geoZone, &latLong, udGZGD_WGS84);
 
   udDouble3 latLongRes = udGeoZone_CartesianToLatLong(geoZone, pos);
   EXPECT_EQ(udRound(latLong.x * localPrecision), udRound(latLongRes.x * localPrecision));
@@ -563,8 +581,8 @@ TEST(udGeoZone, OSGB)
     EXPECT_EQ(int64_t(udRound(expectedLocalSpaces[i].y * localPrecision)), int64_t(udRound(localSpace.y * localPrecision))) << "PointSet:" << i;
 
     // 4326 (WGS84) <-> 4277 (OSGB1936)
-    latLong = udGeoZone_ConvertDatum(expectedLatLongsOSGB[i], udGZGD_OSGB36, udGZGD_WGS84);
-    localSpace = udGeoZone_ConvertDatum(expectedLatLongs[i], udGZGD_WGS84, udGZGD_OSGB36);
+    udGeoZone_ConvertDatum(&latLong, &expectedLatLongsOSGB[i], udGZGD_OSGB36, udGZGD_WGS84);
+    udGeoZone_ConvertDatum(&localSpace, &expectedLatLongs[i], udGZGD_WGS84, udGZGD_OSGB36);
 
     EXPECT_EQ(int64_t(udRound(expectedLatLongs[i].x * angularPrecision * wgs84osgbInaccuracyScalar)), int64_t(udRound(latLong.x * angularPrecision * wgs84osgbInaccuracyScalar))) << "PointSet:" << i;
     EXPECT_EQ(int64_t(udRound(expectedLatLongs[i].y * angularPrecision * wgs84osgbInaccuracyScalar)), int64_t(udRound(latLong.y * angularPrecision * wgs84osgbInaccuracyScalar))) << "PointSet:" << i;
@@ -662,11 +680,13 @@ TEST(udGeoZone, ChangingCRSDatums)
     if (latLongPairs[i].z != 0.0) // Use low accuracy mode
       accuracy = LowAccuracy;
 
-    udDouble3 wgs84Result = udGeoZone_ConvertDatum(latLongPairs[i], (udGeoZoneGeodeticDatum)i, udGZGD_WGS84);
+    udDouble3 wgs84Result;
+    udGeoZone_ConvertDatum(&wgs84Result, &latLongPairs[i], (udGeoZoneGeodeticDatum)i, udGZGD_WGS84);
     EXPECT_EQ(int64_t(udRound((latLongPairs[0].x - wgs84Result.x) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[0].x - wgs84Result.x) * accuracy)));
     EXPECT_EQ(int64_t(udRound((latLongPairs[0].y - wgs84Result.y) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[0].y - wgs84Result.y) * accuracy)));
 
-    udDouble3 curIResult = udGeoZone_ConvertDatum(latLongPairs[0], udGZGD_WGS84, (udGeoZoneGeodeticDatum)i);
+    udDouble3 curIResult;
+    udGeoZone_ConvertDatum(&curIResult, &latLongPairs[0], udGZGD_WGS84, (udGeoZoneGeodeticDatum)i);
     EXPECT_EQ(int64_t(udRound((latLongPairs[i].x - curIResult.x) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[i].x - curIResult.x) * accuracy)));
     EXPECT_EQ(int64_t(udRound((latLongPairs[i].y - curIResult.y) * accuracy)), 0) << "Iter" << i << " " << g_udGZ_GeodeticDatumDescriptors[i].pDatumName << " Error:" << udAbs(int64_t(udRound((latLongPairs[i].y - curIResult.y) * accuracy)));
   }
@@ -1116,12 +1136,12 @@ TEST(udGeoZone, SetFromWKT)
     result = udGeoZone_SetFromSRID(&sridZone, supportedCodes[i].srid);
     EXPECT_EQ(udR_Success, result) << "SRID=" << supportedCodes[i].srid << " & ErrorLine:" << __LINE__;
 
-    result = udGeoZone_GetWellKnownText(&pWKT, wktZone);
+    result = udGeoZone_GetWellKnownText(&pWKT, &wktZone);
     EXPECT_EQ(udR_Success, result) << "SRID=" << supportedCodes[i].srid << " & ErrorLine:" << __LINE__;
     EXPECT_STRCASEEQ(supportedCodes[i].pWKT, pWKT) << "SRID=" << supportedCodes[i].srid << " & ErrorLine:" << __LINE__;
     udFree(pWKT);
 
-    result = udGeoZone_GetWellKnownText(&pWKT, sridZone);
+    result = udGeoZone_GetWellKnownText(&pWKT, &sridZone);
     EXPECT_EQ(udR_Success, result) << "SRID=" << supportedCodes[i].srid << " & ErrorLine:" << __LINE__;
     EXPECT_STRCASEEQ(supportedCodes[i].pWKT, pWKT) << "SRID=" << supportedCodes[i].srid << " & ErrorLine:" << __LINE__;
 
@@ -1177,7 +1197,7 @@ TEST(udGeoZone, WKT)
   {
     result = udGeoZone_SetFromSRID(&zone, supportedCodes[i].srid);
     EXPECT_EQ(udR_Success, result);
-    result = udGeoZone_GetWellKnownText(&pWKT, zone);
+    result = udGeoZone_GetWellKnownText(&pWKT, &zone);
     EXPECT_EQ(udR_Success, result);
     EXPECT_STRCASEEQ(supportedCodes[i].pWKT, pWKT) << "Iteration" << i << " (Code:" << zone.srid << ")";
 
@@ -1212,7 +1232,7 @@ TEST(udGeoZone, WKT)
         if (srid == supportedCodes[i].srid)
           break;
       EXPECT_NE(udLengthOf(supportedCodes), i);
-      result = udGeoZone_GetWellKnownText(&pWKT, zone);
+      result = udGeoZone_GetWellKnownText(&pWKT, &zone);
       EXPECT_EQ(udR_Success, result);
       EXPECT_STRCASEEQ(supportedCodes[i].pWKT, pWKT);
       udFree(pWKT);
@@ -1301,7 +1321,8 @@ TEST(udGeoZone, TransformMatrix)
     EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&sourceZone, testInput[i].srid));
     EXPECT_EQ(udR_Success, udGeoZone_SetFromSRID(&destZone, testInput[i].destSrid));
 
-    udDouble4x4 destMatrix = udGeoZone_TransformMatrix(testInput[i].sourceMatrix, sourceZone, destZone);
+    udDouble4x4 destMatrix;
+    udGeoZone_TransformMatrix(&destMatrix, &testInput[i].sourceMatrix, &sourceZone, &destZone);
 
     EXPECT_TRUE(udMatrixEqualApprox(destMatrix, testInput[i].destMatrix));
   }
