@@ -238,49 +238,6 @@ udResult udJSON::SetDoubleArray(const double *pArray, size_t length, bool shrink
   return udJSON_SetArrayHelper(this, pArray, length, shrinkMathTypes);
 }
 
-//// ****************************************************************************
-//// Author: Dave Pevreal, May 2017
-//udResult udJSON::Set(const udDouble4x4 &v, bool shrink)
-//{
-//  udResult result = udR_Success;
-//  size_t elements = 16;
-//  if (type != T_Array || u.pArray->length != 0)
-//  {
-//    Destroy();
-//    result = SetArray();
-//    UD_ERROR_HANDLE();
-//  }
-//  if (shrink)
-//  {
-//    if ((v.axis.x.w == 0.0) && (v.axis.y.w == 0.0) && (v.axis.z.w == 0.0) && (v.axis.t.w == 1.0))
-//    {
-//      elements = 12;
-//      if ((v.axis.t.x == 0.0) && (v.axis.t.y == 0.0) && (v.axis.t.z == 0.0))
-//        elements = 9;
-//    }
-//  }
-//  switch (elements)
-//  {
-//    case 9:
-//    case 12:
-//      for (size_t i = 0; i < elements; ++i)
-//      {
-//        result = u.pArray->PushBack(udJSON(v.a[(i / 3) * 4 + (i % 3)]));
-//        UD_ERROR_HANDLE();
-//      }
-//      break;
-//    default:
-//      for (size_t i = 0; i < elements; ++i)
-//      {
-//        result = u.pArray->PushBack(udJSON(v.a[i]));
-//        UD_ERROR_HANDLE();
-//      }
-//      break;
-//  }
-//epilogue:
-//  return result;
-//}
-
 // ****************************************************************************
 // Author: Dave Pevreal, June 2017
 const udJSON *udJSON::FindMember(const char *pMemberName, size_t *pIndex) const
