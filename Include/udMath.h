@@ -8,7 +8,7 @@
 // Math functionality
 //
 
-#include "udPlatform.h"
+#include <stdint.h>
 #include <float.h>
 #include <math.h>
 
@@ -114,6 +114,11 @@ template <typename T> constexpr bool udArrayIsFinite(const T *pArr, size_t n) {
 // Template helper for arrays whose length is known at compile time
 template <typename T, size_t N> constexpr bool udArrayIsFinite(T(&arr)[N]) { return udArrayIsFinite(arr, N); }
 
+// Min/max
+template <typename T> T             udMax(T a, T b) { return (a > b) ? a : b; }
+template <typename T> T             udMin(T a, T b) { return (a < b) ? a : b; }
+template <typename T, typename U> T udMax(T a, U b) { return (a > (T)b) ? a : (T)b; }
+template <typename T, typename U> T udMin(T a, U b) { return (a < (T)b) ? a : (T)b; }
 
 // rounding functions
 float udRound(float f);
@@ -565,7 +570,7 @@ template <typename T, typename U>
 udMatrix4x4<T> operator *(U f, const udMatrix4x4<T> &m) { return m*f; }
 
 
-// typedef's for typed vectors/matices
+// typedef's for typed vectors/matrices
 typedef udVector2<int16_t>  udShort2;
 typedef udVector3<int16_t>  udShort3;
 typedef udVector4<int16_t>  udShort4;
@@ -584,24 +589,53 @@ typedef udVector4<uint32_t> udUInt4;
 typedef udVector2<uint64_t> udULong2;
 typedef udVector3<uint64_t> udULong3;
 typedef udVector4<uint64_t> udULong4;
-typedef udVector4<float>  udFloat4;
-typedef udVector3<float>  udFloat3;
 typedef udVector2<float>  udFloat2;
-typedef udVector4<double> udDouble4;
-typedef udVector3<double> udDouble3;
+typedef udVector3<float>  udFloat3;
+typedef udVector4<float>  udFloat4;
 typedef udVector2<double> udDouble2;
-
+typedef udVector3<double> udDouble3;
+typedef udVector4<double> udDouble4;
 typedef udMatrix4x4<float>  udFloat4x4;
 typedef udMatrix4x4<double> udDouble4x4;
-//typedef udMatrix3x4<float>  udFloat3x4;
-//typedef udMatrix3x4<double> udDouble3x4;
-//typedef udMatrix3x3<float>  udFloat3x3;
-//typedef udMatrix3x3<double> udDouble3x3;
-
 typedef udQuaternion<float>  udFloatQuat;
 typedef udQuaternion<double>  udDoubleQuat;
 
 #include "udMath_Inl.h"
+
+#else // !__cplusplus
+// C-compatible declarations for typed math structures
+#define udMathDecl2(type, name) typedef struct { type x, y; } name
+#define udMathDecl3(type, name) typedef struct { type x, y, z; } name
+#define udMathDecl4(type, name) typedef struct { type x, y, z, w; } name
+
+udMathDecl2(int16_t, udShort2);
+udMathDecl3(int16_t, udShort3);
+udMathDecl4(int16_t, udShort4);
+udMathDecl2(int32_t, udInt2);
+udMathDecl3(int32_t, udInt3);
+udMathDecl4(int32_t, udInt4);
+udMathDecl2(int64_t, udLong2);
+udMathDecl3(int64_t, udLong3);
+udMathDecl4(int64_t, udLong4);
+udMathDecl2(uint16_t, udUShort2);
+udMathDecl3(uint16_t, udUShort3);
+udMathDecl4(uint16_t, udUShort4);
+udMathDecl2(uint32_t, udUInt2);
+udMathDecl3(uint32_t, udUInt3);
+udMathDecl4(uint32_t, udUInt4);
+udMathDecl2(uint64_t, udULong2);
+udMathDecl3(uint64_t, udULong3);
+udMathDecl4(uint64_t, udULong4);
+udMathDecl2(float, udFloat2);
+udMathDecl3(float, udFloat3);
+udMathDecl4(float, udFloat4);
+udMathDecl2(double, udDouble2);
+udMathDecl3(double, udDouble3);
+udMathDecl4(double, udDouble4);
+udMathDecl4(udFloat4, udFloat4x4);
+udMathDecl4(udDouble4, udDouble4x4);
+udMathDecl4(float, udFloatQuat);
+udMathDecl4(double, udDoubleQuat);
 
 #endif // __cplusplus
 

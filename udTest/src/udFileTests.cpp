@@ -37,7 +37,7 @@ TEST(udFileTests, GeneralFileTests)
   EXPECT_EQ(udR_Success, udFileExists(pFilename, &size, &modifyTime));
 
   EXPECT_EQ(18, size);
-  EXPECT_GT(2, currentTime - modifyTime);
+  EXPECT_GE(modifyTime, currentTime);
 
   EXPECT_EQ(udR_Success, udFileDelete(pFilename));
   EXPECT_EQ(udR_NotFound, udFileExists(pFilename));

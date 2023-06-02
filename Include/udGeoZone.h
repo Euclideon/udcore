@@ -6,9 +6,15 @@
 // Creator: Dave Pevreal, June 2018
 //
 // Module for dealing with geolocation and transformation between geodetic and cartesian coordinates
+// All output parameters can overwrite input parameters
 //
 
 #include "udMath.h"
+#include "udResult.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum udGeoZoneEllipsoid
 {
@@ -137,8 +143,8 @@ enum udGeoZoneProjectionType
 
 struct udGeoZone
 {
-  udGeoZoneGeodeticDatum datum;
-  udGeoZoneProjectionType projection;
+  enum udGeoZoneGeodeticDatum datum;
+  enum udGeoZoneProjectionType projection;
   udDouble2 latLongBoundMin;
   udDouble2 latLongBoundMax;
   double meridian;
@@ -168,11 +174,11 @@ struct udGeoZone
   char zoneName[64]; // Only 33 characters required for longest known name "Japan Plane Rectangular CS XVIII"
   char displayName[128]; // This is the human readable name; often just datumShortName & zoneName concatenated
 
-  bool knownDatum;
+  char knownDatum; // boolean
   int32_t datumSrid;
-  bool toWGS84;
-  bool axisInfo;
-  udGeoZoneEllipsoid zoneSpheroid;
+  char toWGS84; // boolean
+  char axisInfo; // boolean
+  enum udGeoZoneEllipsoid zoneSpheroid;
   double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
 };
 
@@ -182,12 +188,12 @@ struct udGeoZoneGeodeticDatumDescriptor
   const char *pFullName;
   const char *pShortName;
   const char *pDatumName;
-  udGeoZoneEllipsoid ellipsoid;
+  enum udGeoZoneEllipsoid ellipsoid;
   double paramsHelmert7[7]; //TO-WGS84 as { Tx, Ty, Tz, Rx, Ry, Rz, DS }
   int32_t epsg; // epsg code for the datum
   int32_t authority; // authority for this datum
-  bool exportAxisInfo;
-  bool exportToWGS84;
+  char exportAxisInfo;
+  char exportToWGS84;
 };
 
 struct udGeoZoneEllipsoidInfo
@@ -204,47 +210,114 @@ struct udGeoZoneDatumAlias
   const int datumIndex;
 };
 
-extern const udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
-extern const udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count];
+extern const struct udGeoZoneGeodeticDatumDescriptor g_udGZ_GeodeticDatumDescriptors[udGZGD_Count];
+extern const struct udGeoZoneEllipsoidInfo g_udGZ_StdEllipsoids[udGZE_Count];
 
 // Loads a set of zones from a JSON file where each member is defined as "AUTHORITY:SRID" (eg. "EPSG:32756")
-udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pFailed);
+enum udResult udGeoZone_LoadZonesFromJSON(const char *pJSONStr, int *pLoaded, int *pFailed);
 
 // Unloads all loaded zones (only needs to be called once to unload all)
-udResult udGeoZone_UnloadZones();
+enum udResult udGeoZone_UnloadZones();
 
-// Find an appropriate SRID code for a given lat/long within UTM/WGS84 (for example as a default value)
-udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
+// Find an appropriate SRID code for a given lat/long within UTM/WGS84 (for example using datum udGZGD_WGS84)
+enum udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 *pLatLong, enum udGeoZoneGeodeticDatum datum);
 
 // Set the zone structure parameters from a given srid code
-udResult udGeoZone_SetFromSRID(udGeoZone *pZone, int32_t sridCode);
+enum udResult udGeoZone_SetFromSRID(struct udGeoZone *pZone, int32_t sridCode);
 
 // Get geozone from well known text
-udResult udGeoZone_SetFromWKT(udGeoZone *pZone, const char *pWKT);
+enum udResult udGeoZone_SetFromWKT(struct udGeoZone *pZone, const char *pWKT);
 
 // Get the Well Known Text for a zone
-udResult udGeoZone_GetWellKnownText(const char **ppWKT, const udGeoZone &zone);
+enum udResult udGeoZone_GetWellKnownText(const char **ppWKT, const struct udGeoZone *pZone);
 
 // Convert a point from lat/long to the cartesian coordinate system defined by the zone
-udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
+enum udResult udGeoZone_LatLongToCartesian(udDouble3 *pCartesian, const struct udGeoZone *pZone, const udDouble3 *pLatLong, enum udGeoZoneGeodeticDatum datum);
 
 // Convert a point from the cartesian coordinate system defined by the zone to lat/long
-udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &position, bool flipToLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84);
+enum udResult udGeoZone_CartesianToLatLong(udDouble3 *pLatLong, const struct udGeoZone *pZone, const udDouble3 *pPosition, enum udGeoZoneGeodeticDatum datum);
 
 // Conversion to and from Geocentric
-udDouble3 udGeoZone_LatLongToGeocentric(udDouble3 latLong, const udGeoZoneEllipsoidInfo &ellipsoid);
-udDouble3 udGeoZone_GeocentricToLatLong(udDouble3 geoCentric, const udGeoZoneEllipsoidInfo &ellipsoid);
+enum udResult udGeoZone_LatLongToGeocentric(udDouble3 *pGeocentric, const udDouble3 *pLatLong, const struct udGeoZoneEllipsoidInfo *pEllipsoid);
+enum udResult udGeoZone_GeocentricToLatLong(udDouble3 *pLatLong, const udDouble3 *pGeoCentric, const struct udGeoZoneEllipsoidInfo *pEllipsoid);
 
 // Convert a lat/long pair in one datum to another datum
-udDouble3 udGeoZone_ConvertDatum(udDouble3 latLong, udGeoZoneGeodeticDatum currentDatum, udGeoZoneGeodeticDatum newDatum, bool flipToLongLat = false);
+enum udResult udGeoZone_ConvertDatum(udDouble3 *pOutLatLong, const udDouble3 *pInLatLong, enum udGeoZoneGeodeticDatum currentDatum, enum udGeoZoneGeodeticDatum newDatum);
 
 // Transform a point from one zone to another
-udDouble3 udGeoZone_TransformPoint(const udDouble3 &point, const udGeoZone &sourceZone, const udGeoZone &destZone);
+enum udResult udGeoZone_TransformPoint(udDouble3 *pTransformed, const udDouble3 *pPoint, const struct udGeoZone *pSourceZone, const struct udGeoZone *pDestZone);
 
 // Transform a matrix from one zone to another
-udDouble4x4 udGeoZone_TransformMatrix(const udDouble4x4 &matrix, const udGeoZone &sourceZone, const udGeoZone &destZone);
+enum udResult udGeoZone_TransformMatrix(udDouble4x4 *pTransformed, const udDouble4x4 *pMatrix, const struct udGeoZone *pSourceZone, const struct udGeoZone *pDestZone);
 
 // Complete setup of a udGeoZone
-udResult udGeoZone_UpdateSphereoidInfo(udGeoZone *pZone);
+enum udResult udGeoZone_UpdateSphereoidInfo(struct udGeoZone *pZone);
+
+#ifdef __cplusplus
+}
+
+inline udResult udGeoZone_FindSRID(int32_t *pSRIDCode, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84)
+{
+  udResult result;
+  int32_t SRIDCode = 0;
+  if (flipFromLongLat)
+  {
+    udDouble3 flipped = udDouble3::create(latLong.y, latLong.x, latLong.z);
+    result = udGeoZone_FindSRID(&SRIDCode, &flipped, datum);
+  }
+  else
+  {
+    result = udGeoZone_FindSRID(&SRIDCode, &latLong, datum);
+  }
+  if (pSRIDCode)
+    *pSRIDCode = SRIDCode;
+  return result;
+}
+
+inline udDouble3 udGeoZone_LatLongToCartesian(const udGeoZone &zone, const udDouble3 &latLong, bool flipFromLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84)
+{
+  udDouble3 cartesian;
+  if (flipFromLongLat)
+  {
+    udDouble3 flipped = udDouble3::create(latLong.y, latLong.x, latLong.z);
+    udGeoZone_LatLongToCartesian(&cartesian, &zone, &flipped, datum);
+  }
+  else
+  {
+    udGeoZone_LatLongToCartesian(&cartesian, &zone, &latLong, datum);
+  }
+  return cartesian;
+}
+
+inline udDouble3 udGeoZone_CartesianToLatLong(const udGeoZone &zone, const udDouble3 &cartesian, bool flipToLongLat = false, udGeoZoneGeodeticDatum datum = udGZGD_WGS84)
+{
+  udDouble3 latLong;
+  udGeoZone_CartesianToLatLong(&latLong, &zone, &cartesian, datum);
+  return (flipToLongLat) ? udDouble3::create(latLong.y, latLong.x, latLong.z) : latLong;
+}
+
+inline udDouble3 udGeoZone_LatLongToGeocentric(const udDouble3 &latLong, const udGeoZoneEllipsoidInfo &ellipsoid)
+{
+  udDouble3 geocentric;
+  udGeoZone_LatLongToGeocentric(&geocentric, &latLong, &ellipsoid);
+  return geocentric;
+}
+
+inline udDouble3 udGeoZone_GeocentricToLatLong(const udDouble3 &geocentric, const udGeoZoneEllipsoidInfo &ellipsoid)
+{
+  udDouble3 latLong;
+  udGeoZone_GeocentricToLatLong(&latLong, &geocentric, &ellipsoid);
+  return latLong;
+}
+
+inline udDouble3 udGeoZone_ConvertDatum(const udDouble3 &latLong, udGeoZoneGeodeticDatum currentDatum, udGeoZoneGeodeticDatum newDatum, bool flipToLongLat = false)
+{
+  udDouble3 temp = (flipToLongLat) ? udDouble3::create(latLong.y, latLong.x, latLong.z) : latLong;
+  udGeoZone_ConvertDatum(&temp, &temp, currentDatum, newDatum);
+  return (flipToLongLat) ? udDouble3::create(temp.y, temp.x, temp.z) : temp;
+}
+
+
+#endif //__cplusplus
 
 #endif // UDGEOZONE_H

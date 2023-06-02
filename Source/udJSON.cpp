@@ -186,92 +186,56 @@ epilogue:
   return result;
 }
 
+
 // ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udResult udJSON::Set(const udDouble3 &v)
+// Author: Dave Pevreal, May 2023
+template <typename T>
+udResult udJSON_SetArrayHelper(udJSON *pThis, const T *pArray, size_t length, bool shrinkMatrix = false)
 {
   udResult result;
-  Destroy();
-  result = SetArray();
-  UD_ERROR_HANDLE();
-  for (size_t i = 0; i < v.ElementCount; ++i)
-    u.pArray->PushBack(udJSON(v[i]));
+  udJSONArray *pJSONArray = nullptr;
+  size_t elements = length;
+
+  UD_ERROR_NULL(pThis, udR_InvalidParameter);
+  UD_ERROR_NULL(pArray, udR_InvalidParameter);
+  UD_ERROR_IF(length < 1, udR_InvalidParameter);
+
+  pThis->Destroy();
+  UD_ERROR_CHECK(pThis->SetArray());
+  pJSONArray = pThis->AsArray();
+  if (shrinkMatrix && length == 16)
+  {
+    // Set elements to 9 for a 3x3, or 12 for a 3x4
+    if (pArray[3] == (T)0 && pArray[7] == (T)0 && pArray[11] == (T)0 && pArray[15] == (T)1)
+      elements = (pArray[12] == (T)0 && pArray[13] == (T)0 && pArray[14] == (T)0) ? 9 : 12;
+  }
+
+  for (size_t i = 0; i < length; ++i)
+  {
+    if (elements < length && (i & 3) == 3) // Skip 4th column
+      continue;
+    else if (elements == 9 && i >= 12) // Skip 4th row
+      continue;
+    pJSONArray->PushBack(udJSON(pArray[i]));
+  }
+  result = udR_Success;
 
 epilogue:
   return result;
 }
 
 // ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udResult udJSON::Set(const udDouble4 &v)
+// Author: Dave Pevreal, May 2023
+udResult udJSON::SetFloatArray(const float *pArray, size_t length, bool shrinkMathTypes)
 {
-  udResult result;
-  Destroy();
-  result = SetArray();
-  UD_ERROR_HANDLE();
-  for (size_t i = 0; i < v.ElementCount; ++i)
-    u.pArray->PushBack(udJSON(v[i]));
-
-epilogue:
-  return result;
+  return udJSON_SetArrayHelper(this, pArray, length, shrinkMathTypes);
 }
 
 // ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udResult udJSON::Set(const udQuaternion<double> &v)
+// Author: Dave Pevreal, May 2023
+udResult udJSON::SetDoubleArray(const double *pArray, size_t length, bool shrinkMathTypes)
 {
-  udResult result;
-  Destroy();
-  result = SetArray();
-  UD_ERROR_HANDLE();
-  for (size_t i = 0; i < v.ElementCount; ++i)
-    u.pArray->PushBack(udJSON(v[i]));
-
-epilogue:
-  return result;
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udResult udJSON::Set(const udDouble4x4 &v, bool shrink)
-{
-  udResult result = udR_Success;
-  size_t elements = 16;
-  if (type != T_Array || u.pArray->length != 0)
-  {
-    Destroy();
-    result = SetArray();
-    UD_ERROR_HANDLE();
-  }
-  if (shrink)
-  {
-    if ((v.axis.x.w == 0.0) && (v.axis.y.w == 0.0) && (v.axis.z.w == 0.0) && (v.axis.t.w == 1.0))
-    {
-      elements = 12;
-      if ((v.axis.t.x == 0.0) && (v.axis.t.y == 0.0) && (v.axis.t.z == 0.0))
-        elements = 9;
-    }
-  }
-  switch (elements)
-  {
-    case 9:
-    case 12:
-      for (size_t i = 0; i < elements; ++i)
-      {
-        result = u.pArray->PushBack(udJSON(v.a[(i / 3) * 4 + (i % 3)]));
-        UD_ERROR_HANDLE();
-      }
-      break;
-    default:
-      for (size_t i = 0; i < elements; ++i)
-      {
-        result = u.pArray->PushBack(udJSON(v.a[i]));
-        UD_ERROR_HANDLE();
-      }
-      break;
-  }
-epilogue:
-  return result;
+  return udJSON_SetArrayHelper(this, pArray, length, shrinkMathTypes);
 }
 
 // ****************************************************************************
@@ -396,116 +360,54 @@ const char *udJSON::AsString(const char *pDefaultValue) const
   }
 }
 
-// ****************************************************************************
-// Author: Peter Adams, September 2020
-udFloat2 udJSON::AsFloat2(const udFloat2 &defaultValue) const
+// ----------------------------------------------------------------------------
+// Author: Dave Pevreal, May 2023
+template <typename T>
+T *udJSON_AsArrayHelper(const udJSON *pJSON, T *pResultArray, size_t length, const T *pDefaults, bool expandMatrix = false)
 {
-  udFloat2 ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
+  const udJSONArray *pJSONArray = pJSON->AsArray();
+  size_t i, o;
+
+  if (pJSONArray && expandMatrix)
+    expandMatrix = (length == 16 || (pJSONArray->length == 9 || pJSONArray->length == 12));
+
+  if (pJSONArray && (pJSONArray->length >= length || expandMatrix))
   {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsFloat();
+    for (i = o = 0; o < length; ++o) // Seperate in and out indices for the case of expandMatrix
+    {
+      if (expandMatrix && ((o & 3) == 3)) // Handle expanding 4th column
+        pResultArray[o] = (o == 15) ? (T)1 : (T)0;
+      else if (expandMatrix && i == pJSONArray->length) // Handle expanding 4th row
+          pResultArray[o] = (T)0;
+      else if constexpr (std::is_same<T, float>::value)
+        pResultArray[o] = pJSONArray->GetElement(i++)->AsFloat();
+      else if constexpr (std::is_same<T, double>::value)
+        pResultArray[o] = pJSONArray->GetElement(i++)->AsDouble();
+    }
   }
-  return ret;
+  else
+  {
+    if (pDefaults)
+      memcpy(pResultArray, pDefaults, length * sizeof(*pResultArray));
+    else
+      memset(pResultArray, 0, length * sizeof(*pResultArray));
+  }
+
+  return pResultArray;
 }
 
 // ****************************************************************************
-// Author: Dave Pevreal, August 2018
-udFloat3 udJSON::AsFloat3(const udFloat3 &defaultValue) const
+// Author: Dave Pevreal, May 2023
+float *udJSON::AsFloatArray(float *pResultArray, size_t length, const float *pDefaults, bool expandMatrix) const
 {
-  udFloat3 ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
-  {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsFloat();
-  }
-  return ret;
+  return udJSON_AsArrayHelper(this, pResultArray, length, pDefaults, expandMatrix);
 }
 
 // ****************************************************************************
-// Author: Dave Pevreal, August 2018
-udFloat4 udJSON::AsFloat4(const udFloat4 &defaultValue) const
+// Author: Dave Pevreal, May 2023
+double *udJSON::AsDoubleArray(double *pResultArray, size_t length, const double *pDefaults, bool expandMatrix) const
 {
-  udFloat4 ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
-  {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsFloat();
-  }
-  return ret;
-}
-
-// ****************************************************************************
-// Author: Peter Adams, September 2020
-udDouble2 udJSON::AsDouble2(const udDouble2 &defaultValue) const
-{
-  udDouble2 ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
-  {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsDouble();
-  }
-  return ret;
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udDouble3 udJSON::AsDouble3(const udDouble3 &defaultValue) const
-{
-  udDouble3 ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
-  {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsDouble();
-  }
-  return ret;
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udDouble4 udJSON::AsDouble4(const udDouble4 &defaultValue) const
-{
-  udDouble4 ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
-  {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsDouble();
-  }
-  return ret;
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udQuaternion<double> udJSON::AsQuaternion(const udQuaternion<double> &defaultValue) const
-{
-  udQuaternion<double> ret = defaultValue;
-  if (type == T_Array && u.pArray->length >= ret.ElementCount)
-  {
-    for (size_t i = 0; i < ret.ElementCount; ++i)
-      ret[i] = u.pArray->GetElement(i)->AsDouble();
-  }
-  return ret;
-}
-
-// ****************************************************************************
-// Author: Dave Pevreal, May 2017
-udDouble4x4 udJSON::AsDouble4x4(const udDouble4x4 &defaultValue) const
-{
-  udDouble4x4 ret = defaultValue;
-  switch (ArrayLength())
-  {
-    case 9:
-    case 12:
-      for (size_t i = 0; i < u.pArray->length; ++i)
-        ret.a[(i / 3) * 4 + (i % 3)] = u.pArray->GetElement(i)->AsDouble();
-      return ret;
-    case 16:
-      for (size_t i = 0; i < u.pArray->length; ++i)
-        ret.a[i] = u.pArray->GetElement(i)->AsDouble();
-      return ret;
-    default:
-      return ret.identity();
-  }
+  return udJSON_AsArrayHelper(this, pResultArray, length, pDefaults, expandMatrix);
 }
 
 // ----------------------------------------------------------------------------
