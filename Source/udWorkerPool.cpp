@@ -175,7 +175,11 @@ udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, vo
   tempTask.pDataBlock = pUserData;
   tempTask.freeDataBlock = clearMemory;
 
-  UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedTasks, tempTask));
+  if (func == nullptr && postFunction != nullptr)
+    UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedPostTasks, tempTask));
+  else
+    UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedTasks, tempTask));
+
   udIncrementSemaphore(pPool->pSemaphore);
 
   result = udR_Success;
