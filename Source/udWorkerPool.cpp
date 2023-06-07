@@ -9,24 +9,31 @@
 #include <atomic>
 #include <algorithm>
 
-struct udWorkerPoolThread
-{
-  udWorkerPool *pPool;
-  udThread *pThread;
-};
-
 struct udWorkerPoolTask
 {
+  const char *pTaskName;
+  double startTime;
+
   udWorkerPoolCallback function;
   udWorkerPoolCallback postFunction; // runs on main thread
+
   void *pDataBlock;
   bool freeDataBlock;
 };
 
+struct udWorkerPoolThread
+{
+  udWorkerPool *pPool;
+  udThread *pThread;
+  udWorkerPoolTask currentTask; // Used mostly for debugging
+};
+
 struct udWorkerPool
 {
-  udSafeDeque<udWorkerPoolTask> *pQueuedTasks;
-  udSafeDeque<udWorkerPoolTask> *pQueuedPostTasks;
+  udRWLock *pRWLock;
+
+  udChunkedArray<udWorkerPoolTask> queuedTasks;
+  udChunkedArray<udWorkerPoolTask> queuedPostTasks;
 
   udSemaphore *pSemaphore;
   std::atomic<int32_t> activeThreads;
@@ -46,7 +53,6 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
   udWorkerPoolThread *pThreadData = (udWorkerPoolThread*)pPoolPtr;
   udWorkerPool *pPool = pThreadData->pPool;
 
-  udWorkerPoolTask currentTask;
   int waitValue;
 
   while (pPool->isRunning)
@@ -58,19 +64,32 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
 
     ++pPool->activeThreads;
 
-    if (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) != udR_Success)
+    udWriteLockRWLock(pPool->pRWLock);
+    bool poppedOK = pPool->queuedTasks.PopFront(&pThreadData->currentTask);
+    udWriteUnlockRWLock(pPool->pRWLock);
+
+    if (!poppedOK)
     {
       --pPool->activeThreads;
       continue;
     }
 
-    if (currentTask.function)
-      currentTask.function(currentTask.pDataBlock);
+    if (pThreadData->currentTask.function)
+      pThreadData->currentTask.function(pThreadData->currentTask.pDataBlock);
 
-    if (currentTask.postFunction)
-      udSafeDeque_PushBack(pPool->pQueuedPostTasks, currentTask);
-    else if (currentTask.freeDataBlock)
-      udFree(currentTask.pDataBlock);
+    if (pThreadData->currentTask.postFunction)
+    {
+      udWriteLockRWLock(pPool->pRWLock);
+      pPool->queuedPostTasks.PushBack(pThreadData->currentTask);
+      udWriteUnlockRWLock(pPool->pRWLock);
+    }
+    else
+    {
+      if (pThreadData->currentTask.freeDataBlock)
+        udFree(pThreadData->currentTask.pDataBlock);
+
+      udFree(pThreadData->currentTask.pTaskName);
+    }
 
     --pPool->activeThreads;
   }
@@ -91,11 +110,12 @@ udResult udWorkerPool_Create(udWorkerPool **ppPool, uint8_t totalThreads, const 
   pPool = udAllocType(udWorkerPool, 1, udAF_Zero);
   UD_ERROR_NULL(pPool, udR_MemoryAllocationFailure);
 
+  pPool->pRWLock = udCreateRWLock();
   pPool->pSemaphore = udCreateSemaphore();
   UD_ERROR_NULL(pPool, udR_MemoryAllocationFailure);
 
-  UD_ERROR_CHECK(udSafeDeque_Create(&pPool->pQueuedTasks, 32));
-  UD_ERROR_CHECK(udSafeDeque_Create(&pPool->pQueuedPostTasks, 32));
+  UD_ERROR_CHECK(pPool->queuedTasks.Init(32));
+  UD_ERROR_CHECK(pPool->queuedPostTasks.Init(32));
 
   pPool->isRunning = true;
   pPool->totalThreads = totalThreads;
@@ -136,22 +156,29 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
     udThread_Destroy(&pPool->pThreadData[i].pThread);
   }
 
+  udWriteLockRWLock(pPool->pRWLock);
+
   udWorkerPoolTask currentTask;
-  while (udSafeDeque_PopFront(pPool->pQueuedTasks, &currentTask) == udR_Success)
+  while (pPool->queuedTasks.PopFront(&currentTask))
   {
     if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);
+    udFree(currentTask.pTaskName);
   }
 
-  while (udSafeDeque_PopFront(pPool->pQueuedPostTasks, &currentTask) == udR_Success)
+  while (pPool->queuedPostTasks.PopFront(&currentTask))
   {
     if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);
+    udFree(currentTask.pTaskName);
   }
 
-  udSafeDeque_Destroy(&pPool->pQueuedTasks);
-  udSafeDeque_Destroy(&pPool->pQueuedPostTasks);
+  pPool->queuedTasks.Deinit();
+  pPool->queuedPostTasks.Deinit();
   udDestroySemaphore(&pPool->pSemaphore);
+
+  udWriteUnlockRWLock(pPool->pRWLock);
+  udDestroyRWLock(&pPool->pRWLock);
 
   udFree(pPool->pThreadData);
   udFree(pPool);
@@ -159,15 +186,14 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
+udResult udWorkerPool_AddNamedTask(udWorkerPool *pPool, const char *pTaskName, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
 {
   udResult result = udR_Failure;
   udWorkerPoolTask tempTask;
 
   UD_ERROR_NULL(pPool, udR_InvalidParameter);
-  UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized);
-  UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized);
   UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pRWLock, udR_NotInitialized);
   UD_ERROR_IF(!pPool->isRunning, udR_NotAllowed);
 
   tempTask.function = func;
@@ -175,10 +201,17 @@ udResult udWorkerPool_AddTask(udWorkerPool *pPool, udWorkerPoolCallback func, vo
   tempTask.pDataBlock = pUserData;
   tempTask.freeDataBlock = clearMemory;
 
+
+  tempTask.pTaskName = udStrdup(pTaskName);
+  tempTask.startTime = udGetEpochSecsUTCf();
+
+  udWriteLockRWLock(pPool->pRWLock);
   if (func == nullptr && postFunction != nullptr)
     UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedPostTasks, tempTask));
   else
     UD_ERROR_CHECK(udSafeDeque_PushBack(pPool->pQueuedTasks, tempTask));
+  udWriteUnlockRWLock(pPool->pRWLock);
+
 
   udIncrementSemaphore(pPool->pSemaphore);
 
@@ -195,19 +228,29 @@ udResult udWorkerPool_DoPostWork(udWorkerPool *pPool, int processLimit /*= 0*/)
   udWorkerPoolTask currentTask;
   udResult result = udR_Success;
   int processedItems = 0;
+  bool popSuccess = false;
 
   UD_ERROR_NULL(pPool, udR_InvalidParameter);
-  UD_ERROR_NULL(pPool->pQueuedTasks, udR_NotInitialized);
-  UD_ERROR_NULL(pPool->pQueuedPostTasks, udR_NotInitialized);
+  UD_ERROR_NULL(pPool->pRWLock, udR_NotInitialized);
   UD_ERROR_NULL(pPool->pSemaphore, udR_NotInitialized);
   UD_ERROR_IF(!pPool->isRunning, udR_NotAllowed);
 
-  while (udSafeDeque_PopFront(pPool->pQueuedPostTasks, &currentTask) == udR_Success)
+  
+  while (true)
   {
+    udWriteLockRWLock(pPool->pRWLock);
+    popSuccess = pPool->queuedPostTasks.PopFront(&currentTask);
+    udWriteUnlockRWLock(pPool->pRWLock);
+
+    if (!popSuccess)
+      break;
+
     currentTask.postFunction(currentTask.pDataBlock);
 
     if (currentTask.freeDataBlock)
       udFree(currentTask.pDataBlock);
+
+    udFree(currentTask.pTaskName);
 
     if (++processedItems == processLimit)
       break;
@@ -222,21 +265,25 @@ epilogue:
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /*= nullptr*/, size_t *pQueuedTasks /*= nullptr*/)
+bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /*= nullptr*/, size_t *pQueuedWTTasks /*= nullptr*/, size_t *pQueuedMTTasks /*= nullptr*/)
 {
   if (pPool == nullptr)
     return false;
 
-  udLockMutex(pPool->pQueuedTasks->pMutex);
+  udReadLockRWLock(pPool->pRWLock);
   int32_t activeThreads = pPool->activeThreads;
-  size_t queuedTasks = pPool->pQueuedTasks->chunkedArray.length;
-  udReleaseMutex(pPool->pQueuedTasks->pMutex);
+  size_t queuedWTTasks = pPool->queuedTasks.length;
+  size_t queuedMTTasks = pPool->queuedPostTasks.length;
+  udReadUnlockRWLock(pPool->pRWLock);
 
   if (pActiveThreads)
     *pActiveThreads = (size_t)std::max(activeThreads, 0);
 
-  if (pQueuedTasks)
-    *pQueuedTasks = queuedTasks;
+  if (pQueuedWTTasks)
+    *pQueuedWTTasks = queuedWTTasks;
 
-  return (activeThreads > 0 || queuedTasks > 0);
+  if (pQueuedMTTasks)
+    *pQueuedMTTasks = queuedMTTasks;
+
+  return (activeThreads > 0 || queuedWTTasks > 0 || queuedMTTasks > 0);
 }
