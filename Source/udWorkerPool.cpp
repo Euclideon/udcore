@@ -92,6 +92,8 @@ uint32_t udWorkerPool_DoWork(void *pPoolPtr)
     }
 
     --pPool->activeThreads;
+    pThreadData->currentTask.pTaskName = nullptr;
+    pThreadData->currentTask.startTime = udGetEpochSecsUTCf();
   }
 
   return 0;
@@ -186,7 +188,7 @@ void udWorkerPool_Destroy(udWorkerPool **ppPool)
 
 // ----------------------------------------------------------------------------
 // Author: Paul Fox, May 2015
-udResult udWorkerPool_AddNamedTask(udWorkerPool *pPool, const char *pTaskName, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
+udResult udWorkerPool_AddTask(udWorkerPool *pPool, const char *pTaskName, udWorkerPoolCallback func, void *pUserData /*= nullptr*/, bool clearMemory /*= true*/, udWorkerPoolCallback postFunction /*= nullptr*/)
 {
   udResult result = udR_Failure;
   udWorkerPoolTask tempTask;
@@ -286,4 +288,21 @@ bool udWorkerPool_HasActiveWorkers(udWorkerPool *pPool, size_t *pActiveThreads /
     *pQueuedMTTasks = queuedMTTasks;
 
   return (activeThreads > 0 || queuedWTTasks > 0 || queuedMTTasks > 0);
+}
+
+void udWorkerPool_IterateItems(udWorkerPool *pPool, udCallback<void(const char *taskName, double queuedAt, bool isActive)> callback)
+{
+  udReadLockRWLock(pPool->pRWLock);
+
+  for (int i = 0; i < pPool->totalThreads; ++i)
+  {
+    callback(pPool->pThreadData[i].currentTask.pTaskName, pPool->pThreadData[i].currentTask.startTime, true);
+  }
+
+  for (const auto &item : pPool->queuedTasks)
+  {
+    callback(item.pTaskName, item.startTime, false);
+  }
+
+  udReadUnlockRWLock(pPool->pRWLock);
 }
