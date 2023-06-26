@@ -61,7 +61,7 @@ void udThread_MsToTimespec(struct timespec *pTimespec, int waitMs)
 
 #define DEBUG_CACHE 0
 #define MAX_CACHED_THREADS 16
-#define CACHE_WAIT_SECONDS 30
+#define CACHE_WAIT_SECONDS 360
 static volatile udThread *s_pCachedThreads[MAX_CACHED_THREADS ? MAX_CACHED_THREADS : 1];
 
 struct udThread
