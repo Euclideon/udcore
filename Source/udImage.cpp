@@ -588,15 +588,13 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2020
-udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType)
+udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppImage24, udImageSampleFlags flags, uint32_t *pWidth, uint32_t *pHeight)
 {
   udResult result;
-  uint8_t *pRGB = nullptr; // Need to make a 24-bit copy for stbi
-  stbiWriteContext writeContext;
+  uint8_t *pRGB = nullptr;
 
+  UD_ERROR_NULL(ppImage24, udR_InvalidParameter);
   UD_ERROR_NULL(pImage, udR_InvalidParameter);
-  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
-  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter);
 
   // Ensure the header has been loaded by doing an initial dummy sample
   udImageStreaming_Sample(pImage, 0.f, 0.f);
@@ -609,10 +607,37 @@ udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename
   {
     for (uint32_t x = 0; x < pImage->width; ++x)
     {
-      uint32_t c = udImageStreaming_Sample(pImage, x / (float)pImage->width, y / (float)pImage->height, udISF_ABGR | udISF_TopLeft);
+      uint32_t c = udImageStreaming_Sample(pImage, x / (float)pImage->width, y / (float)pImage->height, flags);
       memcpy(&pRGB[(y * pImage->width + x) * 3], &c, 3);
     }
   }
+
+  *ppImage24 = pRGB;
+  pRGB = nullptr;
+  if (pWidth)
+    *pWidth = pImage->width;
+  if (pHeight)
+    *pHeight = pImage->height;
+  result = udR_Success;
+
+epilogue:
+  udFree(pRGB);
+  return result;
+}
+
+// ****************************************************************************
+// Author: Dave Pevreal, March 2020
+udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType)
+{
+  udResult result;
+  uint8_t *pRGB = nullptr; // Need to make a 24-bit copy for stbi
+  stbiWriteContext writeContext;
+
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pFilename, udR_InvalidParameter);
+  UD_ERROR_IF(saveType >= udIST_Max, udR_InvalidParameter);
+
+  udImageStreaming_GetImage24(pImage, &pRGB, udISF_ABGR | udISF_TopLeft);
 
   writeContext.pResult = &result;
   writeContext.pBytesWritten = pSaveSize;
