@@ -1,7 +1,12 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.safari.service import Service as SafariService
+from selenium.webdriver.safari.options import Options as SafariOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -13,7 +18,7 @@ import os
 
 if len(sys.argv) > 1 and sys.argv[1] == 'firefox':
 	firefox_options = FirefoxOptions()
-	firefox_options.headless = True
+	firefox_options.add_argument("-headless")
 	firefox_options.set_preference("javascript.options.shared_memory", True)
 
 	driverpath = os.environ.get('GECKOWEBDRIVER')
@@ -21,42 +26,45 @@ if len(sys.argv) > 1 and sys.argv[1] == 'firefox':
 		driverpath = ""
 
 	if platform.system() == "Windows":
-		driver = webdriver.Firefox(executable_path=driverpath + "\geckodriver.exe", options=firefox_options)
+		service = FirefoxService(executable_path=driverpath + "\geckodriver.exe")
 	else:
-		driver = webdriver.Firefox(executable_path=driverpath + "/geckodriver", options=firefox_options)
+		service = FirefoxService(executable_path=driverpath + "/geckodriver")
+	driver = webdriver.Firefox(service=service, options=firefox_options)
 elif len(sys.argv) > 1 and sys.argv[1] == 'chrome':
 	chrome_options = ChromeOptions()
-	chrome_options.add_argument("--disable_gpu")
-	chrome_options.add_argument("--headless")
-	chrome_options.add_argument("--no-sandbox")
-	chrome_options.add_argument("--single-process")
+	chrome_options.add_argument("--headless=new")
+	chrome_options.add_argument("--remote-debugging-port=9230")
 
 	driverpath = os.environ.get('CHROMEWEBDRIVER')
 	if driverpath is None:
 		driverpath = ""
 
 	if platform.system() == "Windows":
-		driver = webdriver.Chrome(executable_path=driverpath + "\chromedriver.exe", options=chrome_options)
+		service = ChromeService(executable_path=driverpath + "\chromedriver.exe")
 	else:
-		driver = webdriver.Chrome(executable_path=driverpath + "/chromedriver", options=chrome_options)
-elif len(sys.argv) > 1 and sys.argv[1] == 'edge':
-	edge_options = EdgeOptions()
-	edge_options.add_argument("--disable_gpu")
-	edge_options.add_argument("--headless")
-	edge_options.add_argument("--no-sandbox")
+		service = ChromeService(executable_path=driverpath + "/chromedriver")
+	driver = webdriver.Chrome(service=service, options=chrome_options)
+elif len(sys.argv) > 1 and sys.argv[1] == 'chrome':
+	chrome_options = ChromeOptions()
+	chrome_options.add_argument("--headless=new")
+	chrome_options.add_argument("--remote-debugging-port=9230")
 
 	driverpath = os.environ.get('EDGEWEBDRIVER')
 	if driverpath is None:
 		driverpath = ""
 
 	if platform.system() == "Windows":
-		driver = webdriver.Edge(executable_path=driverpath + "\msedgedriver.exe", options=edge_options)
+		service = EdgeService(executable_path=driverpath + "\msedgedriver.exe")
 	else:
-		driver = webdriver.Edge(executable_path=driverpath + "/msedgedriver", options=edge_options)
+		service = EdgeService(executable_path=driverpath + "/msedgedriver")
+	driver = webdriver.Edge(service=service, options=edge_options)
 elif len(sys.argv) > 1 and sys.argv[1] == 'safari':
 	driver = webdriver.Safari()
 elif len(sys.argv) > 1 and sys.argv[1] == 'safaritp':
-	driver = webdriver.Safari(executable_path='/Applications/Safari Technology Preview.app/Contents/MacOS/safaridriver', desired_capabilities={"browserName": "Safari Technology Preview", "platformName": "mac"})
+	safari_options = SafariOptions()
+	safari_options.use_technology_preview = True
+	service = SafariService(executable_path='/Applications/Safari Technology Preview.app/Contents/MacOS/safaridriver')
+	driver = webdriver.Safari(service=service, options=safari_options)
 elif len(sys.argv) > 2 and sys.argv[1] == 'remote':
 	driver = webdriver.Remote(sys.argv[2])
 else:
