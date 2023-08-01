@@ -100,7 +100,7 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
 udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexData);
 
 // Get the full-res image in 24-bit format from an ImageStreaming object, using supplied sample flags (set to TopLeft|ABGR for r,g,b byte ordering)
-udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppRBG, udImageSampleFlags flags = udISF_TopLeft, uint32_t *pWidth = nullptr, uint32_t *pHeight = nullptr);
+udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppRBG, udImageSampleFlags flags = udISF_TopLeft, uint32_t *pWidth = nullptr, uint32_t *pHeight = nullptr, uint16_t mipLevel = 0);
 
 // Save the image back to a source format
 udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType);

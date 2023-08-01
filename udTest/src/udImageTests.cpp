@@ -80,9 +80,15 @@ TEST(udImageTests, SaveLoadImageStreaming)
     // Test each pixel as 24-bit
     for (int i = dim * dim - 1; i >= 0; --i)
       EXPECT_EQ(0, memcmp(testImage.pImageData + i, pRGB + (i * 3), 3));
+    udFree(pRGB);
+    // Grab the first mip and ensure it's half the size of the full image
+    uint32_t mw, mh;
+    EXPECT_EQ(udR_Success, udImageStreaming_GetImage24(pReload, &pRGB, udISF_TopLeft | udISF_ABGR, &mw, &mh, 1));
+    udFree(pRGB);
+    EXPECT_EQ(dim / 2, mw);
+    EXPECT_EQ(dim / 2, mh);
     udImageStreaming_Destroy(&pReload);
   }
   udFile_Close(&pLoadFile);
-  udFree(pRGB);
   udFree(pRawOutputFilename);
 }

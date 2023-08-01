@@ -588,37 +588,41 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2020
-udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppImage24, udImageSampleFlags flags, uint32_t *pWidth, uint32_t *pHeight)
+udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppImage24, udImageSampleFlags flags, uint32_t *pWidth, uint32_t *pHeight, uint16_t mipLevel)
 {
   udResult result;
   uint8_t *pRGB = nullptr;
+  uint32_t w, h;
 
   UD_ERROR_NULL(ppImage24, udR_InvalidParameter);
   UD_ERROR_NULL(pImage, udR_InvalidParameter);
 
   // Ensure the header has been loaded by doing an initial dummy sample
   udImageStreaming_Sample(pImage, 0.f, 0.f);
+  w = pImage->width >> mipLevel;
+  h = pImage->height >> mipLevel;
 
   // Make a 24-bit copy to avoid PNG saving 32-bit when all alpha values are 0xff (currently anyway)
   // This isn't optimal, but for simplicity we just use the Sample function to handle streaming
-  pRGB = (uint8_t *)udAlloc(pImage->width * pImage->height * 3);
+  pRGB = (uint8_t *)udAlloc(w * h * 3);
   UD_ERROR_NULL(pRGB, udR_MemoryAllocationFailure);
-  for (uint32_t y = 0; y < pImage->height; ++y)
+  for (uint32_t y = 0; y < h; ++y)
   {
-    for (uint32_t x = 0; x < pImage->width; ++x)
+    for (uint32_t x = 0; x < w; ++x)
     {
-      uint32_t c = udImageStreaming_Sample(pImage, x / (float)pImage->width, y / (float)pImage->height, flags);
-      memcpy(&pRGB[(y * pImage->width + x) * 3], &c, 3);
+      uint32_t c = udImageStreaming_Sample(pImage, x / (float)w, y / (float)h, flags, mipLevel);
+      memcpy(&pRGB[(y * w + x) * 3], &c, 3);
     }
   }
 
   *ppImage24 = pRGB;
   pRGB = nullptr;
   if (pWidth)
-    *pWidth = pImage->width;
+    *pWidth = w;
   if (pHeight)
-    *pHeight = pImage->height;
+    *pHeight = h;
   result = udR_Success;
+  udDebugPrintf("Done (%s)\n", pImage->name);
 
 epilogue:
   udFree(pRGB);
