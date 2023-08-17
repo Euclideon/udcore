@@ -65,7 +65,7 @@ struct udFile
 };
 
 // Register a file handler
-udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix);
+udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix, bool overrideExisting = false);
 
 // Deregister a file handler removing it from the internal list (note that functions may still be called if there are open files)
 udResult udFile_DeregisterHandler(udFile_OpenHandlerFunc *fpHandler);

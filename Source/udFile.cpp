@@ -507,14 +507,28 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2014
-udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix)
+udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix, bool overrideExisting /*= false*/)
 {
   UDTRACE();
+  if (overrideExisting)
+  {
+    for (int i = 0; i < s_handlersCount; ++i)
+    {
+      if (udStrEqual(s_handlers[i].prefix, pPrefix))
+      {
+        s_handlers[i].fpOpen = fpHandler;
+        goto epilogue;
+      }
+    }
+  }
+
   if (s_handlersCount >= MAX_HANDLERS)
     return udR_CountExceeded;
   s_handlers[s_handlersCount].fpOpen = fpHandler;
   udStrcpy(s_handlers[s_handlersCount].prefix, pPrefix);
   ++s_handlersCount;
+
+epilogue:
   return udR_Success;
 }
 
