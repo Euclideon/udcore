@@ -220,6 +220,29 @@ TEST(udFileTests, CustomFileHandler)
   EXPECT_NE(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
 }
 
+TEST(udFileTests, CustomFileHandlerOverrideExisting)
+{
+  const char *pFilename = "CUSTOM://._donotcommit_CUSTOMtest";
+  udFile *pFile = nullptr;
+  static udResult sentinelResult = (udResult)(-udR_Count);
+
+  EXPECT_EQ(udR_Success, udFile_RegisterHandler(udFileTests_CustomFileHandler_Open, "CUSTOM:"));
+
+  // Supercede existing handler
+  udFile_OpenHandlerFunc *pTempHandler = [](udFile **, const char *, udFileOpenFlags) -> udResult { return sentinelResult; };
+  EXPECT_EQ(udR_Success, udFile_RegisterHandler(pTempHandler, "CUSTOM:"));
+  EXPECT_EQ(sentinelResult, udFile_Open(&pFile, pFilename, udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_DeregisterHandler(pTempHandler));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+
+  // Override existing handler
+  EXPECT_EQ(udR_Success, udFile_RegisterHandler(pTempHandler, "CUSTOM:", true));
+  EXPECT_EQ(sentinelResult, udFile_Open(&pFile, pFilename, udFOF_Write));
+  EXPECT_EQ(udR_Success, udFile_DeregisterHandler(pTempHandler));
+  EXPECT_EQ(udR_OpenFailure, udFile_Open(&pFile, pFilename, udFOF_Write));
+}
+
 // Emscripten does not have a "home" directory concept
 #if !UDPLATFORM_EMSCRIPTEN
 TEST(udFileTests, TranslatingPaths)
