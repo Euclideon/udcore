@@ -9,6 +9,43 @@
 #include "stb/stb_image_write.h"
 #include <algorithm>
 
+// Helpers to ensure encoding scheme for cell indices stays in one place
+static inline uint32_t PackCellIndex(uint32_t cellX, uint32_t cellY, uint32_t mip) { return mip | (cellX << 8) | (cellY << 16); }
+static inline void UnpackCellIndex(uint32_t cellIndex, uint32_t *pCellX, uint32_t *pCellY, uint32_t *pMip = nullptr)
+{
+  if (pCellX)
+    *pCellX = (cellIndex >> 8) & 0xff;
+  if (pCellY)
+    *pCellY = (cellIndex >> 16) & 0xff;
+  if (pMip)
+    *pMip = (cellIndex >> 0) & 0xff;
+}
+static inline void GetUVAsPixelIndex(float u, float v, udImageSampleFlags flags, uint32_t imageWidth, uint32_t imageHeight, uint32_t *pX, uint32_t *pY)
+{
+  if (flags & udISF_Clamp)
+  {
+    u = std::clamp(u, 0.f, 1.f);
+    v = std::clamp(v, 0.f, 1.f);
+  }
+
+  u = u * imageWidth;
+  if (flags & udISF_TopLeft)
+    v = v * imageHeight;
+  else
+    v = -v * imageHeight;
+
+  while (u < 0.0f || u >= imageWidth)
+    u = u - imageWidth * floorf((u / imageWidth));
+  while (v < 0.0f || v >= imageHeight)
+    v = v - imageHeight * floorf((v / imageHeight));
+
+  *pX = (uint32_t)u;
+  *pY = (uint32_t)v;
+}
+
+
+
+
 // ****************************************************************************
 // Author: Dave Pevreal, February 2019
 udResult udImage_Load(udImage **ppImage, const char *pFilename, bool infoOnly)
@@ -186,42 +223,26 @@ uint32_t udImage_Sample(udImage *pImage, float u, float v, udImageSampleFlags fl
 {
   if (pImage->pImageData == nullptr)
     return 0;
+  uint32_t x, y;
 
-  if (flags & udISF_Clamp)
-  {
-    u = std::clamp(u, 0.f, 1.f);
-    v = std::clamp(v, 0.f, 1.f);
-  }
+  GetUVAsPixelIndex(u, v, flags, pImage->width, pImage->height, &x, &y);
 
-  u =  u * pImage->width;
-  if (flags & udISF_TopLeft)
-    v = v * pImage->height;
-  else
-    v = -v * pImage->height;
-
-  while (u < 0.0f || u >= pImage->width)
-    u = u - pImage->width * floorf((u / pImage->width));
-  while (v < 0.0f || v >= pImage->height)
-    v = v - pImage->height * floorf((v / pImage->height));
-
-  int x = (int)u;
-  int y = (int)v;
   if (flags & udISF_Filter)
   {
-    int u1 = (int)(u * 256) & 0xff; // Get most most significant bits of PRECISION
-    int v1 = (int)(v * 256) & 0xff; // Get most most significant bits of PRECISION
-    int u0 = 256 - u1;
-    int v0 = 256 - v1;
+    uint32_t u1 = (uint32_t)(u * 256) & 0xff; // Get most most significant bits of PRECISION
+    uint32_t v1 = (uint32_t)(v * 256) & 0xff; // Get most most significant bits of PRECISION
+    uint32_t u0 = 256 - u1;
+    uint32_t v0 = 256 - v1;
 
-    int x0 = std::clamp(x + 0, 0, (int)pImage->width - 1);
-    int x1 = std::clamp(x + 1, 0, (int)pImage->width - 1);
-    int y0 = std::clamp(y + 0, 0, (int)pImage->height - 1);
-    int y1 = std::clamp(y + 1, 0, (int)pImage->height - 1);
+    uint32_t x0 = std::clamp(x + 0, 0U, (uint32_t)pImage->width - 1);
+    uint32_t x1 = std::clamp(x + 1, 0U, (uint32_t)pImage->width - 1);
+    uint32_t y0 = std::clamp(y + 0, 0U, (uint32_t)pImage->height - 1);
+    uint32_t y1 = std::clamp(y + 1, 0U, (uint32_t)pImage->height - 1);
 
-    int a = u0 * v0;
-    int b = u1 * v0;
-    int c = u0 * v1;
-    int d = u1 * v1;
+    uint32_t a = u0 * v0;
+    uint32_t b = u1 * v0;
+    uint32_t c = u0 * v1;
+    uint32_t d = u1 * v1;
 
     uint32_t c0 = (pImage->pImageData[x0 + y0 * pImage->width]);
     uint32_t c1 = (pImage->pImageData[x1 + y0 * pImage->width]);
@@ -437,11 +458,13 @@ epilogue:
   return result;
 }
 
+
 // ****************************************************************************
 // Author: Dave Pevreal, March 2020
 uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udImageSampleFlags flags, uint16_t mipLevel)
 {
   udResult result;
+  uint32_t x, y; // Coordinates on texture of u,v
   uint32_t texel = 0; // Default value returned if no data available
   udImageStreaming::Mip *pMip = nullptr;
   uint8_t *p;
@@ -453,37 +476,19 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
     return texel;
   }
 
-  if (flags & udISF_Clamp)
-  {
-    u = std::clamp(u, 0.f, 1.f);
-    v = std::clamp(v, 0.f, 1.f);
-  }
-
   pMip = &pImage->mips[std::clamp((int)mipLevel, 0, pImage->mipCount - 1)];
-  u = u * pMip->width;
-  if (flags & udISF_TopLeft)
-    v = v * pMip->height;
-  else
-    v = -v * pMip->height;
+  GetUVAsPixelIndex(u, v, flags, pMip->width, pMip->height, &x, &y);
 
-  while (u < 0.0f || u >= pMip->width)
-    u = u - pMip->width * floorf((u / pMip->width));
-  while (v < 0.0f || v >= pMip->height)
-    v = v - pMip->height * floorf((v / pMip->height));
-
-  uint32_t x = (uint32_t)u;
-  uint32_t y = (uint32_t)v;
   uint32_t cellX = x / udImageStreaming::TileSize;
   uint32_t cellY = y / udImageStreaming::TileSize;
   uint32_t cellIndex = cellY * pMip->gridW + cellX;
   uint32_t cellWidth = std::min((uint32_t)udImageStreaming::TileSize, pMip->width - (cellX * udImageStreaming::TileSize));
   if (!pMip->ppCellImage || !pMip->ppCellImage[cellIndex])
   {
-    texel = mipLevel | (cellX << 8) | (cellY << 16);
     if (flags & udISF_NoStream)
       UD_ERROR_SET(udR_Success);
     else
-      UD_ERROR_CHECK(udImageStreaming_LoadCell(pImage, texel));
+      UD_ERROR_CHECK(udImageStreaming_LoadCell(pImage, PackCellIndex(cellX, cellY, mipLevel)));
   }
   x &= (udImageStreaming::TileSize - 1);
   y &= (udImageStreaming::TileSize - 1);
@@ -587,42 +592,151 @@ epilogue:
 }
 
 // ****************************************************************************
+// Author: Dave Pevreal, August 2023
+udResult udImageStreaming_GetSubsectionCode(const udImageStreaming *pImage, uint64_t *pSubsectionCode, float minU, float minV, float maxU, float maxV, uint16_t mipLevel, udImageSampleFlags flags, uint64_t existingSubsection, float uvOffsetScale[4])
+{
+  udResult result;
+  uint32_t minCellX, minCellY, maxCellX, maxCellY, x, y;
+  const udImageStreaming::Mip *pMip = nullptr;
+
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_NULL(pSubsectionCode, udR_InvalidParameter);
+
+  // Force load the header
+  if (pImage->fourcc == 0)
+    UD_ERROR_CHECK(udImageStreaming_LoadCell(const_cast<udImageStreaming *>(pImage), (uint32_t)-1));
+
+  if (existingSubsection)
+  {
+    UnpackCellIndex((uint32_t)(existingSubsection >> 0), &minCellX, &minCellY);
+    UnpackCellIndex((uint32_t)(existingSubsection >> 32), &maxCellX, &maxCellY);
+    UD_ERROR_IF(minCellX > maxCellX, udR_InvalidConfiguration);
+    UD_ERROR_IF(minCellY > maxCellY, udR_InvalidConfiguration);
+  }
+  else
+  {
+    minCellX = minCellY = (uint32_t)-1;
+    maxCellX = maxCellY = 0;
+  }
+  pMip = &pImage->mips[std::clamp((int)mipLevel, 0, pImage->mipCount - 1)];
+
+  GetUVAsPixelIndex(minU, minV, flags, pMip->width, pMip->height, &x, &y);
+  minCellX = std::min(minCellX, x);
+  maxCellX = std::max(maxCellX, x);
+  minCellY = std::min(minCellY, y);
+  maxCellY = std::max(maxCellY, y);
+
+  GetUVAsPixelIndex(maxU, maxV, flags, pMip->width, pMip->height, &x, &y);
+  // The max UV could be can be 1.0 which will map back to pixel offset 0, but so could a UV of 0.0, so decrement accordingly
+  if (maxU != 0.f && x == 0)
+    x = pMip->width - 1;
+  if (maxV != 0.f && y == 0)
+    y = pMip->height - 1;
+  minCellX = std::min(minCellX, x);
+  maxCellX = std::max(maxCellX, x);
+  minCellY = std::min(minCellY, y);
+  maxCellY = std::max(maxCellY, y);
+
+  minCellX /= udImageStreaming::TileSize;
+  maxCellX /= udImageStreaming::TileSize;
+  minCellY /= udImageStreaming::TileSize;
+  maxCellY /= udImageStreaming::TileSize;
+  UD_ERROR_IF(minCellX >= pImage->mips[mipLevel].gridW, udR_InternalError);
+  UD_ERROR_IF(maxCellX >= pImage->mips[mipLevel].gridW, udR_InternalError);
+  UD_ERROR_IF(minCellY >= pImage->mips[mipLevel].gridH, udR_InternalError);
+  UD_ERROR_IF(maxCellY >= pImage->mips[mipLevel].gridH, udR_InternalError);
+
+  *pSubsectionCode = PackCellIndex(minCellX, minCellY, mipLevel) | (uint64_t(PackCellIndex(maxCellX, maxCellY, mipLevel)) << 32);
+  if (uvOffsetScale)
+  {
+    // Scale factor for UV's is always just how many tiles are in the subsection divided by the max tiles in that axis
+    uvOffsetScale[2] = pImage->mips[mipLevel].gridW / (maxCellX - minCellX + 1.f);
+    uvOffsetScale[3] = pImage->mips[mipLevel].gridH / (maxCellY - minCellY + 1.f);
+
+    // Offset values are applied before the scale, so they are just the UV coordinate for the minimum tile
+    // Slightly complicated by the fact that GL uses upside down texturing in the V axis
+    uvOffsetScale[0] = minCellX / (float)pImage->mips[mipLevel].gridW;
+    if (flags & udISF_TopLeft)
+      uvOffsetScale[1] = minCellY / (float)pImage->mips[mipLevel].gridH;
+    else
+      uvOffsetScale[1] = (pImage->mips[mipLevel].gridH - (maxCellY + 1)) / (float)pImage->mips[mipLevel].gridH;
+  }
+  //udDebugPrintf("Total cells: %d/%d\n", (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1), pImage->mips[mipLevel].gridW * pImage->mips[mipLevel].gridH);
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
+// ****************************************************************************
 // Author: Dave Pevreal, March 2020
-udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppImage24, udImageSampleFlags flags, uint32_t *pWidth, uint32_t *pHeight, uint16_t mipLevel)
+udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppImage24, udImageSampleFlags flags, uint32_t *pWidth, uint32_t *pHeight, uint64_t subsectionCode)
 {
   udResult result;
   uint8_t *pRGB = nullptr;
-  uint32_t w, h;
+  const udImageStreaming::Mip *pMip = nullptr;
+  uint32_t mipLevel;
+  uint32_t minX, minY, maxX, maxY; // min/max CELL indices (not pixels, and mip dependent)
+  uint32_t baseX, baseY, outW, outH; // The output rectangle in pixel coordinates
 
   UD_ERROR_NULL(ppImage24, udR_InvalidParameter);
   UD_ERROR_NULL(pImage, udR_InvalidParameter);
 
   // Ensure the header has been loaded by doing an initial dummy sample
   udImageStreaming_Sample(pImage, 0.f, 0.f);
-  w = pImage->width >> mipLevel;
-  h = pImage->height >> mipLevel;
+  if (subsectionCode)
+  {
+    uint32_t verifyMipLevel;
+    UnpackCellIndex((uint32_t)(subsectionCode >> 0), &minX, &minY, &mipLevel);
+    UnpackCellIndex((uint32_t)(subsectionCode >> 32), &maxX, &maxY, &verifyMipLevel);
+    UD_ERROR_IF(mipLevel != verifyMipLevel, udR_InvalidConfiguration);
+    pMip = &pImage->mips[std::clamp((int)mipLevel, 0, pImage->mipCount - 1)];
+  }
+  else
+  {
+    mipLevel = 0;
+    pMip = &pImage->mips[0];
+    minX = minY = 0;
+    maxX = pMip->gridW - 1;
+    maxY = pMip->gridH - 1;
+  }
+  baseX = minX * udImageStreaming::TileSize;
+  baseY = minY * udImageStreaming::TileSize;
+  outW = (maxX - minX + 1) * udImageStreaming::TileSize;
+  outH = (maxY - minY + 1) * udImageStreaming::TileSize;
 
   // Make a 24-bit copy to avoid PNG saving 32-bit when all alpha values are 0xff (currently anyway)
   // This isn't optimal, but for simplicity we just use the Sample function to handle streaming
-  pRGB = (uint8_t *)udAlloc(w * h * 3);
+  pRGB = (uint8_t *)udAlloc(outW * outH * 3);
   UD_ERROR_NULL(pRGB, udR_MemoryAllocationFailure);
-  for (uint32_t y = 0; y < h; ++y)
+  for (uint32_t y = 0; y < outH; ++y)
   {
-    for (uint32_t x = 0; x < w; ++x)
+    for (uint32_t x = 0; x < outW; ++x)
     {
-      uint32_t c = udImageStreaming_Sample(pImage, x / (float)w, y / (float)h, flags, mipLevel);
-      memcpy(&pRGB[(y * w + x) * 3], &c, 3);
+      uint32_t c = udImageStreaming_Sample(pImage, (baseX + x) / (float)pMip->width, (baseY + y) / (float)pMip->height, flags, (uint16_t)mipLevel);
+      memcpy(&pRGB[(y * outW + x) * 3], &c, 3);
     }
   }
+
+  if constexpr (0)
+  {
+    stbiWriteContext writeContext;
+    uint32_t bw;
+    writeContext.pResult = &result;
+    writeContext.pBytesWritten = &bw;
+    udFile_Open(&writeContext.pFile, "c:\\temp\\img24.png", udFOF_Create | udFOF_Write);
+    stbiWriteWrapper(&writeContext, outW, outH, pRGB, udIST_PNG);
+    udFile_Close(&writeContext.pFile);
+  }
+
 
   *ppImage24 = pRGB;
   pRGB = nullptr;
   if (pWidth)
-    *pWidth = w;
+    *pWidth = outW;
   if (pHeight)
-    *pHeight = h;
+    *pHeight = outH;
   result = udR_Success;
-  udDebugPrintf("Done (%s)\n", pImage->name);
 
 epilogue:
   udFree(pRGB);

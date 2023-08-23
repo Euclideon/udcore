@@ -99,8 +99,11 @@ uint32_t udImageStreaming_Sample(udImageStreaming *pImage, float u, float v, udI
 // Load a cell from index data returned by udImageStreaming_Sample using the udISF_NoStream flag
 udResult udImageStreaming_LoadCell(udImageStreaming *pImage, uint32_t cellIndexData);
 
+// Helper to generate a subsection code (useful when using GetImage24 to retrieve a portion of the image), optionally expanding an existing subsection
+udResult udImageStreaming_GetSubsectionCode(const udImageStreaming *pImage, uint64_t *pSubsectionCode, float minU, float minV, float maxU, float maxV, uint16_t mipLevel, udImageSampleFlags flags, uint64_t existingSubsection = 0, float uvOffsetScale[4] = nullptr);
+
 // Get the full-res image in 24-bit format from an ImageStreaming object, using supplied sample flags (set to TopLeft|ABGR for r,g,b byte ordering)
-udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppRBG, udImageSampleFlags flags = udISF_TopLeft, uint32_t *pWidth = nullptr, uint32_t *pHeight = nullptr, uint16_t mipLevel = 0);
+udResult udImageStreaming_GetImage24(udImageStreaming *pImage, uint8_t **ppRBG, udImageSampleFlags flags = udISF_TopLeft, uint32_t *pWidth = nullptr, uint32_t *pHeight = nullptr, uint64_t subsectionCode = 0);
 
 // Save the image back to a source format
 udResult udImageStreaming_SaveAs(udImageStreaming *pImage, const char *pFilename, uint32_t *pSaveSize, udImageSaveType saveType);
