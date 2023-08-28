@@ -593,7 +593,7 @@ epilogue:
 
 // ****************************************************************************
 // Author: Dave Pevreal, August 2023
-udResult udImageStreaming_GetSubsectionCode(const udImageStreaming *pImage, uint64_t *pSubsectionCode, float minU, float minV, float maxU, float maxV, uint16_t mipLevel, udImageSampleFlags flags, uint64_t existingSubsection, float uvOffsetScale[4])
+udResult udImageStreaming_GetSubsectionCode(const udImageStreaming *pImage, uint64_t *pSubsectionCode, float minU, float minV, float maxU, float maxV, uint16_t mipLevel, udImageSampleFlags flags, uint64_t existingSubsection)
 {
   udResult result;
   uint32_t minCellX, minCellY, maxCellX, maxCellY, x, y;
@@ -647,26 +647,45 @@ udResult udImageStreaming_GetSubsectionCode(const udImageStreaming *pImage, uint
   UD_ERROR_IF(maxCellY >= pImage->mips[mipLevel].gridH, udR_InternalError);
 
   *pSubsectionCode = PackCellIndex(minCellX, minCellY, mipLevel) | (uint64_t(PackCellIndex(maxCellX, maxCellY, mipLevel)) << 32);
-  if (uvOffsetScale)
-  {
-    // Scale factor for UV's is always just how many tiles are in the subsection divided by the max tiles in that axis
-    uvOffsetScale[2] = pImage->mips[mipLevel].gridW / (maxCellX - minCellX + 1.f);
-    uvOffsetScale[3] = pImage->mips[mipLevel].gridH / (maxCellY - minCellY + 1.f);
-
-    // Offset values are applied before the scale, so they are just the UV coordinate for the minimum tile
-    // Slightly complicated by the fact that GL uses upside down texturing in the V axis
-    uvOffsetScale[0] = minCellX / (float)pImage->mips[mipLevel].gridW;
-    if (flags & udISF_TopLeft)
-      uvOffsetScale[1] = minCellY / (float)pImage->mips[mipLevel].gridH;
-    else
-      uvOffsetScale[1] = (pImage->mips[mipLevel].gridH - (maxCellY + 1)) / (float)pImage->mips[mipLevel].gridH;
-  }
-  //udDebugPrintf("Total cells: %d/%d\n", (maxCellX - minCellX + 1) * (maxCellY - minCellY + 1), pImage->mips[mipLevel].gridW * pImage->mips[mipLevel].gridH);
   result = udR_Success;
 
 epilogue:
   return result;
 }
+
+// ****************************************************************************
+// Author: Dave Pevreal, August 2023
+udResult udImageStreaming_GetUVOffsetScale(const udImageStreaming *pImage, uint64_t subsectionCode, udImageSampleFlags flags, float uvOffset[2], float uvScale[2])
+{
+  udResult result;
+  UD_ERROR_NULL(pImage, udR_InvalidParameter);
+  UD_ERROR_NULL(uvOffset, udR_InvalidParameter);
+  UD_ERROR_NULL(uvScale, udR_InvalidParameter);
+  uint32_t minCellX, minCellY, maxCellX, maxCellY, mipLevel;
+
+  UnpackCellIndex((uint32_t)(subsectionCode >> 0), &minCellX, &minCellY, &mipLevel);
+  UnpackCellIndex((uint32_t)(subsectionCode >> 32), &maxCellX, &maxCellY);
+  UD_ERROR_IF(minCellX > maxCellX, udR_InvalidConfiguration);
+  UD_ERROR_IF(minCellY > maxCellY, udR_InvalidConfiguration);
+
+  // Scale factor for UV's is always just how many tiles are in the subsection divided by the max tiles in that axis
+  uvScale[0] = pImage->mips[mipLevel].gridW / (maxCellX - minCellX + 1.f);
+  uvScale[1] = pImage->mips[mipLevel].gridH / (maxCellY - minCellY + 1.f);
+
+  // Offset values are applied before the scale, so they are just the UV coordinate for the minimum tile
+  // Slightly complicated by the fact that GL uses upside down texturing in the V axis
+  uvOffset[0] = minCellX / (float)pImage->mips[mipLevel].gridW;
+  if (flags & udISF_TopLeft)
+    uvOffset[1] = minCellY / (float)pImage->mips[mipLevel].gridH;
+  else
+    uvOffset[1] = (pImage->mips[mipLevel].gridH - (maxCellY + 1)) / (float)pImage->mips[mipLevel].gridH;
+
+  result = udR_Success;
+
+epilogue:
+  return result;
+}
+
 
 // ****************************************************************************
 // Author: Dave Pevreal, March 2020
