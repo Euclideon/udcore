@@ -13,6 +13,7 @@
 // An abstraction layer for common functions that differ on various platforms
 #include <stdint.h>
 #include <stdlib.h>
+#include <source_location>
 
 #if defined(_WIN64) || defined(__amd64__) || defined (__arm64__) || defined (__aarch64__)
   //64-bit code
@@ -179,8 +180,10 @@ template <typename T, typename U> inline T *udInterlockedCompareExchangePointer(
 
 #ifdef __MEMORY_DEBUG__
 # define IF_MEMORY_DEBUG(x,y) x,y
+# define MEMORY_DEBUG_LOCATION() std::source_location::current()
 #else
 # define IF_MEMORY_DEBUG(x,y) nullptr,0
+# define MEMORY_DEBUG_LOCATION() std::source_location()
 #endif //  __MEMORY_DEBUG__
 
 
@@ -249,41 +252,34 @@ enum udAllocationFlags
 // Inline of operator to allow flags to be combined and retain type-safety
 inline udAllocationFlags operator|(udAllocationFlags a, udAllocationFlags b) { return (udAllocationFlags)(int(a) | int(b)); }
 
-void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags, const char *pFile, int line);
-#define udMemDup(pMemory, size, additionalBytes, flags) _udMemDup(pMemory, size, additionalBytes, flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+void *udMemDup(const void *pMemory, size_t size, size_t additionalBytes = 0, udAllocationFlags flags = udAF_None, const std::source_location location = MEMORY_DEBUG_LOCATION());
+void *udAlloc(size_t size, udAllocationFlags flags = udAF_None, const std::source_location location = MEMORY_DEBUG_LOCATION());
+template <typename T> T *udAlloc(size_t count, udAllocationFlags flags = udAF_None, const std::source_location location = MEMORY_DEBUG_LOCATION()) { return (T *)udAlloc(sizeof(T) * count, flags, location); }
+void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags = udAF_None, const std::source_location location = MEMORY_DEBUG_LOCATION());
 
-void *_udAlloc(size_t size, udAllocationFlags flags, const char *pFile, int line);
-#define udAlloc(size) _udAlloc(size, udAF_None, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+[[deprecated("Use udAlloc instead")]] inline void *udAllocFlags(size_t size, udAllocationFlags flags, const std::source_location location = MEMORY_DEBUG_LOCATION()) { return udAlloc(size, flags, location); }
+#define udAllocType(type, count, flags) (type*)udAlloc(sizeof(type) * (count), flags)
 
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags, const char *pFile, int line);
-#define udAllocAligned(size, alignment, flags) _udAllocAligned(size, alignment, flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+void *udRealloc(void *pMemory, size_t size, const std::source_location location = MEMORY_DEBUG_LOCATION());
+#define udReallocType(pMemory, type, count) (type*)udRealloc(pMemory, sizeof(type) * (count))
 
-#define udAllocFlags(size, flags) _udAlloc(size, flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
-#define udAllocType(type, count, flags) (type*)_udAlloc(sizeof(type) * (count), flags, IF_MEMORY_DEBUG(__FILE__, __LINE__))
+void *udReallocAligned(void *pMemory, size_t size, size_t alignment, const std::source_location location = MEMORY_DEBUG_LOCATION());
 
-void *_udRealloc(void *pMemory, size_t size, const char *pFile, int line);
-#define udRealloc(pMemory, size) _udRealloc(pMemory, size, IF_MEMORY_DEBUG(__FILE__, __LINE__))
-#define udReallocType(pMemory, type, count) (type*)_udRealloc(pMemory, sizeof(type) * (count), IF_MEMORY_DEBUG(__FILE__, __LINE__))
-
-void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char *pFile, int line);
-#define udReallocAligned(pMemory, size, alignment) _udReallocAligned(pMemory, size, alignment, IF_MEMORY_DEBUG(__FILE__, __LINE__))
-
-void _udFreeInternal(void *pMemory, const char *pFile, int line);
+void udFreeInternal(void *pMemory, const std::source_location location = MEMORY_DEBUG_LOCATION());
 template <typename T>
-void _udFree(T *&pMemory, const char *pFile, int line)
+void udFree(T *&pMemory, const std::source_location location = MEMORY_DEBUG_LOCATION())
 {
   void *pActualPtr = (void*)pMemory;
   if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, nullptr, pActualPtr) == pActualPtr)
   {
-    _udFreeInternal((void*)pActualPtr, pFile, line);
+    udFreeInternal((void*)pActualPtr, location);
   }
 }
-#define udFree(pMemory) _udFree(pMemory, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 // A secure free will overwrite the memory (to the size specified) with a random 32-bit
 // constant. For example cryptographic functions use this to overwrite key data before freeing
 template <typename T>
-void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
+void udFreeSecure(T *&pMemory, size_t size, const std::source_location location = MEMORY_DEBUG_LOCATION())
 {
   void *pActualPtr = (void*)pMemory;
   if (pActualPtr && udInterlockedCompareExchangePointer((void**)&pMemory, nullptr, pActualPtr) == pActualPtr)
@@ -297,10 +293,9 @@ void _udFreeSecure(T *&pMemory, size_t size, const char *pFile, int line)
     // Fill the last odd bytes
     while (i < size)
       ((uint8_t*)pActualPtr)[i++] = (uint8_t)randVal;
-    _udFreeInternal((void*)pActualPtr, pFile, line);
+    udFreeInternal((void*)pActualPtr, location);
   }
 }
-#define udFreeSecure(pMemory, size) _udFreeSecure(pMemory, size, IF_MEMORY_DEBUG(__FILE__, __LINE__))
 
 // Wrapper for alloca with flags. Note flags is OR'd with udAF_None to avoid a cppcat warning
 #define udAllocStack(type, count, flags)   ((flags & udAF_Zero) ? (type*)udSetZero(alloca(sizeof(type) * (count)), sizeof(type) * (count)) : (type*)alloca(sizeof(type) * (count)))

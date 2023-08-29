@@ -209,17 +209,13 @@ bool udStrEndsWithi(const char *pStr, const char *pSuffix)
 
 // *********************************************************************
 // Author: Dave Pevreal, March 2014
-#ifdef __MEMORY_DEBUG__
-char *_udStrdup(const char *pStr, size_t additionalChars, const char *pFile, int line)
-#else
-char *udStrdup(const char *pStr, size_t additionalChars)
-#endif
+char *udStrdup(const char *pStr, size_t additionalChars /*=0*/, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
   if (!pStr && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
   if (!pStr) pStr = s_udStrEmptyString;
 
   size_t len = udStrlen(pStr) + 1;
-  char *pDup = (char *)_udAlloc(sizeof(char) * (len + additionalChars), udAF_None, IF_MEMORY_DEBUG(pFile, line));
+  char *pDup = (char *)udAlloc(sizeof(char) * (len + additionalChars), udAF_None, location);
   if (pDup)
     memcpy(pDup, pStr, len);
 
@@ -229,7 +225,7 @@ char *udStrdup(const char *pStr, size_t additionalChars)
 
 // *********************************************************************
 // Author: Dave Pevreal, May 2017
-char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars)
+char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars /*= 0*/, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
   if (!pStr && !additionalChars) return nullptr; // This allows us to duplicate null's as null's
   if (!pStr) pStr = s_udStrEmptyString;
@@ -237,7 +233,7 @@ char *udStrndup(const char *pStr, size_t maxChars, size_t additionalChars)
   size_t len = 0;
   while (len < maxChars && pStr[len])
     ++len;
-  char *pDup = udAllocType(char, len + 1 + additionalChars, udAF_None);
+  char *pDup = (char *)udAlloc(sizeof(char) * (len + 1 + additionalChars), udAF_None, location);
   if (pDup)
   {
     memcpy(pDup, pStr, len);

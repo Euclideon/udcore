@@ -66,7 +66,7 @@ udResult udImage_LoadFromMemory(udImage **ppImage, const void *pMemory, size_t l
     UD_ERROR_NULL(pSTBIImage, udR_ImageLoadFailure);
   }
 
-  pImage = (udImage *)udAllocFlags(sizeof(udImage), udAF_Zero);
+  pImage = (udImage *)udAlloc(sizeof(udImage), udAF_Zero);
   UD_ERROR_NULL(pImage, udR_MemoryAllocationFailure);
   pImage->width = (uint32_t)w;
   pImage->height = (uint32_t)h;

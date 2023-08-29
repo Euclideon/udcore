@@ -22,9 +22,9 @@
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, August 2022
-void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllocationFlags flags, const char *pFile, int line)
+void *udMemDup(const void *pMemory, size_t size, size_t additionalBytes /*= 0*/, udAllocationFlags flags /*= udAF_None*/, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
-  void *pDuplicated = _udAlloc(size + additionalBytes, udAF_None, pFile, line);
+  void *pDuplicated = udAlloc(size + additionalBytes, udAF_None, location);
 
   if (pDuplicated)
   {
@@ -45,15 +45,15 @@ void *_udMemDup(const void *pMemory, size_t size, size_t additionalBytes, udAllo
 #define UD_DEFAULT_ALIGNMENT (8)
 // ----------------------------------------------------------------------------
 // Author: David Ely
-void *_udAlloc(size_t size, udAllocationFlags flags, const char *pFile, int line)
+void *udAlloc(size_t size, udAllocationFlags flags /*= udAF_None*/, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
 #if defined(_MSC_VER)
-  void *pMemory = (flags & udAF_Zero) ? _aligned_recalloc_dbg(nullptr, size, 1, UD_DEFAULT_ALIGNMENT, pFile, line) : _aligned_malloc_dbg(size, UD_DEFAULT_ALIGNMENT, pFile, line);
+  void *pMemory = (flags & udAF_Zero) ? _aligned_recalloc_dbg(nullptr, size, 1, UD_DEFAULT_ALIGNMENT, location.file_name(), location.line()) : _aligned_malloc_dbg(size, UD_DEFAULT_ALIGNMENT, location.file_name(), location.line());
 #else
   void *pMemory = (flags & udAF_Zero) ? calloc(size, 1) : malloc(size);
 #endif // defined(_MSC_VER)
 
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
+  DebugTrackMemoryAlloc(pMemory, size, location.file_name(), location.line());
 
   if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
@@ -69,10 +69,10 @@ void *_udAlloc(size_t size, udAllocationFlags flags, const char *pFile, int line
 
 // ----------------------------------------------------------------------------
 // Author: David Ely
-void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags, const char *pFile, int line)
+void *udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags /*= udAF_None*/, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
 #if defined(_MSC_VER)
-  void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc_dbg(nullptr, size, 1, alignment, pFile, line) : _aligned_malloc_dbg(size, alignment, pFile, line);
+  void *pMemory =  (flags & udAF_Zero) ? _aligned_recalloc_dbg(nullptr, size, 1, alignment, location.file_name(), location.line()) : _aligned_malloc_dbg(size, alignment, location.file_name(), location.line());
 
   if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
@@ -102,18 +102,18 @@ void *_udAllocAligned(size_t size, size_t alignment, udAllocationFlags flags, co
 #else
 # error "Unsupported platform!"
 #endif
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
+  DebugTrackMemoryAlloc(pMemory, size, location.file_name(), location.line());
 
   return pMemory;
 }
 
 // ----------------------------------------------------------------------------
 // Author: David Ely
-void *_udRealloc(void *pMemory, size_t size, const char *pFile, int line)
+void *udRealloc(void *pMemory, size_t size, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
-  DebugTrackMemoryFree(pMemory, pFile, line);
+  DebugTrackMemoryFree(pMemory, location.file_name(), location.line());
 #if defined(_MSC_VER)
-  pMemory =  _aligned_realloc_dbg(pMemory, size, UD_DEFAULT_ALIGNMENT, pFile, line);
+  pMemory =  _aligned_realloc_dbg(pMemory, size, UD_DEFAULT_ALIGNMENT, location.file_name(), location.line());
 #else
   pMemory = realloc(pMemory, size);
 #endif // defined(_MSC_VER)
@@ -127,18 +127,18 @@ void *_udRealloc(void *pMemory, size_t size, const char *pFile, int line)
     }
   }
 
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
+  DebugTrackMemoryAlloc(pMemory, size, location.file_name(), location.line());
 
   return pMemory;
 }
 
 // ----------------------------------------------------------------------------
 // Author: David Ely
-void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char *pFile, int line)
+void *udReallocAligned(void *pMemory, size_t size, size_t alignment, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
-  DebugTrackMemoryFree(pMemory, pFile, line);
+  DebugTrackMemoryFree(pMemory, location.file_name(), location.line());
 #if defined(_MSC_VER)
-  pMemory = _aligned_realloc_dbg(pMemory, size, alignment, pFile, line);
+  pMemory = _aligned_realloc_dbg(pMemory, size, alignment, location.file_name(), location.line());
 
   if constexpr (__BREAK_ON_MEMORY_ALLOCATION_FAILURE)
   {
@@ -151,31 +151,31 @@ void *_udReallocAligned(void *pMemory, size_t size, size_t alignment, const char
 #elif defined(__GNUC__)
   if (!pMemory)
   {
-    pMemory = _udAllocAligned(size, alignment, udAF_None, pFile, line);
+    pMemory = udAllocAligned(size, alignment, udAF_None, location);
   }
   else
   {
-    void *pNewMem = _udAllocAligned(size, alignment, udAF_None, pFile, line);
+    void *pNewMem = udAllocAligned(size, alignment, udAF_None, location);
 
     size_t *pSize = (size_t*)((uint8_t*)pMemory - sizeof(size_t));
     memcpy(pNewMem, pMemory, *pSize);
-    _udFree(pMemory, pFile, line);
+    udFree(pMemory, location);
 
     return pNewMem;
   }
 #else
 # error "Unsupported platform!"
 #endif
-  DebugTrackMemoryAlloc(pMemory, size, pFile, line);
+  DebugTrackMemoryAlloc(pMemory, size, location.file_name(), location.line());
 
   return pMemory;
 }
 
 // ----------------------------------------------------------------------------
 // Author: David Ely
-void _udFreeInternal(void * pMemory, const char *pFile, int line)
+void udFreeInternal(void * pMemory, const std::source_location location /*= MEMORY_DEBUG_LOCATION()*/)
 {
-  DebugTrackMemoryFree(pMemory, pFile, line);
+  DebugTrackMemoryFree(pMemory, location.file_name(), location.line());
 #if defined(_MSC_VER)
   _aligned_free_dbg(pMemory);
 #else
