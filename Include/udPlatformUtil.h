@@ -91,6 +91,9 @@ int udDaysUntilExpired(int maxDays, const char **ppExpireDateStr); // Return the
 int64_t udGetEpochSecsUTCd();
 double udGetEpochSecsUTCf();
 
+double udTime_StringToEpoch(const char *pString);
+udResult udTime_EpochToString(char *pBuffer, size_t bufferLen, double time);
+
 #if UDPLATFORM_WINDOWS
 // *********************************************************************
 // Helper to convert a UTF8 string to wide char for Windows OS calls

@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <chrono>
+#include <date/date.h>
 
 #if UDPLATFORM_WINDOWS
 # include <io.h>
@@ -165,6 +166,32 @@ int64_t udGetEpochSecsUTCd()
 double udGetEpochSecsUTCf()
 {
   return 1.0 * std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den;
+}
+
+double udTime_StringToEpoch(const char *pString)
+{
+  std::istringstream in{ pString };
+  date::sys_time<std::chrono::milliseconds> tp;
+  in >> date::parse("%FT%TZ", tp);
+  if (in.fail())
+  {
+    in.clear();
+    in.exceptions(std::ios::failbit);
+    in.str(pString);
+    in >> date::parse("%FT%T%Ez", tp);
+  }
+
+  return tp.time_since_epoch().count() / 1000.0;
+}
+
+udResult udTime_EpochToString(char *pBuffer, size_t bufferLen, double time)
+{
+  std::ostringstream os;
+  date::sys_time<std::chrono::milliseconds> tp;
+  tp += std::chrono::milliseconds((long long)(time * 1000.0));
+  os << date::format("%FT%TZ", tp);
+  udStrcpy(pBuffer, bufferLen, os.str().c_str());
+  return udR_Success;
 }
 
 #if UDPLATFORM_WINDOWS
