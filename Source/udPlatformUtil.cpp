@@ -176,9 +176,15 @@ double udTime_StringToEpoch(const char *pString)
   if (in.fail())
   {
     in.clear();
-    in.exceptions(std::ios::failbit);
     in.str(pString);
     in >> date::parse("%FT%T%Ez", tp);
+  }
+  if (in.fail())
+  {
+    in.clear();
+    in.exceptions(std::ios::failbit);
+    in.str(pString);
+    in >> date::parse("%Y:%m:%d %T", tp);
   }
 
   return tp.time_since_epoch().count() / 1000.0;
