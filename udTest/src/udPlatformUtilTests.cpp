@@ -10,4 +10,11 @@ TEST(udPlatformUtilTests, udTime)
   char buffer[50]{};
   EXPECT_EQ(udR_Success, udTime_EpochToString(buffer, udLengthOf(buffer), epoch));
   EXPECT_STREQ(time, buffer);
+
+  constexpr const char timeEXIF[] = "2023:08:30 12:34:56.789";
+  epoch = udTime_StringToEpoch(timeEXIF);
+  EXPECT_EQ(1693398896.789, epoch);
+
+  EXPECT_EQ(udR_Success, udTime_EpochToString(buffer, udLengthOf(buffer), epoch));
+  EXPECT_STREQ(time, buffer);
 }
