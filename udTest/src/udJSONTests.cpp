@@ -8,8 +8,8 @@
 // First-pass most basic tests for udJSON
 // TODO: Fix udMemoryDebugTracking to be useful and test memory leaks
 
-static const char *pJSONTest = "{\"Settings\":{\"ProjectsPath\":\"C:\\\\Temp&\\\\\",\"ImportAtFullScale\":true,\"TerrainIndex\":2,\"Inside\":{\"Count\":5},\"Outside\":{\"Count\":2,\"content\":\"windy\"},\"EmptyArray\":[],\"Nothing\":null,\"SpecialChars\":\"<>&\\\\/?[]{}'\\\"%\",\"TestArray\":[0,1,2]}}";
-static const char *pXMLTest = "<Settings ProjectsPath=\"C:\\Temp&amp;\\\" ImportAtFullScale=\"true\" TerrainIndex=\"2\" SpecialChars=\"&lt;&gt;&amp;\\/?[]{}'&quot;%\"><Inside Count=\"5\"/><Outside Count=\"2\">windy</Outside><EmptyArray></EmptyArray><Nothing/><TestArray>0</TestArray><TestArray>1</TestArray><TestArray>2</TestArray></Settings>";
+static const char *pJSONTest = "{\"Settings\":{\"ProjectsPath\":\"C:\\\\Temp&\\\\\",\"ImportAtFullScale\":true,\"TerrainIndex\":2,\"Inside\":{\"Count\":5},\"Outside\":{\"Count\":2,\"content\":\"windy\"},\"EmptyArray\":[],\"Nothing\":null,\"SpecialChars\":\"<>&\\\\/?[]{}'\\\"%\",\"TestArray\":[0,1,2],\"HexFloat\":0x1.921fb54442d18p+1}}";
+static const char *pXMLTest = "<Settings ProjectsPath=\"C:\\Temp&amp;\\\" ImportAtFullScale=\"true\" TerrainIndex=\"2\" SpecialChars=\"&lt;&gt;&amp;\\/?[]{}'&quot;%\" HexFloat=\"0x1.921fb54442d18p+1\"><Inside Count=\"5\"/><Outside Count=\"2\">windy</Outside><EmptyArray></EmptyArray><Nothing/><TestArray>0</TestArray><TestArray>1</TestArray><TestArray>2</TestArray></Settings>";
 
 // ----------------------------------------------------------------------------
 // Author: Dave Pevreal, June 2017
@@ -45,6 +45,8 @@ static void udJSON_TestContent(udJSON &v)
   EXPECT_EQ(1, v.Get("Settings.TestArray[-2]").AsInt());
   EXPECT_EQ(0, v.Get("Settings.TestArray[-3]").AsInt());
   EXPECT_EQ(true, v.Get("Settings.TestArray[-4]").IsVoid());
+  v.Set("Settings.HexFloat = 0x1.921fb54442d18p+1");
+  EXPECT_EQ(3.1415926535897931, v.Get("Settings.HexFloat").AsDouble());
 }
 
 

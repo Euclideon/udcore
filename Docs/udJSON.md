@@ -180,6 +180,7 @@ Get/Set syntax:
 ```cpp
 v.Set("key = %f", 3.14159);
 v.Get("key").AsDouble() == 3.14159
+v.Set("key = 0x1.921fb54442d18p+1"); // 3.1415926535897931 as a hexfloat
 ```
 
 Relevant methods:
