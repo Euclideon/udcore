@@ -116,6 +116,13 @@ static udThreadReturnType udThread_Bootstrap(udThread *pThread)
           if constexpr (DEBUG_CACHE)
             udDebugPrintf("Making thread %p available for cache (slot %d)\n", (void *)pThread, slotIndex);
 
+          // Set the name so that it's state as a cached thread is visible in the debugger
+#if UDPLATFORM_WINDOWS
+          SetThreadName(GetThreadId(pThread->handle), "Cached thread waiting");
+#elif (UDPLATFORM_LINUX || UDPLATFORM_ANDROID)
+          pthread_setname_np(pThread->t, "Cached thread waiting");
+#endif
+
           // Successfully added to the cache, now wait to see if anyone wants to dance
           int timeoutWakeup = udWaitSemaphore(pThread->pCacheSemaphore, CACHE_WAIT_SECONDS * 1000);
           if (udInterlockedCompareExchangePointer(&s_pCachedThreads[slotIndex], nullptr, pThread) == pThread)
@@ -181,7 +188,7 @@ udResult udThread_Create(udThread **ppThread, udThreadStart threadStarter, void 
     UD_ERROR_NULL(pThread, udR_MemoryAllocationFailure);
     pThread->pCacheSemaphore = udCreateSemaphore();
     if constexpr (DEBUG_CACHE)
-      udDebugPrintf("Creating udThread %p\n", (void *)pThread);
+      udDebugPrintf("Creating udThread %p (%s)\n", (void *)pThread, pThreadName);
 
     pThread->threadStarter = threadStarter;
     pThread->pThreadData = pThreadData;
