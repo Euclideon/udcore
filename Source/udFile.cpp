@@ -510,6 +510,17 @@ epilogue:
 udResult udFile_RegisterHandler(udFile_OpenHandlerFunc *fpHandler, const char *pPrefix, bool overrideExisting /*= false*/)
 {
   UDTRACE();
+  if (fpHandler == nullptr)
+  {
+    for (int i = 0; i < s_handlersCount; ++i)
+    {
+      if (udStrEqual(s_handlers[i].prefix, pPrefix))
+        return udFile_DeregisterHandler(s_handlers[i].fpOpen);
+    }
+
+    return udR_NotFound;
+  }
+
   if (overrideExisting)
   {
     for (int i = 0; i < s_handlersCount; ++i)

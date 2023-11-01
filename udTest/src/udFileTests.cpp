@@ -216,8 +216,14 @@ TEST(udFileTests, CustomFileHandler)
   EXPECT_STREQ(writeBuffer, pLoadBuffer);
   udFree(pLoadBuffer);
 
+  // Deregister handler directly
   EXPECT_EQ(udR_Success, udFile_DeregisterHandler(udFileTests_CustomFileHandler_Open));
   EXPECT_NE(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Write));
+
+  // Deregister handler by providing nullptr to register function
+  EXPECT_EQ(udR_Success, udFile_RegisterHandler(udFileTests_CustomFileHandler_Open, "CUSTOM:"));
+  EXPECT_EQ(udR_Success, udFile_RegisterHandler(nullptr, "CUSTOM:"));
+  EXPECT_EQ(udR_NotFound, udFile_RegisterHandler(nullptr, "CUSTOM:"));
 }
 
 TEST(udFileTests, CustomFileHandlerOverrideExisting)
