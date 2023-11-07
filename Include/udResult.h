@@ -11,6 +11,8 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
+#include <stdio.h>
+
 extern bool g_udBreakOnError;      // Set to true normally, unset and reset around sections of code (eg tests) that aren't unexpected
 extern const char *g_udLastErrorFilename;
 extern int g_udLastErrorLine;
@@ -19,7 +21,7 @@ extern int g_udLastErrorLine;
 # define UD_ERROR_BREAK_ON_ERROR 0  // Set to 1 to have the debugger break on error
 #endif
 #if defined(_DEBUG)
-# define UD_ERROR_SETLAST(f,l) g_udLastErrorFilename = f; g_udLastErrorLine = l
+# define UD_ERROR_SETLAST(f,l) g_udLastErrorFilename = f; g_udLastErrorLine = l; printf("Error %s " f ":%d\n", udResultAsString((udResult)result), l);
 #else
 # define UD_ERROR_SETLAST(f,l) g_udLastErrorLine = l
 #endif
