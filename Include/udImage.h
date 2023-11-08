@@ -28,6 +28,7 @@ struct udImageStreamingOnDisk
     Fourcc = MAKE_FOURCC('U', 'D', 'T', '0'),  // Fourcc also a version number
     TileSize = 64,
     MaxMipLevels = 24,
+    ChannelCount = 3,
   };
   uint32_t fourcc;
   uint32_t width, height;
@@ -48,6 +49,9 @@ struct udImageStreaming : public udImageStreamingOnDisk
     uint16_t gridW, gridH;      // Dimensions of cell grid
     uint8_t * volatile * ppCellImage;      // Pointers to each 64x64 tile
   } mips[MaxMipLevels];
+
+  // Only valid after the header has been loaded
+  uint32_t GetOnDiskSize() { return (uint32_t)(offsetToMip0 + mips[mipCount - 1].offset + (mips[mipCount - 1].width * mips[mipCount - 1].height * ChannelCount)); }
 };
 
 enum udImageSampleFlags
