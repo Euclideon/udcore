@@ -61,6 +61,7 @@ struct udFile
   uint32_t requestsInFlight;
   uint64_t totalBytes;
   float mbPerSec;
+  int32_t additionalRefCount;             // To maintain compatibility with the requirement that handlers zero the structure, a zero reference count is the normal state single reference state, ADDITIONAL references increment this.
   bool filenameCopyRequiresFree;          // Set if the filename copy was allocated, will be freed prior to calling handler close function
 };
 

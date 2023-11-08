@@ -5,7 +5,6 @@
 //
 
 #include "udFileHandler.h"
-#include "udFileHandler.h"
 #include "udPlatformUtil.h"
 #include "udStringUtil.h"
 #include "udCrypto.h"
@@ -432,6 +431,15 @@ epilogue:
 
 
 // ****************************************************************************
+// Author: Dave Pevreal, November 2024
+void udFile_AddReference(udFile *pFile)
+{
+  if (pFile)
+    ++pFile->additionalRefCount;
+}
+
+
+// ****************************************************************************
 // Author: Dave Pevreal, March 2014
 udResult udFile_Close(udFile **ppFile)
 {
@@ -440,13 +448,15 @@ udResult udFile_Close(udFile **ppFile)
     return udR_InvalidParameter;
 
   udFile *pFile = *ppFile;
-  if (pFile)
+  *ppFile = nullptr;
+
+  if (pFile && pFile->additionalRefCount-- <= 0) // Post-increment because the reference count is _additional_ references
   {
     if (pFile->filenameCopyRequiresFree)
       udFree(pFile->pFilenameCopy);
     if (pFile->pCipherCtx)
       udCryptoCipher_Destroy(&pFile->pCipherCtx);
-    return pFile->fpClose(ppFile);
+    return pFile->fpClose(&pFile);
   }
   return udR_Success; // Already closed, no error condition
 }

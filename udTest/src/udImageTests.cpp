@@ -46,10 +46,7 @@ TEST(udImageTests, SaveLoad)
 
 TEST(udImageTests, SaveLoadImageStreaming)
 {
-  enum
-  {
-    dim = 32,
-  };
+  const uint32_t dim = 32;
   uint32_t imageData[dim * dim];
   udImage testImage = { dim, dim, 3, 0, imageData };
   udImageStreaming *pReload = nullptr;

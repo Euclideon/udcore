@@ -83,17 +83,30 @@ TEST(udFileTests, BasicReadWriteLoadFILE)
   EXPECT_EQ(0, performance.requestsInFlight);
 
   // Release file
+  memset(readBuffer, 0, sizeof(readBuffer));
   EXPECT_EQ(udR_Success, udFile_Release(pFile));
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer), 0, udFSW_SeekSet));
   EXPECT_STREQ(writeBuffer, readBuffer);
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
 
   // Change seek base
+  memset(readBuffer, 0, sizeof(readBuffer));
   EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Read));
   udFile_SetSeekBase(pFile, 1);
   EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, UDARRAYSIZE(readBuffer) - 1));
   EXPECT_STREQ(&writeBuffer[1], readBuffer);
   EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+
+  // Add reference
+  memset(readBuffer, 0, sizeof(readBuffer));
+  EXPECT_EQ(udR_Success, udFile_Open(&pFile, pFilename, udFOF_Read));
+  udFile *pFile2 = pFile;
+  udFile_AddReference(pFile2);
+  EXPECT_EQ(udR_Success, udFile_Read(pFile, readBuffer, 1));
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile));
+  EXPECT_EQ(udR_Success, udFile_Read(pFile2, readBuffer + 1, UDARRAYSIZE(readBuffer) - 1));
+  EXPECT_STREQ(writeBuffer, readBuffer);
+  EXPECT_EQ(udR_Success, udFile_Close(&pFile2));
 
   // Load
   char *pLoadBuffer = nullptr;

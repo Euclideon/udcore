@@ -88,6 +88,9 @@ udResult udFile_BlockForPipelinedRequest(udFile *pFile, udFilePipelinedRequest *
 // Release the underlying file handle (optional) to be re-opened upon next use - used to have more open files than internal (o/s) limits would otherwise allow
 udResult udFile_Release(udFile *pFile);
 
+// Increment the reference count on the file, requiring additional calls to udFile_Close to actually close
+void udFile_AddReference(udFile *pFile);
+
 // Close the file (sets the udFile pointer to null)
 udResult udFile_Close(udFile **ppFile);
 
