@@ -268,6 +268,7 @@ void udImage_Destroy(udImage **ppImage)
 udResult udImageStreaming_Save(const udImage *pImage, udImageStreamingOnDisk **ppOnDisk, uint32_t *pSaveSize, const char *pNameDesc)
 {
   udResult result;
+  UDCOMPILEASSERT(udImageStreamingOnDisk::ChannelCount == 3, "udImageStreaming only supports 24-bit images currently");
   udImageStreamingOnDisk *pOnDisk = nullptr;
   uint32_t saveSize = (uint32_t)sizeof(udImageStreamingOnDisk);
   uint16_t mipCount = 0;
