@@ -51,7 +51,7 @@ struct udImageStreaming : public udImageStreamingOnDisk
   } mips[MaxMipLevels];
 
   // Only valid after the header has been loaded
-  uint32_t GetOnDiskSize() { return (uint32_t)(offsetToMip0 + mips[mipCount - 1].offset + (mips[mipCount - 1].width * mips[mipCount - 1].height * ChannelCount)); }
+  uint32_t GetOnDiskSize() { return uint32_t(mips[mipCount - 1].offset + (mips[mipCount - 1].width * mips[mipCount - 1].height * ChannelCount) - baseOffset); }
 };
 
 enum udImageSampleFlags
