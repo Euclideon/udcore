@@ -427,6 +427,7 @@ udResult udImageStreaming_Reserve(udImageStreaming **ppImage, udFile *pFile, int
   pImage->pFile = pFile;
   pImage->baseOffset = offset;
   pImage->pLock = udCreateMutex();
+  udFile_AddReference(pImage->pFile); // Add a reference so we can close independently of the caller
 
   *ppImage = pImage;
   pImage = nullptr;
@@ -673,7 +674,7 @@ void udImageStreaming_Destroy(udImageStreaming **ppImage)
       }
     }
     udDestroyMutex(&pImage->pLock);
-    pImage->pFile = nullptr;
+    udFile_Close(&pImage->pFile);
     udFree(pImage);
   }
 }
